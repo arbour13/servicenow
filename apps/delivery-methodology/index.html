@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=20260721g">
+<link rel="stylesheet" href="css/app.css?v=20260722a">
 </head>
 <body>
 
@@ -405,7 +405,7 @@
               </div>
               <div class="ja-roles">
                 <span class="ja-roles-lbl">Applies to:</span>
-                <button type="button" class="ja-rolechip" ng-class="{on: vm.jobAidRoleOn(t, j, r.id)}" ng-repeat="r in vm.taskRaciRoles(t)" ng-click="vm.toggleJobAidRole(t, j, r.id)" data-tip-name="{{r.name}}" data-tip="{{r.description}}"><span ng-if="r.external">&#9671; </span>{{r.abbr}}</button>
+                <button type="button" class="ja-rolechip" ng-class="{on: vm.jobAidRoleOn(t, j, r.id), ext: r.external}" ng-repeat="r in vm.taskRaciRoles(t)" ng-click="vm.toggleJobAidRole(t, j, r.id)" data-tip-name="{{r.name}}" data-tip="{{r.description}}"><svg class="ja-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"></polyline></svg><span ng-if="r.external">&#9671; </span>{{r.abbr}}</button>
               </div>
             </div>
             <button type="button" class="add-item-btn tight" ng-click="vm.addJobAid(t)">+ Add job aid</button>

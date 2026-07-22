@@ -372,9 +372,13 @@
   /* exciting add-job-aid CTA - teal-tinted pill with an icon, fills on hover */
   .ja-roles { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
   .ja-roles-lbl { font-size: 11px; color: var(--ink-2); margin-right: 2px; }
-  .ja-rolechip { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 20px; padding: 4px 11px; cursor: pointer; transition: background .12s, color .12s, border-color .12s, box-shadow .12s; }
-  .ja-rolechip:hover { border-color: var(--teal); }
-  .ja-rolechip.on { color: var(--text-on-primary); background: var(--gradient-pill); border-color: #fff; box-shadow: var(--shadow-inset); }
+  .ja-rolechip { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--ink-faint); background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 20px; padding: 4px 11px; cursor: pointer; display: inline-flex; align-items: center; transition: background .12s, color .12s, border-color .12s; }
+  .ja-rolechip:hover { border-color: var(--teal); color: var(--ink); }
+  .ja-rolechip.on { color: var(--teal); background: rgba(0,224,172,.1); border-color: var(--teal); }
+  .ja-rolechip.ext { border-style: dashed; }
+  /* Checkmark animates in on select - width/margin collapse to 0 when off, matching the participant chips. */
+  .ja-check { width: 0; height: 10px; margin-right: 0; flex: none; opacity: 0; transform: scale(.4) rotate(-20deg); transition: width .18s ease, margin-right .18s ease, opacity .16s ease, transform .22s cubic-bezier(.34,1.56,.64,1); }
+  .ja-rolechip.on .ja-check { width: 10px; margin-right: 5px; opacity: 1; transform: scale(1) rotate(0deg); }
 
   /* setup-zone blocks (LOE / participants / comments above the flow) */
   .setup-block { margin: 20px 0; }
@@ -1787,14 +1791,21 @@ function taskEditHtml(t, ti, n) {
   h += '</div>'; // .task
   return h;
 }
+function jobAidScopeRoleIds(t) {
+  // A job aid's "Applies to" scopes it to the task's RACI roles - but a freshly added task has no
+  // RACI yet, which left the control empty (no chips) while entering new content. Fall back to all
+  // internal job titles so there is always something to scope to.
+  const ids = sortJobTitleIds(Object.keys(t.raci || {}));
+  return ids.length ? ids : sortJobTitleIds(data.jobTitles.filter(r => !r.external).map(r => r.id));
+}
 function jobAidEditHtml(t, ti, j, ji) {
-  const roleIds = sortJobTitleIds(Object.keys(t.raci || {}));
+  const roleIds = jobAidScopeRoleIds(t);
   const roles = j.roles || [];
   const chips = roleIds.map(rid => {
     const r = jobTitleById(rid);
     if (!r) { return ''; }
     const on = !roles.length || roles.includes(rid);
-    return `<button class="ja-rolechip ${on ? 'on' : ''}" data-ja-role="${ti}:${ji}:${rid}" type="button">${r.external ? '◇ ' : ''}${esc(r.abbr)}</button>`;
+    return `<button class="ja-rolechip ${on ? 'on' : ''}${r.external ? ' ext' : ''}" data-ja-role="${ti}:${ji}:${rid}" type="button"><svg class="ja-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"></polyline></svg>${r.external ? '◇ ' : ''}${esc(r.abbr)}</button>`;
   }).join('');
   return `<div class="ja-edit">
     <div class="ja-edit-row">
@@ -1982,7 +1993,7 @@ function wireEditHandlers(sp) {
     b.onclick = () => {
       const [ti, ji, rid] = b.dataset.jaRole.split(':');
       const t = sp.tasks[+ti];
-      const roleIds = sortJobTitleIds(Object.keys(t.raci || {}));
+      const roleIds = jobAidScopeRoleIds(t);
       const j = jaAt(ti, ji);
       const arr = (j.roles && j.roles.length) ? j.roles.slice() : roleIds.slice();
       const i = arr.indexOf(rid);
