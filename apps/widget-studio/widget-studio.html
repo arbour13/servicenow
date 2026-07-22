@@ -245,7 +245,13 @@ class Component extends DCLogic {
   // All access to saved widgets funnels through this thin store so that moving to a ServiceNow table later
   // means swapping ONLY these three methods (listWidgets/writeWidgets keys, and the shape stays the same).
   STORE_KEY(){ return 'widgetStudio_widgets'; }
-  listWidgets(){ try{ const a=JSON.parse(localStorage.getItem(this.STORE_KEY())||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  // A blob that won't parse is preserved under a datestamped backup key BEFORE the next save can
+  // overwrite it — showing an empty library is graceful, silently discarding recoverable data is not.
+  // `_storeCorrupt` surfaces a notice (with the backup key) in the library modal.
+  listWidgets(){ const raw=localStorage.getItem(this.STORE_KEY()); if(raw==null) return [];
+    try{ const a=JSON.parse(raw); if(Array.isArray(a)) return a; }catch(e){}
+    this.backupCorruptStore(raw); return []; }
+  backupCorruptStore(raw){ try{ const k=this.STORE_KEY()+'_corrupt_'+new Date().toISOString().slice(0,10); if(localStorage.getItem(k)==null) localStorage.setItem(k,raw); this._storeCorrupt=k; }catch(e){} }
   writeWidgets(arr){ try{ localStorage.setItem(this.STORE_KEY(), JSON.stringify(arr)); return true; }catch(e){ return false; } }
   // Everything needed to reconstruct a widget: identity, tree, all styling layers, tokens, the Options
   // schema, and the user-authored Client/Server/Link buffers (uidc so re-opening never reuses an id).
@@ -306,6 +312,10 @@ class Component extends DCLogic {
       if(tag==='video'){ base.data.src=''; }
       if(tag==='iframe'){ base.data.src='https://www.youtube.com/embed/…'; base.data.ratio='16x9'; }
       if(this.CONTAINER_TAGS.includes(tag)||tag==='div') base.children=[];
+      // A list item drops with visible starter text and a list drops with one starter item — an empty
+      // <ul> / bare <li></li> renders as nothing on the canvas and exports as empty pairs.
+      if(tag==='li') base.text='List item';
+      if(tag==='ul'||tag==='ol') base.children=[this.make('el','li')];
       return base;
     }
     switch(type){
@@ -629,6 +639,23 @@ class Component extends DCLogic {
 
   // ---------- DnD (pointer engine) ----------
   startAdd(e,spec){ if(e.button!==0) return; e.preventDefault(); this.drag={kind:'add',spec,label:spec.label||spec.tag||spec.type,startX:e.clientX,startY:e.clientY,started:false}; this.addDragListeners(); }
+  // Click-to-add for palette chips (drag stays available): the element lands where a center-drop on
+  // the selection would — the selected container itself, or the nearest ancestor that may legally
+  // hold it (same allowsChild guard as drops). Also what makes the palette keyboard-usable: chips
+  // are a11y buttons whose Enter/Space activation routes here.
+  clickAdd(spec){
+    if(spec.role && this.focusStack.length){ this.quickAdd(spec,this.focusId()); return; }
+    const child={tag:spec.tag,type:spec.type};
+    const fid=this.focusStack.length?this.focusId():null;
+    let startId=this.selectedId||'root';
+    if(fid && startId!==fid && !this.isDesc(fid,startId)) startId=fid;
+    let cur=this.find(startId);
+    while(cur){ const n=cur.node;
+      if(this.canHaveChildren(n)&&this.allowsChild(n,child)){ this.quickAdd(spec,n.id); return; }
+      if(fid&&n.id===fid) return;   // focus mode never climbs out of the focused subtree
+      cur=cur.parent?this.find(cur.parent.id):null;
+    }
+  }
   startMove(e,node){ if(e.button!==0||this._editing===node.id||this.focusLocked(node.id)) return; e.stopPropagation(); this.drag={kind:'move',id:node.id,label:node.type==='el'?node.data.tag:node.type,startX:e.clientX,startY:e.clientY,started:false}; this.addDragListeners(); }
   startEdit(node){ if(node.text==null) return; this._editing=node.id; this.selectedId=node.id; this.forceUpdate(); }
   txtEd(node,clean){ if(clean||node.text==null) return {}; const ed=this._editing===node.id; return { contentEditable: ed?'true':undefined, suppressContentEditableWarning:true, onDoubleClick:e=>{ e.stopPropagation(); this.startEdit(node); }, onBlur:e=>{ if(this._editing===node.id){ const v=e.currentTarget.innerText; this.patch(node.id,n=>n.text=v); this._editing=null; } }, onKeyDown:e=>{ if(this._editing===node.id){ e.stopPropagation(); if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); e.currentTarget.blur(); } } }, ref: ed?(el=>{ if(el&&document.activeElement!==el){ el.focus(); const r=document.createRange(); r.selectNodeContents(el); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); } }):null }; }
@@ -1016,7 +1043,9 @@ class Component extends DCLogic {
       }
     }
     this.multiSel=[];
-    if(id!==this.selectedId){ this._estate='base'; this._bindPick=null; } this.selectedId=id; this.forceUpdate(); }
+    // Selecting a different element resets the per-element editing targets alongside the state layer —
+    // the border-width side and corner-radius pickers shouldn't carry "Editing Left" over to a new element.
+    if(id!==this.selectedId){ this._estate='base'; this._bindPick=null; this._bwSide=null; this._radCorner=null; } this.selectedId=id; this.forceUpdate(); }
 
   componentDidMount(){ this._key=e=>{
     const inField = e.target && (e.target.isContentEditable || /input|textarea|select/i.test(e.target.tagName));
@@ -1650,7 +1679,7 @@ class Component extends DCLogic {
     const trashIcon=h('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}}, h('path',{d:'M3 6h18'}), h('path',{d:'M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2'}), h('path',{d:'M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'}), h('path',{d:'M10 11v5'}), h('path',{d:'M14 11v5'}));
     const row=(w)=>{ const isCur=this._savedId===w.id; const armed=this._delArm===w.id;
       return h('div',{key:w.id,style:{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:'1px solid '+t.borderSoft,background:isCur?t.accentSoft:'transparent'}},
-        h('div',{onClick:()=>this.requestDiscard(()=>this.openWidget(w.id)),...this.tt('Open '+(w.name||'Untitled')),style:{flex:1,minWidth:0,cursor:'pointer'}},
+        h('div',{onClick:()=>this.requestDiscard(()=>this.openWidget(w.id)),...this.tt('Open '+(w.name||'Untitled')),...this.a11y(()=>this.requestDiscard(()=>this.openWidget(w.id)),{label:'Open '+(w.name||'Untitled')}),style:{flex:1,minWidth:0,cursor:'pointer'}},
           h('div',{style:{fontSize:13.5,fontWeight:600,color:t.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, w.name||'Untitled', isCur?h('span',{style:{marginLeft:8,fontSize:10,fontWeight:700,color:t.accent,background:t.panel,border:'1px solid '+t.accent,borderRadius:4,padding:'1px 5px',verticalAlign:'1px'}},'OPEN'):null),
           h('div',{style:{fontSize:11,color:t.faint,marginTop:2,fontFamily:'ui-monospace,monospace'}}, '.'+(w.wid||'untitled'), h('span',{style:{fontFamily:'-apple-system,sans-serif',marginLeft:8}}, 'saved '+this.relTime(w.updatedAt||w.createdAt||Date.now())))),
         h('div',Object.assign({onClick:e=>{e.stopPropagation();this.clickDeleteWidget(w.id);}},this.a11y(()=>this.clickDeleteWidget(w.id),{label:armed?'Click again to delete '+(w.name||'Untitled'):'Delete '+(w.name||'Untitled')}),{
@@ -1666,7 +1695,9 @@ class Component extends DCLogic {
           h('span',{style:{fontSize:12,color:t.faint}}, list.length+(list.length===1?' widget':' widgets')),
           h('span',{style:{flex:1}}),
           h('button',{onClick:()=>this.requestDiscard(()=>this.newBlankWidget()),style:{padding:'6px 11px',fontSize:12,fontWeight:600,borderRadius:6,border:'1px solid '+t.border,background:t.panel,color:t.text,cursor:'pointer',whiteSpace:'nowrap'}},'+ New'),
-          h('div',{onClick:close,...this.tt('Close'),style:{cursor:'pointer',color:t.muted,fontSize:20,lineHeight:1,padding:'0 2px'}},'×')),
+          h('div',{onClick:close,...this.tt('Close'),...this.a11y(close,{label:'Close'}),style:{cursor:'pointer',color:t.muted,fontSize:20,lineHeight:1,padding:'0 2px'}},'×')),
+        this._storeCorrupt?h('div',{style:{padding:'10px 20px',fontSize:12,lineHeight:1.6,color:this.dark?'#e3b341':'#8a6d3b',background:this.dark?'#1f1611':'#fcf8e3',borderBottom:'1px solid '+t.border}},
+          h('b',null,'Your saved-widgets data couldn’t be read.'),' The unreadable copy was preserved in this browser’s localStorage under ',h('code',{style:{fontFamily:'ui-monospace,monospace'}},this._storeCorrupt),' in case it can be recovered. Saving now starts a fresh library without touching that backup.'):null,
         list.length
           ? h('div',{style:{overflowY:'auto',flex:1}}, list.map(row))
           : h('div',{style:{padding:'44px 24px',textAlign:'center',color:t.muted,fontSize:13.5,lineHeight:1.6}}, h('div',{style:{fontWeight:600,color:t.text,marginBottom:4}},'No saved widgets yet'), 'Build something, then click ', h('b',{style:{color:t.text}},'Save'), ' in the header to add it here.')));
@@ -1786,7 +1817,7 @@ class Component extends DCLogic {
             h('input',{type:'color',value:/^#([0-9a-f]{6})$/i.test(tk.value)?tk.value:'#054b80',onChange:e=>this.setTokenValue(tk.id,e.target.value),style:{width:30,height:30,padding:0,border:'1px solid '+t.border,borderRadius:6,background:'#fff',cursor:'pointer'}}),
             h('input',{value:tk.value,spellCheck:false,onChange:e=>this.setTokenValue(tk.id,e.target.value),style:{width:96,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:'#fff',outline:'none',fontFamily:'ui-monospace,monospace'}}))
         : h('input',{value:tk.value,spellCheck:false,placeholder:tk.type==='number'?'400':'16px',onChange:e=>this.setTokenValue(tk.id,e.target.value),style:{width:132,height:30,flexShrink:0,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:'#fff',outline:'none',fontFamily:'ui-monospace,monospace'}}),
-      h('span',{onClick:()=>this.removeToken(tk.id),...this.tt('Delete token'),style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 4px',flexShrink:0}},'×'));
+      h('span',{onClick:()=>this.removeToken(tk.id),...this.tt('Delete token'),...this.a11y(()=>this.removeToken(tk.id),{label:'Delete token '+tk.name}),style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 4px',flexShrink:0}},'×'));
     const addBtn=(label,type)=>h('div',{onClick:()=>this.addToken(type),style:{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 12px',fontSize:12,fontWeight:600,color:t.accent,background:'#fff',border:'1px solid '+t.border,borderRadius:7,cursor:'pointer'}},'+ '+label);
     const grp=(title,list,empty)=>h('div',{style:{marginBottom:18}}, this.section(t,title), list.length?list.map(row):h('div',{style:{fontSize:12,color:t.faint,marginBottom:8}},empty));
     const toggle=h('div',{onClick:()=>{this.cssVarBridge=!this.cssVarBridge;this.saveUiPrefs();this.forceUpdate();},style:{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',background:'#fff',border:'1px solid '+t.border,borderRadius:8,cursor:'pointer',marginTop:6}},
@@ -1855,7 +1886,11 @@ class Component extends DCLogic {
     const rect=el.getBoundingClientRect();
     this._tipT=setTimeout(()=>{ this._tip={content,rect}; this.forceUpdate(); },500); }
   hideTip(){ clearTimeout(this._tipT); if(this._tip){ this._tip=null; this.forceUpdate(); } }
-  tt(content){ return { onMouseEnter:e=>this.showTip(content,e.currentTarget), onMouseLeave:()=>this.hideTip(), onMouseDown:()=>this.hideTip() }; }
+  // Keyboard focus shows the tooltip too (same delay/positioning) — sighted keyboard users get the
+  // same icon-control hints as mouse users. Same override caveat as the mouse handlers: an element
+  // with its own onFocus/onBlur should call showTip/hideTip inside those instead of spreading tt().
+  tt(content){ return { onMouseEnter:e=>this.showTip(content,e.currentTarget), onMouseLeave:()=>this.hideTip(), onMouseDown:()=>this.hideTip(),
+    onFocus:e=>this.showTip(content,e.currentTarget), onBlur:()=>this.hideTip() }; }
   // Prefers ABOVE the anchor (out of the way of both the pointer and whatever's just below it); flips below
   // near the top edge of the shell. Both axes are clamped to MAXW/2 or MAXH from the relevant edge so a
   // tooltip anchored near a corner never renders partly off-screen, even at its full wrapped size. estH is
@@ -1895,7 +1930,7 @@ class Component extends DCLogic {
     return h('div',Object.assign({onClick:()=>{this._previewMode=!this._previewMode; this.forceUpdate();}},this.a11y(()=>{this._previewMode=!this._previewMode;this.forceUpdate();},{label:on?'Exit preview':'Preview',pressed:on}),this.tt(on?{h:'Exit preview',b:'Back to editing'}:{h:'Preview',b:'Live, interactive'}),{style:{width:30,height:30,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:6,border:'1px solid '+(on?t.accentFill:t.border),background:on?t.accentFill:t.panel,color:on?'#fff':t.muted,cursor:'pointer'}}), eye); }
   renderHeader(t){
     const h=React.createElement;
-    const dib=(name,title)=>{ const on=this.device===name; const hasBp=name!=='lg'&&this.responsive[name]&&Object.keys(this.responsive[name]).length; return h('div',{onClick:()=>{this.device=name; if(name!=='lg') this._estate='base'; this._box=null; this.forceUpdate();},...this.tt(name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'}),style:{position:'relative',padding:'4px 11px',borderRadius:4,cursor:'pointer',color:on?'#fff':t.muted,background:on?t.accentFill:'transparent',display:'flex',alignItems:'center'}},this.devIcon(name), hasBp?h('span',{style:{position:'absolute',top:3,right:4,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null); };
+    const dib=(name,title)=>{ const on=this.device===name; const hasBp=name!=='lg'&&this.responsive[name]&&Object.keys(this.responsive[name]).length; const go=()=>{this.device=name; if(name!=='lg') this._estate='base'; this._box=null; this.forceUpdate();}; return h('div',{onClick:go,...this.tt(name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'}),...this.a11y(go,{pressed:on,label:title+' breakpoint'}),style:{position:'relative',padding:'4px 11px',borderRadius:4,cursor:'pointer',color:on?'#fff':t.muted,background:on?t.accentFill:'transparent',display:'flex',alignItems:'center'}},this.devIcon(name), hasBp?h('span',{style:{position:'absolute',top:3,right:4,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null); };
     return h('div',{style:{height:52,flexShrink:0,background:t.header,borderBottom:'1px solid '+t.border,display:'flex',alignItems:'center',padding:'0 16px',gap:12}},
       h('div',{style:{width:26,height:26,borderRadius:6,background:this.dark?'#3d92d9':'#054b80',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700,fontSize:13}},'W'),
       h('span',{style:{fontSize:14,fontWeight:600,color:t.text}},'Widget Studio'),
@@ -2003,7 +2038,10 @@ class Component extends DCLogic {
   }
   renderPalette(t){
     const h=React.createElement;
-    const chip=it=>h('div',{key:it.label,...this.tt(this.chipTitle(it)),onMouseDown:e=>this.startAdd(e,it),style:{display:'flex',alignItems:'center',gap:7,background:t.chip,border:'1px solid '+t.chipBd,borderRadius:6,padding:'6px 10px',fontSize:12,color:t.text,cursor:'grab',userSelect:'none',fontFamily:it.type==='el'?'ui-monospace,monospace':'inherit'}},
+    const chip=it=>h('div',{key:it.label,...this.tt(this.chipTitle(it)),onMouseDown:e=>this.startAdd(e,it),
+      onClick:()=>{ if(this._suppressClick){this._suppressClick=false;return;} this.clickAdd(it); },
+      ...this.a11y(()=>this.clickAdd(it),{label:'Add '+it.label}),
+      style:{display:'flex',alignItems:'center',gap:7,background:t.chip,border:'1px solid '+t.chipBd,borderRadius:6,padding:'6px 10px',fontSize:12,color:t.text,cursor:'grab',userSelect:'none',fontFamily:it.type==='el'?'ui-monospace,monospace':'inherit'}},
       this.chipIcon(it,t), it.label);
     // Focus mode retargets the palette: it offers ONLY the focused container's valid sub-elements, dragged in
     // exactly like the normal palette (drops are confined to the focused container by applyIntent).
@@ -2054,6 +2092,7 @@ class Component extends DCLogic {
     // (transparent, the selected tint, or the drop-target tint) — a flat swatch like t.segBg couldn't guarantee that.
     const rowHoverBg=this.dark?'rgba(0,0,0,.4)':'rgba(0,0,0,.09)';
     const rowIcon=(content,title,onClick,active)=>h('div',{key:title,onMouseDown:e=>e.stopPropagation(),onClick:e=>{e.stopPropagation();onClick(e);},title,
+      ...this.a11y(e=>{e.stopPropagation();onClick(e);},{label:title}),
       style:{width:22,height:22,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:5,color:active?'#fff':t.muted,background:active?t.accent:'transparent',cursor:'pointer'},
       onMouseEnter:e=>{if(!active){e.currentTarget.style.background=rowHoverBg;e.currentTarget.style.color=t.text;}},
       onMouseLeave:e=>{if(!active){e.currentTarget.style.background='transparent';e.currentTarget.style.color=t.muted;}}},
@@ -2064,10 +2103,13 @@ class Component extends DCLogic {
     // above-below/delete), anchored under this button. Keeps the row to just two buttons: "+" and "…".
     const moreIcon=h('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'currentColor',style:{display:'block'}}, h('circle',{cx:5,cy:12,r:2}), h('circle',{cx:12,cy:12,r:2}), h('circle',{cx:19,cy:12,r:2}));
     return h('div',{key:node.id,'data-tree-id':node.id,onMouseDown:locked?undefined:e=>this.treeStart(e,node),onClick:e=>{e.stopPropagation();if(!locked)this.select(node.id);},
+      ...(locked?{}:this.a11y(()=>this.select(node.id),{label:typeLabel+(clsLabel?' '+clsLabel:''),pressed:sel})),
       style:{position:'relative',display:'flex',alignItems:'center',gap:5,height:32,paddingLeft:8+depth*13,paddingRight:8,cursor:locked?'default':(isRoot?'pointer':'grab'),userSelect:'none',opacity:locked?.4:1,
         background:sel?t.accentSoft:(inside?(this.dark?'#13283f':'#eef6ff'):'transparent'),
         boxShadow: before?('inset 0 2px 0 '+t.accent):(after?('inset 0 -2px 0 '+t.accent):'none')}},
-      hasKids?h('span',{onClick:e=>{e.stopPropagation();this.treeCollapsed=this.treeCollapsed||{};this.treeCollapsed[node.id]=!collapsed;this.forceUpdate();},style:{width:12,color:t.muted,cursor:'pointer',display:'inline-flex',alignItems:'center',flexShrink:0,transition:'transform .12s',transform:collapsed?'none':'rotate(90deg)'}},this.chev('right',9)):h('span',{style:{width:12,flexShrink:0}}),
+      hasKids?h('span',{onClick:e=>{e.stopPropagation();this.treeCollapsed=this.treeCollapsed||{};this.treeCollapsed[node.id]=!collapsed;this.forceUpdate();},
+        ...this.a11y(e=>{e.stopPropagation();this.treeCollapsed=this.treeCollapsed||{};this.treeCollapsed[node.id]=!collapsed;this.forceUpdate();},{label:(collapsed?'Expand ':'Collapse ')+typeLabel+' children'}),
+        style:{width:12,color:t.muted,cursor:'pointer',display:'inline-flex',alignItems:'center',flexShrink:0,transition:'transform .12s',transform:collapsed?'none':'rotate(90deg)'}},this.chev('right',9)):h('span',{style:{width:12,flexShrink:0}}),
       h('span',{style:{fontFamily:'ui-monospace,monospace',fontSize:11,color:sel?t.accent:t.muted,flexShrink:0}}, typeLabel),
       clsLabel?h('span',{style:{fontFamily:'ui-monospace,monospace',fontSize:11,color:t.faint,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},clsLabel):null,
       locked?null:h('div',{style:{marginLeft:'auto',display:'flex',alignItems:'center',gap:1,flexShrink:0}},
@@ -2107,12 +2149,13 @@ class Component extends DCLogic {
           h('div',{style:{position:'relative',display:'flex',alignItems:'center'}},
             h('span',{style:{position:'absolute',left:10,display:'flex',color:t.faint,pointerEvents:'none'}}, h('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'}, h('circle',{cx:11,cy:11,r:7}), h('path',{d:'M21 21l-4.35-4.35'}))),
             h('input',{autoFocus:true,placeholder:'Search elements…',value:this._popFilter||'',onChange:e=>{this._popFilter=e.target.value;this.forceUpdate();},
+              onKeyDown:e=>{ if(e.key==='Enter'&&list.length){ this.quickAdd(list[0],p.nodeId,p.col,p.insertIndex); this.addPopover=null; this.forceUpdate(); } else if(e.key==='Escape'){ this.addPopover=null; this.forceUpdate(); } },
               onFocus:e=>{e.target.style.borderColor=t.accent;e.target.style.boxShadow='0 0 0 3px '+t.accentSoft;},
               onBlur:e=>{e.target.style.borderColor=t.border;e.target.style.boxShadow='none';},
               style:{width:'100%',height:36,border:'1px solid '+t.border,borderRadius:8,padding:'0 12px 0 32px',fontSize:13,color:t.text,background:t.panel,outline:'none',transition:'border-color .12s, box-shadow .12s'}})
           )
         ),
-        h('div',{style:{flex:1,overflowY:'auto',padding:'2px 0 6px'}}, list.length?list.map((it,i)=>h('div',{key:it.label+i,onClick:()=>{ this.quickAdd(it,p.nodeId,p.col,p.insertIndex); this.addPopover=null; this.forceUpdate(); },onMouseEnter:e=>e.currentTarget.style.background=t.segBg,onMouseLeave:e=>e.currentTarget.style.background='transparent',style:{display:'flex',alignItems:'center',gap:9,padding:'7px 14px',cursor:'pointer',fontSize:12.5,color:t.text}}, h('span',{style:{display:'flex',color:t.muted,flexShrink:0}}, this.glyphSvg(it.type==='el'?{type:'el',data:{tag:it.tag}}:{type:it.type},16)), h('span',{style:{fontFamily:'ui-monospace,monospace'}},it.label))):h('div',{style:{padding:'10px 14px 14px',fontSize:12,color:t.faint}},'No matches.'))
+        h('div',{style:{flex:1,overflowY:'auto',padding:'2px 0 6px'}}, list.length?list.map((it,i)=>h('div',{key:it.label+i,onClick:()=>{ this.quickAdd(it,p.nodeId,p.col,p.insertIndex); this.addPopover=null; this.forceUpdate(); },...this.a11y(()=>{ this.quickAdd(it,p.nodeId,p.col,p.insertIndex); this.addPopover=null; this.forceUpdate(); },{label:'Add '+it.label}),onMouseEnter:e=>e.currentTarget.style.background=t.segBg,onMouseLeave:e=>e.currentTarget.style.background='transparent',style:{display:'flex',alignItems:'center',gap:9,padding:'7px 14px',cursor:'pointer',fontSize:12.5,color:t.text}}, h('span',{style:{display:'flex',color:t.muted,flexShrink:0}}, this.glyphSvg(it.type==='el'?{type:'el',data:{tag:it.tag}}:{type:it.type},16)), h('span',{style:{fontFamily:'ui-monospace,monospace'}},it.label))):h('div',{style:{padding:'10px 14px 14px',fontSize:12,color:t.faint}},'No matches.'))
       )
     );
   }
@@ -2152,6 +2195,7 @@ class Component extends DCLogic {
     const chevronRightIcon=ic(h('path',{d:'M9 6l6 6-6 6'}));
     const trashIcon=ic([h('path',{key:1,d:'M3 6h18'}),h('path',{key:2,d:'M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2'}),h('path',{key:3,d:'M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'})]);
     const row=(icon,label,fn,opt)=>{ opt=opt||{}; return h('div',{key:label,onClick:opt.disabled?undefined:e=>{ fn(e); close(); },
+      ...this.a11y(e=>{ fn(e); close(); },{label,disabled:opt.disabled}),
       onMouseEnter:e=>{ if(!opt.disabled) e.currentTarget.style.background=t.segBg; },
       onMouseLeave:e=>{ e.currentTarget.style.background='transparent'; },
       style:{display:'flex',alignItems:'center',gap:10,padding:'7px 11px',borderRadius:6,cursor:opt.disabled?'default':'pointer',fontSize:12.5,color:opt.disabled?t.faint:(opt.danger?(this.dark?'#f85149':'#cf222e'):t.text),opacity:opt.disabled?.55:1}},
@@ -2182,6 +2226,7 @@ class Component extends DCLogic {
           // instead of each fragment fighting the other for space or forcing the row to overflow.
           const subRow=(n,i)=>{ const nm=n.id==='root'?this.rootTag():(n.type==='el'?n.data.tag:n.type); const cl=n.id==='root'?this.baseClass():this.primaryClass(n);
             return h('div',{key:n.id,onClick:e=>{ e.stopPropagation(); this.select(n.id); close(); },
+              ...this.a11y(e=>{ e.stopPropagation(); this.select(n.id); close(); },{label:'Select '+nm+(cl?' .'+cl:'')}),
               onMouseEnter:e=>{ e.currentTarget.style.background=t.segBg; }, onMouseLeave:e=>{ e.currentTarget.style.background='transparent'; },
               style:{display:'flex',alignItems:'center',gap:8,padding:'7px 11px',borderRadius:6,cursor:'pointer',fontSize:12.5,color:i===0?t.accent:t.text,fontWeight:i===0?600:400}},
               h('span',{style:{display:'flex',opacity:.85,flexShrink:0}},this.glyphSvg(n,13)),
@@ -2254,7 +2299,7 @@ class Component extends DCLogic {
   undoRedoBtns(t){ const h=React.createElement;
     const canU=!!(this.history&&this.histIdx>0), canR=!!(this.history&&this.histIdx<this.history.length-1);
     const base=this.dark?t.panel:'#fff'; const hoverBg=this.dark?t.borderSoft:'#eef1f4';
-    const btn=(icon,fn,on,title)=>{ const act=()=>{if(on)fn();}; const word=title.split(' ')[0]; const tipText=on?title:{h:word,b:'Nothing to '+word.toLowerCase()+' yet'}; return h('div',Object.assign({onClick:act},this.a11y(act,{label:word,disabled:!on}),{style:{width:24,height:24,boxSizing:'border-box',borderRadius:6,border:'1px solid '+t.border,background:base,display:'flex',alignItems:'center',justifyContent:'center',cursor:on?'pointer':'default',color:on?t.muted:t.faint,opacity:on?1:.4,transition:'background-color .12s'},onMouseEnter:e=>{ this.showTip(tipText,e.currentTarget); if(on)e.currentTarget.style.background=hoverBg;},onMouseLeave:e=>{ this.hideTip(); e.currentTarget.style.background=base;},onMouseDown:()=>this.hideTip()}), icon); };
+    const btn=(icon,fn,on,title)=>{ const act=()=>{if(on)fn();}; const word=title.split(' ')[0]; const tipText=on?title:{h:word,b:'Nothing to '+word.toLowerCase()+' yet'}; return h('div',Object.assign({onClick:act},this.a11y(act,{label:word,disabled:!on}),{style:{width:24,height:24,boxSizing:'border-box',borderRadius:6,border:'1px solid '+t.border,background:base,display:'flex',alignItems:'center',justifyContent:'center',cursor:on?'pointer':'default',color:on?t.muted:t.faint,opacity:on?1:.4,transition:'background-color .12s'},onMouseEnter:e=>{ this.showTip(tipText,e.currentTarget); if(on)e.currentTarget.style.background=hoverBg;},onMouseLeave:e=>{ this.hideTip(); e.currentTarget.style.background=base;},onMouseDown:()=>this.hideTip(),onFocus:e=>this.showTip(tipText,e.currentTarget),onBlur:()=>this.hideTip()}), icon); };
     return h('div',{style:{display:'flex',gap:6,flexShrink:0}},
       btn(this.hicon('undo'),()=>this.undo(),canU,'Undo (⌘Z)'),
       btn(this.hicon('redo'),()=>this.redo(),canR,'Redo (⌘⇧Z)'));
@@ -2358,7 +2403,9 @@ class Component extends DCLogic {
     }, this.nwVisual(node,t), label);
   }
   nwVisual(node,t){ const h=React.createElement;
-    if(this.nwIsFreshContainer(node)) return this.nwChildrenBox(node,t,'div',false);
+    // A childless container with its own text (an <li>) shows that text — otherwise it renders as
+    // the invisible droppable box it always was.
+    if(this.nwIsFreshContainer(node)){ const hasKids=node.children&&node.children.length; return this.nwChildrenBox(node,t,'div',false,hasKids?null:(this.dispText(node)||null)); }
     if(this.nwIsTextTag(node)){
       const tg=node.data.tag;
       const Tag = tg==='button' ? 'button' : ((/^h[1-6]$/.test(tg)||tg==='p'||tg==='a'||tg==='label') ? tg : 'span');
@@ -2383,8 +2430,10 @@ class Component extends DCLogic {
     // stay content-sized, or every block would stretch to fill the stage's (now definite) height.
     const hasHeight = est.height!=null && est.height!=='' && est.height!=='auto';
     ['width','height','minWidth','maxWidth','minHeight','maxHeight','flex','flexGrow','flexShrink','flexBasis','order','gridColumn','gridColumnStart','gridColumnEnd','gridRow','gridRowStart','gridRowEnd','justifySelf','alignSelf'].forEach(k=>{ delete est[k]; });
-    const empty=!(node.children&&node.children.length);
     const hasText=text!=null&&text!=='';
+    // Text counts as content: an <li> holding only its text must size to it, not to the 110px
+    // empty-droppable floor below.
+    const empty=!(node.children&&node.children.length)&&!hasText;
     const labelEl=hasText?h('span',Object.assign({key:'__lbl'},this.txtEd(node,false)),text):null;
     const kids=empty?null:node.children.map(c=>this.nwNode(c,node,t));
     // An empty container is invisible at rest (no border/fill), but it still needs SOME rendered area to
@@ -2521,7 +2570,7 @@ class Component extends DCLogic {
         this.device!=='lg'?h('span',{style:{color:t.border,flexShrink:0}},'·'):null,
         this.device!=='lg'?h('span',{style:{flexShrink:0}},this.widthLabel()):null,
         h('div',{style:{flex:1,minWidth:8}}),
-        (()=>{ const on=this.showBox; return h('div',{onClick:()=>{this.showBox=!this.showBox;this._boxSig=null;this.forceUpdate();},...this.tt({h:'Box model',b:'Shows sizes and content area. Margin and padding always show when selected.'}),style:{display:'flex',alignItems:'center',gap:6,flexShrink:0,cursor:'pointer',height:24,boxSizing:'border-box',padding:'0 9px',borderRadius:6,border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:(this.dark?t.panel:'#fff'),color:on?t.accent:t.muted,fontSize:11,fontWeight:600,whiteSpace:'nowrap'}}, h('span',{style:{display:'inline-block',width:11,height:11,border:'1px solid currentColor',borderRadius:2,position:'relative'}}, h('span',{style:{position:'absolute',inset:2,background:'currentColor',opacity:.45,borderRadius:1}})), 'Box model'); })()
+        (()=>{ const on=this.showBox; return h('div',{onClick:()=>{this.showBox=!this.showBox;this._boxSig=null;this.forceUpdate();},...this.tt({h:'Box model',b:'Shows sizes and content area. Margin and padding always show when selected.'}),...this.a11y(()=>{this.showBox=!this.showBox;this._boxSig=null;this.forceUpdate();},{pressed:on,label:'Box model overlay'}),style:{display:'flex',alignItems:'center',gap:6,flexShrink:0,cursor:'pointer',height:24,boxSizing:'border-box',padding:'0 9px',borderRadius:6,border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:(this.dark?t.panel:'#fff'),color:on?t.accent:t.muted,fontSize:11,fontWeight:600,whiteSpace:'nowrap'}}, h('span',{style:{display:'inline-block',width:11,height:11,border:'1px solid currentColor',borderRadius:2,position:'relative'}}, h('span',{style:{position:'absolute',inset:2,background:'currentColor',opacity:.45,borderRadius:1}})), 'Box model'); })()
       ),
       this.renderFocusBar(t),
       // The whole canvas IS the root element (.ws-stage — the same element the shared drag/measurement
@@ -2538,7 +2587,9 @@ class Component extends DCLogic {
         onMouseLeave:()=>{ if(this.hoverId){this.hoverId=null;this.forceUpdate();} }},
         h('div',{style:{width:widths[this.device],margin:'0 auto',flex:'1 0 auto',display:'flex',flexDirection:'column',transition:'width .2s'}},
           (()=>{ const _sd=this.dark; this.dark=false; try{
-            const kids=(this.tree.children&&this.tree.children.length)?this.tree.children.map(c=>this.nwNode(c,this.tree,lightT)):null;
+            // An empty widget shows the same Add-element prompt as an empty container — the blank
+            // white stage alone gave a first-run user nothing to click and no hint to drag.
+            const kids=(this.tree.children&&this.tree.children.length)?this.tree.children.map(c=>this.nwNode(c,this.tree,lightT)):this.renderEmptyState(lightT,'root',false);
             return h('div',{className:'ws-stage',
               onMouseOver:e=>{e.stopPropagation(); if(this.focusLocked('root')){ if(this.hoverId!=null){this.hoverId=null;this.forceUpdate();} return; } if(this.hoverId!=='root'){this.hoverId='root';this.forceUpdate();}},
               onClick:e=>this.select('root',e),
@@ -2639,16 +2690,18 @@ class Component extends DCLogic {
     const chipBd = gcol ? this.layoutClr(this.dark?0.42:0.34) : (this.dark?t.border:'#d6e2f5');
     const chipBdHover = gcol ? this.layoutClr(0.6) : (this.dark?t.accent:'#9db8e8');
     const pill=h('div',{onMouseDown:e=>e.stopPropagation(),onClick:e=>{e.stopPropagation();this.openColAddPopover(targetId,col,e);},
+      ...this.a11y(e=>{e.stopPropagation();this.openColAddPopover(targetId,col,e);},{label:'Add element'}),
       onMouseEnter:e=>{if(!dragging)e.currentTarget.style.background=accSoft;},onMouseLeave:e=>{if(!popOpen)e.currentTarget.style.background=this.dark?'transparent':'#fff';},
       style:{display:'flex',alignItems:'center',gap:7,padding:'7px 13px',borderRadius:7,border:'1px dashed '+(dragging?t.border:(popOpen?acc:pillBd)),color:dragging?t.faint:acc,font:'600 13px -apple-system,sans-serif',cursor:'pointer',whiteSpace:'nowrap',background:dragging?'transparent':(popOpen?accSoft:(this.dark?'transparent':'#fff')),pointerEvents:dragging?'none':undefined,transition:'background-color .12s, border-color .12s, color .12s'}},
       h('span',{style:{fontSize:15,fontWeight:300,lineHeight:1}},'+'),'Add element');
     const chipRow=h('div',{style:{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',maxWidth:240}},
       chips.map(c=>h('div',{key:c.l,onMouseDown:e=>e.stopPropagation(),onClick:e=>{e.stopPropagation();this.quickAdd(c,targetId,col);},
+        ...this.a11y(e=>{e.stopPropagation();this.quickAdd(c,targetId,col);},{label:'Add '+c.l}),
         onMouseEnter:e=>{if(!dragging){e.currentTarget.style.background=accSoft;e.currentTarget.style.borderColor=chipBdHover;}},
         onMouseLeave:e=>{e.currentTarget.style.background=this.dark?t.segBg:'#fff';e.currentTarget.style.borderColor=chipBd;},
         style:{cursor:'pointer',fontFamily:'ui-monospace,monospace',fontSize:11,color:dragging?t.faint:acc,background:dragging?'transparent':(this.dark?t.segBg:'#fff'),border:'1px solid '+(dragging?t.border:chipBd),borderRadius:6,padding:'4px 8px',pointerEvents:dragging?'none':'auto',transition:'background-color .12s, border-color .12s, color .12s'}},'+ '+c.l)));
     return h('div',{'data-col-prompt':'1',style:{minHeight:88,maxWidth:'100%',boxSizing:'border-box',overflow:'hidden',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:9,padding:(framed?'34px 12px 30px':'24px 12px 20px'),gridColumn,position:'relative',zIndex:1}},
-      hint?h('div',{style:{fontSize:11.5,color:t.muted,marginBottom:-1,textAlign:'center',maxWidth:220}}, 'Drag an element from the palette or'):null,
+      hint?h('div',{style:{fontSize:11.5,color:t.muted,marginBottom:-1,textAlign:'center',maxWidth:220}}, 'Click or drag an element from the palette, or'):null,
       pill, chipRow);
   }
   renderEmptyState(t,targetId,compact,col,gridColumn){
@@ -3283,7 +3336,20 @@ class Component extends DCLogic {
   chev(dir,sz,color){ const h=React.createElement; const pts={right:'9 6 15 12 9 18',down:'6 9 12 15 18 9',up:'6 15 12 9 18 15',left:'15 6 9 12 15 18'}[dir||'right'];
     return h('svg',{width:sz||10,height:sz||10,viewBox:'0 0 24 24',fill:'none',stroke:color||'currentColor',strokeWidth:2.5,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}}, h('polyline',{points:pts})); }
   selectField(t,opts,cur,onChange,key){ return this.xselect(key||('sf:'+opts.join(',')),t,cur,opts,onChange,{fontSize:12}); }
-  rawField(t,node,key,ph){ return React.createElement('input',{value:this.csVal(node,key),placeholder:ph||'',onChange:e=>this.setCS(node,key,e.target.value),style:{width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none'}}); }
+  // Free-text style fields (rawField/numField) validate through CSS.supports() before writing, so an
+  // invalid value never reaches the class styles or the exported SCSS. While a field holds an invalid
+  // value the raw text lives here (keyed node|prop) so the input can keep showing it in error styling;
+  // leaving the field reverts to the last good value.
+  fieldErr(node,key){ const m=this._fieldErr; const v=m&&m[node.id+'|'+key]; return v==null?null:v; }
+  setFieldErr(node,key,raw){ (this._fieldErr=this._fieldErr||{})[node.id+'|'+key]=raw; this.forceUpdate(); }
+  clearFieldErr(node,key){ if(this.fieldErr(node,key)!=null){ delete this._fieldErr[node.id+'|'+key]; this.forceUpdate(); } }
+  cssAccepts(key,val){ if(val==='') return true; try{ return !window.CSS||!CSS.supports||CSS.supports(this.kebab(key),val); }catch(e){ return true; } }
+  errClr(){ return this.dark?'#f85149':'#cf222e'; }
+  rawField(t,node,key,ph){ const err=this.fieldErr(node,key);
+    return React.createElement('input',{value:err!=null?err:this.csVal(node,key),placeholder:ph||'',
+      onChange:e=>{ const v=e.target.value; if(this.cssAccepts(key,v.trim())){ this.clearFieldErr(node,key); this.setCS(node,key,v); } else { this.setFieldErr(node,key,v); } },
+      onBlur:()=>this.clearFieldErr(node,key),
+      style:{width:'100%',height:30,border:'1px solid '+(err!=null?this.errClr():t.border),borderRadius:6,padding:'0 8px',fontSize:12,color:err!=null?this.errClr():t.text,background:t.panel,outline:'none'}}); }
   // opts.clearKeys: other prop keys to blank out whenever this field's value changes — for a
   // shorthand field (borderWidth/borderRadius) that sits alongside per-side/per-corner longhand
   // overrides, so editing "all sides/corners" unambiguously wins instead of silently losing to
@@ -3293,11 +3359,18 @@ class Component extends DCLogic {
   numField(t,node,key,ph,opts){ opts=opts||{}; const h=React.createElement; const raw=(this.csVal(node,key)||'').toString(); const cur=raw.replace(/px$/,'');
     const sizeToks=(this.tokens||[]).filter(x=>x.type==='size');
     const clear=()=>{ if(opts.clearKeys) opts.clearKeys.forEach(k=>this.setCS(node,k,'')); };
-    const input=React.createElement('input',{value:cur,placeholder:ph||'',onChange:e=>{const v=e.target.value.trim(); this.setCS(node,key,v===''?'':(/^[-0-9.]+$/.test(v)&&!this.UNITLESS_KEYS[key]?v+'px':v)); clear(); if(v!==''&&/^border.*Width$/.test(key)) this.ensureBorderStyle(node);},style:{width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,padding:sizeToks.length?'0 26px 0 8px':'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none'}});
+    const err=this.fieldErr(node,key);
+    const input=React.createElement('input',{value:err!=null?err:cur,placeholder:ph||'',
+      onChange:e=>{const v=e.target.value.trim(); const stored=v===''?'':(/^[-0-9.]+$/.test(v)&&!this.UNITLESS_KEYS[key]?v+'px':v);
+        if(!this.cssAccepts(key,stored)){ this.setFieldErr(node,key,e.target.value); return; }
+        this.clearFieldErr(node,key); this.setCS(node,key,stored); clear(); if(v!==''&&/^border.*Width$/.test(key)) this.ensureBorderStyle(node);},
+      onBlur:()=>this.clearFieldErr(node,key),
+      style:{width:'100%',height:30,border:'1px solid '+(err!=null?this.errClr():t.border),borderRadius:6,padding:sizeToks.length?'0 26px 0 8px':'0 8px',fontSize:12,color:err!=null?this.errClr():t.text,background:t.panel,outline:'none'}});
     const SIZEKEYS={fontSize:1,borderRadius:1,borderTopLeftRadius:1,borderTopRightRadius:1,borderBottomLeftRadius:1,borderBottomRightRadius:1,borderWidth:1,borderTopWidth:1,borderRightWidth:1,borderBottomWidth:1,borderLeftWidth:1};
     if(!sizeToks.length || !SIZEKEYS[key]) return input;
     const onVar=!!this.tokenByVar(raw);
-    const btn=h('div',{onClick:e=>{e.stopPropagation(); const r=e.currentTarget.getBoundingClientRect(); this._sizeTokMenu={nodeId:node.id,key,clearKeys:opts.clearKeys,x:Math.min(r.right-150,window.innerWidth-160),y:Math.min(r.bottom+4,window.innerHeight-180)}; this.forceUpdate();},...this.tt('Use a size token'),style:{position:'absolute',right:5,top:5,width:20,height:20,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:4,cursor:'pointer',fontSize:11,fontFamily:'ui-monospace,monospace',color:onVar?t.accent:t.faint,background:onVar?t.accentSoft:'transparent'}},'{}');
+    const openTok=e=>{e.stopPropagation(); const r=e.currentTarget.getBoundingClientRect(); this._sizeTokMenu={nodeId:node.id,key,clearKeys:opts.clearKeys,x:Math.min(r.right-150,window.innerWidth-160),y:Math.min(r.bottom+4,window.innerHeight-180)}; this.forceUpdate();};
+    const btn=h('div',{onClick:openTok,...this.tt('Use a size token'),...this.a11y(openTok,{pressed:onVar,label:'Use a size token'}),style:{position:'absolute',right:5,top:5,width:20,height:20,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:4,cursor:'pointer',fontSize:11,fontFamily:'ui-monospace,monospace',color:onVar?t.accent:t.faint,background:onVar?t.accentSoft:'transparent'}},'{}');
     return h('div',{style:{position:'relative'}}, onVar?React.createElement('input',{value:raw,readOnly:true,...this.tt(raw),style:{width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 26px 0 8px',fontSize:12,color:t.accent,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}):input, btn);
   }
   // Opener for the ◇ token menu — anchored to the clicked field, filtered to a token type.
@@ -3306,8 +3379,8 @@ class Component extends DCLogic {
     const pick=v=>{ this.setCS(node,m.key,v); if(m.clearKeys) m.clearKeys.forEach(k=>this.setCS(node,k,'')); if(v&&/^border.*Width$/.test(m.key)) this.ensureBorderStyle(node); this._sizeTokMenu=null; this.forceUpdate(); };
     return h('div',{onMouseDown:()=>{this._sizeTokMenu=null;this.forceUpdate();},style:{position:'fixed',inset:0,zIndex:325}},
       h('div',{onMouseDown:e=>e.stopPropagation(),style:{position:'fixed',left:m.x,top:m.y,width:152,background:t.panel,border:'1px solid '+t.border,borderRadius:9,boxShadow:'0 12px 32px rgba(0,0,0,.22)',padding:'5px',maxHeight:200,overflowY:'auto'}},
-        toks.map(tk=>h('div',{key:tk.id,onClick:()=>pick('var(--'+tk.name+')'),style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,padding:'6px 8px',borderRadius:6,cursor:'pointer',fontSize:11.5,fontFamily:'ui-monospace,monospace',color:t.text},onMouseEnter:e=>e.currentTarget.style.background=t.segBg,onMouseLeave:e=>e.currentTarget.style.background='transparent'}, h('span',{style:{color:t.accent}},'--'+tk.name), h('span',{style:{color:t.faint}},tk.value))),
-        h('div',{onClick:()=>pick(''),style:{padding:'6px 8px',borderRadius:6,cursor:'pointer',fontSize:11.5,color:t.faint,borderTop:'1px solid '+t.borderSoft,marginTop:3}},'Clear / custom value')));
+        toks.map(tk=>h('div',{key:tk.id,onClick:()=>pick('var(--'+tk.name+')'),...this.a11y(()=>pick('var(--'+tk.name+')'),{label:'--'+tk.name+' '+tk.value}),style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,padding:'6px 8px',borderRadius:6,cursor:'pointer',fontSize:11.5,fontFamily:'ui-monospace,monospace',color:t.text},onMouseEnter:e=>e.currentTarget.style.background=t.segBg,onMouseLeave:e=>e.currentTarget.style.background='transparent'}, h('span',{style:{color:t.accent}},'--'+tk.name), h('span',{style:{color:t.faint}},tk.value))),
+        h('div',{onClick:()=>pick(''),...this.a11y(()=>pick(''),{label:'Clear / custom value'}),style:{padding:'6px 8px',borderRadius:6,cursor:'pointer',fontSize:11.5,color:t.faint,borderTop:'1px solid '+t.borderSoft,marginTop:3}},'Clear / custom value')));
   }
   defaultDisplay(node){ if(node.type!=='el'){ if(node.type==='button'||node.type==='badge') return 'inline-block'; if(node.type==='icon') return 'inline'; return 'block'; } const tg=node.data.tag;
     if(['img','button','input','select','textarea'].includes(tg)) return 'inline-block';
@@ -3319,7 +3392,7 @@ class Component extends DCLogic {
   checkerBg(size){ return 'repeating-conic-gradient('+(this.dark?'#30363d 0% 25%, #21262d 0% 50%':'#c4c4c4 0% 25%, #fff 0% 50%')+') 50% / '+size+'px '+size+'px'; }
   colorField(t,node,key){ const h=React.createElement; const cur=this.csVal(node,key); const valid=this.isColor(cur); const open=this._cp&&this._cp.nodeId===node.id&&this._cp.key===key;
     return h('div',{style:{display:'flex',gap:6,alignItems:'center'}},
-      h('div',{onClick:e=>this.openColorPicker(node,key,e),...this.tt('Open color picker'),style:{position:'relative',width:30,height:30,borderRadius:6,border:'1px solid '+(open?t.accent:t.border),flexShrink:0,cursor:'pointer',overflow:'hidden',boxShadow:open?'0 0 0 2px '+t.accentSoft:'none',background:this.checkerBg(9)}},
+      h('div',{onClick:e=>this.openColorPicker(node,key,e),...this.tt('Open color picker'),...this.a11y(e=>this.openColorPicker(node,key,e),{pressed:open,label:'Open color picker'}),style:{position:'relative',width:30,height:30,borderRadius:6,border:'1px solid '+(open?t.accent:t.border),flexShrink:0,cursor:'pointer',overflow:'hidden',boxShadow:open?'0 0 0 2px '+t.accentSoft:'none',background:this.checkerBg(9)}},
         h('div',{style:{position:'absolute',inset:0,background:valid?cur:'transparent'}})),
       h('input',{value:cur,placeholder:'inherit',spellCheck:false,onChange:e=>this.setCS(node,key,e.target.value),style:{flex:1,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}));
   }
@@ -3343,13 +3416,13 @@ class Component extends DCLogic {
         h('span',{style:{width:18,height:18,borderRadius:4,border:'1px solid '+t.border,flexShrink:0,background:(tk&&this.isColor(tk.value))?tk.value:'transparent'}}),
         h('span',{style:{display:'flex',alignItems:'center',color:t.accent,flexShrink:0}}, this.diamondIcon(11)),
         h('span',{style:{flex:1,minWidth:0,fontSize:11.5,fontWeight:600,fontFamily:'ui-monospace,monospace',color:t.accent,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, nm),
-        h('span',{onClick:()=>this.setCS(node,key,''),...this.tt('Unbind token'),style:{cursor:'pointer',fontWeight:700,fontSize:14,color:t.accent,flexShrink:0}},'×')); }
+        h('span',{onClick:()=>this.setCS(node,key,''),...this.tt('Unbind token'),...this.a11y(()=>this.setCS(node,key,''),{label:'Unbind token'}),style:{cursor:'pointer',fontWeight:700,fontSize:14,color:t.accent,flexShrink:0}},'×')); }
     const sp=this.splitColorAlpha(cur); const valid=this.isColor(cur);
     return h('div',{style:{display:'flex',alignItems:'center',gap:7,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',background:t.panel}},
-      h('div',{onClick:e=>this.openColorPicker(node,key,e),...this.tt('Open color picker'),style:{position:'relative',width:18,height:18,borderRadius:4,border:'1px solid '+t.border,flexShrink:0,cursor:'pointer',overflow:'hidden',background:this.checkerBg(6)}}, h('div',{style:{position:'absolute',inset:0,background:valid?cur:'transparent'}})),
+      h('div',{onClick:e=>this.openColorPicker(node,key,e),...this.tt('Open color picker'),...this.a11y(e=>this.openColorPicker(node,key,e),{label:'Open color picker'}),style:{position:'relative',width:18,height:18,borderRadius:4,border:'1px solid '+t.border,flexShrink:0,cursor:'pointer',overflow:'hidden',background:this.checkerBg(6)}}, h('div',{style:{position:'absolute',inset:0,background:valid?cur:'transparent'}})),
       h('input',{value:sp.hex,placeholder:opts.placeholder||'inherit',spellCheck:false,onChange:e=>this.setCS(node,key,this.composeColorAlpha(e.target.value.trim(),sp.alpha)),style:{flex:1,minWidth:0,border:'none',background:'none',color:t.text,fontSize:12,fontFamily:'ui-monospace,monospace',outline:'none',textTransform:'uppercase'}}),
       opts.noAlpha?null:h('input',{value:sp.alpha+'%',spellCheck:false,onChange:e=>this.setCS(node,key,this.composeColorAlpha(sp.hex,e.target.value.replace('%',''))),style:{width:38,flex:'0 0 auto',border:'none',background:'none',color:t.muted,fontSize:11,textAlign:'right',outline:'none'}}),
-      opts.noToken?null:h('span',{onClick:e=>this.openTokMenu(node,key,e,'color'),...this.tt('Bind to color token'),style:{display:'flex',alignItems:'center',cursor:'pointer',color:t.faint,flexShrink:0}}, this.diamondIcon(13))); }
+      opts.noToken?null:h('span',{onClick:e=>this.openTokMenu(node,key,e,'color'),...this.tt('Bind to color token'),...this.a11y(e=>this.openTokMenu(node,key,e,'color'),{label:'Bind to color token'}),style:{display:'flex',alignItems:'center',cursor:'pointer',color:t.faint,flexShrink:0}}, this.diamondIcon(13))); }
   // ---- color picker (popover): SV square + hue + alpha, hex, eyedropper, recent/brand swatches ----
   hexToRgb(hex){ hex=(hex||'').replace('#',''); if(hex.length===3) hex=hex.split('').map(c=>c+c).join(''); const n=parseInt(hex.slice(0,6),16); return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
   rgbToHex(r,g,b){ const c=v=>('0'+Math.round(v).toString(16)).slice(-2); return '#'+c(r)+c(g)+c(b); }
@@ -3472,11 +3545,11 @@ class Component extends DCLogic {
         // behind the click; the edge/corner should light up the instant you tap it.
         h('div',{style:{borderStyle:'solid',borderWidth:20,borderTopColor:edgeColor('top'),borderRightColor:edgeColor('right'),borderBottomColor:edgeColor('bottom'),borderLeftColor:edgeColor('left'),background:t.panel,transition:'none'}},
           h('div',{style:{minHeight:34,borderRadius:3,background:this.dark?'#0d1117':'#fff',border:'1px dashed '+t.accent,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:600,color:t.accent,transition:'none'}},'Element')),
-        h('div',Object.assign({onClick:()=>setSide('top')},this.tt('Top'),{style:Object.assign({},zone,{top:0,left:0,right:0,height:20})})),
-        h('div',Object.assign({onClick:()=>setSide('right')},this.tt('Right'),{style:Object.assign({},zone,{right:0,top:20,bottom:20,width:20})})),
-        h('div',Object.assign({onClick:()=>setSide('bottom')},this.tt('Bottom'),{style:Object.assign({},zone,{bottom:0,left:0,right:0,height:20})})),
-        h('div',Object.assign({onClick:()=>setSide('left')},this.tt('Left'),{style:Object.assign({},zone,{left:0,top:20,bottom:20,width:20})})),
-        h('div',Object.assign({onClick:()=>setSide('all')},this.tt('Select all sides'),{style:Object.assign({},zone,{top:20,left:20,right:20,bottom:20})}))),
+        h('div',Object.assign({onClick:()=>setSide('top')},this.tt('Top'),this.a11y(()=>setSide('top'),{pressed:side==='top',label:'Edit top border'}),{style:Object.assign({},zone,{top:0,left:0,right:0,height:20})})),
+        h('div',Object.assign({onClick:()=>setSide('right')},this.tt('Right'),this.a11y(()=>setSide('right'),{pressed:side==='right',label:'Edit right border'}),{style:Object.assign({},zone,{right:0,top:20,bottom:20,width:20})})),
+        h('div',Object.assign({onClick:()=>setSide('bottom')},this.tt('Bottom'),this.a11y(()=>setSide('bottom'),{pressed:side==='bottom',label:'Edit bottom border'}),{style:Object.assign({},zone,{bottom:0,left:0,right:0,height:20})})),
+        h('div',Object.assign({onClick:()=>setSide('left')},this.tt('Left'),this.a11y(()=>setSide('left'),{pressed:side==='left',label:'Edit left border'}),{style:Object.assign({},zone,{left:0,top:20,bottom:20,width:20})})),
+        h('div',Object.assign({onClick:()=>setSide('all')},this.tt('Select all sides'),this.a11y(()=>setSide('all'),{pressed:side==='all',label:'Edit all border sides'}),{style:Object.assign({},zone,{top:20,left:20,right:20,bottom:20})}))),
       h('div',{style:{fontSize:11,color:t.faint,textAlign:'center',marginTop:8}}, 'Editing ', h('span',{style:{color:t.accent,fontWeight:600}}, side==='all'?'All sides':this.bcap(side))),
       h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:3,opacity:.85}},'Tap an edge for one side · the middle for all'),
       h('div',{style:{marginTop:10}}, this.lbl(t,'Width'), this.numField(t,node,prop,'0', side==='all'?{clearKeys:Object.values(sideProp)}:null)));
@@ -3544,8 +3617,10 @@ class Component extends DCLogic {
   // Compact icon-only button row — Display / Direction. Same selected-state treatment as tiles() (accent
   // border + accentSoft fill) but flat/single-row instead of a tall icon+label tile, since these icons
   // (gl()'s bars/dots) are already unambiguous alone — the header's breakpoint switcher works the same way.
-  iconRow(t,opts,cur,onPick){ const h=React.createElement;
-    return h('div',{style:{display:'flex',gap:5}}, opts.map(o=>{ const on=cur===o.v;
+  // `aria` names the row (role="group") — Justify and Align both expose tiles labeled just
+  // Start/Center/End, so without a group label the pairs are indistinguishable to a screen reader.
+  iconRow(t,opts,cur,onPick,aria){ const h=React.createElement;
+    return h('div',{role:'group','aria-label':aria||undefined,style:{display:'flex',gap:5}}, opts.map(o=>{ const on=cur===o.v;
       return h('div',Object.assign({key:o.v,onClick:()=>onPick(o.v)},this.a11y(()=>onPick(o.v),{pressed:on,label:o.title}),this.tt(o.title),
         {style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),
         o.icon); }));
@@ -3993,19 +4068,12 @@ class Component extends DCLogic {
   dimControl(t,node,key,presets){ const h=React.createElement; const cur=this.csVal(node,key);
     return h('div',null,
       this.numField(t,node,key,'auto'),
-      h('div',{style:{display:'flex',gap:4,marginTop:5}}, presets.map(p=>{ const on=cur===p.v; return h('div',{key:p.v,onClick:()=>this.setCS(node,key,on?'':p.v),style:{flex:1,textAlign:'center',padding:'3px 0',fontSize:10.5,fontWeight:on?600:500,borderRadius:5,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}},p.l); })));
-  }
-  offsetGrid(node,t){ const h=React.createElement;
-    const inp=(prop)=>{ const cur=(this.csVal(node,prop)||'').toString().replace(/px$/,''); return React.createElement('input',{value:cur,placeholder:'auto',spellCheck:false,onChange:e=>{const v=e.target.value.trim(); this.setCS(node,prop,v===''?'':(/^[-0-9.]+$/.test(v)?v+'px':v));},style:{width:44,height:24,textAlign:'center',border:'1px solid '+t.border,borderRadius:5,fontSize:11,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}); };
-    return h('div',{style:{background:t.panel,border:'1px solid '+t.border,borderRadius:10,padding:'8px',display:'flex',flexDirection:'column',alignItems:'center',gap:6,flexShrink:0}},
-      inp('top'),
-      h('div',{style:{display:'flex',alignItems:'center',gap:8}}, inp('left'), h('div',{style:{width:34,height:24,borderRadius:5,border:'1px dashed '+t.border,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,color:t.faint,fontFamily:'ui-monospace,monospace'}},'pos'), inp('right')),
-      inp('bottom'));
+      h('div',{role:'group','aria-label':key+' presets',style:{display:'flex',gap:4,marginTop:5}}, presets.map(p=>{ const on=cur===p.v; const pick=()=>this.setCS(node,key,on?'':p.v); return h('div',{key:p.v,onClick:pick,...this.a11y(pick,{pressed:on,label:p.l+' '+key}),style:{flex:1,textAlign:'center',padding:'3px 0',fontSize:10.5,fontWeight:on?600:500,borderRadius:5,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}},p.l); })));
   }
   swatchRow(t,node,key,colors){ const h=React.createElement; const cur=(this.csVal(node,key)||'').toLowerCase();
     return h('div',{style:{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}},
-      colors.map(c=>{ const on=cur===c.toLowerCase(); return h('div',{key:c,onClick:()=>this.setCS(node,key,c),...this.tt(c),style:{width:22,height:22,borderRadius:6,background:c,cursor:'pointer',border:c.toLowerCase()==='#ffffff'?'1px solid '+t.border:'1px solid rgba(0,0,0,.12)',boxShadow:on?'0 0 0 2px '+t.panel+',0 0 0 4px '+t.accent:'none'}}); }),
-      h('div',{onClick:()=>this.setCS(node,key,''),...this.tt('Clear'),style:{width:22,height:22,borderRadius:6,cursor:'pointer',border:'1px solid '+t.border,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,color:t.faint,background:t.panel}},'\u2298'));
+      colors.map(c=>{ const on=cur===c.toLowerCase(); return h('div',{key:c,onClick:()=>this.setCS(node,key,c),...this.tt(c),...this.a11y(()=>this.setCS(node,key,c),{pressed:on,label:c}),style:{width:22,height:22,borderRadius:6,background:c,cursor:'pointer',border:c.toLowerCase()==='#ffffff'?'1px solid '+t.border:'1px solid rgba(0,0,0,.12)',boxShadow:on?'0 0 0 2px '+t.panel+',0 0 0 4px '+t.accent:'none'}}); }),
+      h('div',{onClick:()=>this.setCS(node,key,''),...this.tt('Clear'),...this.a11y(()=>this.setCS(node,key,''),{label:'Clear'}),style:{width:22,height:22,borderRadius:6,cursor:'pointer',border:'1px solid '+t.border,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,color:t.faint,background:t.panel}},'\u2298'));
   }
   classPill(node,t){ const h=React.createElement; const c=(node.classes&&node.classes[0])||'';
     return h('div',{style:{display:'flex',alignItems:'center',background:c?t.accentSoft:t.segBg,border:'1px solid '+(c?(this.dark?t.border:'#bcd6f5'):t.border),borderRadius:7,padding:'0 7px',height:25,minWidth:0}},
@@ -4041,7 +4109,7 @@ class Component extends DCLogic {
         nameEl,
         pr?h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:'#fff',background:t.accentFill,borderRadius:4,padding:'2px 6px'}},'styled'):null,
         auto?h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:t.faint,border:'1px solid '+t.border,borderRadius:4,padding:'1px 5px'}},'auto'):null,
-        opts.removable?h('span',{onClick:()=>remove(name),onMouseEnter:e=>{this.showTip('Remove',e.currentTarget);e.currentTarget.style.color=this.dark?'#f85149':'#cf222e';},onMouseLeave:e=>{this.hideTip();e.currentTarget.style.color=t.faint;},onMouseDown:()=>this.hideTip(),style:{cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint,padding:'0 1px',transition:'color .1s'}},'×'):null); };
+        opts.removable?h('span',{onClick:()=>remove(name),...this.a11y(()=>remove(name),{label:'Remove class '+name}),onMouseEnter:e=>{this.showTip('Remove',e.currentTarget);e.currentTarget.style.color=this.dark?'#f85149':'#cf222e';},onMouseLeave:e=>{this.hideTip();e.currentTarget.style.color=t.faint;},onMouseDown:()=>this.hideTip(),onFocus:e=>this.showTip('Remove',e.currentTarget),onBlur:()=>this.hideTip(),style:{cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint,padding:'0 1px',transition:'color .1s'}},'×'):null); };
     const chips=[];
     if(isRoot) chips.push(chip(this.baseClass(),{primary:true}));
     customs.forEach((c,i)=> chips.push(chip(c,{primary: !isRoot && i===0, removable:true, editable:true})) );
@@ -4255,12 +4323,12 @@ class Component extends DCLogic {
   // ng-* attributes take a raw expression; everything else (text, href, src, title…) takes {{ }} interpolation.
   isExprAttr(name){ return /^(ng-if|ng-show|ng-hide|ng-model|ng-click|ng-repeat|ng-disabled|ng-class|ng-bind|ng-style|ng-change|ng-submit)$/.test(name); }
   bindOpen(tkey){ return this._bindPick===tkey; }
-  bindToggleBtn(t,node,tkey){ const h=React.createElement; const open=this.bindOpen(tkey); return h('div',{onClick:e=>{e.stopPropagation(); this._bindPick=open?null:tkey; this.forceUpdate();},...this.tt('Insert data binding'),style:{width:30,flexShrink:0,height:30,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid '+(open?t.accent:t.border),borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:'ui-monospace,monospace',color:open?'#fff':t.muted,background:open?t.accent:'#fff'}},'{ }'); }
+  bindToggleBtn(t,node,tkey){ const h=React.createElement; const open=this.bindOpen(tkey); return h('div',{onClick:e=>{e.stopPropagation(); this._bindPick=open?null:tkey; this.forceUpdate();},...this.tt('Insert data binding'),...this.a11y(e=>{e.stopPropagation(); this._bindPick=open?null:tkey; this.forceUpdate();},{label:'Insert data binding',pressed:open}),style:{width:30,flexShrink:0,height:30,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid '+(open?t.accent:t.border),borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:'ui-monospace,monospace',color:open?'#fff':t.muted,background:open?t.accent:'#fff'}},'{ }'); }
   bindMenuBox(t,node,tkey,insert){ if(!this.bindOpen(tkey)) return null; const h=React.createElement; const groups=this.bindingGroups(node);
     return h('div',{style:{marginTop:6,border:'1px solid '+t.border,borderRadius:8,background:t.segBg||'#f6f8fa',padding:8,maxHeight:220,overflowY:'auto'}},
       groups.length? groups.map((g,gi)=>h('div',{key:gi,style:{marginBottom:gi<groups.length-1?8:0}},
         h('div',{style:{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'.04em',color:t.faint,marginBottom:4}},g.title),
-        h('div',{style:{display:'flex',flexWrap:'wrap',gap:4}}, g.paths.map(p=>h('div',{key:p,onClick:()=>{ insert(p); this._bindPick=null; this.forceUpdate(); },...this.tt('{{'+p+'}}'),style:{cursor:'pointer',fontSize:11.5,fontFamily:'ui-monospace,monospace',color:t.accent,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:'4px 8px'}}, p)))))
+        h('div',{style:{display:'flex',flexWrap:'wrap',gap:4}}, g.paths.map(p=>h('div',{key:p,onClick:()=>{ insert(p); this._bindPick=null; this.forceUpdate(); },...this.tt('{{'+p+'}}'),...this.a11y(()=>{ insert(p); this._bindPick=null; this.forceUpdate(); },{label:'Insert binding '+p}),style:{cursor:'pointer',fontSize:11.5,fontFamily:'ui-monospace,monospace',color:t.accent,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:'4px 8px'}}, p)))))
       : h('div',{style:{fontSize:11,color:t.faint,lineHeight:1.5}},'No bindable data yet — add sample data in the ',h('b',{style:{color:t.text}},'Server'),' script, wrap this in a repeater, or define ',h('b',{style:{color:t.text}},'Options'),'.')); }
   // Text/attr input paired with a { } binding button + inline picker. raw:true inserts a bare expression.
   bindField(t,node,tkey,value,onChange,opts){ opts=opts||{}; const h=React.createElement; const raw=!!opts.raw;
@@ -4641,9 +4709,9 @@ class Component extends DCLogic {
     return h('div',null,
       h('div',{style:{fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}},'Flex child'),
       this.subHead(t,'Align self',true),
-      this.iconRow(t,[{v:'auto',title:'Auto',icon:A},{v:'flex-start',title:'Start',icon:fi('a-flex-start')},{v:'center',title:'Center',icon:fi('a-center')},{v:'flex-end',title:'End',icon:fi('a-flex-end')},{v:'stretch',title:'Stretch',icon:fi('a-stretch')}],as,v=>this.setCS(node,'alignSelf',v==='auto'?'':v)),
+      this.iconRow(t,[{v:'auto',title:'Auto',icon:A},{v:'flex-start',title:'Start',icon:fi('a-flex-start')},{v:'center',title:'Center',icon:fi('a-center')},{v:'flex-end',title:'End',icon:fi('a-flex-end')},{v:'stretch',title:'Stretch',icon:fi('a-stretch')}],as,v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self'),
       h('div',{style:{marginTop:14}}, this.subHead(t,'Sizing',true),
-        this.iconRow(t,[{v:'auto',title:'Auto',icon:A},{v:'fill',title:'Fill',icon:fi('sz-fill')},{v:'grow',title:'Grow',icon:fi('sz-grow')},{v:'shrink',title:'Shrink',icon:fi('sz-shrink')},{v:'fixed',title:'Fixed',icon:fi('sz-fixed')},{v:'custom',title:'Custom',icon:fi('sz-custom')}],sizeVal,setSize),
+        this.iconRow(t,[{v:'auto',title:'Auto',icon:A},{v:'fill',title:'Fill',icon:fi('sz-fill')},{v:'grow',title:'Grow',icon:fi('sz-grow')},{v:'shrink',title:'Shrink',icon:fi('sz-shrink')},{v:'fixed',title:'Fixed',icon:fi('sz-fixed')},{v:'custom',title:'Custom',icon:fi('sz-custom')}],sizeVal,setSize,'Sizing'),
         sizeVal==='fixed'?h('div',{style:{marginTop:8}}, this.lbl(t,'Width / height'), this.rawField(t,node,'flexBasis','auto')):null,
         sizeVal==='custom'?h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}},
           h('div',null,this.lbl(t,'Grow'),this.rawField(t,node,'flexGrow','0')),
@@ -4651,7 +4719,7 @@ class Component extends DCLogic {
       h('div',{style:{marginTop:12}}, this.lbl(t,'Order'), this.rawField(t,node,'order','0'))); }
   // Box-model inset editor for position offsets — same trapezoid look as spacingDiagram, "Itself" center.
   insetBox(node,t){ const h=React.createElement;
-    const inp=(prop,posStyle)=>{ const cur=(this.csVal(node,prop)||'').toString().replace(/px$/,''); return h('input',{value:cur,placeholder:'Auto',spellCheck:false,onChange:e=>{ const v=e.target.value.trim(); this.setCS(node,prop,v===''?'':(/^[-0-9.]+$/.test(v)?v+'px':v)); },style:Object.assign({textAlign:'center',border:'none',background:'transparent',color:t.muted,fontSize:10.5,outline:'none'},posStyle)}); };
+    const inp=(prop,posStyle)=>{ const cur=(this.csVal(node,prop)||'').toString().replace(/px$/,''); return h('input',{value:cur,placeholder:'auto',spellCheck:false,onChange:e=>{ const v=e.target.value.trim(); this.setCS(node,prop,v===''?'':(/^[-0-9.]+$/.test(v)?v+'px':v)); },style:Object.assign({textAlign:'center',border:'none',background:'transparent',color:t.muted,fontSize:10.5,outline:'none'},posStyle)}); };
     const mgTop=this.dark?'#232a33':'#f6f7f9', mgSide=this.dark?'#1d232b':'#eef0f2', mgBot=this.dark?'#161b21':'#e7e9ec';
     const contentBg=this.dark?'#0d1117':'#fff';
     return h('div',{style:{borderRadius:9,overflow:'hidden',border:'1px solid '+t.border}},
@@ -4674,7 +4742,7 @@ class Component extends DCLogic {
     const matches=combo=>{ const cur=curCombo(); const ck=Object.keys(combo); if(!ck.length||Object.keys(cur).length!==ck.length) return false; return ck.every(k=>(cur[k]||'')===(combo[k]||'')); };
     const applyPreset=combo=>{ ['top','right','bottom','left'].forEach(k=>this.setCS(node,k,combo[k]!=null?combo[k]:'')); };
     const pIcon=(x,y,w,hh)=>h('svg',{viewBox:'0 0 16 16',width:20,height:20},[h('rect',{key:'f',x:2,y:2,width:12,height:12,rx:2,fill:'none',stroke:'currentColor',strokeWidth:1,opacity:0.45}),h('rect',{key:'i',x,y,width:w,height:hh,rx:1,fill:'currentColor'})]);
-    els.push(h('div',{key:'presets',style:{display:'flex',gap:3,marginTop:10}}, presetDefs.map(([id,title,combo,box])=>{ const on=matches(combo); return h('div',Object.assign({key:id},this.tt(title),{onClick:()=>applyPreset(combo),style:{flex:'1 1 0',minWidth:0,height:22,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:on?t.accent:t.faint}}), pIcon(box[0],box[1],box[2],box[3])); })));
+    els.push(h('div',{key:'presets',role:'group','aria-label':'Position presets',style:{display:'flex',gap:3,marginTop:10}}, presetDefs.map(([id,title,combo,box])=>{ const on=matches(combo); return h('div',Object.assign({key:id},this.tt(title),this.a11y(()=>applyPreset(combo),{pressed:on,label:title}),{onClick:()=>applyPreset(combo),style:{flex:'1 1 0',minWidth:0,height:22,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:on?t.accent:t.faint}}), pIcon(box[0],box[1],box[2],box[3])); })));
     els.push(h('div',{key:'inset',style:{marginTop:10}}, this.insetBox(node,t)));
     const relText=(pos==='absolute'||pos==='fixed')?'Nearest ancestor':'Itself';
     els.push(h('div',{key:'rel',style:{display:'flex',gap:8,marginTop:12}},
@@ -4706,7 +4774,7 @@ class Component extends DCLogic {
     // (matching the "1" preset tile below reading as selected).
     els.push(h('div',{key:'layout-hdr',style:{fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'0 0 12px'}},'Layout'));
     els.push(h('div',{key:'d'}, this.subHead(t,'Display',true),
-      this.iconRow(t,primaryDisp,isOther?null:disp,setDisp),
+      this.iconRow(t,primaryDisp,isOther?null:disp,setDisp,'Display'),
       h('div',{style:{marginTop:6}}, this.xselect('disp-other',t, isOther?disp:'', [{v:'',label:'Other…'},...otherDisp], v=>{ if(v==='') return; setDisp(v); }))
     ));
     const dyn=[];
@@ -4721,19 +4789,19 @@ class Component extends DCLogic {
       const dir=this.csVal(node,'flexDirection')||'row';
       dyn.push(h('div',{key:'dir',style:{marginTop:16}}, this.subHead(t,'Direction'),
         this.iconRow(t,[{v:'row',title:'Row',icon:dirIc('row')},{v:'column',title:'Column',icon:dirIc('column')},{v:'row-reverse',title:'Row reverse',icon:dirIc('row-reverse')},{v:'column-reverse',title:'Column reverse',icon:dirIc('column-reverse')}],dir,
-          v=>this.flipLayout(node,()=>this.setCS(node,'flexDirection',v)))));
+          v=>this.flipLayout(node,()=>this.setCS(node,'flexDirection',v)),'Direction')));
       const just=this.csVal(node,'justifyContent')||'flex-start';
       dyn.push(h('div',{key:'just',style:{marginTop:16}}, this.subHead(t,'Justify'),
         this.iconRow(t,[{v:'flex-start',title:'Start',icon:jaIc('j-flex-start')},{v:'center',title:'Center',icon:jaIc('j-center')},{v:'flex-end',title:'End',icon:jaIc('j-flex-end')},{v:'space-between',title:'Space between',icon:jaIc('j-space-between')},{v:'space-around',title:'Space around',icon:jaIc('j-space-around')}],just,
-          v=>this.setCS(node,'justifyContent',v))));
+          v=>this.setCS(node,'justifyContent',v),'Justify')));
       const align=this.csVal(node,'alignItems')||'stretch';
       dyn.push(h('div',{key:'align',style:{marginTop:16}}, this.subHead(t,'Align'),
         this.iconRow(t,[{v:'flex-start',title:'Start',icon:jaIc('a-flex-start')},{v:'center',title:'Center',icon:jaIc('a-center')},{v:'flex-end',title:'End',icon:jaIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:jaIc('a-stretch')},{v:'baseline',title:'Baseline',icon:jaIc('a-baseline')}],align,
-          v=>this.setCS(node,'alignItems',v))));
+          v=>this.setCS(node,'alignItems',v),'Align')));
       const wrap=this.csVal(node,'flexWrap')||'nowrap';
       dyn.push(h('div',{key:'wr',style:{marginTop:16}}, this.subHead(t,'Wrap'),
         this.iconRow(t,[{v:'nowrap',title:'No wrap',icon:dirIc('w-nowrap')},{v:'wrap',title:'Wrap',icon:dirIc('w-wrap')}],wrap,
-          v=>this.flipLayout(node,()=>this.setCS(node,'flexWrap',v)))));
+          v=>this.flipLayout(node,()=>this.setCS(node,'flexWrap',v)),'Wrap')));
       if(wrap!=='nowrap'){
         const ac=this.csVal(node,'alignContent')||'stretch';
         dyn.push(h('div',{key:'ac',style:{marginTop:12}}, this.lbl(t,'Align content'), this.xselect('ac:'+node.id,t,ac,this.ALIGN_CONTENT_VALUES().map(v=>[v.v,v.title]),v=>this.setCS(node,'alignContent',v==='stretch'?'':v),{fontSize:12,height:28})));
@@ -4776,8 +4844,8 @@ class Component extends DCLogic {
     els.push(this.row2(
       h('div',null,this.lbl(t,'Width'),this.dimControl(t,node,'width',[{v:'auto',l:'Auto'},{v:'100%',l:'Full'},{v:'fit-content',l:'Fit'}])),
       h('div',null,this.lbl(t,'Height'),this.dimControl(t,node,'height',[{v:'auto',l:'Auto'},{v:'100%',l:'Full'}]))));
-    els.push(h('div',{style:{marginTop:10}}, this.row2(h('div',null,this.lbl(t,'Min width'),this.numField(t,node,'minWidth','\u2014')),h('div',null,this.lbl(t,'Max width'),this.numField(t,node,'maxWidth','\u2014')))));
-    els.push(h('div',{style:{marginTop:10}}, this.row2(h('div',null,this.lbl(t,'Min height'),this.numField(t,node,'minHeight','\u2014')),h('div',null,this.lbl(t,'Max height'),this.numField(t,node,'maxHeight','\u2014')))));
+    els.push(h('div',{style:{marginTop:10}}, this.row2(h('div',null,this.lbl(t,'Min width'),this.numField(t,node,'minWidth','auto')),h('div',null,this.lbl(t,'Max width'),this.numField(t,node,'maxWidth','none')))));
+    els.push(h('div',{style:{marginTop:10}}, this.row2(h('div',null,this.lbl(t,'Min height'),this.numField(t,node,'minHeight','auto')),h('div',null,this.lbl(t,'Max height'),this.numField(t,node,'maxHeight','none')))));
     // ---- children sizing (containers) — reference: Size → Children select ----
     if(this.canHaveChildren(node)){
       const ai=this.csVal(node,'alignItems')||'';
@@ -4800,21 +4868,6 @@ class Component extends DCLogic {
     els.push(this.subHead(t,'Position'));
     els.push(this.positionEditor(node,t));
     return h('div',null,els);
-  }
-  // Position — advanced, rarely-touched, and about the page around the element rather than the element's
-  // own box (Overflow moved into Structure, next to Size) — stays outside both cards, at the very bottom.
-  advancedLayout(node,t){ const h=React.createElement; const els=[];
-    if(node.id!=='root'){
-      const pos=this.csVal(node,'position')||'static';
-      els.push(this.section(t,'Position'));
-      els.push(this.tiles(t,[{v:'static',label:'Static'},{v:'relative',label:'Relative'},{v:'absolute',label:'Absolute'},{v:'sticky',label:'Sticky'},{v:'fixed',label:'Fixed'}],pos,v=>this.setCS(node,'position',v==='static'?'':v),3));
-      if(pos!=='static'){
-        els.push(h('div',{style:{marginTop:12,display:'flex',gap:12,alignItems:'flex-start'}},
-          this.offsetGrid(node,t),
-          h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Z-index'), this.rawField(t,node,'zIndex','auto'), h('div',{style:{fontSize:10.5,color:t.faint,marginTop:8,lineHeight:1.5}}, pos==='absolute'||pos==='fixed'?'Pinned to nearest positioned ancestor.':'Offsets nudge from normal flow.'))));
-      }
-    }
-    return els.length?h('div',null,els):null;
   }
   // Merged Layout + Style — one panel, a single state switcher, grouped into two elevated cards:
   // Structure (display/flex-grid/spacing/size/overflow/position) and Appearance (typography/background/
@@ -4899,8 +4952,8 @@ class Component extends DCLogic {
     const taOpts=[{v:'left',icon:this.taGlyph('left'),title:'Left'},{v:'center',icon:this.taGlyph('center'),title:'Center'},{v:'right',icon:this.taGlyph('right'),title:'Right'},{v:'justify',icon:this.taGlyph('justify'),title:'Justify'}];
     const ta=this.csVal(node,'textAlign')||'left';
     const fst=this.csVal(node,'fontStyle')||''; const deco=this.csVal(node,'textDecoration')||''; const tform=this.csVal(node,'textTransform')||'';
-    const styleTile=(on,glyph,title,onClick,extra)=>h('div',Object.assign({onClick},this.tt(title),{style:Object.assign({flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',fontSize:13,fontWeight:600,border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted},extra||{})}),glyph);
-    const alignTile=o=>{ const on=ta===o.v; return h('div',Object.assign({key:o.v,onClick:()=>this.setCS(node,'textAlign',o.v==='left'?'':o.v)},this.tt(o.title),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),o.icon); };
+    const styleTile=(on,glyph,title,onClick,extra)=>h('div',Object.assign({onClick},this.tt(title),this.a11y(onClick,{pressed:on,label:title}),{style:Object.assign({flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',fontSize:13,fontWeight:600,border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted},extra||{})}),glyph);
+    const alignTile=o=>{ const on=ta===o.v; const pick=()=>this.setCS(node,'textAlign',o.v==='left'?'':o.v); return h('div',Object.assign({key:o.v,onClick:pick},this.tt(o.title),this.a11y(pick,{pressed:on,label:o.title}),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),o.icon); };
     const caseTile=(g,v,title)=>styleTile(tform===v,g,title,()=>this.setCS(node,'textTransform',tform===v?'':v),{fontSize:12});
     return h('div',null,
       h('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'0 0 12px'}}, 'Typography', this.stateEditDot(node,['fontFamily','fontWeight','fontSize','lineHeight','letterSpacing','color','textAlign','fontStyle','textDecoration','textTransform','textShadow','whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'],t)),
@@ -4913,12 +4966,12 @@ class Component extends DCLogic {
         this.prefixField(t,'LS',ls,v=>{ const x=v.trim(); this.setCS(node,'letterSpacing',x===''?'':(/^[-0-9.]+$/.test(x)?x+'px':x)); },{placeholder:'0'})),
       h('div',{style:{marginTop:8}}, this.colorInlineField(t,node,'color',{placeholder:'#1F2328',noAlpha:true,noToken:true})),
       h('div',{style:{display:'flex',gap:5,marginTop:8}},
-        h('div',{style:{display:'flex',gap:4,flex:1}}, taOpts.map(alignTile)),
-        h('div',{style:{display:'flex',gap:4,flex:1}},
+        h('div',{role:'group','aria-label':'Text align',style:{display:'flex',gap:4,flex:1}}, taOpts.map(alignTile)),
+        h('div',{role:'group','aria-label':'Text style',style:{display:'flex',gap:4,flex:1}},
           styleTile(fst==='italic','I','Italic',()=>this.setCS(node,'fontStyle',fst==='italic'?'':'italic'),{fontStyle:'italic'}),
           styleTile(/underline/.test(deco),'U','Underline',()=>this.toggleDeco(node,'underline'),{textDecoration:'underline'}),
           styleTile(/line-through/.test(deco),'S','Strikethrough',()=>this.toggleDeco(node,'line-through'),{textDecoration:'line-through'}))),
-      h('div',{style:{display:'flex',gap:4,marginTop:8}},
+      h('div',{role:'group','aria-label':'Text case',style:{display:'flex',gap:4,marginTop:8}},
         caseTile('AG','uppercase','Uppercase'), caseTile('ag','lowercase','Lowercase'), caseTile('Ag','capitalize','Capitalize')),
       this.textShadowEditor(node,t),
       (()=>{ const tmode=this.truncMode(node); const clampN=(this.csVal(node,'WebkitLineClamp')||'2').toString();
@@ -4952,8 +5005,8 @@ class Component extends DCLogic {
         h('span',{style:swatch(s.color)}),
         h('input',{value:s.color,spellCheck:false,onChange:e=>{ const ns=g.stops.slice(); ns[i]=Object.assign({},ns[i],{color:e.target.value}); setG(g.angle,ns); },style:{flex:1,minWidth:0,border:'none',background:'none',color:t.text,fontSize:11,fontFamily:'ui-monospace,monospace',outline:'none'}}),
         h('input',{value:s.pos,spellCheck:false,onChange:e=>{ const ns=g.stops.slice(); ns[i]=Object.assign({},ns[i],{pos:e.target.value}); setG(g.angle,ns); },style:{width:44,flex:'0 0 auto',border:'none',background:'none',color:t.muted,fontSize:11,textAlign:'right',outline:'none'}}),
-        h('span',{onClick:()=>{ if(g.stops.length>2){ const ns=g.stops.slice(); ns.splice(i,1); setG(g.angle,ns); } },style:{display:g.stops.length>2?'flex':'none',cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint,flex:'0 0 auto'}},'×')))));
-      body.push(h('div',{key:'add',onClick:()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),style:{display:'flex',alignItems:'center',justifyContent:'center',marginTop:6,padding:'6px 0',border:'1px dashed '+t.border,borderRadius:6,cursor:'pointer',color:t.muted,fontSize:11.5,fontWeight:500}},'+ Add color stop'));
+        h('span',{onClick:()=>{ if(g.stops.length>2){ const ns=g.stops.slice(); ns.splice(i,1); setG(g.angle,ns); } },...this.a11y(()=>{ if(g.stops.length>2){ const ns=g.stops.slice(); ns.splice(i,1); setG(g.angle,ns); } },{label:'Remove color stop '+(i+1)}),style:{display:g.stops.length>2?'flex':'none',cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint,flex:'0 0 auto'}},'×')))));
+      body.push(h('div',{key:'add',onClick:()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),...this.a11y(()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),{label:'Add color stop'}),style:{display:'flex',alignItems:'center',justifyContent:'center',marginTop:6,padding:'6px 0',border:'1px dashed '+t.border,borderRadius:6,cursor:'pointer',color:t.muted,fontSize:11.5,fontWeight:500}},'+ Add color stop'));
       body.push(h('div',{key:'angle',style:{display:'flex',alignItems:'center',gap:8,marginTop:8}}, h('span',{style:{fontSize:12,color:t.text,flex:'0 0 auto'}},'Angle'), h('div',{style:{flex:1}}, this.selectField(t,[['90deg','90°'],['0deg','0°'],['45deg','45°'],['135deg','135°'],['180deg','180°']],g.angle,v=>setG(v,g.stops))))); }
     else { // image
       body.push(h('div',{key:'url',style:{marginTop:0}}, this.prefixField(t,'',this.csVal(node,'backgroundImage').replace(/^url\((['"]?)(.*)\1\)$/,'$2'),v=>{ const u=v.trim(); this.setCS(node,'backgroundImage',u?('url("'+u+'")'):''); },{placeholder:'https://…'})));
@@ -4984,11 +5037,11 @@ class Component extends DCLogic {
       const map={tl:{borderTop:bw,borderLeft:bw,borderTopLeftRadius:7},tr:{borderTop:bw,borderRight:bw,borderTopRightRadius:7},br:{borderBottom:bw,borderRight:bw,borderBottomRightRadius:7},bl:{borderBottom:bw,borderLeft:bw,borderBottomLeftRadius:7}};
       // transition:'none' — same reasoning as the width picker: override the app-wide border-color fade
       // so the bracket highlights the instant you tap it instead of lagging behind the click.
-      return h('div',Object.assign({key:id,onClick:()=>setCorner(id)},this.tt(labels[id]),{style:Object.assign({position:'absolute',width:16,height:16,cursor:'pointer',transition:'none'},pos,map[id])})); };
+      return h('div',Object.assign({key:id,onClick:()=>setCorner(id)},this.tt(labels[id]),this.a11y(()=>setCorner(id),{pressed:corner===id,label:'Edit '+labels[id].toLowerCase()+' corner'}),{style:Object.assign({position:'absolute',width:16,height:16,cursor:'pointer',transition:'none'},pos,map[id])})); };
     return h('div',null,
       h('div',{style:{fontSize:12,color:t.text,margin:'12px 0 6px'}},'Corner radius'),
       h('div',{style:{position:'relative',width:'100%',height:74,margin:'0 auto'}},
-        h('div',{style:{position:'absolute',left:14,top:12,right:14,bottom:12,border:'1px dashed '+t.accent,borderRadius:3,background:t.panel,display:'flex',alignItems:'center',justifyContent:'center',transition:'none'},onClick:()=>setCorner('all'),...this.tt('Select all corners')}, h('span',{style:{fontSize:9,fontWeight:600,color:t.accent,pointerEvents:'none'}},'Element')),
+        h('div',{style:{position:'absolute',left:14,top:12,right:14,bottom:12,border:'1px dashed '+t.accent,borderRadius:3,background:t.panel,display:'flex',alignItems:'center',justifyContent:'center',transition:'none'},onClick:()=>setCorner('all'),...this.tt('Select all corners'),...this.a11y(()=>setCorner('all'),{pressed:corner==='all',label:'Edit all corners'})}, h('span',{style:{fontSize:9,fontWeight:600,color:t.accent,pointerEvents:'none'}},'Element')),
         handle('tl',{left:0,top:0}), handle('tr',{right:0,top:0}), handle('br',{right:0,bottom:0}), handle('bl',{left:0,bottom:0})),
       h('div',{style:{fontSize:11,color:t.faint,textAlign:'center',marginTop:8}}, 'Editing ', h('span',{style:{color:t.accent,fontWeight:600}}, corner==='all'?'All corners':labels[corner])),
       h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:3,opacity:.85}},'Tap a corner · the middle for all'),
@@ -4996,8 +5049,8 @@ class Component extends DCLogic {
   // Border style as 4 line-preview swatches (not a <select>) — each button renders the actual rule style
   // so you're picking by how the border will look, not reading a word.
   borderStyleSwatches(node,t){ const h=React.createElement; const cur=this.csVal(node,'borderStyle')||'solid';
-    return h('div',{style:{display:'flex',gap:5}}, ['solid','dashed','dotted','double'].map(v=>{ const on=cur===v;
-      return h('div',Object.assign({key:v,onClick:()=>this.setCS(node,'borderStyle',v)},this.tt(this.bcap(v)),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),borderRadius:6,background:on?t.accentSoft:t.segBg}}),
+    return h('div',{role:'group','aria-label':'Border style',style:{display:'flex',gap:5}}, ['solid','dashed','dotted','double'].map(v=>{ const on=cur===v;
+      return h('div',Object.assign({key:v,onClick:()=>this.setCS(node,'borderStyle',v)},this.tt(this.bcap(v)),this.a11y(()=>this.setCS(node,'borderStyle',v),{pressed:on,label:this.bcap(v)}),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),borderRadius:6,background:on?t.accentSoft:t.segBg}}),
         h('div',{style:{width:'68%',height:0,borderTop:'3px '+v+' '+(on?t.accent:t.muted)}})); })); }
   borderBlock(node,t){ const h=React.createElement;
     return h('div',null,
@@ -5254,8 +5307,8 @@ class Component extends DCLogic {
               smallInput(r.expr,'condition',v=>{ const rs=rows.slice(); rs[i]={...rs[i],expr:v}; commitRows(rs); }),
               h('span',{onClick:()=>{ const rs=rows.slice(); rs.splice(i,1); commitRows(rs); },style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 4px'}},'×'))),
             h('div',{style:{display:'flex',gap:12,alignItems:'center',marginTop:2}},
-              h('div',{onClick:()=>commitRows(rows.concat([{name:'',expr:''}])),style:{cursor:'pointer',fontSize:11.5,color:t.accent,fontWeight:600}},'+ Add class'),
-              h('div',{onClick:()=>{ this._ngClassRaw[node.id]=true; this.forceUpdate(); },style:{cursor:'pointer',fontSize:11,color:t.faint}},'Raw expression'))));
+              h('div',{onClick:()=>commitRows(rows.concat([{name:'',expr:''}])),...this.a11y(()=>commitRows(rows.concat([{name:'',expr:''}])),{label:'Add conditional class'}),style:{cursor:'pointer',fontSize:11.5,color:t.accent,fontWeight:600}},'+ Add class'),
+              h('div',{onClick:()=>{ this._ngClassRaw[node.id]=true; this.forceUpdate(); },...this.a11y(()=>{ this._ngClassRaw[node.id]=true; this.forceUpdate(); },{label:'Edit as raw expression'}),style:{cursor:'pointer',fontSize:11,color:t.faint}},'Raw expression'))));
 
     // ---- ng-style: object-expression only, no builder (values are arbitrary CSS) ----
     const styleSection=h('div',null, this.section(t,'ng-style'),
@@ -5302,11 +5355,11 @@ class Component extends DCLogic {
           inp(k,nk=>this.patch(node.id,n=>{ const v=n.attrs[k]; delete n.attrs[k]; const kk=(nk||'').trim(); if(kk) n.attrs[kk]=v; }),{flex:'0 0 84px',mono:true}),
           React.createElement('input',{value:attrs[k],placeholder:'value',autoFocus:this._focusAttrVal===k,ref:this._focusAttrVal===k?(()=>{this._focusAttrVal=null;}):null,onChange:v=>this.patch(node.id,n=>n.attrs[k]=v.target.value),style:{flex:1,minWidth:0,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none'}}),
           this.bindToggleBtn(t,node,'attr:'+k),
-          h('span',{onClick:()=>this.patch(node.id,n=>delete n.attrs[k]),style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 2px'}},'×')),
+          h('span',{onClick:()=>this.patch(node.id,n=>delete n.attrs[k]),...this.a11y(()=>this.patch(node.id,n=>delete n.attrs[k]),{label:'Remove attribute '+k}),style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 2px'}},'×')),
         this.bindMenuBox(t,node,'attr:'+k,p=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; const cur=n.attrs[k]||''; n.attrs[k]=this.isExprAttr(k)?p:(cur+((cur&&!/\s$/.test(cur))?' ':'')+'{{'+p+'}}'); }))
       ))):h('div',{style:{fontSize:12,color:t.faint,marginBottom:10}},'No attributes yet.'),
       React.createElement('input',{placeholder:'attribute name + Enter',onKeyDown:e=>{ if(e.key==='Enter'){ const k=e.target.value.trim(); if(k){ this._focusAttrVal=k; this.patch(node.id,n=>{ n.attrs=n.attrs||{}; if(!(k in n.attrs)) n.attrs[k]=''; }); } e.target.value=''; } },style:{width:'100%',height:32,border:'1px solid '+t.border,borderRadius:6,padding:'0 10px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}),
-      sug.length?h('div',{style:{marginTop:12}}, this.section(t,'Common'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:6}}, sug.map(s=>h('div',{key:s,onClick:()=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; n.attrs[s]=''; }),style:{cursor:'pointer',fontSize:11.5,fontFamily:'ui-monospace,monospace',color:t.accent,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:'5px 9px'}},s)))):null,
+      sug.length?h('div',{style:{marginTop:12}}, this.section(t,'Common'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:6}}, sug.map(s=>h('div',{key:s,onClick:()=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; n.attrs[s]=''; }),...this.a11y(()=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; n.attrs[s]=''; }),{label:'Add attribute '+s}),style:{cursor:'pointer',fontSize:11.5,fontFamily:'ui-monospace,monospace',color:t.accent,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:'5px 9px'}},s)))):null,
       h('div',{style:{fontSize:11,color:t.faint,marginTop:12,lineHeight:1.5}},'Emitted on the element in the HTML. Use real ServiceNow / Angular attributes like ', h('code',{style:{color:t.muted}},'ng-click'),', ', h('code',{style:{color:t.muted}},'ng-repeat'),'.')
     );
   }
@@ -5408,7 +5461,12 @@ class Component extends DCLogic {
       if(tg==='input') return pad+'<input'+cls0+sty+this.attrStr(node,['type','placeholder'])+' type="'+this.esc(at.type||'text')+'" placeholder="'+this.esc(node.text||'')+'">';
       if(tg==='textarea') return pad+'<textarea'+cls0+sty+this.attrStr(node,['placeholder'])+' placeholder="'+this.esc(node.text||'')+'"></textarea>';
       if(tg==='select') return pad+'<select'+ca+'>'+nl+pad+'  <option>Option</option>'+nl+pad+'</select>';
-      return pad+'<'+tg+ca+'>'+nl+(node.children&&node.children.length?kids(node,depth+1)+nl:'')+pad+'</'+tg+'>';
+      // Generic containers can carry text too (an <li>'s starter/authored text) — emit it ahead of any
+      // children, same shape as the TEXT_TAGS branch, so the export never holds an empty <li></li> pair.
+      { const tx=node.text?this.esc(node.text):'';
+        if(node.children&&node.children.length) return pad+'<'+tg+ca+'>'+(tx?tx+nl:nl)+kids(node,depth+1)+nl+pad+'</'+tg+'>';
+        if(tx) return pad+'<'+tg+ca+'>'+tx+'</'+tg+'>';
+        return pad+'<'+tg+ca+'>'+nl+pad+'</'+tg+'>'; }
     }
     switch(node.type){
       case 'icon': { const sel=this.iconSel(node); const mode=node.data.mode||'svg'; const cls=this.allClasses(node); const xc=cls.length?(' '+cls.join(' ')):'';
@@ -5812,7 +5870,9 @@ class Component extends DCLogic {
     const barH=40; const ds={flexShrink:0,height:open?this.previewH:barH,background:cp.bg,borderTop:'1px solid '+cp.border,display:'flex',flexDirection:'column',overflow:'hidden',transition:this._resizing?'none':'height .22s cubic-bezier(.4,0,.2,1)'};
     const tabs=[['html','Template'],['scss','CSS'],['client','Client'],['server','Server'],['link','Link']];
     const tb=(id,label)=>{ const on=this.codeTab===id; const go=()=>{this.codeTab=id;this.drawerOpen=true;this.saveUiPrefs();this.forceUpdate();if(this._mon)setTimeout(()=>this._mon.layout(),40);}; return h('div',Object.assign({onClick:e=>{e.stopPropagation();go();}},this.a11y(go,{role:'tab',selected:on,label:label+' tab'}),{style:{padding:'3px 11px',fontSize:11.5,fontWeight:600,borderRadius:6,cursor:'pointer',color:on?cp.tabOnText:cp.muted,background:on?cp.tabOnBg:'transparent'}}),label); };
-    const bar=h('div',{onClick:()=>{this.drawerOpen=!this.drawerOpen;this.saveUiPrefs();this.forceUpdate();if(this._mon)setTimeout(()=>this._mon.layout(),60);},style:{height:barH,flexShrink:0,display:'flex',alignItems:'center',gap:10,padding:'0 12px 0 14px',cursor:'pointer',userSelect:'none',background:cp.barBg,borderBottom:open?'1px solid '+cp.border:'1px solid transparent',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace'}},
+    const bar=h('div',{onClick:()=>{this.drawerOpen=!this.drawerOpen;this.saveUiPrefs();this.forceUpdate();if(this._mon)setTimeout(()=>this._mon.layout(),60);},
+      ...this.a11y(()=>{this.drawerOpen=!this.drawerOpen;this.saveUiPrefs();this.forceUpdate();if(this._mon)setTimeout(()=>this._mon.layout(),60);},{label:this.drawerOpen?'Collapse the widget code drawer':'Expand the widget code drawer',pressed:this.drawerOpen}),
+      style:{height:barH,flexShrink:0,display:'flex',alignItems:'center',gap:10,padding:'0 12px 0 14px',cursor:'pointer',userSelect:'none',background:cp.barBg,borderBottom:open?'1px solid '+cp.border:'1px solid transparent',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace'}},
       h('span',{style:{color:cp.muted,transition:'transform .2s',transform:open?'rotate(180deg)':'none',display:'inline-flex',alignItems:'center'}},this.chev('up',11)),
       h('span',{style:{fontSize:12,fontWeight:600,color:cp.text}},'Widget code'),
       h('span',{style:{width:7,height:7,borderRadius:'50%',background:cp.green}}),
