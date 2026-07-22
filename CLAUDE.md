@@ -43,7 +43,9 @@ Two top-level groups under `ServiceNow/`:
     `apps/delivery-methodology/`.
 - `tools/` — **build tooling**, never deployed:
   - `tools/packager/` — assembles ServiceNow Update Set XML (runs in Node/browser at build time).
-  - `tools/theme-foundation/` — the gf- SCSS `!default` token source, inlined into each widget at build (planned).
+  - `tools/theme-foundation/` — the suite's SCSS `!default` design-token source (`_tokens.scss`),
+    inlined into each widget's `<css>` at build by the packager (live — `apps/core` consumes it;
+    see `tools/theme-foundation/SETUP.md` to wire up an app).
 
 **All paths are relative** — an app's own files (`js/app.module.js`, not `/js/...`) AND cross-tree
 references (Core, the packager) use relative paths too: from an app at `apps/<app>/`, reach Core at
@@ -69,6 +71,16 @@ app fails to bootstrap and shows raw `{{ }}`). Navigate to **trailing-slash** UR
 Extraction judgment (both kinds): one concern per shared module; extract only *real* duplication
 (2+ apps carrying substantively the same logic, or explicitly-known future need) — a superficially
 similar 5-20 line helper implemented differently per app is not worth a shared abstraction.
+
+**Deliberately paired content — keep in sync, don't merge:**
+`apps/glide-studio/standards/glidefast-scripting-standards.md` and
+`apps/standards/standards/glidefast-scripting-standards.md` are intentionally two variants of the
+same document, NOT accidental duplication. The glide-studio copy carries Glide-Studio-specific
+callouts ("Build this in …" builder tie-ins, "Glide Studio addition" section labels); the standards
+copy is the de-branded standalone rendering ("Extended guidance", no builder references). The
+*substance* (rules, code samples, section structure) must stay identical. When editing the
+standards content in either app, apply the same substantive change to the other copy (preserving
+each one's own branding phrasing), then re-run that app's `scripts/build-standards.js`.
 
 ## ServiceNow deployment: use the shared packager
 
