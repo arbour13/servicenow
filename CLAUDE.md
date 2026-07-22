@@ -3,35 +3,13 @@
 Everything under `ServiceNow/` is work that targets the ServiceNow platform. It's organized by
 *purpose*, and these conventions apply to the **deployed apps** here.
 
-## Working in worktrees — one chat, one app
+## Working per app — one chat, one app, one branch
 
-This repo is worked on **one app per chat/session**, and each chat runs in **its own git
-worktree** so concurrent chats never collide. The root clone
-(`~/Documents/Projects/servicenow`) stays on `main`. Per-app worktrees live as siblings under
-`~/Documents/Projects/servicenow-worktrees/<app>`, each on branch `app/<app>` (e.g.
-`app/packager`, `app/standards`, `app/glide-studio`).
-
-Why worktrees and not just branches: a single checkout can only be on ONE branch at a time, so
-per-app *branches* in the *shared* root clone don't isolate concurrent chats — switching a branch
-in one chat moves the checkout for all of them. Separate worktrees are separate directories, so
-they don't.
-
-**At session start**, confirm you're in your app's worktree (`git rev-parse --show-toplevel`
-should end in `servicenow-worktrees/<app>`, and `git branch --show-current` should be
-`app/<app>`). If not, create/enter it with the helper, then have the user relaunch the chat there:
-
-```
-tools/worktree.sh <app>     # prints the worktree path; creates branch app/<app> from origin/main if new
-```
-
-**Rules:**
-- Do your app's work on `app/<app>`; commit there. Merge to `main` (or open a PR) when the app's
-  work is ready — don't commit app work straight to `main`.
-- **Never `git checkout <other-branch>` in the root clone or another chat's worktree** — that's the
-  collision this convention exists to prevent. Stay in your own worktree.
-- Repo-wide infra that must reach every chat (this file, shared tooling) goes on `main`; if you're
-  in an app worktree, make that change from a `main` worktree (`git worktree add … main`), not by
-  switching your app worktree off its branch.
+This repo is worked on **one app per chat/session**. Each app has its own branch **named for the
+app** (`packager`, `standards`, `glide-studio`, …). Do that app's work on its branch and merge to
+`main` when it's ready — don't commit app work straight to `main`. The user manages which branch
+each chat is on. There is a single shared checkout, so only one branch is checked out at a time;
+**never switch branches out from under another active chat.**
 
 ## What lives where
 
