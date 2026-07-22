@@ -1035,6 +1035,10 @@ class Component extends DCLogic {
   // Reposition the floating selection toolbar when the window resizes (its rect is measured from the DOM).
   this._winResize=()=>{ if(this.selectedId&&this.selectedId!=='root') this.forceUpdate(); };
   window.addEventListener('resize',this._winResize);
+  // Browser-level exits (refresh/close) can't go through requestDiscard, so warn there too when
+  // there's unsaved work — otherwise F5 silently destroys the widget being built.
+  this._beforeUnload=e=>{ if(this._dirty){ e.preventDefault(); e.returnValue=''; } };
+  window.addEventListener('beforeunload',this._beforeUnload);
   this.loadMonaco(); this.injectGlyphs();
   [0,300,800,1600,3000].forEach(d=>setTimeout(()=>{ if(!this._faIcons) this.scanIcons(); },d));
   }
@@ -1078,7 +1082,7 @@ class Component extends DCLogic {
     s.onerror=()=>{ this._monLoading=false; this._monFailed=true; this.forceUpdate(); };
     document.head.appendChild(s);
   }
-  componentWillUnmount(){ document.removeEventListener('keydown',this._key); if(this._winResize) window.removeEventListener('resize',this._winResize); this.removeDragListeners(); clearInterval(this._cmPoll); if(this._mon){ this._mon.dispose(); this._mon=null; } }
+  componentWillUnmount(){ document.removeEventListener('keydown',this._key); if(this._winResize) window.removeEventListener('resize',this._winResize); if(this._beforeUnload) window.removeEventListener('beforeunload',this._beforeUnload); this.removeDragListeners(); clearInterval(this._cmPoll); if(this._mon){ this._mon.dispose(); this._mon=null; } }
   componentDidUpdate(){ this.playFlip(); this.syncEditor(); this.syncPreview(); this.syncTokenVars(); this.measureBox(); this.measureFlexGrid(); this.positionCtxMenu(); this.positionCrumbStack(); }
   // Walk-up ancestor label stack: normally grows UPWARD from the clicked label (bottom:100%, see
   // crumbAnchor). Near the top of the canvas there's no room above for it, so measure it after render and
@@ -3284,10 +3288,12 @@ class Component extends DCLogic {
   // shorthand field (borderWidth/borderRadius) that sits alongside per-side/per-corner longhand
   // overrides, so editing "all sides/corners" unambiguously wins instead of silently losing to
   // whichever longhand override happens to have been set more recently in the generated CSS.
+  // Properties whose values are plain numbers — appending px would emit invalid CSS (z-index: 5px).
+  UNITLESS_KEYS={zIndex:1,opacity:1,fontWeight:1,lineHeight:1,flexGrow:1,flexShrink:1,order:1};
   numField(t,node,key,ph,opts){ opts=opts||{}; const h=React.createElement; const raw=(this.csVal(node,key)||'').toString(); const cur=raw.replace(/px$/,'');
     const sizeToks=(this.tokens||[]).filter(x=>x.type==='size');
     const clear=()=>{ if(opts.clearKeys) opts.clearKeys.forEach(k=>this.setCS(node,k,'')); };
-    const input=React.createElement('input',{value:cur,placeholder:ph||'',onChange:e=>{const v=e.target.value.trim(); this.setCS(node,key,v===''?'':(/^[-0-9.]+$/.test(v)?v+'px':v)); clear(); if(v!==''&&/^border.*Width$/.test(key)) this.ensureBorderStyle(node);},style:{width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,padding:sizeToks.length?'0 26px 0 8px':'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none'}});
+    const input=React.createElement('input',{value:cur,placeholder:ph||'',onChange:e=>{const v=e.target.value.trim(); this.setCS(node,key,v===''?'':(/^[-0-9.]+$/.test(v)&&!this.UNITLESS_KEYS[key]?v+'px':v)); clear(); if(v!==''&&/^border.*Width$/.test(key)) this.ensureBorderStyle(node);},style:{width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,padding:sizeToks.length?'0 26px 0 8px':'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none'}});
     const SIZEKEYS={fontSize:1,borderRadius:1,borderTopLeftRadius:1,borderTopRightRadius:1,borderBottomLeftRadius:1,borderBottomRightRadius:1,borderWidth:1,borderTopWidth:1,borderRightWidth:1,borderBottomWidth:1,borderLeftWidth:1};
     if(!sizeToks.length || !SIZEKEYS[key]) return input;
     const onVar=!!this.tokenByVar(raw);
@@ -5380,7 +5386,7 @@ class Component extends DCLogic {
     // Responsive overrides → @media blocks (desktop-first; phone after tablet so it wins at small widths).
     let media=''; ['md','sm','xs'].forEach(bp=>{ const r=this.responsive[bp]||{}; const keys=Object.keys(r).filter(c=>used[c]&&Object.keys(r[c]).length); if(!keys.length) return; media+='\n@media (max-width: '+this.BREAKPOINTS[bp].max+'px) {\n'; keys.forEach(c=>{ media+='  .'+c+' {\n'+decls(r[c]).map(d=>'    '+d).join('\n')+'\n  }\n'; }); media+='}\n'; });
     return this.convUnit(tokHead+head+'.'+base+' {\n'+inner+'}\n'+media); }
-  esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   serialize(node,depth){ const pad='  '.repeat(depth); const nl='\n'; const cls=this.allClasses(node); const ca=(cls.length?(' class="'+cls.join(' ')+'"'):'')+this.styleStr(node)+this.attrStr(node);
     // Single choke point for "a node's children, serialized" — every container branch below (generic el,
     // panel, card, button, …) calls this the same way it always did. Pagination hooks in HERE, transparently,
