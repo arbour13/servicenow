@@ -399,317 +399,312 @@
   }
 
   /* ==================================================================================
-     Record builders - one pure function per ServiceNow artifact this package writes. Every
-     record is INSERT_OR_UPDATE against its derived sys_id, tagged with the same sys_scope, so
-     re-running the build against the same manifest updates the existing records instead of
-     duplicating them.
+     Shared record model - the ONE place that knows which records + fields make up a package.
+     buildRecordModel() returns an ORDERED array of plain records: { table, sysId, key, fields }.
+     Each field is { name, value } (business data), plus one of three markers: `cdata: true` (a
+     long script/template/css body - CDATA-wrapped for XML, externalized to its own file for
+     Fluent), `empty: true` (a self-closing tag with no value, e.g. <demo_data/>), or `scopeTag:
+     true` (the <sys_scope> tag itself - XML-only bookkeeping). `xmlOnly: true` marks bookkeeping
+     fields (sys_id/sys_name/sys_scope/sys_update_name/sys_class_name) that only the XML emitter
+     needs - Fluent derives identity from Now.ID/generated/keys.ts instead, and never repeats a
+     record's own sys_id inside its data. `key` is the Now.ID key a Fluent emitter uses for this
+     record; it's meaningless to XML.
+
+     Both assembleXml() (below) and snpackager.fluent.js's assembleFluent() build this SAME model
+     and then just walk it their own way - so a new field on, say, sp_container is added in
+     exactly one place (here) and both output formats pick it up automatically. Field ORDER is
+     preserved deliberately (it matches a real ServiceNow Update Set export's per-table field
+     order, which is not simple alphabetical - see e.g. sp_angular_provider's type-before-script)
+     so XML output stays byte-identical to what this core produced before the model existed.
      ================================================================================== */
 
-  function buildAppRecord(manifest, ids, scopeTag) {
-    return [
-      '<sys_app action="INSERT_OR_UPDATE">',
-      '<active>true</active>',
-      '<name>' + esc(manifest.appName) + '</name>',
-      '<private>true</private>',
-      '<scope>' + esc(manifest.scope) + '</scope>',
-      '<short_description>' + esc(manifest.shortDescription || manifest.appName) + '</short_description>',
-      '<sys_id>' + ids.app + '</sys_id>',
-      scopeTag,
-      '<sys_update_name>sys_app_' + ids.app + '</sys_update_name>',
-      '<trackable>true</trackable>',
-      '<vendor_prefix>' + esc(manifest.vendorPrefix || deriveVendorPrefix(manifest.scope)) + '</vendor_prefix>',
-      '<version>' + esc(manifest.version || '1.0.0') + '</version>',
-      '</sys_app>',
-    ].join('\n');
-  }
+  function buildRecordModel(manifest, parts) {
+    var ids = deriveSysIds(manifest);
+    var scopeTag = '<sys_scope display_value="' + esc(manifest.appName).replace(/"/g, '&quot;') + '">' + ids.app + '</sys_scope>';
+    var SC = { name: 'sys_scope', scopeTag: true, xmlOnly: true }; // reusable <sys_scope> sentinel
+    var records = [];
 
-  // No css_variables of its own - see this file's header comment. Still emitted because sp_portal
-  // requires a <theme> reference; this is just the portal-scaffold theme, not the token carrier.
-  function buildThemeRecord(manifest, ids, scopeTag) {
-    return [
-      '<sp_theme action="INSERT_OR_UPDATE">',
-      '<css_variables/>',
-      '<name>' + esc(manifest.appName) + ' Theme</name>',
-      '<navbar_fixed>true</navbar_fixed>',
-      '<sys_id>' + ids.theme + '</sys_id>',
-      '<sys_name>' + esc(manifest.appName) + ' Theme</sys_name>',
-      scopeTag,
-      '<sys_update_name>sp_theme_' + ids.theme + '</sys_update_name>',
-      '</sp_theme>',
-    ].join('\n');
-  }
+    records.push({ table: 'sys_app', sysId: ids.app, key: 'app', fields: [
+      { name: 'active', value: true },
+      { name: 'name', value: manifest.appName },
+      { name: 'private', value: true },
+      { name: 'scope', value: manifest.scope },
+      { name: 'short_description', value: manifest.shortDescription || manifest.appName },
+      { name: 'sys_id', value: ids.app, xmlOnly: true },
+      SC,
+      { name: 'sys_update_name', value: 'sys_app_' + ids.app, xmlOnly: true },
+      { name: 'trackable', value: true },
+      { name: 'vendor_prefix', value: manifest.vendorPrefix || deriveVendorPrefix(manifest.scope) },
+      { name: 'version', value: manifest.version || '1.0.0' },
+    ] });
 
+    // Opt-in roles/groups layer - BEFORE the theme/page/provider/widget records (matches the
+    // original assembleXml's concatenation order).
+    if (manifest.features && manifest.features.roles) {
+      var r = manifest.roles;
+      records.push({ table: 'sys_user_role', sysId: ids.userRole, key: 'userRole', fields: [
+        { name: 'active', value: true },
+        { name: 'description', value: r.userRoleDescription || ('Can view and use the ' + manifest.appName + ' tool.') },
+        { name: 'name', value: r.userRoleName },
+        { name: 'sys_id', value: ids.userRole, xmlOnly: true },
+        { name: 'sys_name', value: r.userRoleName, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sys_user_role_' + ids.userRole, xmlOnly: true },
+      ] });
+      records.push({ table: 'sys_user_role', sysId: ids.adminRole, key: 'adminRole', fields: [
+        { name: 'active', value: true },
+        { name: 'description', value: r.adminRoleDescription || ("Can edit " + manifest.appName + "'s own application records (widget, page, theme, layout).") },
+        { name: 'name', value: r.adminRoleName },
+        { name: 'sys_id', value: ids.adminRole, xmlOnly: true },
+        { name: 'sys_name', value: r.adminRoleName, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sys_user_role_' + ids.adminRole, xmlOnly: true },
+      ] });
+      records.push({ table: 'sys_user_group', sysId: ids.userGroup, key: 'userGroup', fields: [
+        { name: 'active', value: true },
+        { name: 'description', value: r.userGroupDescription || ('Members can view and use the ' + manifest.appName + ' tool.') },
+        { name: 'name', value: r.userGroupName },
+        { name: 'sys_id', value: ids.userGroup, xmlOnly: true },
+        { name: 'sys_name', value: r.userGroupName, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sys_user_group_' + ids.userGroup, xmlOnly: true },
+      ] });
+      records.push({ table: 'sys_user_group', sysId: ids.adminGroup, key: 'adminGroup', fields: [
+        { name: 'active', value: true },
+        { name: 'description', value: r.adminGroupDescription || ('Members can edit the ' + manifest.appName + ' application.') },
+        { name: 'name', value: r.adminGroupName },
+        { name: 'sys_id', value: ids.adminGroup, xmlOnly: true },
+        { name: 'sys_name', value: r.adminGroupName, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sys_user_group_' + ids.adminGroup, xmlOnly: true },
+      ] });
+      records.push({ table: 'sys_group_has_role', sysId: ids.userGroupRole, key: 'userGroupRole', fields: [
+        { name: 'group', value: ids.userGroup },
+        { name: 'role', value: ids.userRole },
+        { name: 'sys_id', value: ids.userGroupRole, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sys_group_has_role_' + ids.userGroupRole, xmlOnly: true },
+      ] });
+      records.push({ table: 'sys_group_has_role', sysId: ids.adminGroupRole, key: 'adminGroupRole', fields: [
+        { name: 'group', value: ids.adminGroup },
+        { name: 'role', value: ids.adminRole },
+        { name: 'sys_id', value: ids.adminGroupRole, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sys_group_has_role_' + ids.adminGroupRole, xmlOnly: true },
+      ] });
+    }
 
-  function buildProviderRecord(p, script, sysId, scopeTag) {
-    return [
-      '<sp_angular_provider action="INSERT_OR_UPDATE">',
-      '<active>true</active>',
-      '<name>' + esc(p.name) + '</name>',
-      '<type>' + p.type + '</type>',
-      '<script>' + cdata(script) + '</script>',
-      '<sys_id>' + sysId + '</sys_id>',
-      '<sys_name>' + esc(p.name) + '</sys_name>',
-      scopeTag,
-      '<sys_update_name>sp_angular_provider_' + sysId + '</sys_update_name>',
-      '</sp_angular_provider>',
-    ].join('\n');
-  }
+    // No css_variables of its own - see this file's header comment. Still emitted because
+    // sp_portal requires a <theme> reference; this is just the portal-scaffold theme, not the
+    // token carrier.
+    records.push({ table: 'sp_theme', sysId: ids.theme, key: 'theme', fields: [
+      { name: 'css_variables', empty: true },
+      { name: 'name', value: manifest.appName + ' Theme' },
+      { name: 'navbar_fixed', value: true },
+      { name: 'sys_id', value: ids.theme, xmlOnly: true },
+      { name: 'sys_name', value: manifest.appName + ' Theme', xmlOnly: true },
+      SC,
+      { name: 'sys_update_name', value: 'sp_theme_' + ids.theme, xmlOnly: true },
+    ] });
 
-  // An empty factory registered under a dev-harness-only service's name, so a controller that
-  // still injects it (guarded behind an ng-if the deployed widget never satisfies) resolves at
-  // instantiation instead of throwing "Unknown provider: ...".
-  function buildStubProviderRecord(moduleName, name, sysId, scopeTag) {
-    var stub = "angular.module('" + moduleName + "').factory('" + name + "', [function () {\n" +
-      "  /* Dev-harness-only stub - the real " + name + " ships only in the dev harness. */\n" +
-      "  return {};\n}]);";
-    return buildProviderRecord({ name: name, type: 'service' }, stub, sysId, scopeTag);
-  }
-
-  function buildWidgetRecord(manifest, ids, parts, scopeTag) {
-    var widgetId = manifest.scope + '_widget';
-    return [
-      '<sp_widget action="INSERT_OR_UPDATE">',
-      '<category>custom</category>',
-      '<client_script>' + cdata(parts.clientScript) + '</client_script>',
-      '<controller_as>vm</controller_as>',
-      '<css>' + cdata(parts.css) + '</css>',
-      '<demo_data/>',
-      '<description>' + esc(manifest.shortDescription || manifest.appName) + '</description>',
-      '<has_preview>true</has_preview>',
-      '<id>' + widgetId + '</id>',
-      '<internal>false</internal>',
-      '<link>' + cdata(parts.link) + '</link>',
-      '<name>' + esc(manifest.appName) + '</name>',
-      '<option_schema/>',
-      '<public>false</public>',
-      '<roles/>',
-      '<script>' + cdata(parts.serverScript) + '</script>',
-      '<servicenow>false</servicenow>',
-      '<sys_class_name>sp_widget</sys_class_name>',
-      '<sys_id>' + ids.widget + '</sys_id>',
-      '<sys_name>' + esc(manifest.appName) + '</sys_name>',
-      scopeTag,
-      '<sys_update_name>sp_widget_' + ids.widget + '</sys_update_name>',
-      '<template>' + cdata(parts.template) + '</template>',
-      '</sp_widget>',
-    ].join('\n');
-  }
-
-  // <roles> on the page is what actually gates it (server-side, before the page ever renders); a
-  // manifest without features.roles ships this blank, same as before.
-  function buildPageTreeRecords(manifest, ids, scopeTag) {
+    // Page tree. <roles> on the page is what actually gates it (server-side, before the page ever
+    // renders); a manifest without features.roles ships this blank, same as before.
     var pageId = manifest.scope + '_page';
     var pageRolesTag = (manifest.features && manifest.features.roles) ? ids.userRole : '';
-    var pageRec = [
-      '<sp_page action="INSERT_OR_UPDATE">',
-      '<category>custom</category>',
-      '<id>' + pageId + '</id>',
-      '<internal>false</internal>',
-      '<roles>' + pageRolesTag + '</roles>',
-      '<short_description>' + esc(manifest.appName) + ' page</short_description>',
-      '<sys_id>' + ids.page + '</sys_id>',
-      '<sys_name>' + esc(manifest.appName) + '</sys_name>',
-      scopeTag,
-      '<sys_update_name>sp_page_' + ids.page + '</sys_update_name>',
-      '<title>' + esc(manifest.appName) + '</title>',
-      '</sp_page>',
-    ].join('\n');
-    var containerRec = [
-      '<sp_container action="INSERT_OR_UPDATE">',
-      '<bootstrap_alt>false</bootstrap_alt>',
-      '<name>' + esc(manifest.appName) + '</name>',
-      '<order>100</order>',
-      '<sp_page>' + ids.page + '</sp_page>',
-      '<sys_id>' + ids.container + '</sys_id>',
-      scopeTag,
-      '<sys_update_name>sp_container_' + ids.container + '</sys_update_name>',
-      '<width>container-fluid</width>',
-      '</sp_container>',
-    ].join('\n');
-    var rowRec = [
-      '<sp_row action="INSERT_OR_UPDATE">',
-      '<order>100</order>',
-      '<sp_container>' + ids.container + '</sp_container>',
-      '<sys_id>' + ids.row + '</sys_id>',
-      scopeTag,
-      '<sys_update_name>sp_row_' + ids.row + '</sys_update_name>',
-      '</sp_row>',
-    ].join('\n');
-    var columnRec = [
-      '<sp_column action="INSERT_OR_UPDATE">',
-      '<order>100</order>',
-      '<size>12</size>',
-      '<sp_row>' + ids.row + '</sp_row>',
-      '<sys_id>' + ids.column + '</sys_id>',
-      scopeTag,
-      '<sys_update_name>sp_column_' + ids.column + '</sys_update_name>',
-      '</sp_column>',
-    ].join('\n');
-    return { pageRec: pageRec, containerRec: containerRec, rowRec: rowRec, columnRec: columnRec };
+    records.push({ table: 'sp_page', sysId: ids.page, key: 'page', fields: [
+      { name: 'category', value: 'custom' },
+      { name: 'id', value: pageId },
+      { name: 'internal', value: false },
+      { name: 'roles', value: pageRolesTag },
+      { name: 'short_description', value: manifest.appName + ' page' },
+      { name: 'sys_id', value: ids.page, xmlOnly: true },
+      { name: 'sys_name', value: manifest.appName, xmlOnly: true },
+      SC,
+      { name: 'sys_update_name', value: 'sp_page_' + ids.page, xmlOnly: true },
+      { name: 'title', value: manifest.appName },
+    ] });
+    records.push({ table: 'sp_container', sysId: ids.container, key: 'container', fields: [
+      { name: 'bootstrap_alt', value: 'false' },
+      { name: 'name', value: manifest.appName },
+      { name: 'order', value: '100' },
+      { name: 'sp_page', value: ids.page },
+      { name: 'sys_id', value: ids.container, xmlOnly: true },
+      SC,
+      { name: 'sys_update_name', value: 'sp_container_' + ids.container, xmlOnly: true },
+      { name: 'width', value: 'container-fluid' },
+    ] });
+    records.push({ table: 'sp_row', sysId: ids.row, key: 'row', fields: [
+      { name: 'order', value: '100' },
+      { name: 'sp_container', value: ids.container },
+      { name: 'sys_id', value: ids.row, xmlOnly: true },
+      SC,
+      { name: 'sys_update_name', value: 'sp_row_' + ids.row, xmlOnly: true },
+    ] });
+    records.push({ table: 'sp_column', sysId: ids.column, key: 'column', fields: [
+      { name: 'order', value: '100' },
+      { name: 'size', value: '12' },
+      { name: 'sp_row', value: ids.row },
+      { name: 'sys_id', value: ids.column, xmlOnly: true },
+      SC,
+      { name: 'sys_update_name', value: 'sp_column_' + ids.column, xmlOnly: true },
+    ] });
+
+    // Angular providers - one per manifest.providers entry, using the ALREADY-EXTRACTED/formatted
+    // script from parts.providers (buildParts ran extraction earlier). Then dev-harness-only stub
+    // providers (empty factories) - see the original buildStubProviderRecord's doc comment for why
+    // these exist: a controller still injects them behind an ng-if the deployed widget never
+    // satisfies, so the injector needs a real registration to resolve.
+    (parts.providers || []).forEach(function (p) {
+      var sysId = stableSysId(manifest.sysIdPrefix, p.name);
+      records.push({ table: 'sp_angular_provider', sysId: sysId, key: p.name, fields: [
+        { name: 'active', value: true },
+        { name: 'name', value: p.name },
+        { name: 'type', value: p.type },
+        { name: 'script', value: p.script, cdata: true },
+        { name: 'sys_id', value: sysId, xmlOnly: true },
+        { name: 'sys_name', value: p.name, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sp_angular_provider_' + sysId, xmlOnly: true },
+      ] });
+    });
+    (manifest.stubProviders || []).forEach(function (name) {
+      var sysId = stableSysId(manifest.sysIdPrefix, name);
+      // Body-only, matching every real provider's `script` field convention (extractProviderBody
+      // strips the angular.module(...).factory(...) wrapper for those - SP registers the record
+      // from its own name/type fields, so `script` is just the factory definition itself).
+      var stub = "[function () {\n" +
+        "  /* Dev-harness-only stub - the real " + name + " ships only in the dev harness. */\n" +
+        "  return {};\n}]";
+      records.push({ table: 'sp_angular_provider', sysId: sysId, key: name, fields: [
+        { name: 'active', value: true },
+        { name: 'name', value: name },
+        { name: 'type', value: 'service' },
+        { name: 'script', value: stub, cdata: true },
+        { name: 'sys_id', value: sysId, xmlOnly: true },
+        { name: 'sys_name', value: name, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sp_angular_provider_' + sysId, xmlOnly: true },
+      ] });
+    });
+
+    // The widget.
+    var widgetId = manifest.scope + '_widget';
+    records.push({ table: 'sp_widget', sysId: ids.widget, key: 'widget', fields: [
+      { name: 'category', value: 'custom' },
+      { name: 'client_script', value: parts.clientScript, cdata: true },
+      { name: 'controller_as', value: 'vm' },
+      { name: 'css', value: parts.css, cdata: true },
+      { name: 'demo_data', empty: true },
+      { name: 'description', value: manifest.shortDescription || manifest.appName },
+      { name: 'has_preview', value: true },
+      { name: 'id', value: widgetId },
+      { name: 'internal', value: false },
+      { name: 'link', value: parts.link || '', cdata: true },
+      { name: 'name', value: manifest.appName },
+      { name: 'option_schema', empty: true },
+      { name: 'public', value: false },
+      { name: 'roles', empty: true },
+      { name: 'script', value: parts.serverScript, cdata: true },
+      { name: 'servicenow', value: false },
+      { name: 'sys_class_name', value: 'sp_widget', xmlOnly: true },
+      { name: 'sys_id', value: ids.widget, xmlOnly: true },
+      { name: 'sys_name', value: manifest.appName, xmlOnly: true },
+      SC,
+      { name: 'sys_update_name', value: 'sp_widget_' + ids.widget, xmlOnly: true },
+      { name: 'template', value: parts.template, cdata: true },
+    ] });
+
+    records.push({ table: 'sp_instance', sysId: ids.instance, key: 'instance', fields: [
+      { name: 'order', value: 100 },
+      { name: 'sp_column', value: ids.column },
+      { name: 'sp_widget', value: ids.widget },
+      { name: 'sys_class_name', value: 'sp_instance', xmlOnly: true },
+      { name: 'sys_id', value: ids.instance, xmlOnly: true },
+      { name: 'sys_name', value: manifest.appName, xmlOnly: true },
+      SC,
+      { name: 'sys_update_name', value: 'sp_instance_' + ids.instance, xmlOnly: true },
+      { name: 'title', value: manifest.appName },
+    ] });
+
+    records.push({ table: 'sp_portal', sysId: ids.portal, key: 'portal', fields: [
+      { name: 'default', value: false },
+      { name: 'homepage', value: ids.page },
+      { name: 'sys_id', value: ids.portal, xmlOnly: true },
+      { name: 'sys_name', value: manifest.appName, xmlOnly: true },
+      SC,
+      { name: 'sys_update_name', value: 'sp_portal_' + ids.portal, xmlOnly: true },
+      { name: 'theme', value: ids.theme },
+      { name: 'title', value: manifest.appName },
+      { name: 'url_suffix', value: manifest.urlSuffix },
+    ] });
+
+    // Opt-in ACL layer - AFTER everything else (matches the original's non-interleaved order:
+    // every table's ACL record first, then every table's ACL-role record). Scoped to just this
+    // app's own records via a `sys_scope=` condition, so this grant can't reach another scoped
+    // app's records on the same table - additive alongside whatever ACL(s) the target instance
+    // already has (matching ACLs at the same table+operation are OR'd).
+    if (manifest.features && manifest.features.roles) {
+      var r2 = manifest.roles;
+      ACL_TABLES.forEach(function (t) {
+        var aclId = stableSysId(manifest.sysIdPrefix, t + ':acl');
+        records.push({ table: 'sys_security_acl', sysId: aclId, key: 'acl_' + t, fields: [
+          { name: 'active', value: true },
+          { name: 'admin_overrides', value: false },
+          { name: 'condition', value: 'sys_scope=' + ids.app },
+          { name: 'description', value: 'Lets ' + r2.adminRoleName + ' edit ' + t + ' records that belong to this application.' },
+          { name: 'name', value: t },
+          { name: 'operation', value: 'write' },
+          { name: 'sys_id', value: aclId, xmlOnly: true },
+          { name: 'sys_name', value: t + '.write', xmlOnly: true },
+          SC,
+          { name: 'sys_update_name', value: 'sys_security_acl_' + aclId, xmlOnly: true },
+          { name: 'type', value: 'record' },
+        ] });
+      });
+      ACL_TABLES.forEach(function (t) {
+        var aclId = stableSysId(manifest.sysIdPrefix, t + ':acl');
+        var aclRoleId = stableSysId(manifest.sysIdPrefix, t + ':acl_role');
+        records.push({ table: 'sys_security_acl_role', sysId: aclRoleId, key: 'acl_role_' + t, fields: [
+          { name: 'sys_security_acl', value: aclId },
+          { name: 'sys_user_role', value: ids.adminRole },
+          { name: 'sys_id', value: aclRoleId, xmlOnly: true },
+          SC,
+          { name: 'sys_update_name', value: 'sys_security_acl_role_' + aclRoleId, xmlOnly: true },
+        ] });
+      });
+    }
+
+    return { ids: ids, scopeTag: scopeTag, records: records };
   }
 
-  function buildInstanceRecord(manifest, ids, scopeTag) {
-    return [
-      '<sp_instance action="INSERT_OR_UPDATE">',
-      '<order>100</order>',
-      '<sp_column>' + ids.column + '</sp_column>',
-      '<sp_widget>' + ids.widget + '</sp_widget>',
-      '<sys_class_name>sp_instance</sys_class_name>',
-      '<sys_id>' + ids.instance + '</sys_id>',
-      '<sys_name>' + esc(manifest.appName) + '</sys_name>',
-      scopeTag,
-      '<sys_update_name>sp_instance_' + ids.instance + '</sys_update_name>',
-      '<title>' + esc(manifest.appName) + '</title>',
-      '</sp_instance>',
-    ].join('\n');
-  }
-
-  function buildPortalRecord(manifest, ids, scopeTag) {
-    return [
-      '<sp_portal action="INSERT_OR_UPDATE">',
-      '<default>false</default>',
-      '<homepage>' + ids.page + '</homepage>',
-      '<sys_id>' + ids.portal + '</sys_id>',
-      '<sys_name>' + esc(manifest.appName) + '</sys_name>',
-      scopeTag,
-      '<sys_update_name>sp_portal_' + ids.portal + '</sys_update_name>',
-      '<theme>' + ids.theme + '</theme>',
-      '<title>' + esc(manifest.appName) + '</title>',
-      '<url_suffix>' + esc(manifest.urlSuffix) + '</url_suffix>',
-      '</sp_portal>',
-    ].join('\n');
-  }
-
-  /* ---------------------------- opt-in roles/groups/ACL layer ---------------------------- */
-
-  function buildRoleRecord(name, sysId, description, scopeTag) {
-    return [
-      '<sys_user_role action="INSERT_OR_UPDATE">',
-      '<active>true</active>',
-      '<description>' + esc(description) + '</description>',
-      '<name>' + esc(name) + '</name>',
-      '<sys_id>' + sysId + '</sys_id>',
-      '<sys_name>' + esc(name) + '</sys_name>',
-      scopeTag,
-      '<sys_update_name>sys_user_role_' + sysId + '</sys_update_name>',
-      '</sys_user_role>',
-    ].join('\n');
-  }
-  function buildGroupRecord(name, sysId, description, scopeTag) {
-    return [
-      '<sys_user_group action="INSERT_OR_UPDATE">',
-      '<active>true</active>',
-      '<description>' + esc(description) + '</description>',
-      '<name>' + esc(name) + '</name>',
-      '<sys_id>' + sysId + '</sys_id>',
-      '<sys_name>' + esc(name) + '</sys_name>',
-      scopeTag,
-      '<sys_update_name>sys_user_group_' + sysId + '</sys_update_name>',
-      '</sys_user_group>',
-    ].join('\n');
-  }
-  function buildGroupRoleRecord(sysId, groupSysId, roleSysId, scopeTag) {
-    return [
-      '<sys_group_has_role action="INSERT_OR_UPDATE">',
-      '<group>' + groupSysId + '</group>',
-      '<role>' + roleSysId + '</role>',
-      '<sys_id>' + sysId + '</sys_id>',
-      scopeTag,
-      '<sys_update_name>sys_group_has_role_' + sysId + '</sys_update_name>',
-      '</sys_group_has_role>',
-    ].join('\n');
-  }
-  // Scoped to just this app's own records via a `sys_scope=` condition, so this grant can't reach
-  // another scoped app's records on the same table. Additive alongside whatever ACL(s) the target
-  // instance already has on these tables - matching ACLs at the same table+operation are OR'd.
-  function buildAclRecord(table, sysId, appSysId, adminRoleName, scopeTag) {
-    return [
-      '<sys_security_acl action="INSERT_OR_UPDATE">',
-      '<active>true</active>',
-      '<admin_overrides>false</admin_overrides>',
-      '<condition>sys_scope=' + appSysId + '</condition>',
-      '<description>Lets ' + esc(adminRoleName) + ' edit ' + table + ' records that belong to this application.</description>',
-      '<name>' + table + '</name>',
-      '<operation>write</operation>',
-      '<sys_id>' + sysId + '</sys_id>',
-      '<sys_name>' + table + '.write</sys_name>',
-      scopeTag,
-      '<sys_update_name>sys_security_acl_' + sysId + '</sys_update_name>',
-      '<type>record</type>',
-      '</sys_security_acl>',
-    ].join('\n');
-  }
-  function buildAclRoleRecord(sysId, aclSysId, roleSysId, scopeTag) {
-    return [
-      '<sys_security_acl_role action="INSERT_OR_UPDATE">',
-      '<sys_security_acl>' + aclSysId + '</sys_security_acl>',
-      '<sys_user_role>' + roleSysId + '</sys_user_role>',
-      '<sys_id>' + sysId + '</sys_id>',
-      scopeTag,
-      '<sys_update_name>sys_security_acl_role_' + sysId + '</sys_update_name>',
-      '</sys_security_acl_role>',
-    ].join('\n');
-  }
-
-  function buildRolesLayer(manifest, ids, scopeTag) {
-    var r = manifest.roles;
-    var userRoleRec = buildRoleRecord(r.userRoleName, ids.userRole, r.userRoleDescription || ('Can view and use the ' + manifest.appName + ' tool.'), scopeTag);
-    var adminRoleRec = buildRoleRecord(r.adminRoleName, ids.adminRole, r.adminRoleDescription || ("Can edit " + manifest.appName + "'s own application records (widget, page, theme, layout)."), scopeTag);
-    var userGroupRec = buildGroupRecord(r.userGroupName, ids.userGroup, r.userGroupDescription || ('Members can view and use the ' + manifest.appName + ' tool.'), scopeTag);
-    var adminGroupRec = buildGroupRecord(r.adminGroupName, ids.adminGroup, r.adminGroupDescription || ('Members can edit the ' + manifest.appName + ' application.'), scopeTag);
-    var userGroupRoleRec = buildGroupRoleRecord(ids.userGroupRole, ids.userGroup, ids.userRole, scopeTag);
-    var adminGroupRoleRec = buildGroupRoleRecord(ids.adminGroupRole, ids.adminGroup, ids.adminRole, scopeTag);
-    var aclRecs = ACL_TABLES.map(function (t) { return buildAclRecord(t, stableSysId(manifest.sysIdPrefix, t + ':acl'), ids.app, r.adminRoleName, scopeTag); });
-    var aclRoleRecs = ACL_TABLES.map(function (t) { return buildAclRoleRecord(stableSysId(manifest.sysIdPrefix, t + ':acl_role'), stableSysId(manifest.sysIdPrefix, t + ':acl'), ids.adminRole, scopeTag); });
-    return {
-      before: [userRoleRec, adminRoleRec, userGroupRec, adminGroupRec, userGroupRoleRec, adminGroupRoleRec],
-      after: aclRecs.concat(aclRoleRecs),
-    };
+  // Renders one record as an XML block: CDATA-wraps `cdata` fields, self-closes `empty` fields,
+  // inserts the record model's precomputed <sys_scope> tag for `scopeTag` fields, and esc()'s
+  // everything else. Field ORDER comes straight from the model, so this reproduces exactly what
+  // the old per-table builder functions emitted.
+  function renderXmlRecord(rec, scopeTag) {
+    var lines = ['<' + rec.table + ' action="INSERT_OR_UPDATE">'];
+    rec.fields.forEach(function (f) {
+      if (f.scopeTag) { lines.push(scopeTag); return; }
+      if (f.empty) { lines.push('<' + f.name + '/>'); return; }
+      var content = f.cdata ? cdata(f.value) : esc(f.value);
+      lines.push('<' + f.name + '>' + content + '</' + f.name + '>');
+    });
+    lines.push('</' + rec.table + '>');
+    return lines.join('\n');
   }
 
   /* ==================================================================================
-     Top-level assembly. `opts.stamp` is required - this file never calls Date() itself (so the
-     same manifest + same parts always produce byte-identical XML unless a host deliberately wants
-     a fresh wall-clock stamp).
+     Top-level XML assembly. `opts.stamp` is required - this file never calls Date() itself (so
+     the same manifest + same parts always produce byte-identical XML unless a host deliberately
+     wants a fresh wall-clock stamp).
      ================================================================================== */
 
   function assembleXml(manifest, parts, opts) {
-    var ids = deriveSysIds(manifest);
     var stamp = (opts && opts.stamp) || '';
-    var scopeTag = '<sys_scope display_value="' + esc(manifest.appName).replace(/"/g, '&quot;') + '">' + ids.app + '</sys_scope>';
-
-    var providerRecs = parts.providers.map(function (p) {
-      return buildProviderRecord(p, p.script, stableSysId(manifest.sysIdPrefix, p.name), scopeTag);
-    }).concat((manifest.stubProviders || []).map(function (name) {
-      return buildStubProviderRecord(manifest.angularModuleName, name, stableSysId(manifest.sysIdPrefix, name), scopeTag);
-    }));
-
-    var pageTree = buildPageTreeRecords(manifest, ids, scopeTag);
-    var appRec = buildAppRecord(manifest, ids, scopeTag);
-    var themeRec = buildThemeRecord(manifest, ids, scopeTag);
-    var widgetRec = buildWidgetRecord(manifest, ids, parts, scopeTag);
-    var instanceRec = buildInstanceRecord(manifest, ids, scopeTag);
-    var portalRec = buildPortalRecord(manifest, ids, scopeTag);
-
-    var rolesLayer = (manifest.features && manifest.features.roles) ? buildRolesLayer(manifest, ids, scopeTag) : { before: [], after: [] };
-
-    return [
-      '<?xml version="1.0" encoding="UTF-8"?>',
-      '<unload unload_date="' + esc(stamp) + '">',
-      appRec,
-    ].concat(rolesLayer.before).concat([
-      themeRec,
-      pageTree.pageRec,
-      pageTree.containerRec,
-      pageTree.rowRec,
-      pageTree.columnRec,
-    ]).concat(providerRecs).concat([
-      widgetRec,
-      instanceRec,
-      portalRec,
-    ]).concat(rolesLayer.after).concat([
-      '</unload>',
-    ]).join('\n');
+    var model = buildRecordModel(manifest, parts);
+    var body = model.records.map(function (r) { return renderXmlRecord(r, model.scopeTag); });
+    return ['<?xml version="1.0" encoding="UTF-8"?>', '<unload unload_date="' + esc(stamp) + '">']
+      .concat(body).concat(['</unload>']).join('\n');
   }
 
   return {
@@ -724,12 +719,10 @@
     // sys_id / scope
     stableSysId: stableSysId, deriveSysIds: deriveSysIds,
     deriveScope: deriveScope, scopeSlug: scopeSlug, deriveVendorPrefix: deriveVendorPrefix, SCOPE_MAX: SCOPE_MAX,
-    // assembly
-    buildParts: buildParts, assembleXml: assembleXml,
-    // individual record builders (exposed for hosts that want to inspect/override a single piece)
-    buildAppRecord: buildAppRecord, buildThemeRecord: buildThemeRecord, buildProviderRecord: buildProviderRecord,
-    buildStubProviderRecord: buildStubProviderRecord, buildWidgetRecord: buildWidgetRecord,
-    buildPageTreeRecords: buildPageTreeRecords, buildInstanceRecord: buildInstanceRecord, buildPortalRecord: buildPortalRecord,
+    // assembly - buildRecordModel is the shared source of truth both assembleXml (below) and
+    // snpackager.fluent.js's assembleFluent consume; renderXmlRecord is exposed for hosts that
+    // want to inspect/override a single record's XML.
+    buildParts: buildParts, buildRecordModel: buildRecordModel, renderXmlRecord: renderXmlRecord, assembleXml: assembleXml,
     ACL_TABLES: ACL_TABLES,
   };
 });

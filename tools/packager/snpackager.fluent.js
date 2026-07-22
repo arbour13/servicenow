@@ -5,20 +5,21 @@
    the core - it takes the already-extracted `parts` (from core.buildParts) plus the manifest, and
    returns data. No fetch, no fs, no zip here.
 
-   WHAT MAPS TO WHAT (verified against ServiceNow/sdk-examples' service-portal-sample, 2026-07):
-   - The widget and each Angular provider use Fluent's TYPED APIs (SPWidget / SPAngularProvider from
-     '@servicenow/sdk/core'). SPWidget maps almost 1:1 onto core.buildParts's output; its template/
-     css/client/server are external files pulled via Now.include('<file>') (relative to the .now.ts).
-   - Everything else - the sp_page/container/row/column/instance page tree, sp_portal, sp_theme, and
-     the optional roles/groups/ACL layer - has no typed Fluent API in the SDK, so it's emitted via
-     the GENERIC Record({ $id, table, data }) API, exactly as the official sample does for its own
-     page tree and portal. Reference fields carry the concrete sys_id string of the referenced
-     record (whose own $id key resolves to that same sys_id via generated/keys.ts).
+   Both output targets walk the SAME shared record model (core.buildRecordModel) - see that
+   function's doc comment in snpackager.core.js for the field shape. This file's only job is
+   deciding HOW to render each record as Fluent: `sp_widget`/`sp_angular_provider` use Fluent's
+   TYPED APIs (SPWidget/SPAngularProvider from '@servicenow/sdk/core'), with every `cdata`-flagged
+   field becoming an external file pulled in via Now.include(); everything else has no typed Fluent
+   API, so it's emitted via the GENERIC Record({ $id, table, data }) API, exactly as
+   ServiceNow/sdk-examples' service-portal-sample does for its own page tree and portal (verified
+   2026-07). `xmlOnly`/`scopeTag`/`empty`-flagged fields are XML-only bookkeeping and are skipped
+   here - Fluent identity comes from Now.ID + generated/keys.ts instead. The `sys_app` record has
+   no Fluent Record() equivalent at all (an app's identity is its now.config.json, not metadata),
+   so it's skipped entirely - its sys_id still becomes now.config.json's scopeId.
 
-   IDENTITY: every record's sys_id comes from the SAME core.deriveSysIds()/stableSysId() the XML
-   path uses, so a Fluent-installed app and an XML-installed app are the same records - re-importing
-   one over the other updates in place instead of duplicating. generated/keys.ts pins each Now.ID
-   key to its {table, id:<that sys_id>}.
+   IDENTITY: every record's sys_id comes from the model's core.deriveSysIds()/stableSysId() (the
+   SAME ids the XML path uses), so a Fluent-installed app and an XML-installed app are the same
+   records - re-importing one over the other updates in place instead of duplicating.
 
    The controller uses `vm` (SPWidget's controllerAs default is 'c', so we set it explicitly). We do
    NOT list angularProviders on the widget: providers deploy as their own sp_angular_provider records
@@ -44,6 +45,23 @@
     return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'app';
   }
 
+  function fieldValue(rec, name) {
+    for (var i = 0; i < rec.fields.length; i++) { if (rec.fields[i].name === name) { return rec.fields[i].value; } }
+    return undefined;
+  }
+
+  // The "real" fields a generic Record() carries - everything except XML-only bookkeeping
+  // (sys_id/sys_name/sys_scope/sys_update_name/sys_class_name via `xmlOnly`/`scopeTag`) and the
+  // self-closing `empty` tags (sp_widget-only, handled by the typed-widget branch instead).
+  function businessData(rec) {
+    var data = {};
+    rec.fields.forEach(function (f) {
+      if (f.xmlOnly || f.scopeTag || f.empty) { return; }
+      data[f.name] = f.value;
+    });
+    return data;
+  }
+
   // Renders a generic Record({ $id, table, data }) block. `data` is a plain object of SHORT scalar
   // fields (strings/bools/numbers) - long content (scripts/templates/css) never goes here, it goes
   // to external files referenced from the typed SPWidget/SPAngularProvider instead.
@@ -57,6 +75,12 @@
       ",\n    data: {\n" + lines.join('\n') + "\n    },\n})";
   }
 
+  // Which generated file a generic-Record table's declaration lands in - purely a file-layout
+  // grouping (readability), not a Fluent requirement. Anything not listed here (the roles/groups/
+  // ACL tables) falls into the roles file.
+  var PAGE_TABLES = { sp_page: 1, sp_container: 1, sp_row: 1, sp_column: 1, sp_instance: 1 };
+  var PORTAL_TABLES = { sp_theme: 1, sp_portal: 1 };
+
   /* ==================================================================================
      assembleFluent(manifest, parts, opts) -> { 'relative/path': 'file contents', ... }
      opts.mode: 'project' (default) emits a full runnable Now SDK project (package.json,
@@ -66,116 +90,88 @@
   function assembleFluent(manifest, parts, opts) {
     opts = opts || {};
     var mode = opts.mode === 'files' ? 'files' : 'project';
-    var ids = core.deriveSysIds(manifest);
     var slug = slugify(manifest.appName);
+    var model = core.buildRecordModel(manifest, parts);
     var files = {};
     var keyRegistry = []; // { key, table, id } - drives generated/keys.ts
+    var providerDecls = [];
+    var pageRecs = [];
+    var portalRecs = [];
+    var roleRecs = [];
 
-    function record(key, table, id, data) {
-      keyRegistry.push({ key: key, table: table, id: id });
-      return renderRecord(key, table, data);
-    }
+    model.records.forEach(function (rec) {
+      if (rec.table === 'sys_app') { return; } // identity lives in now.config.json, not a Record
+      keyRegistry.push({ key: rec.key, table: rec.table, id: rec.sysId });
 
-    /* ---- 1. the widget: typed SPWidget + its four external asset files ---- */
-    var widgetId = manifest.scope + '_widget';
-    keyRegistry.push({ key: 'widget', table: 'sp_widget', id: ids.widget });
-    files['src/fluent/widgets/' + slug + '.client.js'] = parts.clientScript;
-    files['src/fluent/widgets/' + slug + '.html'] = parts.template;
-    files['src/fluent/widgets/' + slug + '.scss'] = parts.css;
-    files['src/fluent/widgets/' + slug + '.server.js'] = parts.serverScript;
+      if (rec.table === 'sp_widget') {
+        files['src/fluent/widgets/' + slug + '.client.js'] = fieldValue(rec, 'client_script');
+        files['src/fluent/widgets/' + slug + '.html'] = fieldValue(rec, 'template');
+        files['src/fluent/widgets/' + slug + '.scss'] = fieldValue(rec, 'css');
+        files['src/fluent/widgets/' + slug + '.server.js'] = fieldValue(rec, 'script');
+        var link = fieldValue(rec, 'link');
+        var lines = [
+          "import { SPWidget } from '@servicenow/sdk/core'", '',
+          'SPWidget({',
+          "    $id: Now.ID['widget'],",
+          '    name: ' + jsStr(fieldValue(rec, 'name')) + ',',
+          '    id: ' + jsStr(fieldValue(rec, 'id')) + ',',
+          '    description: ' + jsStr(fieldValue(rec, 'description')) + ',',
+          "    controllerAs: 'vm',",
+          '    hasPreview: true,',
+          "    category: 'custom',",
+          "    clientScript: Now.include('" + slug + ".client.js'),",
+          "    serverScript: Now.include('" + slug + ".server.js'),",
+          "    htmlTemplate: Now.include('" + slug + ".html'),",
+          "    customCss: Now.include('" + slug + ".scss'),",
+        ];
+        if (link) {
+          files['src/fluent/widgets/' + slug + '.link.js'] = link;
+          lines.push("    linkScript: Now.include('" + slug + ".link.js'),");
+        }
+        lines.push('})', '');
+        files['src/fluent/widgets/' + slug + '.now.ts'] = lines.join('\n');
+        return;
+      }
 
-    var widgetTs =
-      "import { SPWidget } from '@servicenow/sdk/core'\n\n" +
-      "SPWidget({\n" +
-      "    $id: Now.ID['widget'],\n" +
-      "    name: " + jsStr(manifest.appName) + ",\n" +
-      "    id: " + jsStr(widgetId) + ",\n" +
-      "    description: " + jsStr(manifest.shortDescription || manifest.appName) + ",\n" +
-      "    controllerAs: 'vm',\n" +
-      "    hasPreview: true,\n" +
-      "    category: 'custom',\n" +
-      "    clientScript: Now.include('" + slug + ".client.js'),\n" +
-      "    serverScript: Now.include('" + slug + ".server.js'),\n" +
-      "    htmlTemplate: Now.include('" + slug + ".html'),\n" +
-      "    customCss: Now.include('" + slug + ".scss'),\n" +
-      (parts.link ? "    linkScript: Now.include('" + slug + ".link.js'),\n" : '') +
-      "})\n";
-    if (parts.link) { files['src/fluent/widgets/' + slug + '.link.js'] = parts.link; }
-    files['src/fluent/widgets/' + slug + '.now.ts'] = widgetTs;
+      if (rec.table === 'sp_angular_provider') {
+        var pname = fieldValue(rec, 'name');
+        var ptype = fieldValue(rec, 'type');
+        files['src/fluent/providers/' + pname + '.js'] = fieldValue(rec, 'script');
+        providerDecls.push(
+          "SPAngularProvider({\n" +
+          "    $id: Now.ID[" + jsStr(pname) + "],\n" +
+          "    name: " + jsStr(pname) + ",\n" +
+          "    type: " + jsStr(ptype === 'directive' ? 'directive' : 'service') + ",\n" +
+          "    script: Now.include(" + jsStr(pname + '.js') + "),\n" +
+          "})"
+        );
+        return;
+      }
 
-    /* ---- 2. Angular providers: typed SPAngularProvider, each script an external file ---- */
-    var providerDecls = (parts.providers || []).map(function (p) {
-      var pid = core.stableSysId(manifest.sysIdPrefix, p.name);
-      keyRegistry.push({ key: p.name, table: 'sp_angular_provider', id: pid });
-      files['src/fluent/providers/' + p.name + '.js'] = p.script;
-      return "SPAngularProvider({\n" +
-        "    $id: Now.ID[" + jsStr(p.name) + "],\n" +
-        "    name: " + jsStr(p.name) + ",\n" +
-        "    type: " + jsStr(p.type === 'directive' ? 'directive' : 'service') + ",\n" +
-        "    script: Now.include(" + jsStr(p.name + '.js') + "),\n" +
-        "})";
+      // Everything else has no typed Fluent API - generic Record(), grouped into a file by table.
+      var rendered = renderRecord(rec.key, rec.table, businessData(rec));
+      if (PAGE_TABLES[rec.table]) { pageRecs.push(rendered); }
+      else if (PORTAL_TABLES[rec.table]) { portalRecs.push(rendered); }
+      else { roleRecs.push(rendered); } // sys_user_role/sys_user_group/sys_group_has_role/sys_security_acl*
     });
-    // Dev-harness-only stubs (e.g. Glide Studio's DeployModalService) - a controller still injects
-    // them in the deployed widget behind an ng-if it never satisfies, so the injector needs a real
-    // registration to resolve. Ship an empty factory, same intent as the XML stub.
-    (manifest.stubProviders || []).forEach(function (name) {
-      var sid = core.stableSysId(manifest.sysIdPrefix, name);
-      keyRegistry.push({ key: name, table: 'sp_angular_provider', id: sid });
-      files['src/fluent/providers/' + name + '.js'] = '[function () {\n  /* Dev-harness-only stub - the real ' + name + ' ships only in the dev harness. */\n  return {};\n}]';
-      providerDecls.push("SPAngularProvider({\n" +
-        "    $id: Now.ID[" + jsStr(name) + "],\n" +
-        "    name: " + jsStr(name) + ",\n" +
-        "    type: 'service',\n" +
-        "    script: Now.include(" + jsStr(name + '.js') + "),\n" +
-        "})");
-    });
+
     if (providerDecls.length) {
       files['src/fluent/providers/' + slug + '.providers.now.ts'] =
         "import { SPAngularProvider } from '@servicenow/sdk/core'\n\n" + providerDecls.join('\n\n') + "\n";
     }
-
-    /* ---- 3. page tree (generic Record, exactly like the official sample) ---- */
-    var pageId = manifest.scope + '_page';
-    var pageRecs = [
-      record('page', 'sp_page', ids.page, {
-        category: 'custom', id: pageId, internal: false,
-        title: manifest.appName, short_description: manifest.appName + ' page',
-        roles: (manifest.features && manifest.features.roles) ? ids.userRole : '',
-      }),
-      record('container', 'sp_container', ids.container, {
-        name: manifest.appName, order: '100', sp_page: ids.page, width: 'container-fluid', bootstrap_alt: 'false',
-      }),
-      record('row', 'sp_row', ids.row, { order: '100', sp_container: ids.container }),
-      record('column', 'sp_column', ids.column, { order: '100', size: '12', sp_row: ids.row }),
-      record('instance', 'sp_instance', ids.instance, {
-        order: 100, sp_column: ids.column, sp_widget: ids.widget, title: manifest.appName,
-      }),
-    ];
     files['src/fluent/page/' + slug + '.page.now.ts'] =
       "import { Record } from '@servicenow/sdk/core'\n\n" + pageRecs.join('\n\n') + "\n";
-
-    /* ---- 4. theme + portal (generic Record) ---- */
-    var portalRecs = [
-      record('theme', 'sp_theme', ids.theme, { name: manifest.appName + ' Theme', navbar_fixed: true }),
-      record('portal', 'sp_portal', ids.portal, {
-        title: manifest.appName, url_suffix: manifest.urlSuffix,
-        homepage: ids.page, theme: ids.theme, 'default': false,
-      }),
-    ];
     files['src/fluent/portal/' + slug + '.portal.now.ts'] =
       "import { Record } from '@servicenow/sdk/core'\n\n" + portalRecs.join('\n\n') + "\n";
-
-    /* ---- 5. optional roles / groups / ACL layer (generic Record) ---- */
-    if (manifest.features && manifest.features.roles) {
+    if (roleRecs.length) {
       files['src/fluent/roles/' + slug + '.roles.now.ts'] =
-        "import { Record } from '@servicenow/sdk/core'\n\n" + buildRolesRecords(manifest, ids, record).join('\n\n') + "\n";
+        "import { Record } from '@servicenow/sdk/core'\n\n" + roleRecs.join('\n\n') + "\n";
     }
 
-    /* ---- 6. project scaffolding (full-project mode only) ---- */
     if (mode === 'project') {
       files['src/fluent/generated/keys.ts'] = renderKeys(keyRegistry);
       files['now.config.json'] = JSON.stringify({
-        scope: manifest.scope, scopeId: ids.app, name: manifest.appName,
+        scope: manifest.scope, scopeId: model.ids.app, name: manifest.appName,
       }, null, 4) + '\n';
       var ver = opts.sdkVersion || 'latest';
       files['package.json'] = JSON.stringify({
@@ -189,46 +185,6 @@
     }
 
     return files;
-  }
-
-  // The roles/groups/ACL layer as generic Records - mirrors snpackager.core.js's buildRolesLayer
-  // field-for-field (there is no typed Fluent Role/Group/ACL path we rely on here; generic Record
-  // is guaranteed-correct and matches how the sample handles untyped tables).
-  function buildRolesRecords(manifest, ids, record) {
-    var r = manifest.roles;
-    var recs = [
-      record('user_role', 'sys_user_role', ids.userRole, {
-        name: r.userRoleName, active: true,
-        description: r.userRoleDescription || ('Can view and use the ' + manifest.appName + ' tool.'),
-      }),
-      record('admin_role', 'sys_user_role', ids.adminRole, {
-        name: r.adminRoleName, active: true,
-        description: r.adminRoleDescription || ("Can edit " + manifest.appName + "'s own application records (widget, page, theme, layout)."),
-      }),
-      record('user_group', 'sys_user_group', ids.userGroup, {
-        name: r.userGroupName, active: true,
-        description: r.userGroupDescription || ('Members can view and use the ' + manifest.appName + ' tool.'),
-      }),
-      record('admin_group', 'sys_user_group', ids.adminGroup, {
-        name: r.adminGroupName, active: true,
-        description: r.adminGroupDescription || ('Members can edit the ' + manifest.appName + ' application.'),
-      }),
-      record('user_group_role', 'sys_group_has_role', ids.userGroupRole, { group: ids.userGroup, role: ids.userRole }),
-      record('admin_group_role', 'sys_group_has_role', ids.adminGroupRole, { group: ids.adminGroup, role: ids.adminRole }),
-    ];
-    core.ACL_TABLES.forEach(function (t) {
-      var aclId = core.stableSysId(manifest.sysIdPrefix, t + ':acl');
-      var aclRoleId = core.stableSysId(manifest.sysIdPrefix, t + ':acl_role');
-      recs.push(record('acl_' + t, 'sys_security_acl', aclId, {
-        name: t, operation: 'write', type: 'record', active: true, admin_overrides: false,
-        condition: 'sys_scope=' + ids.app,
-        description: 'Lets ' + r.adminRoleName + ' edit ' + t + ' records that belong to this application.',
-      }));
-      recs.push(record('acl_role_' + t, 'sys_security_acl_role', aclRoleId, {
-        sys_security_acl: aclId, sys_user_role: ids.adminRole,
-      }));
-    });
-    return recs;
   }
 
   // generated/keys.ts - pins every Now.ID key to its {table, id}, so references (which carry the

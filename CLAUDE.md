@@ -56,13 +56,18 @@ hand-roll the XML-assembly/extraction logic.** Use `tools/packager/`:
   wiring a new app. If the core lacks something (a new record type, extraction case), extend the
   core — don't duplicate its logic locally.
 
-**Two output targets, same extraction.** `buildParts()` feeds either serializer:
-`assembleXml` (Update Set `<unload>`) or `snpackager.fluent.js`'s `assembleFluent` (a
-**ServiceNow Fluent / Now SDK** TypeScript project as a file-map — typed `SPWidget`/`SPAngularProvider`
-+ generic `Record()` for the page/portal/roles, identity shared with the XML path). The deploy console
-offers both (XML tabs, or a Fluent file tree with full-project/files-only + a `.zip` download via the
-dependency-free `snpackager.zip.js`). Live-instance prefix detection is shared as
-`snpackager.browser-connect.js`.
+**Two output targets, one shared record model.** `buildRecordModel(manifest, parts)` is the ONE
+place that knows which records + fields make up a package; `assembleXml` and `snpackager.fluent.js`'s
+`assembleFluent` are both thin emitters that just walk it their own way (XML: CDATA + tags; Fluent:
+typed `SPWidget`/`SPAngularProvider` + generic `Record()` for everything else). A new field on an
+existing record type is a one-place change. Both share sys_id identity, so an XML install and a
+Fluent install describe the same records. The deploy console offers both (XML tabs, or a Fluent file
+tree with full-project/files-only + a `.zip` download via the dependency-free `snpackager.zip.js`,
+which also runs in Node). Live-instance prefix detection is shared as
+`snpackager.browser-connect.js`. `tools/packager/build.js` is a Node CLI that runs the same pipeline
+for any app and writes output straight into that app's own `apps/<app>/deploy/` folder (`node
+tools/packager/build.js <app-folder> [--format=xml|fluent|both]`) — a build lands on disk to commit,
+not just a browser download.
 
 ### How to consume it
 

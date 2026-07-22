@@ -1,0 +1,152 @@
+<div class="gfsp-widget">
+<div class="app" ng-cloak>
+
+  <header class="topbar">
+    <div class="topbar-brand"><span class="topbar-logo" aria-hidden="true">G</span>GlideFast Scripting Standards</div>
+    <button type="button" class="topbar-theme-toggle" ng-click="vm.toggleTheme()"
+            aria-pressed="{{vm.theme === 'dark'}}" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg ng-if="vm.theme === 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      <svg ng-if="vm.theme !== 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </header>
+
+  <div class="builder">
+    <div class="page-title page-title-sticky">
+      <span aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+      <div>
+        <div class="page-title-name">Standards</div>
+        <div class="page-title-sub">GlideFast scripting best practices</div>
+      </div>
+      <!-- Fallback copy of the rail's own search box (see .std-rail below) - the rail hides below
+           1260px, and with no in-page nav at that width search needs somewhere else to live so it
+           never disappears entirely. Hidden via CSS (.std-search-wrap-header, app.scss) whenever
+           the rail's own copy is visible, so exactly one is ever shown; both bind vm.stdQuery so
+           they can never drift out of sync. -->
+      <div class="page-title-actions">
+        <div class="std-search-wrap std-search-wrap-header">
+          <input type="text" class="std-search-input" ng-model="vm.stdQuery" placeholder="Search standards…" aria-label="Search standards">
+          <button type="button" class="std-search-clear" ng-if="vm.stdQuery" ng-click="vm.clearStdSearch()" aria-label="Clear search" title="Clear search">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- The hosted GlideFast standards document (see StandardsService, generated from
+         standards/glidefast-scripting-standards.md). Two columns on wide screens: a sticky rail
+         on the left is the ONE nav for the doc (see main.controller.js's IntersectionObserver
+         setup for vm.activeStdId, which keeps it synced to scroll position), and the reading
+         column stays capped at .std-content's measure (860px) rather than stretching to fill the
+         pane. The rail hides below 1260px; with no in-page nav at that width, the reader falls
+         back to plain scrolling. -->
+    <div class="standards-doc">
+
+      <aside class="std-rail" aria-label="On this page">
+        <!-- Search lives here (not just the header) so it sits with the rail - but the rail itself
+             hides below 1260px (see its own media query at the bottom of app.scss), so this copy
+             would disappear at exactly the width where search is needed most. The header keeps its
+             OWN copy (.std-search-wrap-header, above) as a fallback, shown only when this one is
+             hidden - both bind the same vm.stdQuery, so they can never drift out of sync. -->
+        <div class="std-search-wrap">
+          <input type="text" class="std-search-input" ng-model="vm.stdQuery" placeholder="Search standards…" aria-label="Search standards">
+          <button type="button" class="std-search-clear" ng-if="vm.stdQuery" ng-click="vm.clearStdSearch()" aria-label="Clear search" title="Clear search">✕</button>
+        </div>
+        <button type="button" class="std-rail-overview" ng-class="{active: vm.stdView === 'overview'}" ng-click="vm.showStdOverview()">Overview</button>
+        <!-- Chapters, each expandable to its own sections - the rail stays to "principles and
+             high-level topics" at rest, with sections a click away rather than always-on clutter.
+             Expand/collapse (vm.stdPartExpanded) is driven ONLY by the chevron button below
+             (vm.toggleStdExpand) - clicking the chapter's own name just navigates, same as always,
+             and never touches expand state either way. vm.stdPartHeadingActive lights the
+             chapter's name up only when the reader is at its own heading, not a nested section
+             (that gets its own highlight below, regardless of the chapter's expand state). -->
+        <div class="std-rail-band" ng-repeat="grp in vm.standardsDoc.groups" ng-show="vm.stdGroupVisible(grp)">
+          <button type="button" class="std-rail-band-title" ng-click="vm.openStandard(grp.id)">{{grp.name}}</button>
+          <div class="std-rail-chapter" ng-repeat="part in grp.parts" ng-show="vm.stdPartVisible(part)">
+            <div class="std-rail-part-row">
+              <button type="button" class="std-rail-part"
+                      ng-class="{active: vm.stdPartHeadingActive(part)}"
+                      ng-click="vm.openStandard(part.id)">{{part.title}}</button>
+              <button type="button" class="std-rail-expand" ng-class="{expanded: vm.stdPartExpanded(part)}"
+                      ng-click="vm.toggleStdExpand(part, $event)"
+                      aria-label="{{vm.stdPartExpanded(part) ? 'Collapse' : 'Expand'}} {{part.title}} sections"
+                      aria-expanded="{{vm.stdPartExpanded(part)}}">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2l4 3-4 3"/></svg>
+              </button>
+            </div>
+            <div class="std-rail-sections" ng-if="vm.stdPartExpanded(part)">
+              <button type="button" class="std-rail-section" ng-repeat="section in part.sections" ng-show="vm.stdSectionMatches(section)"
+                      ng-class="{active: vm.activeStdId === section.id}"
+                      ng-click="vm.openStandard(section.id)">{{section.title}}</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="std-doc-main">
+
+        <!-- Overview is a real landing view, not just a scroll position: while active, the whole
+             doc below (every .std-band) is kept OUT of the visible page via .std-reading-hidden
+             (position:absolute + visibility:hidden - see app.scss), never display:none/ng-if -
+             see that class's own comment for the reproduced layout-lag bug that ng-if/display:none
+             both caused. Picking a tile (or any rail link, or an external deep-link - all three
+             route through vm.openStandard) flips vm.stdView to 'reading', which drops the class
+             and lets the content rejoin normal flow at its already-known height. A search query
+             keeps the doc out of .std-reading-hidden regardless of vm.stdView, same as it already
+             forced individual sections visible via ng-show. -->
+        <div class="card" ng-show="vm.stdView === 'overview' || vm.stdQuery">
+          <div class="card-head"><h2>Contents</h2></div>
+          <div class="card-body">
+            <!-- The hub: lead text + every chapter as a clickable tile, grouped by band. Ghost
+                 "Planned" tiles (vm.standardsDoc.groups[].planned - see StandardsUiService) show
+                 chapters that don't exist yet, so a thin band reads as a visible roadmap instead
+                 of just sparse. -->
+            <div ng-if="vm.stdView === 'overview' && !vm.stdQuery">
+              <div class="std-content" ng-bind-html="vm.standardsDoc.lead"></div>
+              <div class="std-hub">
+                <div class="std-hub-band" ng-repeat="grp in vm.standardsDoc.groups">
+                  <h3 class="std-hub-band-title">{{grp.name}}</h3>
+                  <div class="std-hub-grid">
+                    <button type="button" class="std-hub-tile" ng-class="{'std-hub-tile-alt': grp.name !== 'Principles'}" ng-repeat="part in grp.parts" ng-click="vm.openStandard(part.id)">
+                      <span class="ic">
+                        <svg ng-if="grp.name === 'Principles'" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="7"/><path d="M6 9.2l2 2 4-4.4"/></svg>
+                        <svg ng-if="grp.name !== 'Principles'" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L2 6.5l7 4.5 7-4.5L9 2z"/><path d="M2.5 9.5L9 13.5l6.5-4"/></svg>
+                      </span>
+                      <span class="t">{{part.title}}</span>
+                      <span class="meta">{{part.sections.length}} section<span ng-if="part.sections.length !== 1">s</span></span>
+                    </button>
+                    <div class="std-hub-tile ghost" ng-class="{'std-hub-tile-alt': grp.name !== 'Principles'}" ng-repeat="p in grp.planned">
+                      <span class="ic">
+                        <svg ng-if="grp.name === 'Principles'" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="7"/><path d="M6 9.2l2 2 4-4.4"/></svg>
+                        <svg ng-if="grp.name !== 'Principles'" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L2 6.5l7 4.5 7-4.5L9 2z"/><path d="M2.5 9.5L9 13.5l6.5-4"/></svg>
+                      </span>
+                      <span class="t">{{p}}</span>
+                      <span class="badge">Planned</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div ng-if="vm.stdQuery">
+              <p class="empty" ng-if="!vm.stdHasMatches()">No matching sections for "{{vm.stdQuery}}".</p>
+              <p class="hint" ng-if="vm.stdHasMatches()">Showing sections matching "{{vm.stdQuery}}". <button type="button" class="std-link" ng-click="vm.clearStdSearch()">Clear search</button></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="std-band" ng-repeat="grp in vm.standardsDoc.groups" ng-show="vm.stdGroupVisible(grp)"
+             ng-class="{'std-reading-hidden': vm.stdView !== 'reading' && !vm.stdQuery}">
+          <h2 class="std-band-heading" id="std-{{grp.id}}">{{grp.name}}</h2>
+          <div class="card" ng-repeat="part in grp.parts" ng-show="vm.stdPartVisible(part)">
+            <div class="card-head"><h2 id="std-{{part.id}}">{{part.title}}</h2></div>
+            <div class="card-body std-content">
+              <div ng-bind-html="part.lead"></div>
+              <div ng-repeat="section in part.sections" ng-show="vm.stdSectionMatches(section)" ng-bind-html="section.html"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div>

@@ -1,0 +1,16 @@
+{
+    "name": "core",
+    "version": "1.0.0",
+    "description": "Core - shared foundation app: reusable AngularJS providers and a generic documentation/wiki widget for the ServiceNow app suite.",
+    "license": "UNLICENSED",
+    "scripts": {
+        "build": "now-sdk build",
+        "deploy": "now-sdk install",
+        "transform": "now-sdk transform",
+        "types": "now-sdk dependencies"
+    },
+    "devDependencies": {
+        "@servicenow/sdk": "latest",
+        "@servicenow/glide": "latest"
+    }
+}

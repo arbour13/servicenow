@@ -1,15 +1,24 @@
 /* Dependency-free ZIP writer - takes a file-map ({ 'path': 'text contents' }) and returns a Blob of
    a valid .zip. STORE method only (no compression): the deploy console's payloads are small text
    files (a Now SDK project), so DEFLATE would add a lot of code for little benefit; a store-only
-   archive is a few dozen lines and every unzip tool reads it. Browser-only (uses Blob), build-time
-   tooling - never shipped into a widget. Exposes window.SNPackager.zip.
+   archive is a few dozen lines and every unzip tool reads it. Build-time tooling - never shipped
+   into a widget. Runs in a browser (window.SNPackager.zip) AND in Node (module.exports, e.g.
+   build.js's CLI) - both have global Blob/TextEncoder/Uint32Array, same UMD pattern as
+   snpackager.core.js.
 
    Format: for each entry a local-file-header + name + raw bytes, then a central-directory header
    per entry, then the end-of-central-directory record. CRC-32 (the one non-trivial bit) is a
    standard table-driven implementation. Text is encoded UTF-8; filenames too. */
-(function (root) {
+(function (root, factory) {
   'use strict';
-  root.SNPackager = root.SNPackager || {};
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.SNPackager = root.SNPackager || {};
+    root.SNPackager.zip = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
 
   var CRC_TABLE = (function () {
     var table = new Uint32Array(256);
@@ -103,5 +112,5 @@
     return new Blob([new Uint8Array(local), new Uint8Array(central), new Uint8Array(end)], { type: 'application/zip' });
   }
 
-  root.SNPackager.zip = { zip: zip, crc32: crc32 };
-})(typeof self !== 'undefined' ? self : this);
+  return { zip: zip, crc32: crc32 };
+});
