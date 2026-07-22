@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SCSS Mixin Generator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f6f8fa; color: #24292f;
+      height: 100vh; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────────── */
+    .app-header {
+      height: 52px; background: #fff; border-bottom: 1px solid #d0d7de;
+      display: flex; align-items: center; padding: 0 20px; gap: 12px; flex-shrink: 0;
+    }
+    .app-header__logo {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: linear-gradient(135deg, #5a4fcf, #3b31a8); flex-shrink: 0;
+    }
+    .app-header__name  { font-size: 15px; font-weight: 600; color: #24292f; }
+    .app-header__tagline { font-size: 13px; color: #6e7781; }
+
+    /* ── Layout ──────────────────────────────────────────────────────────── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Left panel ──────────────────────────────────────────────────────── */
+    .panel {
+      width: 320px; min-width: 0; background: #fff;
+      overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;
+    }
+    .panel::-webkit-scrollbar { width: 5px; }
+    .panel::-webkit-scrollbar-track { background: transparent; }
+    .panel::-webkit-scrollbar-thumb { background: #d0d7de; border-radius: 3px; }
+
+    /* ── Panel resizer ───────────────────────────────────────────────────── */
+    .panel__resizer {
+      width: 5px; flex-shrink: 0;
+      background: #d0d7de; cursor: col-resize; position: relative;
+      transition: background .15s;
+    }
+    .panel__resizer:hover, .panel__resizer--dragging { background: #0969da; }
+    .panel__toggle {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      right: -13px; z-index: 20;
+      width: 18px; height: 32px;
+      background: #fff; border: 1px solid #d0d7de; border-left: none;
+      border-radius: 0 6px 6px 0;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #57606a; padding: 0; font-family: inherit;
+      box-shadow: 2px 0 4px rgba(0,0,0,.07);
+      transition: background .1s, color .1s;
+    }
+    .panel__toggle:hover { background: #f6f8fa; color: #24292f; }
+
+    /* ── Component selector ─────────────────────────────────────────────── */
+    .component-selector { padding: 12px 16px; border-bottom: 1px solid #d0d7de; }
+    .component-selector__label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: #6e7781; margin-bottom: 8px;
+    }
+    .component-selector__group {
+      display: flex; background: #f6f8fa;
+      border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden;
+    }
+    .component-selector__btn {
+      flex: 1; padding: 7px 10px; font-size: 12px;
+      background: none; border: none; color: #57606a;
+      cursor: pointer; transition: all .15s; font-family: inherit; text-align: center;
+    }
+    .component-selector__btn--active { background: #5a4fcf; color: #fff; font-weight: 500; }
+    .component-selector__btn--soon { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Collapsible sections ────────────────────────────────────────────── */
+    .main-section { border-bottom: 1px solid #d0d7de; }
+    .main-section__header {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 7px 16px;
+      background: #f6f8fa; border: none; cursor: pointer;
+      font-size: 10px; font-weight: 700; font-family: inherit;
+      color: #57606a; text-transform: uppercase; letter-spacing: 0.09em;
+      text-align: left; transition: background .15s, color .15s;
+    }
+    .main-section__header:hover { background: #eaeef2; color: #24292f; }
+    .main-section__chevron {
+      font-size: 9px; color: currentColor; line-height: 1;
+      transition: transform 0.2s ease; display: inline-block;
+    }
+    .main-section--collapsed .main-section__chevron { transform: rotate(-90deg); }
+    .main-section__body {
+      display: grid; grid-template-rows: 1fr;
+      transition: grid-template-rows 0.25s ease;
+    }
+    .main-section--collapsed .main-section__body { grid-template-rows: 0fr; }
+    .main-section__body-inner { overflow: hidden; }
+    .section-body { padding: 10px 16px; }
+
+    /* ── Fields ──────────────────────────────────────────────────────────── */
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+    .field__label { display: block; font-size: 12px; color: #57606a; margin-bottom: 4px; }
+    .field__input {
+      width: 100%; background: #fff; border: 1px solid #d0d7de; border-radius: 6px;
+      color: #24292f; font-size: 13px; padding: 6px 10px; outline: none; font-family: inherit;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .field__input:focus { border-color: #5a4fcf; box-shadow: 0 0 0 3px rgba(90,79,207,.12); }
+
+    /* ── Color rows ──────────────────────────────────────────────────────── */
+    .color-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+    .color-row + .color-row { border-top: 1px solid #f0f2f4; }
+    .color-row__swatch {
+      width: 36px; height: 36px; border-radius: 7px; flex-shrink: 0;
+      border: 1px solid rgba(0,0,0,.1); cursor: pointer;
+      transition: transform .1s, box-shadow .15s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    .color-row__swatch:hover { transform: scale(1.08); box-shadow: 0 3px 10px rgba(0,0,0,.18); }
+    .color-row__meta { flex: 1; min-width: 0; }
+    .color-row__label { font-size: 12px; color: #24292f; font-weight: 500; line-height: 1.2; }
+    .color-row__sublabel { font-size: 10px; color: #6e7781; margin-top: 2px; font-family: 'SF Mono','Consolas',monospace; }
+
+    /* ── Sliders ─────────────────────────────────────────────────────────── */
+    .slider { display: flex; align-items: center; gap: 10px; padding: 2px 0; }
+    .slider__input { flex: 1; accent-color: #5a4fcf; cursor: pointer; }
+    .slider__value {
+      font-size: 11px; color: #24292f; font-family: 'SF Mono','Consolas',monospace;
+      min-width: 42px; text-align: right;
+    }
+
+    /* ── Segmented controls ──────────────────────────────────────────────── */
+    .seg-control {
+      display: flex; background: #f6f8fa;
+      border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden;
+    }
+    .seg-control__btn {
+      flex: 1; padding: 5px 4px; font-size: 11px;
+      background: none; border: none; color: #57606a;
+      cursor: pointer; transition: all .15s; font-family: inherit; text-align: center;
+    }
+    .seg-control__btn--active { background: #5a4fcf; color: #fff; font-weight: 500; }
+
+    /* ── Custom parameters ───────────────────────────────────────────────── */
+    .custom-params-header {
+      display: grid; grid-template-columns: 1fr 1fr auto;
+      gap: 6px; padding-bottom: 4px;
+    }
+    .custom-params-col-label {
+      font-size: 10px; color: #8c959f; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .custom-param-row {
+      display: grid; grid-template-columns: 1fr 1fr auto;
+      gap: 6px; align-items: center; padding: 5px 0;
+    }
+    .custom-param-row + .custom-param-row { border-top: 1px solid #f0f2f4; }
+    .custom-param__input {
+      background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 5px;
+      color: #24292f; font-size: 11px; font-family: 'SF Mono','Consolas',monospace;
+      padding: 4px 7px; outline: none; width: 100%;
+      transition: border-color .15s;
+    }
+    .custom-param__input:focus { border-color: #5a4fcf; background: #fff; }
+    .custom-param__input::placeholder { color: #a8b0b9; }
+    .custom-param__remove {
+      width: 22px; height: 22px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: 1px solid #d0d7de; border-radius: 4px;
+      color: #57606a; cursor: pointer; font-size: 14px; line-height: 1;
+      transition: all .15s;
+    }
+    .custom-param__remove:hover { background: #ffeef0; border-color: #cf222e; color: #cf222e; }
+    .add-param-btn {
+      width: 100%; padding: 7px; margin-top: 8px;
+      background: #f6f8fa; border: 1px dashed #d0d7de; border-radius: 6px;
+      color: #57606a; font-size: 12px; cursor: pointer; font-family: inherit;
+      transition: all .15s; text-align: center;
+    }
+    .add-param-btn:hover { background: #eaeef2; border-color: #5a4fcf; color: #5a4fcf; }
+
+    /* ── Pickr overrides ─────────────────────────────────────────────────── */
+    .pcr-app { z-index: 9999 !important; }
+    .pcr-button { display: none !important; }
+
+    /* ── Tooltip ─────────────────────────────────────────────────────────── */
+    .gf-tooltip {
+      position: fixed; z-index: 9999; pointer-events: none;
+      background: #24292f; color: #fff; font-size: 11px;
+      padding: 5px 8px; border-radius: 4px; white-space: nowrap;
+      opacity: 0; transition: opacity .15s;
+    }
+    .gf-tooltip.visible { opacity: 1; }
+
+    /* ── Right panel ─────────────────────────────────────────────────────── */
+    .right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+    /* ── Preview pane ────────────────────────────────────────────────────── */
+    .preview-pane { display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+    .pane-header {
+      height: 36px; background: #fff; border-bottom: 1px solid #d0d7de;
+      display: flex; align-items: center; padding: 0 16px; gap: 10px; flex-shrink: 0;
+    }
+    .pane-header__title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #6e7781; flex: 1;
+    }
+    .preview-pane__content {
+      flex: 1; overflow: auto; background: #f6f8fa;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 32px;
+    }
+    .zoom-control { display: flex; align-items: center; gap: 8px; }
+    .pv-btn-wrap {
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Horizontal splitter ─────────────────────────────────────────────── */
+    .h-splitter {
+      height: 5px; flex-shrink: 0; background: #d0d7de;
+      cursor: row-resize; transition: background .15s; position: relative;
+    }
+    .h-splitter:hover, .h-splitter--dragging { background: #5a4fcf; }
+
+    /* ── Code pane ───────────────────────────────────────────────────────── */
+    .code-pane { display: flex; flex-direction: column; overflow: hidden; flex: 1; min-height: 80px; }
+    .copy-btn {
+      padding: 4px 12px; background: #f6f8fa; border: 1px solid #d0d7de;
+      border-radius: 5px; color: #24292f; font-size: 11px; font-weight: 500;
+      cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap;
+    }
+    .copy-btn:hover { background: #eaeef2; }
+    .copy-btn--copied { background: #d1fae5 !important; border-color: #a7f3d0 !important; color: #065f46 !important; }
+    .code-pane__content { flex: 1; overflow: auto; background: #1e1e2e; padding: 16px 20px; }
+    .code-pane__content::-webkit-scrollbar { width: 6px; height: 6px; }
+    .code-pane__content::-webkit-scrollbar-track { background: transparent; }
+    .code-pane__content::-webkit-scrollbar-thumb { background: #44475a; border-radius: 3px; }
+
+    pre.mixin-code {
+      font-family: 'SF Mono','Consolas','Menlo',monospace;
+      font-size: 12.5px; line-height: 1.65; color: #cdd6f4; margin: 0; white-space: pre;
+    }
+
+    /* ── Syntax highlighting ─────────────────────────────────────────────── */
+    .sh-keyword  { color: #cba6f7; font-weight: 600; }
+    .sh-name     { color: #89b4fa; font-weight: 600; }
+    .sh-comment  { color: #6272a4; font-style: italic; }
+    .sh-param    { color: #89dceb; }
+    .sh-value    { color: #fab387; }
+    .sh-color    { color: #a6e3a1; }
+    .sh-prop     { color: #89b4fa; }
+    .sh-selector { color: #f38ba8; }
+    .sh-cdot {
+      display: inline-block; width: 9px; height: 9px;
+      border-radius: 2px; margin-right: 3px; vertical-align: -1px;
+      border: 1px solid rgba(255,255,255,.18);
+      line-height: 0; font-size: 0;
+    }
+
+    /* ── Spacing helpers ─────────────────────────────────────────────────── */
+    .gap-sm { height: 8px; }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header__logo"></div>
+  <span class="app-header__name">SCSS Mixin Generator</span>
+  <span class="app-header__tagline">— Component Mixin Builder</span>
+</header>
+
+<div class="layout">
+
+  <!-- ── LEFT PANEL ───────────────────────────────────────────────────── -->
+  <div class="panel" id="leftPanel">
+
+    <!-- Component selector -->
+    <div class="component-selector">
+      <div class="component-selector__label">Component</div>
+      <div class="component-selector__group">
+        <button class="component-selector__btn component-selector__btn--active">Button</button>
+        <button class="component-selector__btn component-selector__btn--soon" disabled data-tooltip="Coming soon">Panel</button>
+        <button class="component-selector__btn component-selector__btn--soon" disabled data-tooltip="Coming soon">Card</button>
+      </div>
+    </div>
+
+    <!-- ── SIZE ─────────────────────────────────────────────────────────── -->
+    <div class="main-section" id="ms-Size">
+      <button class="main-section__header" onclick="toggleSection('Size')">Size <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="field">
+          <label class="field__label">Padding Y</label>
+          <div class="slider"><input class="slider__input" type="range" id="paddingY" min="2" max="32" step="1" value="8"><span class="slider__value" id="paddingYVal">8px</span></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Padding X</label>
+          <div class="slider"><input class="slider__input" type="range" id="paddingX" min="4" max="60" step="1" value="16"><span class="slider__value" id="paddingXVal">16px</span></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Min Width</label>
+          <div class="slider"><input class="slider__input" type="range" id="minWidth" min="0" max="240" step="4" value="0"><span class="slider__value" id="minWidthVal">0</span></div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── BORDER ───────────────────────────────────────────────────────── -->
+    <div class="main-section" id="ms-Border">
+      <button class="main-section__header" onclick="toggleSection('Border')">Border <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="field">
+          <label class="field__label">Width</label>
+          <div class="slider"><input class="slider__input" type="range" id="borderWidth" min="0" max="8" step="1" value="1"><span class="slider__value" id="borderWidthVal">1px</span></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Style</label>
+          <div class="seg-control" id="borderStyleGroup">
+            <button class="seg-control__btn seg-control__btn--active" data-val="solid">Solid</button>
+            <button class="seg-control__btn" data-val="dashed">Dashed</button>
+            <button class="seg-control__btn" data-val="dotted">Dotted</button>
+            <button class="seg-control__btn" data-val="none">None</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Color</label>
+          <div class="color-row">
+            <div class="color-row__swatch" id="sw-borderColor" style="background:#2a6595"></div>
+            <div class="color-row__meta">
+              <div class="color-row__label">$border-color</div>
+              <div class="color-row__sublabel" id="hx-borderColor">#2a6595</div>
+            </div>
+          </div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── RADIUS ───────────────────────────────────────────────────────── -->
+    <div class="main-section" id="ms-Radius">
+      <button class="main-section__header" onclick="toggleSection('Radius')">Radius <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="field">
+          <label class="field__label">Border Radius</label>
+          <div class="slider"><input class="slider__input" type="range" id="borderRadius" min="0" max="32" step="1" value="4"><span class="slider__value" id="borderRadiusVal">4px</span></div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── COLOR ────────────────────────────────────────────────────────── -->
+    <div class="main-section" id="ms-Color">
+      <button class="main-section__header" onclick="toggleSection('Color')">Color <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-bg" style="background:#337ab7"></div>
+          <div class="color-row__meta">
+            <div class="color-row__label">Background</div>
+            <div class="color-row__sublabel" id="hx-bg">#337ab7</div>
+          </div>
+        </div>
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-color" style="background:#ffffff;border-color:#d0d7de"></div>
+          <div class="color-row__meta">
+            <div class="color-row__label">Text</div>
+            <div class="color-row__sublabel" id="hx-color">#ffffff</div>
+          </div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── SHADOW ───────────────────────────────────────────────────────── -->
+    <div class="main-section main-section--collapsed" id="ms-Shadow">
+      <button class="main-section__header" onclick="toggleSection('Shadow')">Shadow <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="field">
+          <label class="field__label">Box Shadow</label>
+          <input class="field__input" type="text" id="shadow" value="none" placeholder="e.g. 0 2px 4px rgba(0,0,0,.15)">
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── TYPOGRAPHY ───────────────────────────────────────────────────── -->
+    <div class="main-section" id="ms-Typography">
+      <button class="main-section__header" onclick="toggleSection('Typography')">Typography <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="field">
+          <label class="field__label">Font Size</label>
+          <div class="slider"><input class="slider__input" type="range" id="fontSize" min="10" max="24" step="1" value="14"><span class="slider__value" id="fontSizeVal">14px</span></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Font Weight</label>
+          <div class="seg-control" id="fontWeightGroup">
+            <button class="seg-control__btn" data-val="300">300</button>
+            <button class="seg-control__btn" data-val="400">400</button>
+            <button class="seg-control__btn" data-val="500">500</button>
+            <button class="seg-control__btn seg-control__btn--active" data-val="600">600</button>
+            <button class="seg-control__btn" data-val="700">700</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Line Height</label>
+          <div class="slider"><input class="slider__input" type="range" id="lineHeight" min="1" max="2.5" step="0.05" value="1.5"><span class="slider__value" id="lineHeightVal">1.5</span></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Text Transform</label>
+          <div class="seg-control" id="textTransformGroup">
+            <button class="seg-control__btn seg-control__btn--active" data-val="none">None</button>
+            <button class="seg-control__btn" data-val="uppercase">Upper</button>
+            <button class="seg-control__btn" data-val="capitalize">Cap</button>
+            <button class="seg-control__btn" data-val="lowercase">Lower</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Letter Spacing</label>
+          <div class="slider"><input class="slider__input" type="range" id="letterSpacing" min="-2" max="8" step="0.5" value="0"><span class="slider__value" id="letterSpacingVal">0px</span></div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── TRANSITION ───────────────────────────────────────────────────── -->
+    <div class="main-section main-section--collapsed" id="ms-Transition">
+      <button class="main-section__header" onclick="toggleSection('Transition')">Transition <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="field">
+          <label class="field__label">Duration</label>
+          <div class="slider"><input class="slider__input" type="range" id="transitionDuration" min="0" max="1" step="0.05" value="0.15"><span class="slider__value" id="transitionDurationVal">0.15s</span></div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── HOVER ────────────────────────────────────────────────────────── -->
+    <div class="main-section main-section--collapsed" id="ms-Hover">
+      <button class="main-section__header" onclick="toggleSection('Hover')">Hover <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-hoverBg" style="background:#2a6595"></div>
+          <div class="color-row__meta"><div class="color-row__label">Background</div><div class="color-row__sublabel" id="hx-hoverBg">#2a6595</div></div>
+        </div>
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-hoverColor" style="background:#ffffff;border-color:#d0d7de"></div>
+          <div class="color-row__meta"><div class="color-row__label">Text</div><div class="color-row__sublabel" id="hx-hoverColor">#ffffff</div></div>
+        </div>
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-hoverBorderColor" style="background:#1e4d78"></div>
+          <div class="color-row__meta"><div class="color-row__label">Border Color</div><div class="color-row__sublabel" id="hx-hoverBorderColor">#1e4d78</div></div>
+        </div>
+        <div class="gap-sm"></div>
+        <div class="field">
+          <label class="field__label">Border Width</label>
+          <div class="slider"><input class="slider__input" type="range" id="hoverBorderWidth" min="0" max="8" step="1" value="1"><span class="slider__value" id="hoverBorderWidthVal">1px</span></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Border Style</label>
+          <div class="seg-control" id="hoverBorderStyleGroup">
+            <button class="seg-control__btn seg-control__btn--active" data-val="solid">Solid</button>
+            <button class="seg-control__btn" data-val="dashed">Dashed</button>
+            <button class="seg-control__btn" data-val="dotted">Dotted</button>
+            <button class="seg-control__btn" data-val="none">None</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Font Weight</label>
+          <div class="seg-control" id="hoverFontWeightGroup">
+            <button class="seg-control__btn" data-val="300">300</button>
+            <button class="seg-control__btn" data-val="400">400</button>
+            <button class="seg-control__btn" data-val="500">500</button>
+            <button class="seg-control__btn seg-control__btn--active" data-val="600">600</button>
+            <button class="seg-control__btn" data-val="700">700</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Shadow</label>
+          <input class="field__input" type="text" id="hoverShadow" value="none" placeholder="e.g. 0 4px 8px rgba(0,0,0,.2)">
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── ACTIVE ────────────────────────────────────────────────────────── -->
+    <div class="main-section main-section--collapsed" id="ms-Active">
+      <button class="main-section__header" onclick="toggleSection('Active')">Active <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-activeBg" style="background:#1e4d78"></div>
+          <div class="color-row__meta"><div class="color-row__label">Background</div><div class="color-row__sublabel" id="hx-activeBg">#1e4d78</div></div>
+        </div>
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-activeColor" style="background:#ffffff;border-color:#d0d7de"></div>
+          <div class="color-row__meta"><div class="color-row__label">Text</div><div class="color-row__sublabel" id="hx-activeColor">#ffffff</div></div>
+        </div>
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-activeBorderColor" style="background:#163a5a"></div>
+          <div class="color-row__meta"><div class="color-row__label">Border Color</div><div class="color-row__sublabel" id="hx-activeBorderColor">#163a5a</div></div>
+        </div>
+        <div class="gap-sm"></div>
+        <div class="field">
+          <label class="field__label">Border Width</label>
+          <div class="slider"><input class="slider__input" type="range" id="activeBorderWidth" min="0" max="8" step="1" value="1"><span class="slider__value" id="activeBorderWidthVal">1px</span></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Border Style</label>
+          <div class="seg-control" id="activeBorderStyleGroup">
+            <button class="seg-control__btn seg-control__btn--active" data-val="solid">Solid</button>
+            <button class="seg-control__btn" data-val="dashed">Dashed</button>
+            <button class="seg-control__btn" data-val="dotted">Dotted</button>
+            <button class="seg-control__btn" data-val="none">None</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Font Weight</label>
+          <div class="seg-control" id="activeFontWeightGroup">
+            <button class="seg-control__btn" data-val="300">300</button>
+            <button class="seg-control__btn" data-val="400">400</button>
+            <button class="seg-control__btn" data-val="500">500</button>
+            <button class="seg-control__btn seg-control__btn--active" data-val="600">600</button>
+            <button class="seg-control__btn" data-val="700">700</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Shadow</label>
+          <input class="field__input" type="text" id="activeShadow" value="none" placeholder="e.g. inset 0 2px 4px rgba(0,0,0,.15)">
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── SELECTED ──────────────────────────────────────────────────────── -->
+    <div class="main-section main-section--collapsed" id="ms-Selected">
+      <button class="main-section__header" onclick="toggleSection('Selected')">Selected <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-selectedBg" style="background:#1e4d78"></div>
+          <div class="color-row__meta"><div class="color-row__label">Background</div><div class="color-row__sublabel" id="hx-selectedBg">#1e4d78</div></div>
+        </div>
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-selectedColor" style="background:#ffffff;border-color:#d0d7de"></div>
+          <div class="color-row__meta"><div class="color-row__label">Text</div><div class="color-row__sublabel" id="hx-selectedColor">#ffffff</div></div>
+        </div>
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-selectedBorderColor" style="background:#163a5a"></div>
+          <div class="color-row__meta"><div class="color-row__label">Border Color</div><div class="color-row__sublabel" id="hx-selectedBorderColor">#163a5a</div></div>
+        </div>
+        <div class="gap-sm"></div>
+        <div class="field">
+          <label class="field__label">Border Width</label>
+          <div class="slider"><input class="slider__input" type="range" id="selectedBorderWidth" min="0" max="8" step="1" value="1"><span class="slider__value" id="selectedBorderWidthVal">1px</span></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Border Style</label>
+          <div class="seg-control" id="selectedBorderStyleGroup">
+            <button class="seg-control__btn seg-control__btn--active" data-val="solid">Solid</button>
+            <button class="seg-control__btn" data-val="dashed">Dashed</button>
+            <button class="seg-control__btn" data-val="dotted">Dotted</button>
+            <button class="seg-control__btn" data-val="none">None</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Font Weight</label>
+          <div class="seg-control" id="selectedFontWeightGroup">
+            <button class="seg-control__btn" data-val="300">300</button>
+            <button class="seg-control__btn" data-val="400">400</button>
+            <button class="seg-control__btn" data-val="500">500</button>
+            <button class="seg-control__btn seg-control__btn--active" data-val="600">600</button>
+            <button class="seg-control__btn" data-val="700">700</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">Shadow</label>
+          <input class="field__input" type="text" id="selectedShadow" value="none" placeholder="e.g. 0 0 0 3px rgba(51,122,183,.3)">
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── DISABLED ──────────────────────────────────────────────────────── -->
+    <div class="main-section main-section--collapsed" id="ms-Disabled">
+      <button class="main-section__header" onclick="toggleSection('Disabled')">Disabled <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="field">
+          <label class="field__label">Opacity</label>
+          <div class="slider"><input class="slider__input" type="range" id="disabledOpacity" min="0" max="1" step="0.05" value="0.5"><span class="slider__value" id="disabledOpacityVal">0.5</span></div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── FOCUS ─────────────────────────────────────────────────────────── -->
+    <div class="main-section main-section--collapsed" id="ms-Focus">
+      <button class="main-section__header" onclick="toggleSection('Focus')">Focus <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="color-row">
+          <div class="color-row__swatch" id="sw-focusOutlineColor" style="background:#337ab7"></div>
+          <div class="color-row__meta"><div class="color-row__label">Outline Color</div><div class="color-row__sublabel" id="hx-focusOutlineColor">#337ab7</div></div>
+        </div>
+        <div class="gap-sm"></div>
+        <div class="field">
+          <label class="field__label">Outline Width</label>
+          <div class="slider"><input class="slider__input" type="range" id="focusOutlineWidth" min="1" max="6" step="1" value="2"><span class="slider__value" id="focusOutlineWidthVal">2px</span></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Outline Offset</label>
+          <div class="slider"><input class="slider__input" type="range" id="focusOutlineOffset" min="0" max="8" step="1" value="2"><span class="slider__value" id="focusOutlineOffsetVal">2px</span></div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ── CUSTOM PARAMETERS ─────────────────────────────────────────────── -->
+    <div class="main-section" id="ms-Custom">
+      <button class="main-section__header" onclick="toggleSection('Custom')">Custom Parameters <span class="main-section__chevron">▾</span></button>
+      <div class="main-section__body"><div class="main-section__body-inner"><div class="section-body">
+        <div class="custom-params-header">
+          <span class="custom-params-col-label">Name</span>
+          <span class="custom-params-col-label">Default Value</span>
+          <span></span>
+        </div>
+        <div id="customParamsList"></div>
+        <button class="add-param-btn" onclick="addCustomParam()">+ Add Parameter</button>
+      </div></div></div>
+    </div>
+
+  </div><!-- /panel -->
+
+  <!-- ── VERTICAL RESIZE HANDLE ────────────────────────────────────────── -->
+  <div class="panel__resizer" id="panelResizer">
+    <button class="panel__toggle" id="panelToggleBtn" title="Toggle panel">‹</button>
+  </div>
+
+  <!-- ── RIGHT PANEL ───────────────────────────────────────────────────── -->
+  <div class="right-panel" id="rightPanel">
+
+    <!-- Preview pane -->
+    <div class="preview-pane" id="previewPane">
+      <div class="pane-header">
+        <span class="pane-header__title">Preview</span>
+      </div>
+      <div class="preview-pane__content">
+        <style id="btnPreviewStyle"></style>
+        <div class="pv-btn-wrap" id="pvBtnWrap">
+          <button class="pv-btn" id="pvBtn">Button</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Horizontal splitter -->
+    <div class="h-splitter" id="hSplitter"></div>
+
+    <!-- Code pane -->
+    <div class="code-pane" id="codePane">
+      <div class="pane-header">
+        <span class="pane-header__title">Generated Mixin</span>
+        <button class="copy-btn" id="copyBtn" onclick="copyMixin()">Copy</button>
+      </div>
+      <div class="code-pane__content">
+        <pre class="mixin-code" id="mixinCode"></pre>
+      </div>
+    </div>
+
+  </div><!-- /right-panel -->
+
+</div><!-- /layout -->
+
+<script>
+  // ── State ─────────────────────────────────────────────────────────────────
+
+  const state = {
+    paddingY: 8, paddingX: 16, minWidth: 0,
+    borderWidth: 1, borderStyle: 'solid', borderColor: '#2a6595',
+    borderRadius: 4,
+    bg: '#337ab7', color: '#ffffff',
+    shadow: 'none',
+    fontSize: 14, fontWeight: 600, lineHeight: 1.5,
+    textTransform: 'none', letterSpacing: 0,
+    transitionDuration: 0.15,
+    hoverBg: '#2a6595', hoverColor: '#ffffff',
+    hoverBorderWidth: 1, hoverBorderStyle: 'solid', hoverBorderColor: '#1e4d78',
+    hoverShadow: 'none', hoverFontWeight: 600,
+    activeBg: '#1e4d78', activeColor: '#ffffff',
+    activeBorderWidth: 1, activeBorderStyle: 'solid', activeBorderColor: '#163a5a',
+    activeShadow: 'none', activeFontWeight: 600,
+    selectedBg: '#1e4d78', selectedColor: '#ffffff',
+    selectedBorderWidth: 1, selectedBorderStyle: 'solid', selectedBorderColor: '#163a5a',
+    selectedShadow: 'none', selectedFontWeight: 600,
+    disabledOpacity: 0.5,
+    focusOutlineColor: '#337ab7', focusOutlineWidth: 2, focusOutlineOffset: 2,
+    customParams: [],
+  };
+
+  // ── Color swatch definitions ──────────────────────────────────────────────
+
+  const COLOR_SWATCHES = [
+    { key: 'borderColor',        label: '$border-color' },
+    { key: 'bg',                 label: '$bg' },
+    { key: 'color',              label: '$color' },
+    { key: 'hoverBg',            label: '$hover-bg' },
+    { key: 'hoverColor',         label: '$hover-color' },
+    { key: 'hoverBorderColor',   label: '$hover-border-color' },
+    { key: 'activeBg',           label: '$active-bg' },
+    { key: 'activeColor',        label: '$active-color' },
+    { key: 'activeBorderColor',  label: '$active-border-color' },
+    { key: 'selectedBg',         label: '$selected-bg' },
+    { key: 'selectedColor',      label: '$selected-color' },
+    { key: 'selectedBorderColor',label: '$selected-border-color' },
+    { key: 'focusOutlineColor',  label: '$focus-outline-color' },
+  ];
+
+  // ── Section toggle ────────────────────────────────────────────────────────
+
+  function toggleSection(id) {
+    document.getElementById('ms-' + id).classList.toggle('main-section--collapsed');
+  }
+
+  // ── Build preview CSS ─────────────────────────────────────────────────────
+
+  function buildPreviewCSS() {
+    const s = state;
+    const ls = s.letterSpacing === 0 ? 'normal' : s.letterSpacing + 'px';
+    const mw = s.minWidth === 0 ? '0' : s.minWidth + 'px';
+    const td = s.transitionDuration + 's';
+    const customCSS = s.customParams
+      .filter(p => p.cssProp && p.value)
+      .map(p => `      ${p.cssProp}: ${p.value};`)
+      .join('\n');
+
+    return `
+      .pv-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        padding: ${s.paddingY}px ${s.paddingX}px;
+        min-width: ${mw};
+        font-size: ${s.fontSize}px;
+        font-weight: ${s.fontWeight};
+        line-height: ${s.lineHeight};
+        text-transform: ${s.textTransform};
+        letter-spacing: ${ls};
+        color: ${s.color};
+        background-color: ${s.bg};
+        border: ${s.borderWidth}px ${s.borderStyle} ${s.borderColor};
+        border-radius: ${s.borderRadius}px;
+        box-shadow: ${s.shadow};
+        cursor: pointer; text-decoration: none; font-family: inherit;
+        transition: background-color ${td} ease, border-color ${td} ease,
+                    color ${td} ease, box-shadow ${td} ease, font-weight ${td} ease;
+        ${customCSS}
+      }
+      .pv-btn:hover, .pv-btn--hover {
+        background-color: ${s.hoverBg};
+        color: ${s.hoverColor};
+        border: ${s.hoverBorderWidth}px ${s.hoverBorderStyle} ${s.hoverBorderColor};
+        box-shadow: ${s.hoverShadow};
+        font-weight: ${s.hoverFontWeight};
+      }
+      .pv-btn:active, .pv-btn--active {
+        background-color: ${s.activeBg};
+        color: ${s.activeColor};
+        border: ${s.activeBorderWidth}px ${s.activeBorderStyle} ${s.activeBorderColor};
+        box-shadow: ${s.activeShadow};
+        font-weight: ${s.activeFontWeight};
+      }
+      .pv-btn--selected {
+        background-color: ${s.selectedBg};
+        color: ${s.selectedColor};
+        border: ${s.selectedBorderWidth}px ${s.selectedBorderStyle} ${s.selectedBorderColor};
+        box-shadow: ${s.selectedShadow};
+        font-weight: ${s.selectedFontWeight};
+      }
+      .pv-btn:disabled { opacity: ${s.disabledOpacity}; cursor: not-allowed; pointer-events: none; }
+      .pv-btn--focused {
+        outline: ${s.focusOutlineWidth}px solid ${s.focusOutlineColor};
+        outline-offset: ${s.focusOutlineOffset}px;
+      }
+    `;
+  }
+
+  // ── Build mixin text ──────────────────────────────────────────────────────
+
+  function buildMixin() {
+    const s = state;
+    const ls  = s.letterSpacing === 0 ? 'normal' : s.letterSpacing + 'px';
+    const mw  = s.minWidth === 0 ? '0' : s.minWidth + 'px';
+    const lhv = parseFloat(s.lineHeight.toFixed(2));
+
+    const customParamsBlock = s.customParams.length
+      ? '\n' + s.customParams.map(p =>
+          `  $${p.name || 'param'}:${' '.repeat(Math.max(1, 28 - (p.name||'param').length))}${p.value || 'inherit'},`
+        ).join('\n')
+      : '';
+
+    const customBodyBlock = s.customParams.length
+      ? '\n' + s.customParams
+          .filter(p => p.cssProp && p.name)
+          .map(p => `  ${p.cssProp}:${' '.repeat(Math.max(1, 18 - p.cssProp.length))}$${p.name};`)
+          .join('\n')
+      : '';
+
+    return `@mixin button(
+  $padding-y:               ${s.paddingY}px,
+  $padding-x:               ${s.paddingX}px,
+  $min-width:               ${mw},
+  $border-width:            ${s.borderWidth}px,
+  $border-style:            ${s.borderStyle},
+  $border-color:            ${s.borderColor},
+  $border-radius:           ${s.borderRadius}px,
+  $bg:                      ${s.bg},
+  $color:                   ${s.color},
+  $shadow:                  ${s.shadow},
+  $font-size:               ${s.fontSize}px,
+  $font-weight:             ${s.fontWeight},
+  $line-height:             ${lhv},
+  $text-transform:          ${s.textTransform},
+  $letter-spacing:          ${ls},
+  $transition-duration:     ${s.transitionDuration}s,
+  $hover-bg:                ${s.hoverBg},
+  $hover-color:             ${s.hoverColor},
+  $hover-border-width:      ${s.hoverBorderWidth}px,
+  $hover-border-style:      ${s.hoverBorderStyle},
+  $hover-border-color:      ${s.hoverBorderColor},
+  $hover-shadow:            ${s.hoverShadow},
+  $hover-font-weight:       ${s.hoverFontWeight},
+  $active-bg:               ${s.activeBg},
+  $active-color:            ${s.activeColor},
+  $active-border-width:     ${s.activeBorderWidth}px,
+  $active-border-style:     ${s.activeBorderStyle},
+  $active-border-color:     ${s.activeBorderColor},
+  $active-shadow:           ${s.activeShadow},
+  $active-font-weight:      ${s.activeFontWeight},
+  $selected-bg:             ${s.selectedBg},
+  $selected-color:          ${s.selectedColor},
+  $selected-border-width:   ${s.selectedBorderWidth}px,
+  $selected-border-style:   ${s.selectedBorderStyle},
+  $selected-border-color:   ${s.selectedBorderColor},
+  $selected-shadow:         ${s.selectedShadow},
+  $selected-font-weight:    ${s.selectedFontWeight},
+  $disabled-opacity:        ${s.disabledOpacity},
+  $focus-outline-color:     ${s.focusOutlineColor},
+  $focus-outline-width:     ${s.focusOutlineWidth}px,
+  $focus-outline-offset:    ${s.focusOutlineOffset}px${customParamsBlock}
+) {
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  padding:          $padding-y $padding-x;
+  min-width:        $min-width;
+  font-size:        $font-size;
+  font-weight:      $font-weight;
+  line-height:      $line-height;
+  text-transform:   $text-transform;
+  letter-spacing:   $letter-spacing;
+  color:            $color;
+  background-color: $bg;
+  border:           $border-width $border-style $border-color;
+  border-radius:    $border-radius;
+  box-shadow:       $shadow;
+  cursor:           pointer;
+  text-decoration:  none;
+  transition:       background-color $transition-duration ease,
+                    border-color $transition-duration ease,
+                    color $transition-duration ease,
+                    box-shadow $transition-duration ease;
+
+  &:hover {
+    background-color: $hover-bg;
+    color:            $hover-color;
+    border:           $hover-border-width $hover-border-style $hover-border-color;
+    box-shadow:       $hover-shadow;
+    font-weight:      $hover-font-weight;
+  }
+
+  &:active {
+    background-color: $active-bg;
+    color:            $active-color;
+    border:           $active-border-width $active-border-style $active-border-color;
+    box-shadow:       $active-shadow;
+    font-weight:      $active-font-weight;
+  }
+
+  &.selected,
+  &[aria-selected="true"] {
+    background-color: $selected-bg;
+    color:            $selected-color;
+    border:           $selected-border-width $selected-border-style $selected-border-color;
+    box-shadow:       $selected-shadow;
+    font-weight:      $selected-font-weight;
+  }
+
+  &:disabled,
+  &[disabled] {
+    opacity:        $disabled-opacity;
+    cursor:         not-allowed;
+    pointer-events: none;
+  }
+
+  &:focus-visible {
+    outline:        $focus-outline-width solid $focus-outline-color;
+    outline-offset: $focus-outline-offset;
+  }${customBodyBlock}
+}`;
+  }
+
+  // ── Syntax highlighting ───────────────────────────────────────────────────
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function highlightLine(s) {
+    // @mixin name
+    s = s.replace(/(@mixin)\s+(\w[\w-]*)/g,
+      '<span class="sh-keyword">$1</span> <span class="sh-name">$2</span>');
+    // selectors: &:pseudo, &.class, &[attr
+    s = s.replace(/(&amp;[.:[][\w"'=\-[\].:#]+\]?)/g,
+      '<span class="sh-selector">$1</span>');
+    // $variables
+    s = s.replace(/(\$[\w-]+)/g, '<span class="sh-param">$1</span>');
+    // #hex colors
+    s = s.replace(/(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})(?=[,;\s)']|$)/g,
+      '<span class="sh-color">$1</span>');
+    // numbers with units
+    s = s.replace(/\b(\d+(?:\.\d+)?(?:px|em|rem|s|ms|%|vh|vw))\b/g,
+      '<span class="sh-value">$1</span>');
+    // bare numbers (opacity, line-height, font-weight, 0)
+    s = s.replace(/(?<=:\s{1,20}|\s{1,20})(\d+(?:\.\d+)?)(?=[,;)\s]|$)/g,
+      '<span class="sh-value">$1</span>');
+    // CSS property names (word before colon, not $param:)
+    s = s.replace(/\b([a-z][\w-]*)(?=\s*:(?!:))/g,
+      '<span class="sh-prop">$1</span>');
+    return s;
+  }
+
+  function highlightSCSS(raw) {
+    return raw.split('\n').map(line => {
+      const e = esc(line);
+      // Pure comment line
+      if (/^\s*\/\//.test(line)) return `<span class="sh-comment">${e}</span>`;
+      // Inline comment
+      const ci = e.indexOf('//');
+      if (ci >= 0) {
+        return highlightLine(e.slice(0, ci)) +
+               `<span class="sh-comment">${e.slice(ci)}</span>`;
+      }
+      return highlightLine(e);
+    }).join('\n');
+  }
+
+  // ── Update ────────────────────────────────────────────────────────────────
+
+  function update() {
+    document.getElementById('btnPreviewStyle').textContent = buildPreviewCSS();
+    const mixin = buildMixin();
+    document.getElementById('mixinCode').innerHTML = highlightSCSS(mixin);
+    _rawMixin = mixin;
+  }
+
+  let _rawMixin = '';
+
+
+  // ── Slider wiring ─────────────────────────────────────────────────────────
+
+  const SLIDERS = [
+    { id: 'paddingY',            key: 'paddingY',            unit: 'px',  fmt: v => v + 'px' },
+    { id: 'paddingX',            key: 'paddingX',            unit: 'px',  fmt: v => v + 'px' },
+    { id: 'minWidth',            key: 'minWidth',            unit: 'px',  fmt: v => v == 0 ? '0' : v + 'px' },
+    { id: 'borderWidth',         key: 'borderWidth',         unit: 'px',  fmt: v => v + 'px' },
+    { id: 'borderRadius',        key: 'borderRadius',        unit: 'px',  fmt: v => v + 'px' },
+    { id: 'fontSize',            key: 'fontSize',            unit: 'px',  fmt: v => v + 'px' },
+    { id: 'lineHeight',          key: 'lineHeight',          unit: '',    fmt: v => parseFloat(v).toFixed(2).replace(/\.?0+$/,'') },
+    { id: 'letterSpacing',       key: 'letterSpacing',       unit: 'px',  fmt: v => v == 0 ? '0px' : v + 'px' },
+    { id: 'transitionDuration',  key: 'transitionDuration',  unit: 's',   fmt: v => parseFloat(v).toFixed(2).replace(/0+$/,'') + 's' },
+    { id: 'hoverBorderWidth',    key: 'hoverBorderWidth',    unit: 'px',  fmt: v => v + 'px' },
+    { id: 'activeBorderWidth',   key: 'activeBorderWidth',   unit: 'px',  fmt: v => v + 'px' },
+    { id: 'selectedBorderWidth', key: 'selectedBorderWidth', unit: 'px',  fmt: v => v + 'px' },
+    { id: 'disabledOpacity',     key: 'disabledOpacity',     unit: '',    fmt: v => parseFloat(v).toFixed(2).replace(/\.?0+$/,'') },
+    { id: 'focusOutlineWidth',   key: 'focusOutlineWidth',   unit: 'px',  fmt: v => v + 'px' },
+    { id: 'focusOutlineOffset',  key: 'focusOutlineOffset',  unit: 'px',  fmt: v => v + 'px' },
+  ];
+
+  SLIDERS.forEach(({ id, key, fmt }) => {
+    const el = document.getElementById(id);
+    const valEl = document.getElementById(id + 'Val');
+    el.addEventListener('input', () => {
+      const v = parseFloat(el.value);
+      state[key] = v;
+      if (valEl) valEl.textContent = fmt(v);
+      update();
+    });
+  });
+
+  // ── Segmented control wiring ──────────────────────────────────────────────
+
+  const SEG_GROUPS = [
+    { id: 'borderStyleGroup',        key: 'borderStyle' },
+    { id: 'fontWeightGroup',         key: 'fontWeight',        parse: parseInt },
+    { id: 'textTransformGroup',      key: 'textTransform' },
+    { id: 'hoverBorderStyleGroup',   key: 'hoverBorderStyle' },
+    { id: 'hoverFontWeightGroup',    key: 'hoverFontWeight',   parse: parseInt },
+    { id: 'activeBorderStyleGroup',  key: 'activeBorderStyle' },
+    { id: 'activeFontWeightGroup',   key: 'activeFontWeight',  parse: parseInt },
+    { id: 'selectedBorderStyleGroup',key: 'selectedBorderStyle' },
+    { id: 'selectedFontWeightGroup', key: 'selectedFontWeight',parse: parseInt },
+  ];
+
+  SEG_GROUPS.forEach(({ id, key, parse }) => {
+    const group = document.getElementById(id);
+    group.addEventListener('click', e => {
+      const btn = e.target.closest('.seg-control__btn');
+      if (!btn) return;
+      group.querySelectorAll('.seg-control__btn').forEach(b => b.classList.remove('seg-control__btn--active'));
+      btn.classList.add('seg-control__btn--active');
+      state[key] = parse ? parse(btn.dataset.val) : btn.dataset.val;
+      update();
+    });
+  });
+
+  // ── Text input wiring ─────────────────────────────────────────────────────
+
+  ['shadow','hoverShadow','activeShadow','selectedShadow'].forEach(id => {
+    document.getElementById(id).addEventListener('input', e => {
+      state[id] = e.target.value || 'none';
+      update();
+    });
+  });
+
+  // ── Custom parameters ─────────────────────────────────────────────────────
+
+  function addCustomParam() {
+    state.customParams.push({ name: '', value: '', cssProp: '' });
+    renderCustomParams();
+  }
+
+  function removeCustomParam(i) {
+    state.customParams.splice(i, 1);
+    renderCustomParams();
+    update();
+  }
+
+  function renderCustomParams() {
+    const list = document.getElementById('customParamsList');
+    list.innerHTML = state.customParams.map((p, i) => `
+      <div class="custom-param-row">
+        <input class="custom-param__input" type="text" placeholder="\$param-name"
+               value="${esc(p.name)}" oninput="updateCustomParam(${i},'name',this.value)">
+        <input class="custom-param__input" type="text" placeholder="value"
+               value="${esc(p.value)}" oninput="updateCustomParam(${i},'value',this.value)">
+        <button class="custom-param__remove" onclick="removeCustomParam(${i})" title="Remove">×</button>
+      </div>
+    `).join('');
+  }
+
+  function updateCustomParam(i, field, val) {
+    // Strip leading $ from name if user typed it
+    if (field === 'name') val = val.replace(/^\$+/, '');
+    state.customParams[i][field] = val;
+    // Auto-derive a CSS property guess from the name
+    if (field === 'name') {
+      const cssGuess = val.replace(/-/g, '-');
+      state.customParams[i].cssProp = cssGuess;
+    }
+    update();
+  }
+
+  // ── Panel resize (vertical) ───────────────────────────────────────────────
+
+  (function () {
+    const panel = document.getElementById('leftPanel');
+    const resizer = document.getElementById('panelResizer');
+    const toggleBtn = document.getElementById('panelToggleBtn');
+    let isResizing = false, startX = 0, startW = 0, savedW = 320, collapsed = false;
+
+    resizer.addEventListener('mousedown', e => {
+      if (e.target === toggleBtn) return;
+      isResizing = true; startX = e.clientX; startW = panel.offsetWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      resizer.classList.add('panel__resizer--dragging');
+    });
+    document.addEventListener('mousemove', e => {
+      if (!isResizing) return;
+      const w = Math.max(200, Math.min(560, startW + (e.clientX - startX)));
+      panel.style.width = w + 'px';
+      if (collapsed) { collapsed = false; panel.style.overflow = ''; toggleBtn.textContent = '‹'; }
+      savedW = w;
+    });
+    document.addEventListener('mouseup', () => {
+      if (!isResizing) return;
+      isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      resizer.classList.remove('panel__resizer--dragging');
+    });
+    toggleBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      collapsed = !collapsed;
+      panel.style.transition = 'width 0.2s ease';
+      if (collapsed) {
+        savedW = panel.offsetWidth || savedW;
+        panel.style.width = '0px';
+        panel.style.overflow = 'hidden';
+        toggleBtn.textContent = '›';
+      } else {
+        panel.style.width = savedW + 'px';
+        panel.style.overflow = '';
+        toggleBtn.textContent = '‹';
+      }
+    });
+  })();
+
+  // ── H-splitter (preview / code) ───────────────────────────────────────────
+
+  (function () {
+    const splitter   = document.getElementById('hSplitter');
+    const previewPane = document.getElementById('previewPane');
+    const rightPanel  = document.getElementById('rightPanel');
+    let isDragging = false, startY = 0, startH = 0;
+
+    // Init to 50%
+    previewPane.style.height = '50%';
+
+    splitter.addEventListener('mousedown', e => {
+      isDragging = true; startY = e.clientY; startH = previewPane.offsetHeight;
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      splitter.classList.add('h-splitter--dragging');
+    });
+    document.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      const totalH = rightPanel.offsetHeight;
+      const newH = Math.max(80, Math.min(totalH - 120, startH + (e.clientY - startY)));
+      previewPane.style.height = newH + 'px';
+    });
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      splitter.classList.remove('h-splitter--dragging');
+    });
+  })();
+
+  // ── Pickr singleton ───────────────────────────────────────────────────────
+
+  let _pickrCb = null;
+
+  const _anchor = Object.assign(document.createElement('div'), { id: 'pickrAnchor' });
+  Object.assign(_anchor.style, { position:'fixed', width:'1px', height:'1px', pointerEvents:'none', top:'0', left:'0' });
+  document.body.appendChild(_anchor);
+
+  const pickr = Pickr.create({
+    el: _anchor, theme: 'nano', default: '#337ab7',
+    defaultRepresentation: localStorage.getItem('pickrFmt') || 'HEX',
+    position: 'bottom-start',
+    components: {
+      preview: true, opacity: false, hue: true,
+      interaction: { hex: true, rgba: true, hsla: true, input: true, save: false }
+    }
+  });
+
+  pickr.on('change', color => {
+    const hex = color.toHEXA().toString().slice(0, 7);
+    if (_pickrCb) _pickrCb(hex);
+    const fmt = document.querySelector('.pcr-type.active')?.value;
+    if (fmt) localStorage.setItem('pickrFmt', fmt);
+  });
+  pickr.on('hide', () => { _pickrCb = null; });
+
+  function openPickr(triggerEl, currentColor, onChange) {
+    _pickrCb = onChange;
+    pickr.setColor(currentColor || '#000000');
+    pickr.show();
+    requestAnimationFrame(() => {
+      const fmt = localStorage.getItem('pickrFmt') || 'HEX';
+      document.querySelectorAll('.pcr-type').forEach(btn => {
+        if (btn.value === fmt && !btn.classList.contains('active')) btn.click();
+      });
+      const app = document.querySelector('.pcr-app');
+      if (!app || !triggerEl) return;
+      const r = triggerEl.getBoundingClientRect();
+      const pw = app.offsetWidth || 240, ph = app.offsetHeight || 240;
+      const left = Math.min(r.left, window.innerWidth - pw - 8);
+      const top  = r.bottom + 6 + ph > window.innerHeight ? r.top - ph - 6 : r.bottom + 6;
+      Object.assign(app.style, { position:'fixed', left: Math.max(8, left)+'px', top: top+'px', transform:'none' });
+    });
+  }
+
+  // ── Wire color swatches ───────────────────────────────────────────────────
+
+  COLOR_SWATCHES.forEach(({ key }) => {
+    const sw = document.getElementById('sw-' + key);
+    if (!sw) return;
+    sw.addEventListener('click', () => {
+      openPickr(sw, state[key], hex => {
+        state[key] = hex;
+        sw.style.background = hex;
+        const hx = document.getElementById('hx-' + key);
+        if (hx) hx.textContent = hex;
+        update();
+      });
+    });
+  });
+
+  // ── Copy mixin ────────────────────────────────────────────────────────────
+
+  function copyMixin() {
+    navigator.clipboard.writeText(_rawMixin).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copy-btn--copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copy-btn--copied'); }, 1800);
+    });
+  }
+
+  // ── Tooltip ───────────────────────────────────────────────────────────────
+
+  const _tip = Object.assign(document.createElement('div'), { className: 'gf-tooltip' });
+  document.body.appendChild(_tip);
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-tooltip]');
+    if (!el) return;
+    _tip.textContent = el.dataset.tooltip;
+    _tip.classList.add('visible');
+    const r = el.getBoundingClientRect();
+    _tip.style.left = Math.max(8, r.left + r.width / 2 - _tip.offsetWidth / 2) + 'px';
+    _tip.style.top  = (r.bottom + 6) + 'px';
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest('[data-tooltip]')) _tip.classList.remove('visible');
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  update();
+</script>
+</body>
+</html>

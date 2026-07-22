@@ -1,0 +1,283 @@
+/* Shared design tokens for the ServiceNow app suite - the single source of truth for the suite's
+   SCSS color/spacing/type vocabulary. Every value is declared with `!default`, which is what makes
+   a widget portable across portals and instances:
+
+   - The packager inlines these declarations at the TOP of each widget's own <css> field (before the
+     widget's scoped rules). See tools/packager + an app's build-deploy.js `sharedScssPartials`.
+   - `!default` means "use this value UNLESS the variable is already defined." A ServiceNow portal
+     theme's own CSS Variables are compiled AHEAD of a widget's SCSS, so if the target portal already
+     defines a token (e.g. `$brand-primary`), that wins and this default is a no-op. Where the portal
+     defines nothing, the widget falls back to these bundled defaults and still looks right.
+
+   So an app references these token names in its scss/app.scss (it does NOT redefine them), and gets
+   both a consistent suite vocabulary AND portability for free. Category-variant naming
+   (`$background-*`, `$text-*`, `$brand-*`, `$border-*`, ...) per the suite convention.
+
+   NOTE: these are the COMPILE-TIME ($) layer - portal/brand integration. An app's own runtime
+   light/dark flipping is a SEPARATE concern (CSS custom properties + `data-theme`), seeded from
+   these values but living in the app's own scss. */
+/* Core - styling source for Core's own widget: the generic documentation/wiki viewer (the
+   <core-doc> directive rendering CoreDocsService's content).
+
+   SCSS SOURCE, not hand-edited CSS - css/app.css is a BUILD OUTPUT (npm run build:css). Edit this
+   file, not that one.
+
+   Selectors are written PLAIN (`:root`, `body`, `.doc-*`, ...) so they apply directly in this
+   standalone dev harness; the packager's scopeScss() re-scopes them under the widget wrapper class
+   (`.core-widget`) at deploy time - do NOT hand-wrap them here. Color tokens are real SCSS variables
+   with `!default` so the deploy build ships them into the widget's own <css> field as fallbacks: a
+   host portal theme that already defines the token wins; otherwise this default applies. Phase 5
+   replaces this local token block with the shared theme-foundation partial, inlined by the packager. */
+:root {
+  --core-bg: #f4f5f7;
+  --core-panel: #ffffff;
+  --core-panel-alt: #fbfbfd;
+  --core-border: #e2e5ea;
+  --core-text: #1c2128;
+  --core-muted: #6b7280;
+  --core-faint: #9aa1ab;
+  --core-accent: #054b80;
+  --core-accent-soft: #e6eef5;
+  --core-code-bg: #fbfbfd;
+}
+
+:root[data-theme=dark] {
+  --core-bg: #10131a;
+  --core-panel: #1a1f29;
+  --core-panel-alt: #20262f;
+  --core-border: #2a3040;
+  --core-text: #e7ebf2;
+  --core-muted: #9aa3b6;
+  --core-faint: #6b7385;
+  --core-accent: #5b9fe0;
+  --core-accent-soft: rgba(91, 159, 224, 0.16);
+  --core-code-bg: #0f1319;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--core-bg);
+  color: var(--core-text);
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}
+.app {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+}
+
+/* header */
+.core-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--core-border);
+}
+
+.core-badge {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: var(--core-accent);
+  padding: 4px 11px;
+  border-radius: 7px;
+}
+
+.core-head-title {
+  color: var(--core-muted);
+  font-size: 14px;
+}
+
+/* doc viewer */
+.doc-lead {
+  font-size: 16px;
+  color: var(--core-muted);
+  max-width: 70ch;
+  margin: 0 0 28px;
+}
+
+.doc-lead :first-child {
+  margin-top: 0;
+}
+
+.doc-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+
+.doc-rail {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+}
+
+.doc-search {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  color: var(--core-text);
+  background: var(--core-panel);
+  border: 1px solid var(--core-border);
+  border-radius: 8px;
+  padding: 8px 11px;
+  margin-bottom: 16px;
+}
+
+.doc-search::placeholder {
+  color: var(--core-faint);
+}
+
+.doc-search:focus {
+  outline: none;
+  border-color: var(--core-accent);
+  box-shadow: 0 0 0 3px var(--core-accent-soft);
+}
+
+.doc-nav {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+.doc-nav-part {
+  margin-bottom: 14px;
+}
+
+.doc-nav-chapter {
+  display: block;
+  font-weight: 600;
+  color: var(--core-text);
+  text-decoration: none;
+  padding: 3px 0;
+}
+
+.doc-nav-chapter:hover {
+  color: var(--core-accent);
+}
+
+.doc-nav-link {
+  display: block;
+  color: var(--core-muted);
+  text-decoration: none;
+  padding: 4px 0 4px 12px;
+  border-left: 2px solid transparent;
+  margin-left: 1px;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.doc-nav-link:hover {
+  color: var(--core-accent);
+}
+
+.doc-nav-link.active {
+  color: var(--core-accent);
+  border-left-color: var(--core-accent);
+  font-weight: 600;
+}
+
+.doc-content {
+  min-width: 0;
+}
+
+.doc-part {
+  margin-bottom: 40px;
+}
+
+.doc-chapter {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  scroll-margin-top: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--core-border);
+}
+
+.doc-chapter-lead {
+  color: var(--core-muted);
+  margin: 0 0 20px;
+}
+
+.doc-chapter-lead :first-child {
+  margin-top: 0;
+}
+
+.doc-section {
+  margin: 24px 0;
+  scroll-margin-top: 16px;
+}
+
+.doc-section-title {
+  font-size: 16px;
+  font-weight: 650;
+  margin: 0 0 6px;
+}
+
+.doc-section-body :first-child {
+  margin-top: 0;
+}
+
+.doc-section-body p {
+  margin: 8px 0;
+}
+
+.doc-section-body code {
+  font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.86em;
+  background: var(--core-code-bg);
+  border: 1px solid var(--core-border);
+  border-radius: 4px;
+  padding: 0.05em 0.36em;
+}
+
+.doc-code {
+  background: var(--core-code-bg);
+  border: 1px solid var(--core-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.doc-code code {
+  font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--core-text);
+}
+
+.doc-empty {
+  color: var(--core-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .doc-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .doc-rail {
+    position: static;
+  }
+}

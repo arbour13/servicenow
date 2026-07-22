@@ -1,0 +1,2767 @@
+// =============================================================================
+// GlideFast Variables & Mixins  —  gf-variables-and-mixins.scss
+// =============================================================================
+//
+// THREE-TIER VARIABLE SYSTEM
+// --------------------------
+// Tier 1  Wizard-generated client values (brand colors, font family).
+//         These are placed BEFORE this file in the Update Set, so they set
+//         SCSS variables before any !default declaration here is evaluated.
+//         Never edit this file to apply client branding — put Tier 1 values
+//         in "CSS Variables" (Theme CSS Variables field) instead.
+//
+// Tier 2  Variables marked [T2] in this file.  These are safe to adjust on
+//         a per-project basis without touching Tier 3.  Typical examples:
+//         navbar height, sub-navbar colors, footer padding.
+//
+// Tier 3  Everything else in this file.  Change only when updating the GF
+//         standard; changes here affect every project that @imports this file.
+//
+// NAMING NOTE — primary / secondary / tertiary
+// --------------------------------------------
+// The suffixes -primary / -secondary / -tertiary in $background-*, $text-*,
+// and $border-* variable names describe FREQUENCY OF USE (most-used → least-
+// used).  They have NO relationship to $brand-primary / $brand-secondary.
+//   $background-primary   = the main page background (used most)
+//   $background-secondary = the subtle alt background (used second-most)
+//   $background-tertiary  = an accent / heavy background (used least)
+//
+// =============================================================================
+//
+// TABLE OF CONTENTS
+// -----------------
+// PART 1: Foundation
+//   1.1 Neutral & brand colors
+//   1.2 Semantic / grouped colors
+//   1.3 Text, link, background
+//   1.4 Borders, spacing, typography
+//   1.5 Focus rings
+// PART 2: Component variables (Bootstrap 3)
+//   2.1 Buttons, form states, alerts, panel
+//   2.2 Dropdown, navs, tables, list group, labels
+//   2.3 Modals, forms, progress, badge, input, component active
+// PART 3: Aliases
+//   3.1 Bootstrap / ServiceNow aliases (primary, select-primary, etc.)
+//   3.2 ServiceNow EC / portal (sp-*, now-sp-*, navbar, sub-navbar, footer,
+//       fav-star, etc.)
+// PART 4: gf- aliases (Bootstrap vars with gf- prefix)
+// PART 5: gf- semantic variables (mixin defaults; override for mixin behavior)
+// PART 6: Mixins
+//   6.1 Focus
+//   6.2 Buttons (gf-btn, gf-btn-default, gf-btn-primary, gf-btn-link,
+//       gf-btn-icon, gf-btn-favorite)
+//   6.3 Card, dropdown, input
+//   6.4 Panel, avatar, textarea, select
+//   6.5 Nav tabs, tab
+//   6.6 Utility (truncate, flex, stack, cluster, visually-hidden, skeleton,
+//       badge, divider, aspect-ratio, container, grid, clearfix)
+//   6.7 Generator & codebase-derived mixins (font-sizes, spacers,
+//       btn-link-hover, heading-scale, card-selectable, logo-margin-block)
+//   6.8 Backward-compatibility aliases (unprefixed → gf-*)
+// =============================================================================
+
+// =============================================================================
+// PART 1: Foundation
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 1.1 Neutral & brand colors (Bootstrap 3 gray scale + brand)
+// -----------------------------------------------------------------------------
+
+// Neutral colors (Bootstrap 3 gray scale)
+$gray-base:    #000 !default;
+$gray-darker:  #222 !default;  // lighten($gray-base, 13.5%)
+$gray-dark:    #333 !default;  // lighten($gray-base, 20%)
+$gray:         #555 !default;  // lighten($gray-base, 33.5%)
+$gray-light:   #777 !default;  // lighten($gray-base, 46.7%)
+$gray-lighter: #eee !default;  // lighten($gray-base, 93.5%)
+
+$color-darkest:  #000 !default;
+$color-darker:   #222 !default;
+$color-dark:     #333 !default;
+$color-disabled: #777 !default;
+$color-light:    #999 !default;
+$color-lighter:  #eee !default;
+$color-lightest: #fff !default;
+
+// Brand colors — primary
+// Tier 1 (wizard) sets $brand-primary before this file; !default keeps that value.
+$brand-primary:         #337ab7 !default;
+$brand-primary-darker:  darken($brand-primary, 5%)  !default;
+$brand-primary-darkest: darken($brand-primary, 15%) !default;
+$brand-primary-lighter: lighten($brand-primary, 10%) !default;
+$brand-primary-lightest: rgba($brand-primary, 0.15) !default;
+$brand-primary-opacity:  rgba($brand-primary, 0.08) !default;
+
+// Brand colors — secondary  [T2]
+// Tier 1 may set $brand-secondary; derived tints are computed from that value.
+$brand-secondary:         $gray-light !default;
+$brand-secondary-light:   lighten($brand-secondary, 10%) !default;
+$brand-secondary-lightest: lighten($brand-secondary, 20%) !default;
+
+// Brand colors — semantic
+$brand-success: #5cb85c !default;
+$brand-info:    #5bc0de !default;
+$brand-warning: #f0ad4e !default;
+$brand-danger:  #d9534f !default;
+$brand-low:     $gray-light !default;
+$brand-moderate: $brand-primary !default;
+$brand-danger-darker:   darken($brand-danger,  10%) !default;
+$brand-warning-darker:  darken($brand-warning, 10%) !default;
+$brand-success-darker:  darken($brand-success, 10%) !default;
+$brand-info-darker:     darken($brand-info,    10%) !default;
+$brand-low-darker:      darken($brand-low,     10%) !default;
+$brand-moderate-darker: darken($brand-moderate, 10%) !default;
+
+// -----------------------------------------------------------------------------
+// 1.2 Semantic / grouped colors
+// -----------------------------------------------------------------------------
+
+$color-accent-light:   $brand-primary-lighter !default;
+$color-accent-lightest: rgba($brand-primary, 0.1) !default;
+$color-blue-lightest:  #d9f4f9 !default;
+$color-blue-light:     #a0e3ef !default;
+$color-blue-dark:      darken($brand-info, 15%) !default;
+$color-grey:           #c6cbcb !default;
+$color-green-dark:     darken($brand-success, 25%) !default;
+
+// -----------------------------------------------------------------------------
+// 1.3 Text, link, background
+// -----------------------------------------------------------------------------
+
+// Text colors
+// NOTE: -primary/-secondary/-tertiary here = most-used → least-used,
+//       NOT a reference to $brand-primary/$brand-secondary.
+$text-primary:   $gray-dark   !default;
+$text-secondary: $gray-darker !default;
+$text-tertiary:  $gray        !default;
+$text-white:     #fff         !default;
+$text-color:     $gray-dark   !default;
+$text-muted:     $gray        !default;
+
+// Link colors
+$link-color:            $brand-primary !default;
+$link-hover-color:      darken($link-color, 15%) !default;
+$link-hover-decoration: underline !default;
+
+// Background colors
+// NOTE: -primary/-secondary/-tertiary here = most-used → least-used,
+//       NOT a reference to $brand-primary/$brand-secondary/$brand-tertiary.
+$background-primary:   #fff     !default;
+$background-secondary: #f9f9f9 !default;
+$background-tertiary:  $gray-light !default;  // [T2] heavy accent bg
+$background-hover:     #f5f5f5 !default;
+$background-accent:    $brand-primary !default;
+
+// Bootstrap scaffolding
+$body-bg:    $background-primary !default;
+$sp-body-bg: $body-bg            !default;
+
+// -----------------------------------------------------------------------------
+// 1.4 Borders, spacing, typography
+// -----------------------------------------------------------------------------
+
+// Borders
+// NOTE: -primary/-secondary/-tertiary here = most-used → least-used,
+//       NOT a reference to $brand-primary/$brand-secondary.
+$border-primary:   #ccc          !default;
+$border-secondary: $color-dark   !default;  // [T2] stronger border
+$border-tertiary:  $brand-primary-darkest !default;  // [T2] darkest border
+$border-card:      $border-primary !default;
+$border-white:     $color-lightest !default;
+$border-white-alpha-20: rgba($color-lightest, 0.2) !default;
+$border:           $border-primary !default;
+
+// Border widths
+$border-width-xs:    1px !default;
+$border-width-sm:    1px !default;
+$border-width-md:    2px !default;
+$border-width-lg:    3px !default;
+$border-width-xl:    4px !default;
+$border-width-small: $border-width-sm !default;
+
+// Border styles
+$border-style-solid:    solid       !default;
+$border-bg-transparent: transparent !default;
+
+// Border radius
+$border-radius-base:  4px  !default;
+$border-radius-sm:    3px  !default;  // Bootstrap $border-radius-small
+$border-radius-md:    4px  !default;
+$border-radius-lg:    6px  !default;  // Bootstrap $border-radius-large
+$border-radius-xl:    12px !default;
+$border-radius-xxl:   24px !default;
+$border-radius-round: 50px !default;
+$border-rad-md: $border-radius-md !default;
+
+// Box shadows
+$box-shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.05) !default;
+$box-shadow-md:    0 2px 4px rgba(0, 0, 0, 0.10) !default;
+$box-shadow-lg:    0 4px 8px rgba(0, 0, 0, 0.10) !default;
+$box-shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.10) !default;
+
+// Spacing
+// $spacing-xxs corrected to 2px (Bootstrap xs gutter minimum; 1px is too tight
+// for EC touch targets and was a bug in earlier versions of this file).
+$spacing-xxs: 2px  !default;
+$spacing-xs:  5px  !default;
+$spacing-sm:  8px  !default;
+$spacing-md:  12px !default;
+$spacing-lg:  16px !default;
+$spacing-xl:  24px !default;
+$spacing-xxl: 32px !default;
+$spacing-3xl: 40px !default;
+$grid-gutter-width: 30px !default;
+
+// sp-space aliases (used by ServiceNow portal widgets)
+$sp-space--xxs: $spacing-xxs !default;
+$sp-space--xs:  $spacing-xs  !default;
+$sp-space--sm:  $spacing-sm  !default;
+$sp-space--md:  $spacing-md  !default;
+$sp-space--lg:  $spacing-lg  !default;
+$sp-space--xl:  $spacing-xl  !default;
+$sp-space--xxl: $spacing-xxl !default;
+$sp-space--3xl: $spacing-3xl !default;
+
+// Bootstrap padding shorthands
+$padding-base-vertical:    6px  !default;
+$padding-base-horizontal:  12px !default;
+$padding-large-vertical:   10px !default;
+$padding-large-horizontal: 16px !default;
+$padding-small-vertical:   5px  !default;
+$padding-small-horizontal: 10px !default;
+$padding-xs-vertical:      1px  !default;
+$padding-xs-horizontal:    5px  !default;
+
+// Typography
+// $font-size-base is 16px (EC standard).  Bootstrap 3 ships 14px but EC
+// renders at 16px by default; using 14px causes computed heading/input sizes
+// to be too small.
+$font-family-sans-serif: "Helvetica Neue", Helvetica, Arial, sans-serif !default;
+$font-family-base:       $font-family-sans-serif !default;
+$font-size-base: 16px !default;
+$font-size-xs:   12px !default;
+$font-size-sm:   14px !default;  // $font-size-small
+$font-size-md:   16px !default;  // = base
+$font-size-lg:   18px !default;
+$font-size-xl:   20px !default;
+$font-size-xxl:  28px !default;
+$font-size-3xl:  36px !default;
+$font-size-h1: ceil($font-size-base * 2.25) !default;  // 36px
+$font-size-h2: ceil($font-size-base * 1.75) !default;  // 28px
+$font-size-h3: ceil($font-size-base * 1.5)  !default;  // 24px
+$font-size-h4: ceil($font-size-base * 1.25) !default;  // 20px
+$font-size-h5: $font-size-base              !default;  // 16px
+$font-size-h6: ceil($font-size-base * 0.875) !default; // 14px
+
+$font-weight-base:     400    !default;
+$font-weight-light:    300    !default;
+$font-weight-normal:   400    !default;
+$font-weight-medium:   500    !default;
+$font-weight-semibold: 600    !default;
+$font-weight-bold:     700    !default;
+$font-weight-md: $font-weight-medium   !default;
+$font-weight-lg: $font-weight-semibold !default;
+$font-weight-xl: $font-weight-bold     !default;
+
+$line-height-base:     1.428571429 !default;  // 20/14 Bootstrap default
+$line-height-small:    1.2         !default;
+$line-height-computed: floor($font-size-base * $line-height-base) !default;
+
+$headings-font-family:  $font-family-sans-serif !default;
+$headings-font-weight:  500 !default;
+$headings-line-height:  1.1 !default;
+
+// -----------------------------------------------------------------------------
+// 1.5 Focus rings
+// -----------------------------------------------------------------------------
+
+$focus-ring-offset-sm:       1px  !default;
+$focus-ring-offset-md:       2px  !default;
+$focus-ring-offset-lg:       3px  !default;
+$focus-ring-offset-sm-inset: -1px !default;
+$focus-ring-offset-md-inset: -2px !default;
+$focus-ring-offset-lg-inset: -3px !default;
+
+$focus-ring-primary: $border-width-md solid $brand-primary-darker !default;
+$focus-ring-white:   $border-width-md solid $color-lightest       !default;
+
+// =============================================================================
+// PART 2: Component variables (Bootstrap 3)
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 2.1 Buttons, form states, alerts, panel
+// -----------------------------------------------------------------------------
+
+// Buttons — default variant
+$btn-font-weight:         normal !default;
+$btn-default-color:       #333   !default;
+$btn-default-bg:          #fff   !default;
+$btn-default-border:      #ccc   !default;
+$btn-default-bg-hover:    $background-hover !default;
+$btn-default-border-hover: $border-primary  !default;
+$btn-default-color-hover:  $btn-default-color !default;
+$btn-default-bg-active:    #e6e6e6 !default;
+$btn-default-border-active: #adadad !default;
+$btn-default-color-active:  $btn-default-color !default;
+
+// Buttons — primary variant
+$btn-primary-color:        #fff  !default;
+$btn-primary-bg:           $brand-primary !default;
+$btn-primary-border:       darken($btn-primary-bg, 5%)  !default;
+$btn-primary-bg-hover:     darken($btn-primary-bg, 5%)  !default;
+$btn-primary-border-hover: darken($btn-primary-bg, 10%) !default;
+$btn-primary-color-hover:  #fff  !default;
+$btn-primary-bg-active:    darken($btn-primary-bg, 10%) !default;
+$btn-primary-border-active: darken($btn-primary-bg, 12%) !default;
+$btn-primary-color-active: #fff  !default;
+
+// Buttons — secondary variant  [T2]
+// Tied to $brand-secondary so client Tier 1 overrides flow through automatically.
+$btn-secondary-color:        $text-white !default;
+$btn-secondary-bg:           $brand-secondary !default;
+$btn-secondary-border:       $brand-secondary !default;
+$btn-secondary-bg-hover:     darken($brand-secondary, 5%)  !default;
+$btn-secondary-border-hover: darken($brand-secondary, 10%) !default;
+$btn-secondary-color-hover:  $text-white !default;
+$btn-secondary-bg-active:    darken($brand-secondary, 10%) !default;
+$btn-secondary-border-active: darken($brand-secondary, 12%) !default;
+$btn-secondary-color-active: $text-white !default;
+
+// Buttons — link
+$btn-link-disabled-color: $text-muted !default;
+
+// Button border radii
+$btn-border-radius-base:  $border-radius-base !default;
+$btn-border-radius-large: $border-radius-lg   !default;
+$btn-border-radius-small: $border-radius-sm   !default;
+
+// Form states and alerts (Bootstrap 3)
+$state-success-text:   #3c763d !default;
+$state-success-bg:     #dff0d8 !default;
+$state-success-border: darken(adjust-hue($state-success-bg, -10), 5%) !default;
+$state-info-text:      #31708f !default;
+$state-info-bg:        #d9edf7 !default;
+$state-info-border:    darken(adjust-hue($state-info-bg, -10), 7%) !default;
+$state-warning-text:   #8a6d3b !default;
+$state-warning-bg:     #fcf8e3 !default;
+$state-warning-border: darken(adjust-hue($state-warning-bg, -10), 5%) !default;
+$state-danger-text:    #a94442 !default;
+$state-danger-bg:      #f2dede !default;
+$state-danger-border:  darken(adjust-hue($state-danger-bg, -10), 5%) !default;
+
+// Alerts
+$alert-padding:        15px !default;
+$alert-border-radius:  $border-radius-base !default;
+$alert-success-bg:     $state-success-bg   !default;
+$alert-success-text:   $state-success-text !default;
+$alert-success-border: $state-success-border !default;
+$alert-info-bg:        $state-info-bg   !default;
+$alert-info-text:      $state-info-text !default;
+$alert-info-border:    $state-info-border !default;
+$alert-warning-bg:     $state-warning-bg   !default;
+$alert-warning-text:   $state-warning-text !default;
+$alert-warning-border: $state-warning-border !default;
+$alert-danger-bg:      $state-danger-bg   !default;
+$alert-danger-text:    $state-danger-text !default;
+$alert-danger-border:  $state-danger-border !default;
+
+// Panel (Bootstrap 3)
+$panel-bg:             #fff   !default;
+$panel-body-padding:   15px   !default;
+$panel-heading-padding: 10px 15px !default;
+$panel-footer-padding: $panel-heading-padding !default;
+$panel-border-radius:  $border-radius-base !default;
+$panel-inner-border:   #ddd !default;
+$panel-footer-bg:      #f5f5f5 !default;
+$panel-default-text:         $gray-dark    !default;
+$panel-default-border:       #ddd          !default;
+$panel-default-heading-bg:   #f5f5f5       !default;
+$panel-primary-text:         #fff          !default;
+$panel-primary-border:       $brand-primary !default;
+$panel-primary-heading-bg:   $brand-primary !default;
+$panel-success-text:         $state-success-text !default;
+$panel-success-border:       $state-success-border !default;
+$panel-success-heading-bg:   $state-success-bg !default;
+$panel-info-text:            $state-info-text !default;
+$panel-info-border:          $state-info-border !default;
+$panel-info-heading-bg:      $state-info-bg !default;
+$panel-warning-text:         $state-warning-text !default;
+$panel-warning-border:       $state-warning-border !default;
+$panel-warning-heading-bg:   $state-warning-bg !default;
+$panel-danger-text:          $state-danger-text !default;
+$panel-danger-border:        $state-danger-border !default;
+$panel-danger-heading-bg:    $state-danger-bg !default;
+$sp-panel-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) !default;
+
+// -----------------------------------------------------------------------------
+// 2.2 Dropdown, navs, tables, list group, labels
+// -----------------------------------------------------------------------------
+
+// Dropdowns
+$dropdown-bg:               #fff !default;
+$dropdown-border:            rgba(0, 0, 0, 0.15) !default;
+$dropdown-fallback-border:   #ccc !default;
+$dropdown-divider-bg:        #e5e5e5 !default;
+$dropdown-link-color:        $gray-dark !default;
+$dropdown-link-hover-color:  darken($gray-dark, 5%) !default;
+$dropdown-link-hover-bg:     #f5f5f5 !default;
+$dropdown-link-active-color: $component-active-color !default;
+$dropdown-link-active-bg:    $component-active-bg    !default;
+$dropdown-link-disabled-color: $gray-light !default;
+$dropdown-header-color:      $gray-light !default;
+
+// Navs
+$nav-link-padding:                    10px 15px !default;
+$nav-link-hover-bg:                   $gray-lighter !default;
+$nav-disabled-link-color:             $gray-light   !default;
+$nav-disabled-link-hover-color:       $gray-light   !default;
+$nav-tabs-border-color:               #ddd          !default;
+$nav-tabs-link-hover-border-color:    $gray-lighter !default;
+$nav-tabs-active-link-hover-bg:       $body-bg      !default;
+$nav-tabs-active-link-hover-color:    $gray         !default;
+$nav-tabs-active-link-hover-border-color: #ddd      !default;
+$nav-tabs-justified-link-border-color: #ddd         !default;
+$nav-tabs-justified-active-link-border-color: $body-bg !default;
+$nav-pills-border-radius:             $border-radius-base !default;
+$nav-pills-active-link-hover-bg:      $component-active-bg    !default;
+$nav-pills-active-link-hover-color:   $component-active-color !default;
+
+// Tables
+$table-cell-padding:           8px  !default;
+$table-condensed-cell-padding: 5px  !default;
+$table-bg:                     transparent !default;
+$table-bg-accent:              #f9f9f9     !default;
+$table-bg-hover:               #f5f5f5     !default;
+$table-bg-active:              $table-bg-hover !default;
+$table-border-color:           #ddd !default;
+$table-hover: $table-bg-hover !default;
+
+// List group
+$list-group-bg:                  #fff  !default;
+$list-group-border:              #ddd  !default;
+$list-group-border-radius:       $border-radius-base !default;
+$list-group-hover-bg:            #f5f5f5 !default;
+$list-group-active-color:        $component-active-color !default;
+$list-group-active-bg:           $component-active-bg    !default;
+$list-group-active-border:       $list-group-active-bg   !default;
+$list-group-active-text-color:   lighten($list-group-active-bg, 40%) !default;
+$list-group-disabled-color:      $gray-light  !default;
+$list-group-disabled-bg:         $gray-lighter !default;
+$list-group-disabled-text-color: $list-group-disabled-color !default;
+$list-group-link-color:          #555  !default;
+$list-group-link-hover-color:    $list-group-link-color !default;
+$list-group-link-heading-color:  #333  !default;
+
+// Labels (Bootstrap 3)
+$label-default-bg:     $gray-light     !default;
+$label-primary-bg:     $brand-primary  !default;
+$label-success-bg:     $brand-success  !default;
+$label-info-bg:        $brand-info     !default;
+$label-warning-bg:     $brand-warning  !default;
+$label-danger-bg:      $brand-danger   !default;
+$label-color:          #fff            !default;
+$label-link-hover-color: #fff          !default;
+
+// -----------------------------------------------------------------------------
+// 2.3 Modals, forms, progress, badge, input, component active
+// -----------------------------------------------------------------------------
+
+// Component active (must precede dropdown / list-group refs above)
+$component-active-color: #fff          !default;
+$component-active-bg:    $brand-primary !default;
+
+// Modals
+$modal-inner-padding:   15px !default;
+$modal-title-padding:   15px !default;
+$modal-title-line-height: $line-height-base !default;
+$modal-content-bg:      #fff !default;
+$modal-content-border-color: rgba(0, 0, 0, 0.2) !default;
+$modal-content-fallback-border-color: #999 !default;
+$modal-backdrop-bg:     #000 !default;
+$modal-backdrop-opacity: 0.5 !default;
+$modal-header-border-color: #e5e5e5 !default;
+$modal-footer-border-color: $modal-header-border-color !default;
+
+// Forms
+$input-border-focus:         #66afe9      !default;
+$form-group-margin-bottom:   15px         !default;
+$legend-color:               $gray-dark   !default;
+$legend-border-color:        #e5e5e5      !default;
+$input-group-addon-bg:       $gray-lighter !default;
+$input-group-addon-border-color: $input-border !default;
+$cursor-disabled:            not-allowed   !default;
+$label-margin-bottom:        $spacing-xs   !default;
+
+// Input
+$input-bg:               #fff  !default;
+$input-bg-disabled:      $gray-lighter !default;
+$input-color:            $gray !default;
+$input-border:           #ccc  !default;
+$input-border-radius:    $border-radius-base !default;
+$input-color-placeholder: #999 !default;
+$input-height-base:  ($line-height-computed + ($padding-base-vertical  * 2) + 2) !default;
+$input-height-small: (floor($font-size-sm * $line-height-base) + ($padding-small-vertical * 2) + 2) !default;
+$input-height-large: (ceil($font-size-lg  * $line-height-base) + ($padding-large-vertical * 2) + 2) !default;
+
+// Progress bars
+$progress-bg:             #f5f5f5       !default;
+$progress-bar-color:      #fff          !default;
+$progress-border-radius:  $border-radius-base !default;
+$progress-bar-bg:         $brand-primary  !default;
+$progress-bar-success-bg: $brand-success  !default;
+$progress-bar-warning-bg: $brand-warning  !default;
+$progress-bar-danger-bg:  $brand-danger   !default;
+$progress-bar-info-bg:    $brand-info     !default;
+$progress-bar: $progress-bar-bg !default;
+
+// Badges
+$badge-bg:            $gray-light !default;
+$badge-color:         #fff        !default;
+$badge-link-hover-color: #fff     !default;
+$badge-active-color:  $link-color !default;
+$badge-active-bg:     #fff        !default;
+$badge-font-weight:   bold        !default;
+$badge-line-height:   1           !default;
+$badge-border-radius: 10px        !default;
+
+// Popovers
+$popover-bg:                    $background-primary !default;
+$popover-border-color:          $background-primary !default;
+$popover-fallback-border-color: $background-primary !default;
+$popover-title-bg:              $background-primary !default;
+
+// Breadcrumbs
+$breadcrumb-padding-vertical:   0          !default;
+$breadcrumb-padding-horizontal: $spacing-xl !default;
+$breadcrumb-bg:                 transparent !default;
+$breadcrumb-color:              $text-primary !default;
+$breadcrumb-active-color:       $text-primary !default;
+
+// Thumbnails
+$thumbnail-padding:         $spacing-xs !default;
+$thumbnail-border:          $border     !default;
+$thumbnail-caption-padding: $spacing-sm !default;
+
+// Wells
+$well-bg:     $body-bg !default;
+$well-border: $border  !default;
+
+// Pagination
+$pagination-bg:     $background-primary !default;
+$pagination-border: $border-primary     !default;
+$pagination-color:  $text-primary       !default;
+$pagination-hover-bg:     $background-secondary !default;
+$pagination-hover-border: $border-secondary     !default;
+$pagination-hover-color:  $text-primary         !default;
+$pagination-active-bg:     $brand-primary !default;
+$pagination-active-border: $brand-primary !default;
+$pagination-active-color:  $text-white    !default;
+$pagination-disabled-bg:     $background-primary !default;
+$pagination-disabled-border: $border-tertiary    !default;
+$pagination-disabled-color:  $text-muted         !default;
+$pager-border-radius: $border-radius-base !default;
+
+// Code
+$code-color: $brand-danger        !default;
+$code-bg:    $background-secondary !default;
+$kbd-color:  $text-white           !default;
+$kbd-bg:     $gray-dark            !default;
+$pre-bg:     $background-secondary !default;
+$pre-color:  $gray-dark            !default;
+$pre-border-color: $border-tertiary !default;
+
+// Type helpers
+$abbr-border-color:         $border-tertiary !default;
+$headings-small-color:      $text-muted      !default;
+$blockquote-small-color:    $text-muted      !default;
+$blockquote-border-color:   $border-tertiary !default;
+$page-header-border-color:  $border-tertiary !default;
+$hr-border:                 $border-tertiary !default;
+
+// Carousel
+$carousel-indicator-active-bg: $brand-primary !default;
+
+// =============================================================================
+// PART 3: Aliases
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 3.1 Bootstrap / ServiceNow variable aliases
+// -----------------------------------------------------------------------------
+
+$primary:                $brand-primary  !default;
+$select-primary:         $brand-primary  !default;
+$select-primary-lighter: lighten($brand-primary, 35%) !default;
+$select-primary-darker:  $brand-primary-darker !default;
+
+$success:     $brand-success !default;
+$info:        $brand-info    !default;
+$warning:     $brand-warning !default;
+$danger:      $brand-danger  !default;
+$error:       $danger        !default;
+$in-progress: $success       !default;
+$due-later:   $success       !default;
+$due-today:   $warning       !default;
+$overdue:     $danger        !default;
+
+// Bootstrap 3 shorthands
+$border-rad-md: $border-radius-md !default;
+
+// -----------------------------------------------------------------------------
+// 3.2 ServiceNow EC / portal variables  [T2 unless noted]
+// Override in "Theme CSS Variables" (before this file) or in "Portal CSS
+// Variables" when using gf-variables-and-mixins in a portal theme.
+// -----------------------------------------------------------------------------
+
+// Navbar  [T2]
+$navbar-height:  60px !default;
+$navbar-padding: $spacing-sm $spacing-xxl !default;
+
+$navbar-inverse-bg:     $background-primary !default;
+$navbar-inverse-border: transparent         !default;
+$navbar-inverse-color:  $text-primary       !default;
+
+$navbar-inverse-brand-color:      $navbar-inverse-color !default;
+$navbar-inverse-brand-hover-color: $navbar-inverse-color !default;
+$navbar-inverse-brand-hover-bg:   transparent            !default;
+
+$navbar-inverse-link-color:          $navbar-inverse-color !default;
+// Uses $brand-secondary-lightest so that Tier 1 $brand-secondary flows through.
+// Do NOT reference $brand-secondary-light here — it may be too dark for a bg.
+$navbar-inverse-link-hover-bg:       $brand-secondary-lightest !default;
+$navbar-inverse-link-hover-color:    $text-primary             !default;
+$navbar-inverse-link-active-color:   $navbar-inverse-link-hover-color !default;
+$navbar-inverse-link-active-bg:      $navbar-inverse-link-hover-bg    !default;
+$navbar-inverse-link-disabled-color: rgba($navbar-inverse-link-color, 0.5) !default;
+$navbar-inverse-link-disabled-bg:    transparent !default;
+
+// Sub-navbar  [T2]
+$sub-navbar-height:  50px !default;
+$sub-navbar-padding: 0 $spacing-lg !default;
+$sub-navbar-bg:      $background-primary !default;
+$sub-navbar-border:  $brand-primary      !default;
+
+// SP navbar / logo / tagline
+$sp-navbar-height:        $navbar-height          !default;
+$sp-navbar-divider-color: $sub-navbar-border       !default;
+$sp-navbar-inverse-bg:    $navbar-inverse-bg        !default;
+$sp-nav-subnav:           $sp-navbar-divider-color  !default;
+
+$sp-logo-max-height: 44px !default;
+$sp-logo-margin-x:   6px  !default;
+$sp-logo-margin-y:   6px  !default;
+
+$sp-tagline-color: $text-primary !default;
+
+// Footer  [T2]
+$footer-padding: $spacing-xl $spacing-xl !default;
+$footer-bg:      $brand-primary-lightest  !default;
+$footer-border:  $footer-bg               !default;
+$footer-color:   $text-white              !default;
+
+// Misc SP
+$sp-loading-color:   $text-primary   !default;
+$sp-agent-chat-bg:   $brand-primary  !default;
+$sp-b-border-color:  $border         !default;
+$sp-box-shadow--sm:  0 2px  4px 0 rgba(56, 56, 56, 0.25) !default;
+$sp-box-shadow--md:  0 4px  8px 0 rgba(56, 56, 56, 0.25) !default;
+$sp-box-shadow--lg:  0 8px 12px 0 rgba(56, 56, 56, 0.25) !default;
+$sp-box-shadow--xl:  0 12px 16px 0 rgba(56, 56, 56, 0.25) !default;
+$sp-box-shadow--xxl: 0 16px 24px 0 rgba(56, 56, 56, 0.25) !default;
+
+// Preview / error
+$preview-outline-text-color: $text-white   !default;
+$sc-field-error-color:       $text-secondary !default;
+
+// Favorite star  [T2]
+$fav-star-color:         $brand-warning !default;
+$fav-star-color-off:     $background-primary !default;
+$fav-star-outline-color: darken($brand-warning, 30%) !default;
+$fav-star-outline: -1px 0 $fav-star-outline-color,
+                    0  1px $fav-star-outline-color,
+                    1px 0  $fav-star-outline-color,
+                    0 -1px $fav-star-outline-color !default;
+
+// AI / now-sp tabs
+$now-sp-font-family-sans-serif:          $font-family-sans-serif !default;
+$now-sp-tabs--border-color:              $sp-b-border-color      !default;
+// These reference $select-primary (not $brand-primary) so the active tab
+// color tracks the portal's selected/active interaction color, which clients
+// may override independently from brand colors.
+$now-sp-tabs--color--hover:              $select-primary !default;
+$now-sp-tabs--selected--background-color: $select-primary !default;
+$now-sp-tabs--selected--color:           $select-primary !default;
+
+// Miscellaneous
+$align-center:      center     !default;
+$align-left:        left       !default;
+$box-size-border:   border-box !default;
+$width-full:        100%       !default;
+$display-d1:        flex       !default;
+$margin-min:        0          !default;
+$margin-top-base:   0          !default;
+$margin-bottom-base: 0         !default;
+$padding-base:      0          !default;
+$padding-left-base: 0          !default;
+
+// =============================================================================
+// PART 4: gf- aliases (Bootstrap variables with gf- prefix)
+// =============================================================================
+// These are read-only mirrors; set the base variable, not the gf- alias.
+
+// Neutral / color scale
+$gf-gray-base:       $gray-base       !default;
+$gf-gray-darker:     $gray-darker     !default;
+$gf-gray-dark:       $gray-dark       !default;
+$gf-gray:            $gray            !default;
+$gf-gray-light:      $gray-light      !default;
+$gf-gray-lighter:    $gray-lighter    !default;
+$gf-color-darkest:   $color-darkest   !default;
+$gf-color-darker:    $color-darker    !default;
+$gf-color-dark:      $color-dark      !default;
+$gf-color-disabled:  $color-disabled  !default;
+$gf-color-light:     $color-light     !default;
+$gf-color-lighter:   $color-lighter   !default;
+$gf-color-lightest:  $color-lightest  !default;
+
+// Brand
+$gf-brand-primary:           $brand-primary           !default;
+$gf-brand-primary-darker:    $brand-primary-darker    !default;
+$gf-brand-primary-darkest:   $brand-primary-darkest   !default;
+$gf-brand-primary-lighter:   $brand-primary-lighter   !default;
+$gf-brand-primary-lightest:  $brand-primary-lightest  !default;
+$gf-brand-secondary:         $brand-secondary         !default;
+$gf-brand-secondary-light:   $brand-secondary-light   !default;
+$gf-brand-secondary-lightest: $brand-secondary-lightest !default;
+$gf-brand-success:           $brand-success           !default;
+$gf-brand-info:              $brand-info              !default;
+$gf-brand-warning:           $brand-warning           !default;
+$gf-brand-danger:            $brand-danger            !default;
+
+// Text / link
+$gf-text-primary:          $text-primary          !default;
+$gf-text-secondary:        $text-secondary        !default;
+$gf-text-tertiary:         $text-tertiary         !default;
+$gf-text-white:            $text-white            !default;
+$gf-text-color:            $text-color            !default;
+$gf-text-muted:            $text-muted            !default;
+$gf-link-color:            $link-color            !default;
+$gf-link-hover-color:      $link-hover-color      !default;
+$gf-link-hover-decoration: $link-hover-decoration !default;
+
+// Background / scaffolding
+$gf-background-primary:   $background-primary   !default;
+$gf-background-secondary: $background-secondary !default;
+$gf-background-tertiary:  $background-tertiary  !default;
+$gf-background-hover:     $background-hover     !default;
+$gf-body-bg:              $body-bg              !default;
+$gf-sp-body-bg:           $sp-body-bg           !default;
+
+// Borders
+$gf-border-primary:       $border-primary       !default;
+$gf-border-secondary:     $border-secondary     !default;
+$gf-border-tertiary:      $border-tertiary      !default;
+$gf-border:               $border               !default;
+$gf-border-width-xs:      $border-width-xs      !default;
+$gf-border-width-sm:      $border-width-sm      !default;
+$gf-border-width-md:      $border-width-md      !default;
+$gf-border-width-lg:      $border-width-lg      !default;
+$gf-border-width-xl:      $border-width-xl      !default;
+$gf-border-width-small:   $border-width-small   !default;
+$gf-border-radius-base:   $border-radius-base   !default;
+$gf-border-radius-sm:     $border-radius-sm     !default;
+$gf-border-radius-md:     $border-radius-md     !default;
+$gf-border-radius-lg:     $border-radius-lg     !default;
+$gf-border-radius-xl:     $border-radius-xl     !default;
+$gf-border-radius-xxl:    $border-radius-xxl    !default;
+$gf-border-radius-round:  $border-radius-round  !default;
+
+// Box shadow
+$gf-box-shadow-sm:    $box-shadow-sm    !default;
+$gf-box-shadow-md:    $box-shadow-md    !default;
+$gf-box-shadow-lg:    $box-shadow-lg    !default;
+$gf-box-shadow-inset: $box-shadow-inset !default;
+
+// Spacing
+$gf-spacing-xxs:              $spacing-xxs              !default;
+$gf-spacing-xs:               $spacing-xs               !default;
+$gf-spacing-sm:               $spacing-sm               !default;
+$gf-spacing-md:               $spacing-md               !default;
+$gf-spacing-lg:               $spacing-lg               !default;
+$gf-spacing-xl:               $spacing-xl               !default;
+$gf-spacing-xxl:              $spacing-xxl              !default;
+$gf-grid-gutter-width:        $grid-gutter-width        !default;
+$gf-padding-base-vertical:    $padding-base-vertical    !default;
+$gf-padding-base-horizontal:  $padding-base-horizontal  !default;
+$gf-padding-large-vertical:   $padding-large-vertical   !default;
+$gf-padding-large-horizontal: $padding-large-horizontal !default;
+$gf-padding-small-vertical:   $padding-small-vertical   !default;
+$gf-padding-small-horizontal: $padding-small-horizontal !default;
+$gf-padding-xs-vertical:      $padding-xs-vertical      !default;
+$gf-padding-xs-horizontal:    $padding-xs-horizontal    !default;
+
+// Typography
+$gf-font-family-sans-serif: $font-family-sans-serif !default;
+$gf-font-family-base:       $font-family-base       !default;
+$gf-font-size-base:         $font-size-base         !default;
+$gf-font-size-xs:           $font-size-xs           !default;
+$gf-font-size-sm:           $font-size-sm           !default;
+$gf-font-size-md:           $font-size-md           !default;
+$gf-font-size-lg:           $font-size-lg           !default;
+$gf-font-size-xl:           $font-size-xl           !default;
+$gf-font-size-xxl:          $font-size-xxl          !default;
+$gf-font-size-3xl:          $font-size-3xl          !default;
+$gf-font-size-h1:           $font-size-h1           !default;
+$gf-font-size-h2:           $font-size-h2           !default;
+$gf-font-size-h3:           $font-size-h3           !default;
+$gf-font-size-h4:           $font-size-h4           !default;
+$gf-font-size-h5:           $font-size-h5           !default;
+$gf-font-size-h6:           $font-size-h6           !default;
+$gf-font-weight-normal:     $font-weight-normal     !default;
+$gf-font-weight-medium:     $font-weight-medium     !default;
+$gf-font-weight-semibold:   $font-weight-semibold   !default;
+$gf-line-height-base:       $line-height-base       !default;
+$gf-line-height-computed:   $line-height-computed   !default;
+$gf-headings-font-weight:   $headings-font-weight   !default;
+$gf-headings-line-height:   $headings-line-height   !default;
+
+// Focus
+$gf-focus-ring-primary:        $focus-ring-primary        !default;
+$gf-focus-ring-offset-sm-inset: $focus-ring-offset-sm-inset !default;
+$gf-focus-ring-offset-md:      $focus-ring-offset-md      !default;
+$gf-focus-ring-offset-lg:      $focus-ring-offset-lg      !default;
+
+// Buttons — default
+$gf-btn-font-weight:          $btn-font-weight          !default;
+$gf-btn-default-color:        $btn-default-color        !default;
+$gf-btn-default-bg:           $btn-default-bg           !default;
+$gf-btn-default-border:       $btn-default-border       !default;
+$gf-btn-default-bg-hover:     $btn-default-bg-hover     !default;
+$gf-btn-default-border-hover: $btn-default-border-hover !default;
+$gf-btn-default-color-hover:  $btn-default-color-hover  !default;
+$gf-btn-default-bg-active:    $btn-default-bg-active    !default;
+$gf-btn-default-border-active: $btn-default-border-active !default;
+$gf-btn-default-color-active: $btn-default-color-active !default;
+
+// Buttons — primary
+$gf-btn-primary-color:        $btn-primary-color        !default;
+$gf-btn-primary-bg:           $btn-primary-bg           !default;
+$gf-btn-primary-border:       $btn-primary-border       !default;
+$gf-btn-primary-bg-hover:     $btn-primary-bg-hover     !default;
+$gf-btn-primary-border-hover: $btn-primary-border-hover !default;
+$gf-btn-primary-color-hover:  $btn-primary-color-hover  !default;
+$gf-btn-primary-bg-active:    $btn-primary-bg-active    !default;
+$gf-btn-primary-border-active: $btn-primary-border-active !default;
+$gf-btn-primary-color-active: $btn-primary-color-active !default;
+
+// Buttons — secondary
+$gf-btn-secondary-color:        $btn-secondary-color        !default;
+$gf-btn-secondary-bg:           $btn-secondary-bg           !default;
+$gf-btn-secondary-border:       $btn-secondary-border       !default;
+$gf-btn-secondary-bg-hover:     $btn-secondary-bg-hover     !default;
+$gf-btn-secondary-border-hover: $btn-secondary-border-hover !default;
+$gf-btn-secondary-color-hover:  $btn-secondary-color-hover  !default;
+$gf-btn-secondary-bg-active:    $btn-secondary-bg-active    !default;
+$gf-btn-secondary-border-active: $btn-secondary-border-active !default;
+$gf-btn-secondary-color-active: $btn-secondary-color-active !default;
+
+// Buttons — border radii
+$gf-btn-border-radius-base:  $btn-border-radius-base  !default;
+$gf-btn-border-radius-large: $btn-border-radius-large !default;
+$gf-btn-border-radius-small: $btn-border-radius-small !default;
+
+// Form states and alerts
+$gf-state-success-text:   $state-success-text   !default;
+$gf-state-success-bg:     $state-success-bg     !default;
+$gf-state-success-border: $state-success-border !default;
+$gf-state-info-text:      $state-info-text      !default;
+$gf-state-info-bg:        $state-info-bg        !default;
+$gf-state-info-border:    $state-info-border    !default;
+$gf-state-warning-text:   $state-warning-text   !default;
+$gf-state-warning-bg:     $state-warning-bg     !default;
+$gf-state-warning-border: $state-warning-border !default;
+$gf-state-danger-text:    $state-danger-text    !default;
+$gf-state-danger-bg:      $state-danger-bg      !default;
+$gf-state-danger-border:  $state-danger-border  !default;
+$gf-alert-padding:        $alert-padding        !default;
+$gf-alert-border-radius:  $alert-border-radius  !default;
+$gf-alert-success-bg:     $alert-success-bg     !default;
+$gf-alert-success-text:   $alert-success-text   !default;
+$gf-alert-success-border: $alert-success-border !default;
+$gf-alert-info-bg:        $alert-info-bg        !default;
+$gf-alert-info-text:      $alert-info-text      !default;
+$gf-alert-info-border:    $alert-info-border    !default;
+$gf-alert-warning-bg:     $alert-warning-bg     !default;
+$gf-alert-warning-text:   $alert-warning-text   !default;
+$gf-alert-warning-border: $alert-warning-border !default;
+$gf-alert-danger-bg:      $alert-danger-bg      !default;
+$gf-alert-danger-text:    $alert-danger-text    !default;
+$gf-alert-danger-border:  $alert-danger-border  !default;
+
+// Panel
+$gf-panel-bg:                 $panel-bg                 !default;
+$gf-panel-body-padding:       $panel-body-padding       !default;
+$gf-panel-heading-padding:    $panel-heading-padding    !default;
+$gf-panel-footer-padding:     $panel-footer-padding     !default;
+$gf-panel-border-radius:      $panel-border-radius      !default;
+$gf-panel-inner-border:       $panel-inner-border       !default;
+$gf-panel-footer-bg:          $panel-footer-bg          !default;
+$gf-panel-default-text:       $panel-default-text       !default;
+$gf-panel-default-border:     $panel-default-border     !default;
+$gf-panel-default-heading-bg: $panel-default-heading-bg !default;
+$gf-panel-primary-text:       $panel-primary-text       !default;
+$gf-panel-primary-border:     $panel-primary-border     !default;
+$gf-panel-primary-heading-bg: $panel-primary-heading-bg !default;
+$gf-panel-success-text:       $panel-success-text       !default;
+$gf-panel-success-border:     $panel-success-border     !default;
+$gf-panel-success-heading-bg: $panel-success-heading-bg !default;
+$gf-panel-info-text:          $panel-info-text          !default;
+$gf-panel-info-border:        $panel-info-border        !default;
+$gf-panel-info-heading-bg:    $panel-info-heading-bg    !default;
+$gf-panel-warning-text:       $panel-warning-text       !default;
+$gf-panel-warning-border:     $panel-warning-border     !default;
+$gf-panel-warning-heading-bg: $panel-warning-heading-bg !default;
+$gf-panel-danger-text:        $panel-danger-text        !default;
+$gf-panel-danger-border:      $panel-danger-border      !default;
+$gf-panel-danger-heading-bg:  $panel-danger-heading-bg  !default;
+$gf-sp-panel-box-shadow:      $sp-panel-box-shadow      !default;
+
+// Dropdown
+$gf-dropdown-bg:               $dropdown-bg               !default;
+$gf-dropdown-border:           $dropdown-border           !default;
+$gf-dropdown-fallback-border:  $dropdown-fallback-border  !default;
+$gf-dropdown-divider-bg:       $dropdown-divider-bg       !default;
+$gf-dropdown-link-color:       $dropdown-link-color       !default;
+$gf-dropdown-link-hover-color: $dropdown-link-hover-color !default;
+$gf-dropdown-link-hover-bg:    $dropdown-link-hover-bg    !default;
+$gf-dropdown-link-active-color: $dropdown-link-active-color !default;
+$gf-dropdown-link-active-bg:   $dropdown-link-active-bg   !default;
+$gf-dropdown-link-disabled-color: $dropdown-link-disabled-color !default;
+$gf-dropdown-header-color:     $dropdown-header-color     !default;
+
+// Navs
+$gf-nav-link-padding:                     $nav-link-padding                     !default;
+$gf-nav-link-hover-bg:                    $nav-link-hover-bg                    !default;
+$gf-nav-disabled-link-color:              $nav-disabled-link-color              !default;
+$gf-nav-disabled-link-hover-color:        $nav-disabled-link-hover-color        !default;
+$gf-nav-tabs-border-color:                $nav-tabs-border-color                !default;
+$gf-nav-tabs-link-hover-border-color:     $nav-tabs-link-hover-border-color     !default;
+$gf-nav-tabs-active-link-hover-bg:        $nav-tabs-active-link-hover-bg        !default;
+$gf-nav-tabs-active-link-hover-color:     $nav-tabs-active-link-hover-color     !default;
+$gf-nav-tabs-active-link-hover-border-color: $nav-tabs-active-link-hover-border-color !default;
+$gf-nav-tabs-justified-link-border-color: $nav-tabs-justified-link-border-color !default;
+$gf-nav-tabs-justified-active-link-border-color: $nav-tabs-justified-active-link-border-color !default;
+$gf-nav-pills-border-radius:              $nav-pills-border-radius              !default;
+$gf-nav-pills-active-link-hover-bg:       $nav-pills-active-link-hover-bg       !default;
+$gf-nav-pills-active-link-hover-color:    $nav-pills-active-link-hover-color    !default;
+
+// Table
+$gf-table-cell-padding:           $table-cell-padding           !default;
+$gf-table-condensed-cell-padding: $table-condensed-cell-padding !default;
+$gf-table-bg:                     $table-bg                     !default;
+$gf-table-bg-accent:              $table-bg-accent              !default;
+$gf-table-bg-hover:               $table-bg-hover               !default;
+$gf-table-bg-active:              $table-bg-active              !default;
+$gf-table-border-color:           $table-border-color           !default;
+
+// List group
+$gf-list-group-bg:                  $list-group-bg                  !default;
+$gf-list-group-border:              $list-group-border              !default;
+$gf-list-group-border-radius:       $list-group-border-radius       !default;
+$gf-list-group-hover-bg:            $list-group-hover-bg            !default;
+$gf-list-group-active-color:        $list-group-active-color        !default;
+$gf-list-group-active-bg:           $list-group-active-bg           !default;
+$gf-list-group-active-border:       $list-group-active-border       !default;
+$gf-list-group-active-text-color:   $list-group-active-text-color   !default;
+$gf-list-group-disabled-color:      $list-group-disabled-color      !default;
+$gf-list-group-disabled-bg:         $list-group-disabled-bg         !default;
+$gf-list-group-disabled-text-color: $list-group-disabled-text-color !default;
+$gf-list-group-link-color:          $list-group-link-color          !default;
+$gf-list-group-link-hover-color:    $list-group-link-hover-color    !default;
+$gf-list-group-link-heading-color:  $list-group-link-heading-color  !default;
+
+// Labels
+$gf-label-default-bg:     $label-default-bg     !default;
+$gf-label-primary-bg:     $label-primary-bg     !default;
+$gf-label-success-bg:     $label-success-bg     !default;
+$gf-label-info-bg:        $label-info-bg        !default;
+$gf-label-warning-bg:     $label-warning-bg     !default;
+$gf-label-danger-bg:      $label-danger-bg      !default;
+$gf-label-color:          $label-color          !default;
+$gf-label-link-hover-color: $label-link-hover-color !default;
+
+// Modal
+$gf-modal-inner-padding:               $modal-inner-padding               !default;
+$gf-modal-title-padding:               $modal-title-padding               !default;
+$gf-modal-title-line-height:           $modal-title-line-height           !default;
+$gf-modal-content-bg:                  $modal-content-bg                  !default;
+$gf-modal-content-border-color:        $modal-content-border-color        !default;
+$gf-modal-content-fallback-border-color: $modal-content-fallback-border-color !default;
+$gf-modal-backdrop-bg:                 $modal-backdrop-bg                 !default;
+$gf-modal-backdrop-opacity:            $modal-backdrop-opacity            !default;
+$gf-modal-header-border-color:         $modal-header-border-color         !default;
+$gf-modal-footer-border-color:         $modal-footer-border-color         !default;
+
+// Forms / input
+$gf-input-border-focus:            $input-border-focus            !default;
+$gf-form-group-margin-bottom:      $form-group-margin-bottom      !default;
+$gf-legend-color:                  $legend-color                  !default;
+$gf-legend-border-color:           $legend-border-color           !default;
+$gf-input-group-addon-bg:          $input-group-addon-bg          !default;
+$gf-input-group-addon-border-color: $input-group-addon-border-color !default;
+$gf-cursor-disabled:               $cursor-disabled               !default;
+$gf-input-bg:                      $input-bg                      !default;
+$gf-input-bg-disabled:             $input-bg-disabled             !default;
+$gf-input-color:                   $input-color                   !default;
+$gf-input-border:                  $input-border                  !default;
+$gf-input-border-radius:           $input-border-radius           !default;
+$gf-input-color-placeholder:       $input-color-placeholder       !default;
+$gf-input-height-base:             $input-height-base             !default;
+$gf-input-height-small:            $input-height-small            !default;
+$gf-input-height-large:            $input-height-large            !default;
+
+// Progress
+$gf-progress-bg:             $progress-bg             !default;
+$gf-progress-bar-color:      $progress-bar-color      !default;
+$gf-progress-border-radius:  $progress-border-radius  !default;
+$gf-progress-bar-bg:         $progress-bar-bg         !default;
+$gf-progress-bar-success-bg: $progress-bar-success-bg !default;
+$gf-progress-bar-warning-bg: $progress-bar-warning-bg !default;
+$gf-progress-bar-danger-bg:  $progress-bar-danger-bg  !default;
+$gf-progress-bar-info-bg:    $progress-bar-info-bg    !default;
+
+// Badge
+$gf-badge-bg:            $badge-bg            !default;
+$gf-badge-color:         $badge-color         !default;
+$gf-badge-link-hover-color: $badge-link-hover-color !default;
+$gf-badge-active-color:  $badge-active-color  !default;
+$gf-badge-active-bg:     $badge-active-bg     !default;
+$gf-badge-font-weight:   $badge-font-weight   !default;
+$gf-badge-line-height:   $badge-line-height   !default;
+$gf-badge-border-radius: $badge-border-radius !default;
+
+// Component active
+$gf-component-active-color: $component-active-color !default;
+$gf-component-active-bg:    $component-active-bg    !default;
+
+// =============================================================================
+// PART 5: gf- semantic variables (mixin defaults)
+// =============================================================================
+// Override these to adjust mixin behavior on a per-project basis without
+// editing mixin code.  Variable → mixin parameter name matches exactly.
+
+// Focus
+$gf-focus-ring:               $focus-ring-primary     !default;
+$gf-focus-ring-offset:        0                       !default;
+$gf-focus-ring-offset-sm:     $focus-ring-offset-sm-inset !default;
+$gf-focus-ring-offset-md:     $focus-ring-offset-md   !default;
+$gf-focus-ring-offset-lg:     $focus-ring-offset-lg   !default;
+$gf-focus-border-radius:      $border-radius-base     !default;
+$gf-focus-box-shadow:         none                    !default;
+$gf-focus-border:             none                    !default;
+$gf-focus-border-top:         none                    !default;
+$gf-focus-border-right:       none                    !default;
+$gf-focus-border-bottom:      none                    !default;
+$gf-focus-border-left:        none                    !default;
+$gf-focus-outline-reset:      none                    !default;
+$gf-focus-outline-offset-reset: 0                     !default;
+
+// Button — base
+$gf-btn-width:           auto                  !default;
+$gf-btn-height:          auto                  !default;
+$gf-btn-padding:         $spacing-sm $spacing-md !default;
+$gf-btn-gap:             $spacing-md           !default;
+$gf-btn-border-radius:   $border-radius-base   !default;
+$gf-btn-font-size:       $font-size-md         !default;
+$gf-btn-font-weight:     $font-weight-normal   !default;
+$gf-btn-line-height:     $line-height-base     !default;
+$gf-btn-text-decoration: none                  !default;
+$gf-btn-cursor:          pointer               !default;
+$gf-btn-border:          none                  !default;
+$gf-btn-border-top:      none                  !default;
+$gf-btn-border-right:    none                  !default;
+$gf-btn-border-bottom:   none                  !default;
+$gf-btn-border-left:     none                  !default;
+$gf-btn-background:      transparent           !default;
+$gf-btn-box-shadow:          none              !default;
+$gf-btn-box-shadow-hover:    none              !default;
+$gf-btn-box-shadow-active:   none              !default;
+$gf-btn-box-shadow-selected: none              !default;
+$gf-btn-color:               $text-primary     !default;
+$gf-btn-hover-background:    $gf-btn-background !default;
+$gf-btn-hover-border:        $gf-btn-border    !default;
+$gf-btn-hover-color:         $gf-btn-color     !default;
+$gf-btn-hover-text-decoration: $gf-btn-text-decoration !default;
+
+// Button — default variant
+$gf-btn-default-bg:           $btn-default-bg !default;
+$gf-btn-default-border:       $border-width-sm solid $btn-default-border !default;
+$gf-btn-default-color:        $btn-default-color !default;
+$gf-btn-default-hover-bg:     $btn-default-bg-hover !default;
+$gf-btn-default-hover-border: $border-width-sm solid $btn-default-border-hover !default;
+$gf-btn-default-hover-color:  $btn-default-color-hover !default;
+$gf-btn-default-active-bg:    $btn-default-bg-active !default;
+$gf-btn-default-active-border: $border-width-sm solid $btn-default-border-active !default;
+$gf-btn-default-active-color: $btn-default-color-active !default;
+$gf-btn-default-font-weight:  $btn-font-weight !default;
+
+// Button — primary variant
+$gf-btn-primary-bg:           $btn-primary-bg !default;
+$gf-btn-primary-border:       $border-width-sm solid $btn-primary-border !default;
+$gf-btn-primary-color:        $btn-primary-color !default;
+$gf-btn-primary-hover-bg:     $btn-primary-bg-hover !default;
+$gf-btn-primary-hover-border: $border-width-sm solid $btn-primary-border-hover !default;
+$gf-btn-primary-hover-box-shadow: $box-shadow-sm !default;
+$gf-btn-primary-hover-color:  $btn-primary-color-hover !default;
+$gf-btn-primary-active-bg:    $btn-primary-bg-active !default;
+$gf-btn-primary-active-border: $border-width-sm solid $btn-primary-border-active !default;
+$gf-btn-primary-active-color: $btn-primary-color-active !default;
+$gf-btn-primary-font-weight:  $btn-font-weight !default;
+
+// Button — secondary variant  [T2]
+$gf-btn-secondary-bg:           $btn-secondary-bg !default;
+$gf-btn-secondary-border:       $border-width-sm solid $btn-secondary-border !default;
+$gf-btn-secondary-color:        $btn-secondary-color !default;
+$gf-btn-secondary-hover-bg:     $btn-secondary-bg-hover !default;
+$gf-btn-secondary-hover-border: $border-width-sm solid $btn-secondary-border-hover !default;
+$gf-btn-secondary-hover-box-shadow: $box-shadow-sm !default;
+$gf-btn-secondary-hover-color:  $btn-secondary-color-hover !default;
+$gf-btn-secondary-active-bg:    $btn-secondary-bg-active !default;
+$gf-btn-secondary-active-border: $border-width-sm solid $btn-secondary-border-active !default;
+$gf-btn-secondary-active-color: $btn-secondary-color-active !default;
+$gf-btn-secondary-font-weight:  $btn-font-weight !default;
+
+// Button — link variant
+$gf-btn-link-color:              $link-color        !default;
+$gf-btn-link-hover-color:        $link-hover-color  !default;
+$gf-btn-link-font-weight:        $btn-font-weight   !default;
+$gf-btn-link-background:         transparent        !default;
+$gf-btn-link-width:              fit-content        !default;
+$gf-btn-link-padding:            0                  !default;
+$gf-btn-link-border-radius:      0                  !default;
+$gf-btn-link-hover-background:   $gf-btn-link-background !default;
+$gf-btn-link-hover-text-decoration: $gf-btn-text-decoration !default;
+$gf-btn-link-active-background:  $gf-btn-link-hover-background !default;
+$gf-btn-link-active-color:       $gf-btn-link-hover-color      !default;
+$gf-btn-link-selected-background: $gf-btn-link-hover-background !default;
+$gf-btn-link-selected-color:     $gf-btn-link-hover-color      !default;
+$gf-btn-link-column-gap:         $spacing-sm !default;
+
+// Button — icon
+$gf-btn-icon-padding:        $spacing-xs        !default;
+$gf-btn-icon-font-size:      $font-size-sm      !default;
+$gf-btn-icon-background:     transparent        !default;
+$gf-btn-icon-color:          $text-primary      !default;
+$gf-btn-icon-hover-background: $gf-btn-icon-background !default;
+
+// Button — favorite
+$gf-btn-favorite-width:        2rem               !default;
+$gf-btn-favorite-height:       2rem               !default;
+$gf-btn-favorite-padding:      0                  !default;
+$gf-btn-favorite-border-radius: $border-radius-sm !default;
+$gf-btn-favorite-color:        $brand-primary-lighter !default;
+$gf-btn-favorite-font-size:    $font-size-xl      !default;
+
+// Card
+$gf-card-width:             auto                      !default;
+$gf-card-height:            auto                      !default;
+$gf-card-padding:           $spacing-lg $spacing-xl   !default;
+$gf-card-bg:                $background-primary        !default;
+$gf-card-border-radius:     $border-radius-md          !default;
+$gf-card-border:            none                       !default;
+$gf-card-hover-box-shadow:  $box-shadow-sm             !default;
+$gf-card-row-gap:           $spacing-lg                !default;
+$gf-card-transition:        background-color 0.2s ease-out, box-shadow 0.2s ease-out !default;
+$gf-card-color:             $text-primary              !default;
+$gf-card-font-weight:       $font-weight-medium        !default;
+$gf-card-hover-color:       $text-primary              !default;
+$gf-card-active-background: $background-secondary      !default;
+$gf-card-active-color:      $text-primary              !default;
+
+// Dropdown
+$gf-dropdown-margin-top:      0               !default;
+$gf-dropdown-padding:         $spacing-sm     !default;
+$gf-dropdown-bg:              $dropdown-bg    !default;
+$gf-dropdown-border:          none            !default;
+$gf-dropdown-border-radius:   $border-radius-base !default;
+$gf-dropdown-box-shadow:      $box-shadow-md  !default;
+$gf-dropdown-item-padding:    $nav-link-padding !default;
+$gf-dropdown-item-color:      $dropdown-link-color !default;
+$gf-dropdown-item-hover-bg:   $dropdown-link-hover-bg !default;
+$gf-dropdown-item-margin-bottom: $spacing-xxs !default;
+$gf-dropdown-menu-item-background: $background-primary !default;
+
+// Input
+$gf-input-height:             3.6rem          !default;
+$gf-input-padding:            $spacing-sm $spacing-sm !default;
+$gf-input-bg:                 $background-primary !default;
+$gf-input-border:             $border-width-sm solid $border-primary !default;
+$gf-input-border-radius:      $border-radius-md !default;
+$gf-input-color:              $text-primary   !default;
+$gf-input-placeholder-color:  $text-muted     !default;
+$gf-input-disabled-bg:        $color-lighter  !default;
+$gf-input-disabled-color:     $text-muted     !default;
+$gf-input-box-shadow:         none            !default;
+
+// Checkbox / radio
+$gf-checkbox-width:           1.8rem          !default;
+$gf-checkbox-height:          1.8rem          !default;
+$gf-checkbox-checked-bg:      $brand-primary  !default;
+$gf-checkbox-checked-color:   $text-white     !default;
+
+// Select / textarea
+$gf-select-padding:           $spacing-sm $spacing-sm !default;
+$gf-textarea-height:          auto            !default;
+
+// Panel
+$gf-panel-margin-bottom:      $spacing-xl               !default;
+$gf-panel-padding:            0                         !default;
+$gf-panel-background:         $panel-bg                 !default;
+$gf-panel-border:             none                      !default;
+$gf-panel-border-radius:      $panel-border-radius      !default;
+$gf-panel-box-shadow:         $sp-panel-box-shadow      !default;
+$gf-panel-heading-padding:    $panel-heading-padding    !default;
+$gf-panel-heading-background: $panel-default-heading-bg !default;
+$gf-panel-heading-border:     none                      !default;
+$gf-panel-heading-font-size:  $font-size-xl             !default;
+$gf-panel-heading-font-weight: $headings-font-weight    !default;
+$gf-panel-heading-color:      $text-primary             !default;
+$gf-panel-body-padding:       $panel-body-padding       !default;
+$gf-panel-body-bg:            $panel-bg                 !default;
+$gf-panel-body-border:        none                      !default;
+$gf-panel-body-color:         $text-primary             !default;
+$gf-panel-footer-padding:     $panel-footer-padding     !default;
+$gf-panel-footer-background:  $panel-footer-bg          !default;
+$gf-panel-footer-border:      none                      !default;
+$gf-panel-footer-color:       $text-primary             !default;
+$gf-panel-title-color:        $text-primary             !default;
+
+// Tab / nav-tabs
+// $gf-tab-active-color uses $select-primary (the portal's selected interaction
+// color) instead of $brand-primary so that client tab styles track the same
+// active-state token used by now-sp-tabs and other SN components.
+$gf-tab-padding:              $nav-link-padding        !default;
+$gf-tab-margin-right:         $spacing-xs              !default;
+$gf-tab-margin-bottom:        -0.1rem                  !default;
+$gf-tab-margin-bottom-active: 0                        !default;
+$gf-tab-margin-right-inner:   0                        !default;
+$gf-tab-border-bottom-width:  $border-width-lg         !default;
+$gf-tab-background:           transparent              !default;
+$gf-tab-border:               none                     !default;
+$gf-tab-border-top:           none                     !default;
+$gf-tab-border-right:         none                     !default;
+$gf-tab-border-bottom-color:  transparent              !default;
+$gf-tab-border-bottom:        $gf-tab-border-bottom-width solid $gf-tab-border-bottom-color !default;
+$gf-tab-border-left:          none                     !default;
+$gf-tab-border-bottom-hover:  $gf-tab-border-bottom-width solid $nav-tabs-border-color !default;
+// References $select-primary, not $brand-primary — see note above.
+$gf-tab-border-bottom-active: $gf-tab-border-bottom-width solid $select-primary !default;
+$gf-tab-active-color:         $select-primary          !default;
+$gf-tab-active-background:    $nav-tabs-active-link-hover-bg !default;
+$gf-tab-active-border:        none                     !default;
+$gf-tab-active-box-shadow:    none                     !default;
+$gf-tab-border-radius:        0                        !default;
+$gf-tab-color:                $text-primary            !default;
+$gf-tab-font-weight:          $font-weight-medium      !default;
+$gf-tab-hover-color:          $text-primary            !default;
+
+$gf-nav-tabs-width:           100%                     !default;
+$gf-nav-tabs-padding:         0                        !default;
+$gf-nav-tabs-background:      transparent              !default;
+$gf-nav-tabs-border:          $border-width-sm solid $nav-tabs-border-color !default;
+$gf-nav-tabs-border-radius:   0                        !default;
+
+// Avatar
+$gf-avatar-width:             $input-height-small     !default;
+$gf-avatar-height:            $input-height-small     !default;
+$gf-avatar-font-size:         $font-size-xs           !default;
+$gf-avatar-font-weight:       $font-weight-medium     !default;
+$gf-avatar-box-shadow:        none                    !default;
+$gf-avatar-color:             $text-primary           !default;
+$gf-avatar-background:        $background-primary     !default;
+$gf-avatar-border:            $border-width-sm solid $border-primary !default;
+$gf-avatar-border-radius:     $border-radius-round    !default;
+
+// Utility
+$gf-truncate-lines:      1            !default;
+$gf-stack-gap:           $spacing-md  !default;
+$gf-stack-align:         stretch      !default;
+$gf-cluster-gap:         $spacing-md  !default;
+$gf-cluster-align:       center       !default;
+$gf-cluster-justify:     flex-start   !default;
+$gf-flex-center-direction: row        !default;
+$gf-flex-gap-zero:       0            !default;
+$gf-flex-between-align:  center       !default;
+$gf-flex-between-gap:    $gf-btn-gap  !default;
+$gf-divider-color:       $border-primary !default;
+$gf-divider-width:       1px          !default;
+$gf-divider-margin-x:   0            !default;
+$gf-divider-margin-y:   $spacing-md  !default;
+$gf-divider-border:     none         !default;
+$gf-skeleton-bg:         $background-secondary !default;
+$gf-skeleton-border-radius: $border-radius-base !default;
+$gf-skeleton-pointer-events: none    !default;
+$gf-skeleton-color:      transparent !default;
+$gf-badge-padding-x:     $spacing-sm !default;
+$gf-badge-padding-y:     $spacing-xs !default;
+$gf-badge-font-size:     $font-size-xs !default;
+$gf-badge-font-weight:   $font-weight-semibold !default;
+$gf-container-narrow-max-width:  90rem      !default;
+$gf-container-wide-max-width:    120rem     !default;
+$gf-container-narrow-padding-x: $spacing-xl !default;
+$gf-container-wide-padding-x:   $spacing-xl !default;
+$gf-container-margin-x:  auto    !default;
+$gf-grid-min-column-width: 18rem !default;
+$gf-grid-gap:            $spacing-lg !default;
+$gf-visually-hidden-padding: 0   !default;
+$gf-visually-hidden-margin:  -1px !default;
+$gf-visually-hidden-clip:    0   !default;
+$gf-visually-hidden-border:  0   !default;
+$gf-aspect-ratio-width:   16     !default;
+$gf-aspect-ratio-height:  9      !default;
+
+// Logo (sp logo margin block)
+$gf-logo-margin-x:  $sp-logo-margin-x !default;
+$gf-logo-margin-y:  $sp-logo-margin-y !default;
+$gf-logo-padding-x: $sp-logo-margin-x !default;
+$gf-logo-padding-y: $sp-logo-margin-y !default;
+
+// btn-link-hover pattern
+$gf-btn-link-hover-hover-bg:   rgba(0, 0, 0, 0.05) !default;
+$gf-btn-link-hover-focus-bg:   transparent !default;
+$gf-btn-link-hover-outline-color: $link-color !default;
+$gf-btn-link-hover-outline-offset: 0 !default;
+
+// Heading scale
+$gf-heading-scale-font-family:  $headings-font-family !default;
+$gf-heading-scale-font-weight:  $headings-font-weight !default;
+$gf-heading-scale-line-height:  $headings-line-height !default;
+$gf-heading-scale-h1:           $font-size-h1 !default;
+$gf-heading-scale-h2:           $font-size-h2 !default;
+$gf-heading-scale-h3:           $font-size-h3 !default;
+$gf-heading-scale-h4:           $font-size-h4 !default;
+$gf-heading-scale-h5:           $font-size-h5 !default;
+$gf-heading-scale-h6:           $font-size-h6 !default;
+
+// Card selectable
+$gf-card-selectable-border-width:              0.3rem         !default;
+$gf-card-selectable-border-default:            transparent    !default;
+$gf-card-selectable-selected-border-color:     $brand-success !default;
+$gf-card-selectable-selected-indicator-bg:     $brand-success !default;
+$gf-card-selectable-selected-indicator-color:  $text-white    !default;
+$gf-card-selectable-selected-indicator-size:   3rem           !default;
+
+// Generator — spacer map
+$gf-generate-spacers-prefix: '' !default;
+$gf-generate-spacers-sizes: (
+  ('xxs', $spacing-xxs),
+  ('xs',  $spacing-xs),
+  ('sm',  $spacing-sm),
+  ('md',  $spacing-md),
+  ('lg',  $spacing-lg),
+  ('xl',  $spacing-xl),
+  ('xxl', $spacing-xxl),
+  ('none', 0),
+  ('auto', auto)
+) !default;
+
+// Generator — font-size map
+$gf-generate-font-sizes-sizes: (
+  ('xxs', $font-size-xs),
+  ('xs',  $font-size-xs),
+  ('sm',  $font-size-sm),
+  ('md',  $font-size-md),
+  ('lg',  $font-size-lg),
+  ('xl',  $font-size-xl),
+  ('xxl', $font-size-xxl),
+  ('3xl', $font-size-3xl),
+  ('h1',  $font-size-h1),
+  ('h2',  $font-size-h2),
+  ('h3',  $font-size-h3),
+  ('h4',  $font-size-h4),
+  ('h5',  $font-size-h5),
+  ('h6',  $font-size-h6)
+) !default;
+
+// Generator — font-weight map
+$gf-generate-font-weights-weights: (
+  ('normal',   $font-weight-normal),
+  ('medium',   $font-weight-medium),
+  ('semibold', $font-weight-semibold),
+  ('bold',     $headings-font-weight)
+) !default;
+
+// =============================================================================
+// PART 6: Mixins
+// =============================================================================
+//
+// Parameter order: sizing → spacing → typography → background → border →
+//   border-radius → box-shadow → state (hover/active/selected) → focus.
+// Property order within rule blocks: position → display/flex → dimensions →
+//   margin → padding → background → border → border-radius → box-shadow →
+//   color → font-* → text-* → cursor/transition/other.
+
+// -----------------------------------------------------------------------------
+// 6.1 Focus mixins
+// -----------------------------------------------------------------------------
+
+@mixin gf-focus(
+  $border:        $gf-focus-border,
+  $border-top:    $gf-focus-border-top,
+  $border-right:  $gf-focus-border-right,
+  $border-bottom: $gf-focus-border-bottom,
+  $border-left:   $gf-focus-border-left,
+  $border-radius: $gf-focus-border-radius,
+  $box-shadow:    $gf-focus-box-shadow,
+  $focus-ring:    $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset
+) {
+  &:focus {
+    @if $border-top != none or $border-right != none or $border-bottom != none or $border-left != none {
+      border: none !important;
+      border-top:    $border-top    !important;
+      border-right:  $border-right  !important;
+      border-bottom: $border-bottom !important;
+      border-left:   $border-left   !important;
+    } @else {
+      border: $border !important;
+    }
+    border-radius:  $border-radius  !important;
+    box-shadow:     $box-shadow     !important;
+    outline:        $focus-ring     !important;
+    outline-offset: $focus-ring-offset !important;
+  }
+
+  &:hover,
+  &:focus-visible,
+  &:hover:focus-visible {
+    @if $border-top != none or $border-right != none or $border-bottom != none or $border-left != none {
+      border: none !important;
+      border-top:    $border-top    !important;
+      border-right:  $border-right  !important;
+      border-bottom: $border-bottom !important;
+      border-left:   $border-left   !important;
+    } @else {
+      border: $border !important;
+    }
+    border-radius: $border-radius !important;
+    box-shadow:    $box-shadow    !important;
+    opacity: 1 !important;
+  }
+}
+
+@mixin gf-focus-none {
+  &:focus {
+    border:         $gf-focus-outline-reset        !important;
+    box-shadow:     $gf-focus-outline-reset        !important;
+    outline:        $gf-focus-outline-reset        !important;
+    outline-offset: $gf-focus-outline-offset-reset !important;
+  }
+}
+
+@mixin gf-focus-visible(
+  $border:        $gf-focus-border,
+  $border-top:    $gf-focus-border-top,
+  $border-right:  $gf-focus-border-right,
+  $border-bottom: $gf-focus-border-bottom,
+  $border-left:   $gf-focus-border-left,
+  $border-radius: $gf-focus-border-radius,
+  $box-shadow:    $gf-focus-box-shadow,
+  $focus-ring:    $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset
+) {
+  @include gf-focus(
+    $border:        $border,
+    $border-top:    $border-top,
+    $border-right:  $border-right,
+    $border-bottom: $border-bottom,
+    $border-left:   $border-left,
+    $border-radius: $border-radius,
+    $box-shadow:    $box-shadow,
+    $focus-ring:    $gf-focus-outline-reset,
+    $focus-ring-offset: $gf-focus-outline-offset-reset
+  );
+
+  &:focus-visible,
+  &:hover:focus-visible {
+    outline:        $focus-ring        !important;
+    outline-offset: $focus-ring-offset !important;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 6.2 Button mixins
+// -----------------------------------------------------------------------------
+
+@mixin gf-btn(
+  $width:            $gf-btn-width,
+  $height:           $gf-btn-height,
+  $padding:          $gf-btn-padding,
+  $gap:              $gf-btn-gap,
+  $color:            $gf-btn-color,
+  $font-size:        $gf-btn-font-size,
+  $line-height:      $gf-btn-line-height,
+  $font-weight:      $gf-btn-font-weight,
+  $text-decoration:  $gf-btn-text-decoration,
+  $background:       $gf-btn-background,
+  $border:           $gf-btn-border,
+  $border-top:       $gf-btn-border-top,
+  $border-right:     $gf-btn-border-right,
+  $border-bottom:    $gf-btn-border-bottom,
+  $border-left:      $gf-btn-border-left,
+  $border-radius:    $gf-btn-border-radius,
+  $box-shadow:       $gf-btn-box-shadow,
+  $hover-background: $gf-btn-hover-background,
+  $hover-border:     $gf-btn-hover-border,
+  $hover-border-top:    $border-top,
+  $hover-border-right:  $border-right,
+  $hover-border-bottom: $border-bottom,
+  $hover-border-left:   $border-left,
+  $hover-box-shadow: $gf-btn-box-shadow-hover,
+  $hover-color:      $gf-btn-hover-color,
+  $hover-text-decoration: $gf-btn-hover-text-decoration,
+  $active-background:  $hover-background,
+  $active-border:      $hover-border,
+  $active-border-top:  $hover-border-top,
+  $active-border-right: $hover-border-right,
+  $active-border-bottom: $hover-border-bottom,
+  $active-border-left: $hover-border-left,
+  $active-box-shadow:  $gf-btn-box-shadow-active,
+  $active-color:       $hover-color,
+  $selected-background:  $active-background,
+  $selected-border:      $active-border,
+  $selected-border-top:  $active-border-top,
+  $selected-border-right: $active-border-right,
+  $selected-border-bottom: $active-border-bottom,
+  $selected-border-left:   $active-border-left,
+  $selected-box-shadow:  $gf-btn-box-shadow-selected,
+  $selected-color:       $active-color,
+  $focus-ring:         $gf-focus-ring,
+  $focus-ring-offset:  $gf-focus-ring-offset-sm
+) {
+  @include gf-focus-visible(
+    $border:        $border,
+    $border-top:    $border-top,
+    $border-right:  $border-right,
+    $border-bottom: $border-bottom,
+    $border-left:   $border-left,
+    $border-radius: $border-radius,
+    $box-shadow:    $box-shadow,
+    $focus-ring:    $focus-ring,
+    $focus-ring-offset: $focus-ring-offset
+  );
+
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: $width;
+  height: $height;
+  gap: $gap;
+  padding: $padding !important;
+  background: $background !important;
+  background-origin: border-box !important;
+
+  @if $border-top != none or $border-right != none or $border-bottom != none or $border-left != none {
+    border: none !important;
+    border-top:    $border-top    !important;
+    border-right:  $border-right  !important;
+    border-bottom: $border-bottom !important;
+    border-left:   $border-left   !important;
+  } @else {
+    border: $border !important;
+  }
+
+  border-radius: $border-radius !important;
+  box-shadow:    $box-shadow    !important;
+  color:         $color         !important;
+  font-size:     $font-size;
+  font-weight:   $font-weight;
+  line-height:   $line-height;
+  text-decoration:           $text-decoration !important;
+  text-decoration-thickness: 0.1rem           !important;
+  text-underline-offset:     0.3rem           !important;
+  cursor: $gf-btn-cursor;
+
+  svg { fill: $color !important; }
+
+  .fa,
+  .icon {
+    margin: 0 !important;
+    padding: 0 !important;
+    color: $color !important;
+  }
+
+  &:focus,
+  &:focus-visible {
+    background: $background !important;
+    background-origin: border-box !important;
+
+    @if $border-top != none or $border-right != none or $border-bottom != none or $border-left != none {
+      border: none !important;
+      border-top:    $border-top    !important;
+      border-right:  $border-right  !important;
+      border-bottom: $border-bottom !important;
+      border-left:   $border-left   !important;
+    } @else {
+      border: $border !important;
+    }
+
+    box-shadow: $box-shadow !important;
+    color:      $color      !important;
+    svg { fill: $color !important; }
+    .fa, .icon { color: $color !important; }
+  }
+
+  &:hover,
+  &:hover:focus,
+  &:hover:focus-visible {
+    background: $hover-background !important;
+
+    @if $hover-border-top != none or $hover-border-right != none or $hover-border-bottom != none or $hover-border-left != none {
+      border: none !important;
+      border-top:    $hover-border-top    !important;
+      border-right:  $hover-border-right  !important;
+      border-bottom: $hover-border-bottom !important;
+      border-left:   $hover-border-left   !important;
+    } @else {
+      border: $hover-border !important;
+    }
+
+    box-shadow:                $hover-box-shadow       !important;
+    color:                     $hover-color            !important;
+    text-decoration:           $hover-text-decoration  !important;
+    text-decoration-thickness: 0.1rem                  !important;
+    text-underline-offset:     0.3rem                  !important;
+    svg { fill: $hover-color !important; }
+    .fa, .icon { color: $hover-color !important; }
+  }
+
+  &.active,
+  &.active:focus,
+  &.active:focus-visible,
+  &:active,
+  &:active:focus,
+  &:active:focus-visible {
+    background: $active-background !important;
+
+    @if $active-border-top != none or $active-border-right != none or $active-border-bottom != none or $active-border-left != none {
+      border: none !important;
+      border-top:    $active-border-top    !important;
+      border-right:  $active-border-right  !important;
+      border-bottom: $active-border-bottom !important;
+      border-left:   $active-border-left   !important;
+    } @else {
+      border: $active-border !important;
+    }
+
+    box-shadow: $active-box-shadow !important;
+    color:      $active-color      !important;
+    svg { fill: $active-color !important; }
+    .fa, .icon { color: $active-color !important; }
+  }
+
+  &.selected,
+  &.selected:focus,
+  &.selected:focus-visible,
+  &.selected-item,
+  &.selected-item:focus,
+  &.selected-item:focus-visible,
+  &[aria-expanded='true'],
+  &[aria-expanded='true']:focus,
+  &[aria-expanded='true']:focus-visible {
+    background: $selected-background !important;
+
+    @if $selected-border-top != none or $selected-border-right != none or $selected-border-bottom != none or $selected-border-left != none {
+      border: none !important;
+      border-top:    $selected-border-top    !important;
+      border-right:  $selected-border-right  !important;
+      border-bottom: $selected-border-bottom !important;
+      border-left:   $selected-border-left   !important;
+    } @else {
+      border: $selected-border !important;
+    }
+
+    box-shadow: $selected-box-shadow !important;
+    color:      $selected-color      !important;
+    svg { fill: $selected-color !important; }
+    .fa, .icon { color: $selected-color !important; }
+  }
+
+  &.disabled,
+  &.isDisabled,
+  &[disabled],
+  &[readonly] {
+    background:     $background !important;
+    border:         $border     !important;
+    color:          $color      !important;
+    opacity:        0.5         !important;
+    pointer-events: none        !important;
+    cursor:         default     !important;
+  }
+}
+
+@mixin gf-btn-default(
+  $width:            $gf-btn-width,
+  $height:           $gf-btn-height,
+  $padding:          $gf-btn-padding,
+  $background:       $gf-btn-default-bg,
+  $border:           $gf-btn-default-border,
+  $border-radius:    $gf-btn-border-radius,
+  $box-shadow:       $gf-btn-box-shadow,
+  $color:            $gf-btn-default-color,
+  $font-size:        $gf-btn-font-size,
+  $font-weight:      $gf-btn-default-font-weight,
+  $hover-background: $gf-btn-default-hover-bg,
+  $hover-border:     $gf-btn-default-hover-border,
+  $hover-box-shadow: $gf-btn-box-shadow,
+  $hover-color:      $gf-btn-default-hover-color,
+  $active-background: $gf-btn-default-active-bg,
+  $active-border:    $gf-btn-default-active-border,
+  $active-box-shadow: $gf-btn-box-shadow,
+  $active-color:     $gf-btn-default-active-color,
+  $focus-ring:       $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset
+) {
+  @include gf-btn(
+    $width: $width, $height: $height, $padding: $padding,
+    $background: $background, $border: $border, $border-radius: $border-radius,
+    $box-shadow: $box-shadow, $color: $color, $font-size: $font-size,
+    $font-weight: $font-weight, $hover-background: $hover-background,
+    $hover-border: $hover-border, $hover-box-shadow: $hover-box-shadow,
+    $hover-color: $hover-color, $active-background: $active-background,
+    $active-border: $active-border, $active-box-shadow: $active-box-shadow,
+    $active-color: $active-color, $focus-ring: $focus-ring,
+    $focus-ring-offset: $focus-ring-offset
+  );
+  column-gap: $gf-btn-gap;
+}
+
+@mixin gf-btn-primary(
+  $width:            $gf-btn-width,
+  $height:           $gf-btn-height,
+  $padding:          $gf-btn-padding,
+  $background:       $gf-btn-primary-bg,
+  $border:           $gf-btn-primary-border,
+  $border-radius:    $gf-btn-border-radius,
+  $box-shadow:       $gf-btn-box-shadow,
+  $color:            $gf-btn-primary-color,
+  $font-size:        $gf-btn-font-size,
+  $font-weight:      $gf-btn-primary-font-weight,
+  $hover-background: $gf-btn-primary-hover-bg,
+  $hover-border:     $gf-btn-primary-hover-border,
+  $hover-box-shadow: $gf-btn-primary-hover-box-shadow,
+  $hover-color:      $gf-btn-primary-hover-color,
+  $active-background: $gf-btn-primary-active-bg,
+  $active-border:    $gf-btn-primary-active-border,
+  $active-box-shadow: $gf-btn-box-shadow,
+  $active-color:     $gf-btn-primary-active-color,
+  $focus-ring:       $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset
+) {
+  @include gf-btn(
+    $width: $width, $height: $height, $padding: $padding,
+    $background: $background, $border: $border, $border-radius: $border-radius,
+    $box-shadow: $box-shadow, $color: $color, $font-size: $font-size,
+    $font-weight: $font-weight, $hover-background: $hover-background,
+    $hover-border: $hover-border, $hover-box-shadow: $hover-box-shadow,
+    $hover-color: $hover-color, $active-background: $active-background,
+    $active-border: $active-border, $active-box-shadow: $active-box-shadow,
+    $active-color: $active-color, $focus-ring: $focus-ring,
+    $focus-ring-offset: $focus-ring-offset
+  );
+  column-gap: $gf-btn-gap;
+}
+
+@mixin gf-btn-secondary(
+  $width:            $gf-btn-width,
+  $height:           $gf-btn-height,
+  $padding:          $gf-btn-padding,
+  $background:       $gf-btn-secondary-bg,
+  $border:           $gf-btn-secondary-border,
+  $border-radius:    $gf-btn-border-radius,
+  $box-shadow:       $gf-btn-box-shadow,
+  $color:            $gf-btn-secondary-color,
+  $font-size:        $gf-btn-font-size,
+  $font-weight:      $gf-btn-secondary-font-weight,
+  $hover-background: $gf-btn-secondary-hover-bg,
+  $hover-border:     $gf-btn-secondary-hover-border,
+  $hover-box-shadow: $gf-btn-secondary-hover-box-shadow,
+  $hover-color:      $gf-btn-secondary-hover-color,
+  $active-background: $gf-btn-secondary-active-bg,
+  $active-border:    $gf-btn-secondary-active-border,
+  $active-box-shadow: $gf-btn-box-shadow,
+  $active-color:     $gf-btn-secondary-active-color,
+  $focus-ring:       $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset
+) {
+  @include gf-btn(
+    $width: $width, $height: $height, $padding: $padding,
+    $background: $background, $border: $border, $border-radius: $border-radius,
+    $box-shadow: $box-shadow, $color: $color, $font-size: $font-size,
+    $font-weight: $font-weight, $hover-background: $hover-background,
+    $hover-border: $hover-border, $hover-box-shadow: $hover-box-shadow,
+    $hover-color: $hover-color, $active-background: $active-background,
+    $active-border: $active-border, $active-box-shadow: $active-box-shadow,
+    $active-color: $active-color, $focus-ring: $focus-ring,
+    $focus-ring-offset: $focus-ring-offset
+  );
+  column-gap: $gf-btn-gap;
+}
+
+@mixin gf-btn-icon(
+  $width:            $gf-btn-width,
+  $height:           $gf-btn-height,
+  $padding:          $gf-btn-icon-padding,
+  $background:       $gf-btn-icon-background,
+  $border:           $gf-btn-border,
+  $border-radius:    $gf-btn-border-radius,
+  $color:            $gf-btn-icon-color,
+  $font-size:        $gf-btn-icon-font-size,
+  $font-weight:      $gf-btn-font-weight,
+  $hover-background: $gf-btn-icon-hover-background,
+  $hover-border:     $border,
+  $hover-color:      $color,
+  $active-background: $hover-background,
+  $active-border:    $hover-border,
+  $active-color:     $hover-color,
+  $selected-background: $active-background,
+  $selected-border:  $active-border,
+  $selected-color:   $active-color,
+  $focus-ring:       $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset
+) {
+  @include gf-btn(
+    $width: $width, $height: $height, $padding: $padding,
+    $background: $background, $border: $border, $border-radius: $border-radius,
+    $color: $color, $font-size: $font-size, $font-weight: $font-weight,
+    $hover-background: $hover-background, $hover-border: $hover-border,
+    $hover-color: $hover-color, $active-background: $active-background,
+    $active-border: $active-border, $active-color: $active-color,
+    $selected-background: $selected-background, $selected-border: $selected-border,
+    $selected-color: $selected-color, $focus-ring: $focus-ring,
+    $focus-ring-offset: $focus-ring-offset
+  );
+
+  .fa, .icon {
+    color: $color;
+    font-size: $font-size;
+  }
+}
+
+@mixin gf-btn-link(
+  $width:            $gf-btn-link-width,
+  $height:           $gf-btn-height,
+  $padding:          $gf-btn-link-padding,
+  $background:       $gf-btn-link-background,
+  $border-radius:    $gf-btn-link-border-radius,
+  $color:            $gf-btn-link-color,
+  $font-size:        $gf-btn-font-size,
+  $font-weight:      $gf-btn-link-font-weight,
+  $text-decoration:  $gf-btn-text-decoration,
+  $hover-background: $gf-btn-link-hover-background,
+  $hover-color:      $gf-btn-link-hover-color,
+  $hover-text-decoration: $gf-btn-link-hover-text-decoration,
+  $active-background:  $gf-btn-link-active-background,
+  $active-color:       $gf-btn-link-active-color,
+  $selected-background: $gf-btn-link-selected-background,
+  $selected-color:     $gf-btn-link-selected-color,
+  $focus-ring:         $gf-focus-ring,
+  $focus-ring-offset:  $gf-focus-ring-offset-lg
+) {
+  @include gf-btn(
+    $width: $width, $height: $height, $padding: $padding,
+    $background: $background, $border-radius: $border-radius,
+    $color: $color, $font-size: $font-size, $font-weight: $font-weight,
+    $text-decoration: $text-decoration, $hover-background: $hover-background,
+    $hover-color: $hover-color, $hover-text-decoration: $hover-text-decoration,
+    $active-background: $active-background, $active-color: $active-color,
+    $selected-background: $selected-background, $selected-color: $selected-color,
+    $focus-ring: $focus-ring, $focus-ring-offset: $focus-ring-offset
+  );
+  column-gap: $gf-btn-link-column-gap;
+
+  .fa, .icon {
+    color: $color;
+    font-size: $font-size;
+    text-decoration: none !important;
+  }
+
+  &:hover,
+  &:hover:focus,
+  &:hover:focus-visible {
+    .fa, .icon { text-decoration: none !important; }
+  }
+}
+
+@mixin gf-btn-favorite(
+  $width:            $gf-btn-favorite-width,
+  $height:           $gf-btn-favorite-height,
+  $padding:          $gf-btn-favorite-padding,
+  $border-radius:    $gf-btn-favorite-border-radius,
+  $color:            $gf-btn-favorite-color,
+  $font-size:        $gf-btn-favorite-font-size,
+  $hover-color:      $gf-btn-favorite-color,
+  $focus-ring:       $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset-lg
+) {
+  @include gf-btn-icon(
+    $width: $width, $height: $height, $padding: $padding,
+    $border-radius: $border-radius, $color: $color, $font-size: $font-size,
+    $hover-color: $hover-color, $focus-ring: $focus-ring,
+    $focus-ring-offset: $focus-ring-offset
+  );
+}
+
+// -----------------------------------------------------------------------------
+// 6.3 Card, dropdown, input
+// -----------------------------------------------------------------------------
+
+@mixin gf-card(
+  $width:            $gf-card-width,
+  $height:           $gf-card-height,
+  $padding:          $gf-card-padding,
+  $row-gap:          $gf-card-row-gap,
+  $color:            $gf-card-color,
+  $font-size:        $gf-btn-font-size,
+  $font-weight:      $gf-card-font-weight,
+  $background:       $gf-card-bg,
+  $border:           $gf-card-border,
+  $border-radius:    $gf-card-border-radius,
+  $box-shadow:       $gf-btn-box-shadow,
+  $hover-background: $gf-card-bg,
+  $hover-border:     $gf-card-border,
+  $hover-box-shadow: $gf-card-hover-box-shadow,
+  $hover-color:      $gf-card-hover-color,
+  $active-background: $gf-card-active-background,
+  $active-border:    $gf-card-border,
+  $active-box-shadow: $gf-btn-box-shadow,
+  $active-color:     $gf-card-active-color,
+  $transition:       $gf-card-transition,
+  $focus-ring:       $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset
+) {
+  @include gf-btn(
+    $width: $width, $height: $height, $padding: $padding,
+    $background: $background, $border: $border, $border-radius: $border-radius,
+    $box-shadow: $box-shadow, $color: $color, $font-size: $font-size,
+    $font-weight: $font-weight, $hover-background: $hover-background,
+    $hover-border: $hover-border, $hover-box-shadow: $hover-box-shadow,
+    $hover-color: $hover-color, $active-background: $active-background,
+    $active-border: $active-border, $active-box-shadow: $active-box-shadow,
+    $active-color: $active-color, $focus-ring: $focus-ring,
+    $focus-ring-offset: $focus-ring-offset
+  );
+  min-height: unset;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  row-gap: $row-gap;
+  transition: $transition;
+}
+
+@mixin gf-dropdown-menu(
+  $margin-top:       $gf-dropdown-margin-top,
+  $padding:          $gf-dropdown-padding,
+  $item-padding:     $gf-dropdown-item-padding,
+  $item-color:       $gf-dropdown-item-color,
+  $item-hover-background: $gf-dropdown-item-hover-bg,
+  $item-margin-bottom: $gf-dropdown-item-margin-bottom,
+  $background:       $gf-dropdown-bg,
+  $border:           $gf-dropdown-border,
+  $border-radius:    $gf-dropdown-border-radius,
+  $box-shadow:       $gf-dropdown-box-shadow
+) {
+  margin-top: $margin-top !important;
+  padding:    $padding    !important;
+  background: $background !important;
+  border:        $border;
+  border-radius: $border-radius;
+  box-shadow:    $box-shadow;
+
+  li {
+    margin-bottom: $item-margin-bottom;
+    &:last-child { margin-bottom: 0; }
+
+    a {
+      @include gf-btn(
+        $padding: $item-padding, $color: $item-color,
+        $hover-background: $item-hover-background,
+        $hover-box-shadow: $gf-btn-box-shadow
+      );
+      margin: 0;
+      justify-content: start;
+    }
+  }
+}
+
+@mixin gf-dropdown-menu-item(
+  $width:            auto,
+  $height:           auto,
+  $padding:          $gf-dropdown-item-padding,
+  $color:            $gf-dropdown-item-color,
+  $font-size:        $gf-btn-font-size,
+  $font-weight:      $gf-btn-font-weight,
+  $hover-background: $gf-dropdown-item-hover-bg,
+  $hover-color:      $gf-dropdown-item-color,
+  $background:       $gf-dropdown-menu-item-background,
+  $border-radius:    $gf-dropdown-border-radius,
+  $focus-ring:       $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset
+) {
+  @include gf-btn(
+    $width: $width, $height: $height, $padding: $padding,
+    $border-radius: $border-radius, $color: $color, $font-size: $font-size,
+    $font-weight: $font-weight, $hover-background: $hover-background,
+    $hover-color: $hover-color, $focus-ring: $focus-ring,
+    $focus-ring-offset: $focus-ring-offset
+  );
+  width: 100%;
+  justify-content: start;
+  margin: 0 !important;
+}
+
+@mixin gf-input(
+  $height:           $gf-input-height,
+  $padding:          $gf-input-padding,
+  $color:            $gf-input-color,
+  $font-size:        $gf-btn-font-size,
+  $font-weight:      $gf-btn-font-weight,
+  $placeholder-color: $gf-input-placeholder-color,
+  $background:       $gf-input-bg,
+  $border:           $gf-input-border,
+  $border-radius:    $gf-input-border-radius,
+  $box-shadow:       $gf-input-box-shadow,
+  $disabled-background: $gf-input-disabled-bg,
+  $disabled-border:  $gf-input-border,
+  $disabled-color:   $gf-input-disabled-color,
+  $focus-ring:       $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset-sm
+) {
+  @include gf-focus-visible(
+    $border: $border, $border-radius: $border-radius,
+    $box-shadow: $box-shadow, $focus-ring: $focus-ring,
+    $focus-ring-offset: $focus-ring-offset
+  );
+
+  position: relative;
+  width:  100%;
+  height: $height;
+  padding:       $padding    !important;
+  background:    $background !important;
+  border:        $border     !important;
+  border-radius: $border-radius !important;
+  box-shadow:    $box-shadow !important;
+  color:         $color      !important;
+  font-size:     $font-size;
+  font-weight:   $font-weight !important;
+  transition: none !important;
+
+  &::placeholder { color: $placeholder-color !important; }
+
+  &:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 3rem $background inset !important;
+  }
+
+  &:focus,
+  &:focus-visible {
+    background: $background !important;
+    border:     $border     !important;
+    box-shadow: $box-shadow !important;
+    color:      $color      !important;
+  }
+
+  &.disabled,
+  &[disabled],
+  &[readonly] {
+    background:     $disabled-background !important;
+    border:         $disabled-border     !important;
+    color:          $disabled-color      !important;
+    opacity:        1                    !important;
+    pointer-events: none                 !important;
+    cursor:         default              !important;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 6.4 Panel, avatar, textarea, select
+// -----------------------------------------------------------------------------
+
+@mixin gf-panel(
+  $margin-bottom:     $gf-panel-margin-bottom,
+  $padding:           $gf-panel-padding,
+  $heading-padding:   $gf-panel-heading-padding,
+  $heading-color:     $gf-panel-heading-color,
+  $heading-font-size: $gf-panel-heading-font-size,
+  $heading-font-weight: $gf-panel-heading-font-weight,
+  $body-padding:      $gf-panel-body-padding,
+  $body-color:        $gf-panel-body-color,
+  $body-font-size:    $gf-btn-font-size,
+  $body-font-weight:  $gf-btn-font-weight,
+  $footer-padding:    $gf-panel-footer-padding,
+  $footer-color:      $gf-panel-footer-color,
+  $footer-font-size:  $gf-btn-font-size,
+  $footer-font-weight: $gf-btn-font-weight,
+  $background:        $gf-panel-background,
+  $border:            $gf-panel-border,
+  $border-radius:     $gf-panel-border-radius,
+  $box-shadow:        $gf-panel-box-shadow,
+  $heading-background: $gf-panel-heading-background,
+  $heading-border:    $gf-panel-heading-border,
+  $body-background:   $gf-panel-body-bg,
+  $body-border:       $gf-panel-body-border,
+  $footer-background: $gf-panel-footer-background,
+  $footer-border:     $gf-panel-footer-border
+) {
+  width: auto;
+  height: auto;
+  margin-bottom: $margin-bottom;
+  padding:       $padding;
+  background:    $background;
+  border:        $border;
+  border-radius: $border-radius;
+  box-shadow:    $box-shadow;
+
+  > .panel-heading {
+    @include gf-panel-heading(
+      $padding: $heading-padding, $background: $heading-background,
+      $border: $heading-border,
+      $border-radius: $border-radius $border-radius 0 0,
+      $color: $heading-color, $font-size: $heading-font-size,
+      $font-weight: $heading-font-weight
+    );
+  }
+
+  > .panel-body {
+    @include gf-panel-body(
+      $padding: $body-padding, $background: $body-background,
+      $border: $body-border,
+      $border-radius: 0 0 $border-radius $border-radius,
+      $color: $body-color, $font-size: $body-font-size,
+      $font-weight: $body-font-weight
+    );
+  }
+
+  > .panel-footer {
+    @include gf-panel-footer(
+      $padding: $footer-padding, $background: $footer-background,
+      $border: $footer-border,
+      $border-radius: 0 0 $border-radius $border-radius,
+      $color: $footer-color, $font-size: $footer-font-size,
+      $font-weight: $footer-font-weight
+    );
+  }
+}
+
+@mixin gf-panel-heading(
+  $padding:       $gf-panel-heading-padding,
+  $color:         $gf-panel-heading-color,
+  $font-size:     $gf-panel-heading-font-size,
+  $font-weight:   $gf-panel-heading-font-weight,
+  $background:    $gf-panel-heading-background,
+  $border:        $gf-panel-heading-border,
+  $border-radius: $gf-panel-border-radius
+) {
+  width: 100%;
+  padding:       $padding;
+  background:    $background;
+  border:        none;
+  border-bottom: $border;
+  border-radius: $border-radius $border-radius 0 0;
+  color:       $color;
+  font-size:   $font-size;
+  font-weight: $font-weight;
+
+  .panel-title {
+    @include gf-panel-title($color: $color, $font-size: $font-size, $font-weight: $font-weight);
+  }
+}
+
+@mixin gf-panel-body(
+  $padding:       $gf-panel-body-padding,
+  $color:         $gf-panel-body-color,
+  $font-size:     $gf-btn-font-size,
+  $font-weight:   $gf-btn-font-weight,
+  $background:    $gf-panel-body-bg,
+  $border:        $gf-panel-body-border,
+  $border-radius: $gf-panel-border-radius
+) {
+  padding:       $padding        !important;
+  background:    $background     !important;
+  border:        $border         !important;
+  border-radius: 0 0 $border-radius $border-radius !important;
+  color:         $color          !important;
+  font-size:     $font-size      !important;
+  font-weight:   $font-weight    !important;
+}
+
+@mixin gf-panel-footer(
+  $padding:       $gf-panel-footer-padding,
+  $color:         $gf-panel-footer-color,
+  $font-size:     $gf-btn-font-size,
+  $font-weight:   $gf-btn-font-weight,
+  $background:    $gf-panel-footer-background,
+  $border:        $gf-panel-footer-border,
+  $border-radius: $gf-panel-border-radius
+) {
+  width: 100%;
+  padding:       $padding    !important;
+  background:    $background !important;
+  border:        none        !important;
+  border-top:    $border     !important;
+  border-radius: 0 0 $border-radius $border-radius !important;
+  color:         $color      !important;
+  font-size:     $font-size  !important;
+  font-weight:   $font-weight !important;
+}
+
+@mixin gf-panel-title(
+  $color:       $gf-panel-title-color,
+  $font-size:   $gf-panel-heading-font-size,
+  $font-weight: $gf-panel-heading-font-weight
+) {
+  width: 100%;
+  margin:      0 !important;
+  padding:     0 !important;
+  color:       $color       !important;
+  font-size:   $font-size   !important;
+  font-weight: $font-weight !important;
+  line-height: $headings-line-height;
+}
+
+@mixin gf-avatar-container(
+  $width:         $gf-avatar-width,
+  $height:        $gf-avatar-height,
+  $color:         $gf-avatar-color,
+  $font-size:     $gf-avatar-font-size,
+  $font-weight:   $gf-avatar-font-weight,
+  $background:    $gf-avatar-background,
+  $border:        $gf-avatar-border,
+  $border-radius: $gf-avatar-border-radius,
+  $box-shadow:    $gf-avatar-box-shadow,
+  $focus-ring:    $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset-md
+) {
+  @include gf-focus-visible(
+    $border-radius: $border-radius, $box-shadow: $box-shadow,
+    $focus-ring: $focus-ring, $focus-ring-offset: $focus-ring-offset
+  );
+
+  min-width:  $width;
+  max-width:  $width;
+  min-height: $height;
+  max-height: $height;
+  border:     none;
+  box-shadow: $box-shadow;
+
+  .avatar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border:   $border;
+    outline:  none;
+
+    .sub-avatar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width:       $width;
+      height:      $height;
+      background:  $background;
+      background-position: center;
+      background-size:     contain;
+      color:       $color;
+      font-size:   $font-size;
+      font-weight: $font-weight;
+
+      span { color: $color; }
+    }
+  }
+}
+
+@mixin gf-textarea(
+  $height:        $gf-textarea-height,
+  $padding:       $gf-input-padding,
+  $color:         $gf-input-color,
+  $font-size:     $gf-btn-font-size,
+  $font-weight:   $gf-btn-font-weight,
+  $background:    $gf-input-bg,
+  $border:        $gf-input-border,
+  $border-radius: $gf-input-border-radius,
+  $focus-ring:    $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset-sm
+) {
+  @include gf-input(
+    $height: $height, $padding: $padding, $background: $background,
+    $border: $border, $border-radius: $border-radius, $color: $color,
+    $font-size: $font-size, $font-weight: $font-weight,
+    $focus-ring: $focus-ring, $focus-ring-offset: $focus-ring-offset
+  );
+}
+
+@mixin gf-select(
+  $padding:       $gf-select-padding,
+  $color:         $gf-input-color,
+  $font-size:     $gf-btn-font-size,
+  $font-weight:   $gf-btn-font-weight,
+  $background:    $gf-input-bg,
+  $border:        $gf-input-border,
+  $border-radius: $gf-input-border-radius,
+  $box-shadow:    $gf-input-box-shadow,
+  $focus-ring:    $gf-focus-ring,
+  $focus-ring-offset: $gf-focus-ring-offset-sm
+) {
+  @include gf-input(
+    $padding: $padding, $background: $background, $border: $border,
+    $border-radius: $border-radius, $box-shadow: $box-shadow,
+    $color: $color, $font-size: $font-size, $font-weight: $font-weight,
+    $focus-ring: $focus-ring, $focus-ring-offset: $focus-ring-offset
+  );
+}
+
+// -----------------------------------------------------------------------------
+// 6.5 Nav tabs, tab
+// -----------------------------------------------------------------------------
+
+@mixin gf-nav-tabs(
+  $width:         $gf-nav-tabs-width,
+  $padding:       $gf-nav-tabs-padding,
+  $background:    $gf-nav-tabs-background,
+  $border:        $gf-nav-tabs-border,
+  $border-radius: $gf-nav-tabs-border-radius
+) {
+  width:         $width;
+  padding:       $padding    !important;
+  background:    $background !important;
+  border:        none;
+  border-bottom: $border     !important;
+  border-radius: $border-radius !important;
+}
+
+@mixin gf-tab(
+  $margin-right:         $gf-tab-margin-right,
+  $margin-bottom:        $gf-tab-margin-bottom,
+  $padding:              $gf-tab-padding,
+  $color:                $gf-tab-color,
+  $font-size:            $gf-btn-font-size,
+  $font-weight:          $gf-tab-font-weight,
+  $background:           $gf-tab-background,
+  $border:               $gf-tab-border,
+  $border-top:           $gf-tab-border-top,
+  $border-right:         $gf-tab-border-right,
+  $border-bottom:        $gf-tab-border-bottom,
+  $border-left:          $gf-tab-border-left,
+  $border-radius:        $gf-tab-border-radius,
+  $hover-background:     $gf-tab-background,
+  $hover-border:         $gf-tab-border,
+  $hover-border-top:     $gf-tab-border-top,
+  $hover-border-right:   $gf-tab-border-right,
+  $hover-border-bottom:  $gf-tab-border-bottom-hover,
+  $hover-border-left:    $gf-tab-border-left,
+  $hover-color:          $gf-tab-hover-color,
+  $active-background:    $gf-tab-background,
+  $active-border:        $gf-tab-border,
+  $active-border-top:    $gf-tab-border-top,
+  $active-border-right:  $gf-tab-border-right,
+  $active-border-bottom: $gf-tab-border-bottom-active,
+  $active-border-left:   $gf-tab-border-left,
+  $active-color:         $gf-tab-active-color,
+  $focus-ring:           $gf-focus-ring,
+  $focus-ring-offset:    $gf-focus-ring-offset-md
+) {
+  margin-right: $margin-right !important;
+
+  a {
+    @include gf-btn(
+      $padding: $padding, $background: $background, $border: $border,
+      $border-top: $border-top, $border-right: $border-right,
+      $border-bottom: $border-bottom, $border-left: $border-left,
+      $border-radius: $border-radius, $color: $color,
+      $font-size: $font-size, $font-weight: $font-weight,
+      $hover-background: $hover-background, $hover-border: $hover-border,
+      $hover-border-top: $hover-border-top, $hover-border-right: $hover-border-right,
+      $hover-border-bottom: $hover-border-bottom, $hover-border-left: $hover-border-left,
+      $hover-color: $hover-color,
+      $active-background: $active-background, $active-border: $active-border,
+      $active-border-top: $active-border-top, $active-border-right: $active-border-right,
+      $active-border-bottom: $active-border-bottom, $active-border-left: $active-border-left,
+      $active-color: $active-color,
+      $focus-ring: $focus-ring, $focus-ring-offset: $focus-ring-offset
+    );
+    margin-right:  $gf-tab-margin-right-inner !important;
+    margin-bottom: $margin-bottom             !important;
+  }
+
+  &.active {
+    margin-bottom: $gf-tab-margin-bottom-active;
+    background:    $gf-tab-active-background;
+    border:        $gf-tab-active-border    !important;
+    box-shadow:    $gf-tab-active-box-shadow !important;
+
+    a {
+      @include gf-btn(
+        $padding: $padding,
+        $background: $active-background, $border: $active-border,
+        $border-top: $active-border-top, $border-right: $active-border-right,
+        $border-bottom: $active-border-bottom, $border-left: $active-border-left,
+        $border-radius: $border-radius, $color: $active-color,
+        $font-size: $font-size, $font-weight: $font-weight,
+        $hover-background: $active-background, $hover-border: $active-border,
+        $hover-border-top: $active-border-top, $hover-border-right: $active-border-right,
+        $hover-border-bottom: $active-border-bottom, $hover-border-left: $active-border-left,
+        $hover-color: $active-color,
+        $active-background: $active-background, $active-border: $active-border,
+        $active-border-top: $active-border-top, $active-border-right: $active-border-right,
+        $active-border-bottom: $active-border-bottom, $active-border-left: $active-border-left,
+        $active-color: $active-color,
+        $focus-ring: $focus-ring, $focus-ring-offset: $focus-ring-offset
+      );
+      margin-bottom: $margin-bottom !important;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 6.6 Utility mixins
+// -----------------------------------------------------------------------------
+
+@mixin gf-truncate($lines: $gf-truncate-lines) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@mixin gf-flex-center(
+  $direction: $gf-flex-center-direction,
+  $gap:       $gf-flex-gap-zero
+) {
+  display: flex;
+  flex-direction: $direction;
+  align-items: center;
+  justify-content: center;
+  @if $gap != $gf-flex-gap-zero { gap: $gap; }
+}
+
+@mixin gf-flex-between(
+  $align: $gf-flex-between-align,
+  $gap:   $gf-flex-between-gap
+) {
+  display: flex;
+  align-items: $align;
+  justify-content: space-between;
+  @if $gap != $gf-flex-gap-zero { gap: $gap; }
+}
+
+@mixin gf-stack(
+  $gap:   $gf-stack-gap,
+  $align: $gf-stack-align
+) {
+  display: flex;
+  flex-direction: column;
+  align-items: $align;
+  gap: $gap;
+}
+
+@mixin gf-cluster(
+  $gap:     $gf-cluster-gap,
+  $align:   $gf-cluster-align,
+  $justify: $gf-cluster-justify
+) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: $align;
+  justify-content: $justify;
+  gap: $gap;
+}
+
+@mixin gf-visually-hidden {
+  position: absolute !important;
+  width:    1px      !important;
+  height:   1px      !important;
+  padding:  $gf-visually-hidden-padding !important;
+  margin:   $gf-visually-hidden-margin  !important;
+  overflow: hidden   !important;
+  clip: rect($gf-visually-hidden-clip, $gf-visually-hidden-clip, $gf-visually-hidden-clip, $gf-visually-hidden-clip) !important;
+  white-space: nowrap !important;
+  border: $gf-visually-hidden-border   !important;
+}
+
+@mixin gf-skeleton(
+  $background:    $gf-skeleton-bg,
+  $border-radius: $gf-skeleton-border-radius
+) {
+  background:    $background    !important;
+  border-radius: $border-radius;
+  animation: gf-skeleton-pulse 1.5s ease-in-out infinite;
+  pointer-events: $gf-skeleton-pointer-events !important;
+  color:          $gf-skeleton-color          !important;
+}
+
+@mixin gf-badge(
+  $padding-x:     $gf-badge-padding-x,
+  $padding-y:     $gf-badge-padding-y,
+  $border-radius: $gf-badge-border-radius,
+  $font-size:     $gf-badge-font-size,
+  $font-weight:   $gf-badge-font-weight,
+  $background:    $gf-badge-bg,
+  $color:         $gf-badge-color
+) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding:       $padding-y $padding-x;
+  border-radius: $border-radius;
+  background:    $background;
+  color:         $color;
+  font-size:     $font-size;
+  font-weight:   $font-weight;
+  line-height: 1;
+}
+
+@mixin gf-divider(
+  $color:    $gf-divider-color,
+  $width:    $gf-divider-width,
+  $margin-y: $gf-divider-margin-y,
+  $margin-x: $gf-divider-margin-x
+) {
+  border:     $gf-divider-border;
+  border-top: $width solid $color;
+  margin:     $margin-y $margin-x;
+}
+
+@mixin gf-aspect-ratio(
+  $width:  $gf-aspect-ratio-width,
+  $height: $gf-aspect-ratio-height
+) {
+  overflow: hidden;
+
+  @supports (aspect-ratio: 1) {
+    aspect-ratio: $width / $height;
+  }
+
+  @supports not (aspect-ratio: 1) {
+    position: relative;
+
+    &::before {
+      content: '';
+      display: block;
+      padding-bottom: percentage($height / $width);
+    }
+
+    > * {
+      position: absolute;
+      top:    $gf-visually-hidden-clip;
+      left:   $gf-visually-hidden-clip;
+      width:  100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+}
+
+@mixin gf-container-narrow(
+  $max-width: $gf-container-narrow-max-width,
+  $padding-x: $gf-container-narrow-padding-x
+) {
+  max-width:     $max-width;
+  margin-left:   $gf-container-margin-x;
+  margin-right:  $gf-container-margin-x;
+  padding-left:  $padding-x;
+  padding-right: $padding-x;
+}
+
+@mixin gf-container-wide(
+  $max-width: $gf-container-wide-max-width,
+  $padding-x: $gf-container-wide-padding-x
+) {
+  max-width:     $max-width;
+  margin-left:   $gf-container-margin-x;
+  margin-right:  $gf-container-margin-x;
+  padding-left:  $padding-x;
+  padding-right: $padding-x;
+}
+
+@mixin gf-grid-auto-fill(
+  $min-column-width: $gf-grid-min-column-width,
+  $gap:              $gf-grid-gap
+) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax($min-column-width, 1fr));
+  gap: $gap;
+}
+
+@mixin gf-clearfix {
+  &::after {
+    content: '';
+    display: table;
+    clear:   both;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 6.7 Generator & codebase-derived mixins
+// -----------------------------------------------------------------------------
+
+@mixin gf-generate-font-sizes($sizes: $gf-generate-font-sizes-sizes) {
+  @each $size in $sizes {
+    .font-size-#{nth($size, 1)} { font-size: #{nth($size, 2)} !important; }
+  }
+}
+
+@mixin gf-generate-font-weights($weights: $gf-generate-font-weights-weights) {
+  @each $weight in $weights {
+    .font-weight-#{nth($weight, 1)} { font-weight: #{nth($weight, 2)} !important; }
+  }
+}
+
+@mixin gf-generate-spacers(
+  $sizes:  $gf-generate-spacers-sizes,
+  $prefix: $gf-generate-spacers-prefix
+) {
+  @each $size in $sizes {
+    $name: nth($size, 1);
+    $val:  nth($size, 2);
+    .#{$prefix}gap-#{$name} { gap:            $val !important; }
+    .#{$prefix}m-#{$name}   { margin:         $val !important; }
+    .#{$prefix}mt-#{$name}  { margin-top:     $val !important; }
+    .#{$prefix}mr-#{$name}  { margin-right:   $val !important; }
+    .#{$prefix}mb-#{$name}  { margin-bottom:  $val !important; }
+    .#{$prefix}ml-#{$name}  { margin-left:    $val !important; }
+    .#{$prefix}mx-#{$name}  { margin-left:  $val !important; margin-right:  $val !important; }
+    .#{$prefix}my-#{$name}  { margin-top:   $val !important; margin-bottom: $val !important; }
+    .#{$prefix}p-#{$name}   { padding:        $val !important; }
+    .#{$prefix}pt-#{$name}  { padding-top:    $val !important; }
+    .#{$prefix}pr-#{$name}  { padding-right:  $val !important; }
+    .#{$prefix}pb-#{$name}  { padding-bottom: $val !important; }
+    .#{$prefix}pl-#{$name}  { padding-left:   $val !important; }
+    .#{$prefix}px-#{$name}  { padding-left: $val !important; padding-right:  $val !important; }
+    .#{$prefix}py-#{$name}  { padding-top:  $val !important; padding-bottom: $val !important; }
+  }
+}
+
+@mixin gf-btn-link-hover(
+  $color:          $gf-btn-link-color,
+  $hover-bg:       $gf-btn-link-hover-hover-bg,
+  $focus-bg:       $gf-btn-link-hover-focus-bg,
+  $outline-color:  $gf-btn-link-hover-outline-color,
+  $outline-offset: $gf-btn-link-hover-outline-offset
+) {
+  @include gf-btn-link($color: $color);
+
+  &:focus { background-color: $focus-bg !important; }
+
+  &:hover,
+  &:hover:focus-visible { background-color: $hover-bg !important; }
+
+  &:focus-visible {
+    outline:        $border-width-md solid $outline-color !important;
+    outline-offset: $outline-offset !important;
+  }
+}
+
+@mixin gf-heading-scale(
+  $font-family:  $gf-heading-scale-font-family,
+  $font-weight:  $gf-heading-scale-font-weight,
+  $line-height:  $gf-heading-scale-line-height,
+  $h1: $gf-heading-scale-h1,
+  $h2: $gf-heading-scale-h2,
+  $h3: $gf-heading-scale-h3,
+  $h4: $gf-heading-scale-h4,
+  $h5: $gf-heading-scale-h5,
+  $h6: $gf-heading-scale-h6
+) {
+  h1 { font-size: $h1; font-family: $font-family; font-weight: $font-weight; line-height: $line-height; }
+  h2 { font-size: $h2; font-family: $font-family; font-weight: $font-weight; line-height: $line-height; }
+  h3 { font-size: $h3; font-family: $font-family; font-weight: $font-weight; line-height: $line-height; }
+  h4 { font-size: $h4; font-family: $font-family; font-weight: $font-weight; line-height: $line-height; }
+  h5 { font-size: $h5; font-family: $font-family; font-weight: $font-weight; line-height: $line-height; }
+  h6 { font-size: $h6; font-family: $font-family; font-weight: $font-weight; line-height: $line-height; }
+}
+
+@mixin gf-card-selectable(
+  $border-width:             $gf-card-selectable-border-width,
+  $border-default:           $gf-card-selectable-border-default,
+  $selected-border-color:    $gf-card-selectable-selected-border-color,
+  $selected-indicator-bg:    $gf-card-selectable-selected-indicator-bg,
+  $selected-indicator-color: $gf-card-selectable-selected-indicator-color,
+  $selected-indicator-size:  $gf-card-selectable-selected-indicator-size
+) {
+  position: relative;
+  border: $border-width solid $border-default;
+
+  &.selected {
+    border-color: $selected-border-color;
+
+    &::after {
+      position: absolute;
+      bottom: 0;
+      right:  0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width:  $selected-indicator-size;
+      height: $selected-indicator-size;
+      font-family: 'Font Awesome 5 Free', 'FontAwesome';
+      font-weight: 900;
+      content: '\f00c';
+      background-color: $selected-indicator-bg;
+      color:            $selected-indicator-color;
+    }
+  }
+}
+
+@mixin gf-logo-margin-block(
+  $margin-x:  $gf-logo-margin-x,
+  $margin-y:  $gf-logo-margin-y,
+  $padding-y: $gf-logo-padding-y,
+  $padding-x: $gf-logo-padding-x
+) {
+  margin:  $margin-y auto $margin-y $margin-x !important;
+  padding: $padding-y $padding-x              !important;
+}
+
+// -----------------------------------------------------------------------------
+// 6.8 Backward-compatibility aliases (unprefixed → gf-*)
+// -----------------------------------------------------------------------------
+// Keep these so themes written against pre-gf- mixin names continue to compile.
+
+@mixin focus($args...) { @include gf-focus($args...); }
+@mixin focus-none      { @include gf-focus-none; }
+@mixin focus-visible($args...) { @include gf-focus-visible($args...); }
+@mixin btn($args...)            { @include gf-btn($args...); }
+@mixin btn-default($args...)    { @include gf-btn-default($args...); }
+@mixin btn-primary($args...)    { @include gf-btn-primary($args...); }
+@mixin btn-secondary($args...)  { @include gf-btn-secondary($args...); }
+@mixin btn-icon($args...)       { @include gf-btn-icon($args...); }
+@mixin btn-link($args...)       { @include gf-btn-link($args...); }
+@mixin btn-favorite($args...)   { @include gf-btn-favorite($args...); }
+@mixin card($args...)           { @include gf-card($args...); }
+@mixin dropdown-menu($args...)  { @include gf-dropdown-menu($args...); }
+@mixin dropdown-menu-item($args...) { @include gf-dropdown-menu-item($args...); }
+@mixin input($args...)          { @include gf-input($args...); }
+@mixin panel($args...)          { @include gf-panel($args...); }
+@mixin panel-heading($args...)  { @include gf-panel-heading($args...); }
+@mixin panel-body($args...)     { @include gf-panel-body($args...); }
+@mixin panel-footer($args...)   { @include gf-panel-footer($args...); }
+@mixin panel-title($args...)    { @include gf-panel-title($args...); }
+@mixin avatar-container($args...) { @include gf-avatar-container($args...); }
+@mixin textarea($args...)       { @include gf-textarea($args...); }
+@mixin select($args...)         { @include gf-select($args...); }
+@mixin nav-tabs($args...)       { @include gf-nav-tabs($args...); }
+@mixin tab($args...)            { @include gf-tab($args...); }
+
+// Keyframes used by gf-skeleton
+@keyframes gf-skeleton-pulse {
+  0%,
+  100% { opacity: 1;   }
+  50%  { opacity: 0.5; }
+}

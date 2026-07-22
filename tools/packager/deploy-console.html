@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SN Deploy Console</title>
+<style>
+  :root {
+    --bg: #0b1220; --panel: #121b2e; --border: #24304a; --text: #e6ebf5; --text-muted: #93a1bd;
+    --accent: #4d8fe0; --accent-hover: #6ba3e8; --danger: #e0685f; --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-muted); margin: 0 0 28px; font-size: 14px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; max-width: 900px; }
+  label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 6px; }
+  select, input[type="text"] {
+    width: 100%; padding: 9px 10px; background: #0e1626; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-size: 14px;
+  }
+  select:disabled { opacity: .5; }
+  .status { margin-top: 10px; font-size: 13px; color: var(--text-muted); min-height: 16px; }
+  .status-error { color: var(--danger); }
+  .ineligible-note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+  .hint { font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+  #connectionSection label:first-child { margin-bottom: 8px; }
+  .grid3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+  .field + .field { margin-top: 14px; }
+  .grid3 .field + .field { margin-top: 0; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tab-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
+  }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  textarea#outputArea {
+    width: 100%; height: 420px; background: #0a1120; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: var(--mono); font-size: 12.5px; padding: 14px; resize: vertical;
+  }
+  .output-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  #sysIdSummary { font-size: 12px; color: var(--text-muted); }
+  button.action-btn {
+    background: var(--accent); border: none; color: #fff; padding: 8px 16px; border-radius: 6px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  button.action-btn:hover { background: var(--accent-hover); }
+  button.action-btn + button.action-btn { margin-left: 8px; }
+</style>
+</head>
+<body>
+
+<h1>SN Deploy Console</h1>
+<p class="subtitle">Build, preview, and download a ServiceNow Update Set for any app in this suite - outside any single app's own dev harness. Only apps with a <code>deploy.manifest.js</code> are deployable.</p>
+
+<div class="panel">
+  <label for="appSelect">App</label>
+  <select id="appSelect" disabled></select>
+  <div id="discoveryStatus" class="status">Checking apps…</div>
+  <div id="ineligibleNote" class="ineligible-note"></div>
+  <div id="buildStatus" class="status"></div>
+</div>
+
+<div class="panel" id="connectionSection" style="display:none;">
+  <label>Deploy target instance <span class="hint">— for detecting the target's vendor prefix, so Scope can be recommended to match it</span></label>
+  <input type="text" id="fldInstanceUrl" autocomplete="off" placeholder="https://devXXXXX.service-now.com">
+  <div class="grid3" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+    <div class="field">
+      <label for="fldUsername">Username</label>
+      <input type="text" id="fldUsername" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="fldPassword">Password</label>
+      <input type="text" id="fldPassword" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true">
+    </div>
+  </div>
+  <div style="margin-top: 10px; display:flex; align-items:center; gap:10px;">
+    <button type="button" class="action-btn" id="detectPrefixBtn">Detect prefix</button>
+    <span id="detectStatus" class="status" style="margin:0;"></span>
+  </div>
+</div>
+
+<div class="panel" id="overridesSection" style="display:none;">
+  <div class="grid3">
+    <div class="field">
+      <label for="fldAppName">App name</label>
+      <input type="text" id="fldAppName" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="fldScope">Scope <span id="scopeHint" class="hint"></span></label>
+      <input type="text" id="fldScope" autocomplete="off" maxlength="18">
+    </div>
+    <div class="field">
+      <label for="fldVersion">Version</label>
+      <input type="text" id="fldVersion" autocomplete="off">
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="tabsSection" style="display:none; max-width: 1100px;">
+  <div class="tabs">
+    <button type="button" class="tab-btn active" data-tab="xml">Package XML</button>
+    <button type="button" class="tab-btn" data-tab="template">Template</button>
+    <button type="button" class="tab-btn" data-tab="client">Client</button>
+    <button type="button" class="tab-btn" data-tab="server">Server</button>
+    <button type="button" class="tab-btn" data-tab="services">Services</button>
+    <button type="button" class="tab-btn" data-tab="css">CSS</button>
+    <button type="button" class="tab-btn" data-tab="link">Link</button>
+  </div>
+  <textarea id="outputArea" readonly spellcheck="false"></textarea>
+  <div class="output-actions">
+    <span id="sysIdSummary"></span>
+    <div>
+      <button type="button" class="action-btn" id="copyBtn">Copy</button>
+      <button type="button" class="action-btn" id="downloadBtn">Download</button>
+    </div>
+  </div>
+</div>
+
+<script src="snpackager.core.js"></script>
+<script src="snpackager.browser-connect.js"></script>
+<script src="deploy-console.js"></script>
+</body>
+</html>

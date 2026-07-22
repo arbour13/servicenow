@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="glideStudio">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glide Studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23054b80'/%3E%3Ctext x='16' y='23' font-family='Arial,Helvetica,sans-serif' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
+<script>
+// Blocking (deliberately not deferred/async) - runs before the stylesheet below paints anything,
+// so the app opens straight into the right theme instead of flashing light mode first and then
+// switching. Mirrors main.controller.js's own loadSavedTheme()/systemPrefersDark() exactly; that
+// code still runs the same logic on bootstrap (idempotent - it just re-sets the same attribute),
+// this is only here to beat first paint, which Angular loading from a CDN is far too slow for.
+(function () {
+  try {
+    var t = localStorage.getItem('glideStudioTheme');
+    if (!t) { t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!--
+  This dev harness loads AngularJS from a CDN purely so this page is previewable in a plain
+  browser - the *deployed* Service Portal widget does not include this shell. The Deploy step
+  packages the template/controller/services into an sp_widget + sp_angular_provider records
+  instead (see DeployService).
+-->
+
+<!-- ng-cloak on the WHOLE app root, not scattered on individual elements - the browser's HTML
+     PARSER doesn't know what any Angular directive means, ng-if/ng-show/{{interpolation}} included,
+     so it will happily parse AND PAINT this entire subtree exactly as written in the raw HTML while
+     it's still waiting on the slow CDN-hosted Angular script (see the inline theme-script's own
+     comment) to download, execute, and bootstrap. Before this, that meant: raw "{{...}}" text
+     wherever the header/sidenav interpolate a value, EVERY ng-if'd modal overlay briefly painting
+     full-screen regardless of its condition (confirm/deploy/preview all default closed, but "closed"
+     only exists as compiled Angular behavior, not as anything the raw markup itself expresses), and
+     .output-pane showing hardcoded light colors in dark mode before core-sync-attr could run. Chasing
+     those one at a time (each one only surfacing once someone happened to refresh at the right
+     moment) was the wrong shape of fix - anything inside this root is equally exposed to the same
+     race, so the fix belongs at the root once, not per-element as each case gets separately noticed.
+     [ng-cloak] (app.scss) hides the raw markup via a plain CSS rule loaded synchronously in <head>,
+     long before the Angular script tag; Angular's own built-in ngCloak directive strips the
+     attribute the instant its FIRST digest finishes compiling this element - by which point every
+     directive inside (ng-if, ng-show, core-sync-attr, interpolation) has ALREADY resolved correctly,
+     since Angular compiles a subtree top-down in one synchronous pass before anything repaints. -->
+<div class="app" ng-cloak ng-class="{'meta-view': vm.activeMode === 'Settings' || vm.activeMode === 'Standards'}" ng-controller="MainController as vm">
+
+  <header class="appbar">
+    <div class="appbar-brand"><span class="appbar-logo" aria-hidden="true">G</span>Glide Studio</div>
+    <gs-select class="appbar-select" aria-label="Script type" ng-model="vm.activeMode"
+               gs-options="vm.modeOptions" placeholder="Mode"></gs-select>
+  </header>
+
+  <nav class="sidenav" aria-label="Script type">
+    <div class="sidenav-brand">
+      <div class="sidenav-logo">G</div>
+      <div>
+        <p class="sidenav-brand-name">Glide Studio</p>
+        <p class="sidenav-brand-desc">Visual ServiceNow script generator</p>
+      </div>
+    </div>
+    <div class="sidenav-modes" role="radiogroup">
+      <button type="button" class="sidenav-btn" ng-repeat-start="m in vm.modes" role="radio"
+              ng-class="{active: vm.activeMode === m.key, connected: m.key === 'Settings' && vm.connection.status === 'connected', connecting: m.key === 'Settings' && vm.connection.status === 'connecting', error: m.key === 'Settings' && vm.connection.status === 'error'}"
+              aria-checked="{{vm.activeMode === m.key}}" tabindex="{{vm.activeMode === m.key ? 0 : -1}}"
+              ng-click="vm.selectMode(m.key)">
+        <span ng-bind-html="m.icon"></span>
+        <span class="sidenav-label">{{m.name}}</span>
+        <span class="sidenav-badge" ng-if="!m.ready">soon</span>
+        <span class="sidenav-conn-dot" ng-if="m.key === 'Settings'"></span>
+      </button>
+      <div class="sidenav-spacer" ng-if="m.key === 'Standards'" role="presentation" aria-hidden="true" ng-repeat-end></div>
+      <button type="button" class="sidenav-btn" ng-click="vm.toggleTheme()"
+              aria-pressed="{{vm.theme === 'dark'}}" title="Toggle dark mode">
+        <svg ng-if="vm.theme === 'dark'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg ng-if="vm.theme !== 'dark'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <span class="sidenav-label">{{vm.theme === 'dark' ? 'Light mode' : 'Dark mode'}}</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="builder" ng-class="{'builder-focus-lock': vm.activeMode === 'Standards' && vm.stdFocusId}">
+    <div class="page-title" ng-class="{'page-title-sticky': vm.activeMode === 'Standards'}">
+      <span ng-bind-html="vm.activeModeInfo().headerIcon"></span>
+      <div>
+        <div class="page-title-name">{{vm.activeModeInfo().name}}</div>
+        <div class="page-title-sub">{{vm.activeModeInfo().sub}}</div>
+      </div>
+      <div class="page-title-actions" ng-if="vm.activeMode === 'Standards' && vm.stdFocusId">
+        <button type="button" class="btn btn-accent btn-sm" ng-click="vm.backFromStandards()">
+          ← Back to {{vm.modeName(vm.previousMode)}}
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.exitStdFocus()">
+          Stay &amp; browse Standards →
+        </button>
+      </div>
+      <!-- Fallback copy of the rail's own search box (see .std-rail above) - the rail hides below
+           std-rail-bp, and with no in-page nav at that width search needs somewhere else to live so
+           it never disappears entirely. Hidden via CSS (.std-search-wrap-header, app.scss) whenever
+           the rail's own copy is visible, so exactly one is ever shown; both bind vm.stdQuery so
+           they can't drift. Mutually exclusive with the focus-mode actions above (vm.stdFocusId can
+           only be truthy when vm.stdQuery is empty - see vm.openStandard/vm.selectMode), so only one
+           of the two ever renders. -->
+      <div class="page-title-actions" ng-if="vm.activeMode === 'Standards' && !vm.stdFocusId">
+        <div class="std-search-wrap std-search-wrap-header">
+          <input type="text" class="std-search-input" ng-model="vm.stdQuery" placeholder="Search standards…" aria-label="Search standards">
+          <button type="button" class="std-search-clear" ng-if="vm.stdQuery" ng-click="vm.clearStdSearch()" aria-label="Clear search" title="Clear search">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shared context: one table + one connection status, persistent across every table-driven
+         mode - see main.controller.js's vm.onWorkingTableChange for why this replaced five
+         independent table pickers that could silently drift out of sync with each other. A card
+         like every other panel (same title/spacing treatment), not a bespoke bar - "Source" as in
+         the record source the rest of the panels below build against. -->
+    <div class="card" ng-if="vm.usesWorkingTable(vm.activeMode)">
+      <div class="card-head">
+        <h2>Source</h2>
+        <button type="button" class="working-context-conn" ng-click="vm.selectMode('Settings')" title="Go to Settings">
+          <span class="working-context-dot" ng-class="vm.connection.status"></span>
+          {{vm.connLabel()}}
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="working-context-row">
+          <div class="working-context-field">
+            <span class="working-context-label">Table</span>
+            <gs-select ng-model="vm.workingTable" ng-change="vm.onWorkingTableChange()"
+                       gs-options="vm.tables" gs-live-search="vm.searchTables(query)" gs-label-for="vm.tableLabel(name)"
+                       placeholder="table name" no-options-text="{{vm.connection.status === 'connected' ? 'Type to search tables…' : 'No options'}}"></gs-select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Not-yet-ported modes: placeholder, not a dead end - explains what's coming. -->
+    <div class="card" ng-if="!vm.activeModeInfo().ready">
+      <div class="stub-card">
+        Phase 2 - {{vm.activeModeInfo().name}} hasn't been ported to this rebuild yet.<br>
+        GlideRecord and GlideAggregate modes are fully wired - switch back to see them.
+      </div>
+    </div>
+
+    <div ng-if="vm.activeMode === 'GlideRecord'">
+
+      <div class="card">
+        <div class="card-head"><h2>Operation</h2></div>
+        <div class="card-body">
+          <div ng-class="{grid2: vm.vis.getMethod}">
+            <div>
+              <label class="field-label" for="fldOperation">Operation</label>
+              <gs-select id="fldOperation" ng-model="vm.state.operation" ng-change="vm.onFieldChange()"
+                         gs-options="vm.operations" placeholder="operation"></gs-select>
+            </div>
+            <div ng-if="vm.vis.getMethod">
+              <label class="field-label">Lookup by</label>
+              <gs-select ng-model="vm.state.getMethod" ng-change="vm.onFieldChange()"
+                         gs-options="vm.getMethodOptions" placeholder="lookup by"></gs-select>
+            </div>
+          </div>
+
+          <div ng-if="vm.vis.multiAction" style="margin-top:var(--sp-md);">
+            <label class="field-label">Then...</label>
+            <gs-select ng-model="vm.state.multiAction" ng-change="vm.onFieldChange()"
+                       gs-options="vm.multiActionOptions" placeholder="then"></gs-select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Function</h2></div>
+        <div class="card-body">
+          <p class="hint">{{vm.fnHint}}</p>
+          <div class="grid3">
+            <div>
+              <label class="field-label" for="fldFnName">Function name</label>
+              <input type="text" id="fldFnName" autocomplete="off" placeholder="getIncident"
+                     ng-model="vm.state.fnName" ng-change="vm.onFnNameEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldFnParams">Parameters</label>
+              <input type="text" id="fldFnParams" autocomplete="off" placeholder="comma-separated parameters"
+                     ng-model="vm.state.fnParams" ng-change="vm.onFnParamsEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldVarName">Variable name</label>
+              <input type="text" id="fldVarName" autocomplete="off"
+                     ng-model="vm.state.varName" ng-change="vm.onVarNameEdit()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" ng-if="vm.vis.exampleQuery">
+        <div class="card-head">
+          <h2>Example inputs</h2>
+          <button type="button" class="btn btn-sm" ng-if="vm.connection.status === 'connected'" ng-click="vm.previewRecords()">▶ Preview records</button>
+        </div>
+        <div class="card-body">
+          <p class="hint">These inputs don't change the generated function - they only build the example call shown in the output panel. Type an <code>encodedQuery</code>, or build one from conditions (a built query takes precedence).</p>
+          <label class="field-label" for="fldExampleQuery">Encoded query</label>
+          <input type="text" id="fldExampleQuery" placeholder="active=true^priority=1" autocomplete="off"
+                 ng-model="vm.state.exampleQuery" ng-change="vm.onFieldChange()">
+          <div style="margin-top:var(--sp-md);">
+            <gs-condition-groups groups="vm.state.grArgGroups" gs-change="vm.onFieldChange()"
+                                  gs-fields="vm.fieldNames(vm.state.table)" gs-table="vm.state.table" gs-conn="vm.connection"></gs-condition-groups>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" ng-if="vm.vis.exampleCard">
+        <div class="card-head"><h2>Example inputs</h2></div>
+        <div class="card-body">
+          <p class="hint">These inputs don't change the generated function - they only build the example call shown in the output panel.</p>
+          <div ng-if="vm.vis.exampleSysId" style="margin-bottom:var(--sp-md);">
+            <label class="field-label" for="fldExampleSysId">Sys ID</label>
+            <input type="text" id="fldExampleSysId" placeholder="a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6" autocomplete="off"
+                   ng-model="vm.state.exampleSysId" ng-change="vm.onFieldChange()">
+          </div>
+          <div ng-if="vm.vis.exampleSets">
+            <div class="row" style="margin-bottom:var(--sp-sm);">
+              <label class="check" style="cursor:default; white-space:nowrap; flex-shrink:0;">Caller passes an</label>
+              <gs-select ng-model="vm.state.insertInputStyle" ng-change="vm.onFieldChange()"
+                         gs-options="vm.insertStyleOptions" placeholder="input shape" style="max-width:230px;"></gs-select>
+            </div>
+            <p class="hint">The function sets whatever the caller passes in. List the fields you expect (with a sample value) to build the example call shown in the output panel.</p>
+            <div class="set-row" ng-repeat="fld in vm.state.sets">
+              <gs-select ng-model="fld.field" ng-change="vm.onFieldChange()" gs-options="vm.fieldNames(vm.state.table)"
+                         gs-exclude="name === 'number' || name.indexOf('sys_') === 0" placeholder="field"
+                         no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+              <input type="text" placeholder="value" autocomplete="off" ng-model="fld.value" ng-change="vm.onFieldChange()">
+              <button type="button" class="icon-btn" ng-click="vm.removeSet($index)" title="Remove">✕</button>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addSet()" style="margin-top:8px;">+ Add field</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" ng-if="vm.vis.order">
+        <div class="card-head"><h2>Order &amp; limit</h2></div>
+        <div class="card-body">
+          <label class="field-label">Order by</label>
+          <div>
+            <div class="order-row" ng-repeat="o in vm.state.orderBys">
+              <gs-select ng-model="o.field" ng-change="vm.onFieldChange()"
+                         gs-options="vm.fieldNames(vm.state.table)" placeholder="field name"
+                         no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+              <gs-select ng-model="o.dir" ng-change="vm.onFieldChange()"
+                         gs-options="vm.orderDirOptions" placeholder="direction"></gs-select>
+              <button type="button" class="icon-btn" ng-click="vm.removeOrder($index)" title="Remove">✕</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addOrder()" style="margin-top:8px;">+ Add order field</button>
+
+          <div class="row" style="margin-top:13px;">
+            <label class="check"><input type="checkbox" ng-model="vm.state.useLimit" ng-change="vm.onUseLimitChange()"> setLimit</label>
+            <input type="number" min="1" style="max-width:110px;" ng-model="vm.state.limit" ng-change="vm.onFieldChange()">
+          </div>
+          <p class="hint" ng-if="vm.vis.chooseWindow" style="margin:8px 0 0;">setLimit and chooseWindow can't be used together — turning on one turns the other off automatically.</p>
+          <div ng-if="vm.vis.chooseWindow">
+            <div class="row" style="margin-top:8px;">
+              <label class="check"><input type="checkbox" ng-model="vm.state.useChooseWindow" ng-change="vm.onUseChooseWindowChange()"> chooseWindow</label>
+              <input type="text" placeholder="first param" style="max-width:100px;" autocomplete="off"
+                     ng-model="vm.state.chooseWindowFirst" ng-change="vm.onFieldChange()">
+              <input type="text" placeholder="last param" style="max-width:100px;" autocomplete="off"
+                     ng-model="vm.state.chooseWindowLast" ng-change="vm.onFieldChange()">
+            </div>
+            <p class="hint" ng-if="vm.state.useChooseWindow" style="margin:6px 0 0;">Pagination should come from the caller, not be baked in - these become extra function parameters.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Options</h2></div>
+        <div class="card-body checks">
+          <p class="hint">These apply only where relevant to the current operation - options that don't apply are hidden.</p>
+          <label class="check">
+            <input type="checkbox" ng-model="vm.state.secure" ng-change="vm.onFieldChange()">
+            Enforce ACLs <span class="hint" style="margin-left:var(--sp-sm);"><code>GlideRecordSecure</code></span>
+          </label>
+          <label class="check">
+            <input type="checkbox" ng-model="vm.errorHandling" ng-change="vm.onFieldChange()">
+            Add error handling <span class="hint" style="margin-left:var(--sp-sm);"><code>try/catch</code> + <code>gs.error</code></span>
+          </label>
+          <label class="check">
+            <input type="checkbox" ng-model="vm.state.setWorkflow" ng-change="vm.onFieldChange()">
+            Skip business rules <span class="hint" style="margin-left:var(--sp-sm);"><code>setWorkflow(false)</code></span>
+          </label>
+          <label class="check" ng-if="vm.vis.autoSysFields">
+            <input type="checkbox" ng-model="vm.state.autoSysFields" ng-change="vm.onFieldChange()">
+            Skip updates to system fields <span class="hint" style="margin-left:var(--sp-sm);"><code>autoSysFields(false)</code></span>
+          </label>
+          <label class="check" ng-if="vm.vis.withRefs">
+            <input type="checkbox" ng-model="vm.state.withRefs" ng-change="vm.onFieldChange()">
+            Cascade reference field updates <span class="hint" style="margin-left:var(--sp-sm);"><code>insertWithReferences() / updateWithReferences()</code></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <div ng-if="vm.activeMode === 'GlideQuery'">
+
+      <div class="card">
+        <div class="card-head"><h2>Operation</h2></div>
+        <div class="card-body">
+          <div ng-class="{grid2: vm.gqVis.getMethod}">
+            <div>
+              <label class="field-label" for="fldGqOperation">Operation</label>
+              <gs-select id="fldGqOperation" ng-model="vm.gqState.operation" ng-change="vm.onGqFieldChange()"
+                         gs-options="vm.gqOperations" placeholder="operation"></gs-select>
+            </div>
+            <div ng-if="vm.gqVis.getMethod">
+              <label class="field-label">Lookup by</label>
+              <gs-select ng-model="vm.gqState.getMethod" ng-change="vm.onGqFieldChange()"
+                         gs-options="vm.getMethodOptions" placeholder="lookup by"></gs-select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Function</h2></div>
+        <div class="card-body">
+          <p class="hint">{{vm.gqFnHint}}</p>
+          <div class="grid3">
+            <div>
+              <label class="field-label" for="fldGqFnName">Function name</label>
+              <input type="text" id="fldGqFnName" autocomplete="off" placeholder="getIncident"
+                     ng-model="vm.gqState.fnName" ng-change="vm.onGqFnNameEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldGqFnParams">Parameters</label>
+              <input type="text" id="fldGqFnParams" autocomplete="off" placeholder="comma-separated parameters"
+                     ng-model="vm.gqState.fnParams" ng-change="vm.onGqFnParamsEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldGqVarName">Variable name</label>
+              <input type="text" id="fldGqVarName" autocomplete="off"
+                     ng-model="vm.gqState.gqVar" ng-change="vm.onGqVarEdit()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" ng-if="vm.gqVis.selectFields">
+        <div class="card-head"><h2>Fields to select</h2></div>
+        <div class="card-body">
+          <p class="hint">Only these fields come back on the result. Leave empty to return the whole record.</p>
+          <div class="empty" ng-if="!vm.gqState.selectFields.length">None added - the whole record is returned.</div>
+          <div class="si-field-row" ng-repeat="f in vm.gqState.selectFields track by $index">
+            <gs-select ng-model="vm.gqState.selectFields[$index]" ng-change="vm.onGqFieldChange()"
+                       gs-options="vm.fieldNames(vm.gqState.table)" placeholder="field name"
+                       no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+            <button type="button" class="icon-btn" ng-click="vm.removeGqField($index)" title="Remove">✕</button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addGqField()" style="margin-top:8px;">+ Add field</button>
+        </div>
+      </div>
+
+      <div class="card" ng-if="vm.gqVis.exampleQuery">
+        <div class="card-head"><h2>Example inputs</h2></div>
+        <div class="card-body">
+          <p class="hint">These inputs don't change the generated function - they only build the example call shown in the output panel. Type an <code>encodedQuery</code>, or build one from conditions (a built query takes precedence).</p>
+          <label class="field-label" for="fldGqExampleQuery">Encoded query</label>
+          <input type="text" id="fldGqExampleQuery" placeholder="active=true^priority=1" autocomplete="off"
+                 ng-model="vm.gqState.exampleQuery" ng-change="vm.onGqFieldChange()">
+          <div style="margin-top:var(--sp-md);">
+            <gs-condition-groups groups="vm.gqState.gqArgGroups" gs-change="vm.onGqFieldChange()"
+                                  gs-fields="vm.fieldNames(vm.gqState.table)" gs-table="vm.gqState.table" gs-conn="vm.connection"></gs-condition-groups>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" ng-if="vm.gqVis.exampleCard">
+        <div class="card-head"><h2>Example inputs</h2></div>
+        <div class="card-body">
+          <p class="hint">These inputs don't change the generated function - they only build the example call shown in the output panel.</p>
+          <div ng-if="vm.gqVis.exampleSysId" style="margin-bottom:var(--sp-md);">
+            <label class="field-label" for="fldGqExampleSysId">Sys ID</label>
+            <input type="text" id="fldGqExampleSysId" placeholder="a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6" autocomplete="off"
+                   ng-model="vm.gqState.exampleSysId" ng-change="vm.onGqFieldChange()">
+          </div>
+          <div ng-if="vm.gqVis.exampleSets">
+            <p class="hint">GlideQuery applies whatever the caller passes directly - no per-field setValue loop to configure. List the fields you expect (with a sample value) to build the example call shown in the output panel.</p>
+            <div class="set-row" ng-repeat="fld in vm.gqState.sets">
+              <gs-select ng-model="fld.field" ng-change="vm.onGqFieldChange()" gs-options="vm.fieldNames(vm.gqState.table)"
+                         gs-exclude="name === 'number' || name.indexOf('sys_') === 0" placeholder="field"
+                         no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+              <input type="text" placeholder="value" autocomplete="off" ng-model="fld.value" ng-change="vm.onGqFieldChange()">
+              <button type="button" class="icon-btn" ng-click="vm.removeGqSet($index)" title="Remove">✕</button>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addGqSet()" style="margin-top:8px;">+ Add field</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" ng-if="vm.gqVis.order">
+        <div class="card-head"><h2>Order &amp; limit</h2></div>
+        <div class="card-body">
+          <label class="field-label">Order by</label>
+          <div>
+            <div class="order-row" ng-repeat="o in vm.gqState.orderBys">
+              <gs-select ng-model="o.field" ng-change="vm.onGqFieldChange()"
+                         gs-options="vm.fieldNames(vm.gqState.table)" placeholder="field name"
+                         no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+              <gs-select ng-model="o.dir" ng-change="vm.onGqFieldChange()"
+                         gs-options="vm.orderDirOptions" placeholder="direction"></gs-select>
+              <button type="button" class="icon-btn" ng-click="vm.removeGqOrder($index)" title="Remove">✕</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addGqOrder()" style="margin-top:8px;">+ Add order field</button>
+
+          <div class="row" style="margin-top:13px;">
+            <label class="check"><input type="checkbox" ng-model="vm.gqState.useLimit" ng-change="vm.onGqUseLimitChange()"> limit</label>
+            <input type="number" min="1" style="max-width:110px;" ng-model="vm.gqState.limit" ng-change="vm.onGqFieldChange()">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Options</h2></div>
+        <div class="card-body checks">
+          <label class="check">
+            <input type="checkbox" ng-model="vm.errorHandling" ng-change="vm.onGqFieldChange()">
+            Add error handling <span class="hint" style="margin-left:var(--sp-sm);"><code>try/catch</code> + <code>gs.error</code></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <div ng-if="vm.activeMode === 'GlideAggregate'">
+
+      <div class="card">
+        <div class="card-head"><h2>Aggregates</h2></div>
+        <div class="card-body">
+          <p class="hint">Add one or more aggregate functions. A field is required for SUM / AVG / MIN / MAX; leave it empty for a plain COUNT, or set it for a distinct count.</p>
+          <div class="agg-row" ng-repeat="a in vm.aggState.aggregates">
+            <gs-select ng-model="a.fn" ng-change="vm.onAggFieldChange()"
+                       gs-options="vm.aggFnOptions" placeholder="function"></gs-select>
+            <gs-select ng-model="a.field" ng-change="vm.onAggFieldChange()"
+                       gs-options="vm.fieldNames(vm.aggState.table)"
+                       gs-exclude="vm.isAggFieldExcluded(a.fn, vm.aggState.table, name)"
+                       placeholder="field (optional for COUNT)"
+                       no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+            <button type="button" class="icon-btn" ng-click="vm.removeAggregate($index)" title="Remove">✕</button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addAggregate()" style="margin-top:8px;">+ Add aggregate</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Function</h2></div>
+        <div class="card-body">
+          <p class="hint">Parameters replace hardcoded values - the caller passes an <code>encodedQuery</code> string at runtime.</p>
+          <div class="grid3">
+            <div>
+              <label class="field-label" for="fldAggFnName">Function name</label>
+              <input type="text" id="fldAggFnName" autocomplete="off"
+                     ng-model="vm.aggState.fnName" ng-change="vm.onAggFnNameEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldAggFnParams">Parameters</label>
+              <input type="text" id="fldAggFnParams" autocomplete="off"
+                     ng-model="vm.aggState.fnParams" ng-change="vm.onAggFnParamsEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldAggVar">Variable name</label>
+              <input type="text" id="fldAggVar" autocomplete="off"
+                     ng-model="vm.aggState.aggVar" ng-change="vm.onAggVarEdit()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Example inputs</h2>
+          <button type="button" class="btn btn-sm" ng-if="vm.connection.status === 'connected'" ng-click="vm.previewAggregate()">▶ Preview results</button>
+        </div>
+        <div class="card-body">
+          <p class="hint">These inputs don't change the generated function - they only build the example call shown in the output panel. Type an <code>encodedQuery</code>, or build one from conditions (a built query takes precedence).</p>
+          <label class="field-label" for="fldAggExampleQuery">Encoded query</label>
+          <input type="text" id="fldAggExampleQuery" placeholder="active=true^priority=1" autocomplete="off"
+                 ng-model="vm.aggState.gaExampleQuery" ng-change="vm.onAggFieldChange()">
+          <div style="margin-top:var(--sp-md);">
+            <gs-condition-groups groups="vm.aggState.groups" gs-change="vm.onAggFieldChange()"
+                                  gs-fields="vm.fieldNames(vm.aggState.table)" gs-table="vm.aggState.table" gs-conn="vm.connection"></gs-condition-groups>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Group by</h2></div>
+        <div class="card-body">
+          <div class="empty" ng-if="!vm.aggState.groupBys.length">None added.</div>
+          <div class="group-row" ng-repeat="g in vm.aggState.groupBys">
+            <gs-select ng-model="g.field" ng-change="vm.onAggFieldChange()"
+                       gs-options="vm.fieldNames(vm.aggState.table)" placeholder="field name"
+                       no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+            <gs-select ng-model="g.order" ng-change="vm.onAggFieldChange()"
+                       gs-options="vm.groupOrders" placeholder="ordering"></gs-select>
+            <button type="button" class="icon-btn" ng-click="vm.removeGroupBy($index)" title="Remove">✕</button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addGroupBy()" style="margin-top:8px;">+ Add group field</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Having</h2></div>
+        <div class="card-body">
+          <p class="hint">Filter grouped results by an aggregate value (e.g. groups with COUNT &gt; 5).</p>
+          <div class="empty" ng-if="!vm.aggState.havings.length">None added.</div>
+          <div class="having-row" ng-repeat="h in vm.aggState.havings">
+            <gs-select ng-model="h.fn" ng-change="vm.onAggFieldChange()"
+                       gs-options="vm.aggFnOptions" placeholder="function"></gs-select>
+            <gs-select ng-model="h.op" ng-change="vm.onAggFieldChange()"
+                       gs-options="vm.havingOpOptions" placeholder="op"></gs-select>
+            <input type="text" placeholder="value" autocomplete="off"
+                   ng-model="h.value" ng-change="vm.onAggFieldChange()">
+            <button type="button" class="icon-btn" ng-click="vm.removeHaving($index)" title="Remove">✕</button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addHaving()" style="margin-top:8px;">+ Add having clause</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Options</h2></div>
+        <div class="card-body checks">
+          <p class="hint">Adding or removing a Group by field changes what this function returns — a single value with one aggregate and no grouping, an object keyed by aggregate with multiple aggregates, or an array of rows once any Group by field is added. If other code already calls this function, a change here can break it.</p>
+          <label class="check">
+            <input type="checkbox" ng-model="vm.errorHandling" ng-change="vm.onAggFieldChange()">
+            Add error handling <span class="hint" style="margin-left:var(--sp-sm);"><code>try/catch</code> + <code>gs.error</code></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <div ng-if="vm.activeMode === 'GlideAjax'">
+
+      <div class="card">
+        <div class="card-head"><h2>Call setup</h2></div>
+        <div class="card-body">
+          <p class="hint">Calls a client-callable Script Include (AbstractAjaxProcessor) from a client script. The method name maps to <code>sysparm_name</code>.</p>
+          <div class="grid2">
+            <div>
+              <label class="field-label" for="fldAjaxSI">Script Include name</label>
+              <input type="text" id="fldAjaxSI" autocomplete="off"
+                     ng-model="vm.ajaxState.ajaxScriptInclude" ng-change="vm.onAjaxSIEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldAjaxMethod">Method (sysparm_name)</label>
+              <input type="text" id="fldAjaxMethod" autocomplete="off"
+                     ng-model="vm.ajaxState.ajaxMethod" ng-change="vm.onAjaxMethodEdit()">
+            </div>
+          </div>
+          <label class="field-label" style="margin-top:13px;">Parameters</label>
+          <p class="hint" style="margin-bottom:8px;">Names are auto-prefixed with <code>sysparm_</code>. Put quotes around literal text (e.g. <code>'active'</code>) to send it as-is; leave a value unquoted (e.g. <code>sysId</code>) to reference a variable defined earlier in your script.</p>
+          <div class="param-row" ng-repeat="p in vm.ajaxState.ajaxParams">
+            <input type="text" placeholder="name (sysparm_…)" autocomplete="off"
+                   ng-model="p.name" ng-change="vm.onAjaxFieldChange()">
+            <input type="text" placeholder="value or variable" autocomplete="off"
+                   ng-model="p.value" ng-change="vm.onAjaxFieldChange()">
+            <button type="button" class="icon-btn" ng-click="vm.removeAjaxParam($index)" title="Remove">✕</button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addAjaxParam()" style="margin-top:8px;">+ Add parameter</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Function</h2></div>
+        <div class="card-body">
+          <p class="hint" style="margin-bottom:var(--sp-md);">GlideAjax is asynchronous - the caller passes a <code>callback</code> that receives the parsed answer instead of getting a return value.</p>
+          <div class="grid3">
+            <div>
+              <label class="field-label" for="fldAjaxFnName">Function name</label>
+              <input type="text" id="fldAjaxFnName" autocomplete="off"
+                     ng-model="vm.ajaxState.fnName" ng-change="vm.onAjaxFnNameEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldAjaxFnParams">Parameters</label>
+              <input type="text" id="fldAjaxFnParams" autocomplete="off"
+                     ng-model="vm.ajaxState.fnParams" ng-change="vm.onAjaxFnParamsEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldAjaxVar">Variable name</label>
+              <input type="text" id="fldAjaxVar" autocomplete="off"
+                     ng-model="vm.ajaxState.ajaxVar" ng-change="vm.onAjaxVarEdit()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Options</h2></div>
+        <div class="card-body checks">
+          <label class="check">
+            <input type="checkbox" ng-model="vm.errorHandling" ng-change="vm.onAjaxFieldChange()">
+            Add error handling <span class="hint" style="margin-left:var(--sp-sm);"><code>try/catch</code> + <code>console.error</code></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <div ng-if="vm.activeMode === 'ScriptInclude'">
+
+      <div class="card">
+        <div class="card-head"><h2>Source</h2></div>
+        <div class="card-body">
+          <label class="field-label" for="fldSiClassName">Script Include name</label>
+          <input type="text" id="fldSiClassName" autocomplete="off"
+                 ng-model="vm.siState.className" ng-change="vm.onSiClassNameEdit()">
+          <div style="margin-top:var(--sp-md);">
+            <label class="field-label" for="fldSiVarName">Variable name</label>
+            <input type="text" id="fldSiVarName" autocomplete="off"
+                   ng-model="vm.siState.varName" ng-change="vm.onSiVarNameEdit()">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Client access</h2></div>
+        <div class="card-body checks">
+          <label class="check">
+            <input type="checkbox" ng-model="vm.siState.clientCallable" ng-change="vm.onSiFieldChange()">
+            Client-callable <span class="hint" style="margin-left:var(--sp-sm);">generates an <code>AbstractAjaxProcessor</code>, callable from a client script via <code>GlideAjax</code></span>
+          </label>
+          <div class="method-sub" ng-if="vm.siState.clientCallable">
+            <label class="check">
+              <input type="checkbox" ng-model="vm.siState.alsoServerClass" ng-change="vm.onSiFieldChange()">
+              Also build a server-side class <span class="hint" style="margin-left:var(--sp-sm);">the Ajax class delegates to it, instead of doing its own GlideRecord work</span>
+            </label>
+          </div>
+          <p class="hint" style="margin-top:var(--sp-sm);" ng-if="vm.siState.clientCallable && !vm.siState.alsoServerClass">See the Example call panel for ready-to-paste <code>GlideAjax</code> usage.</p>
+          <p class="hint" style="margin-top:var(--sp-sm);" ng-if="vm.siState.clientCallable && vm.siState.alsoServerClass">Generates the server class above plus a thin <code>AbstractAjaxProcessor</code> wrapper that delegates to it - keep server-only logic in the server class, and expose only what the client actually needs.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Methods</h2></div>
+        <div class="card-body checks">
+          <div class="method-block">
+            <label class="check"><input type="checkbox" ng-model="vm.siState.methods.create.on" ng-change="vm.onSiFieldChange()"> Create</label>
+            <div class="method-sub" ng-if="vm.siState.methods.create.on">
+              <label class="check">
+                <input type="checkbox" ng-model="vm.siState.methods.create.setWorkflow" ng-change="vm.onSiFieldChange()">
+                Skip business rules <span class="hint" style="margin-left:var(--sp-sm);"><code>setWorkflow(false)</code></span>
+              </label>
+              <label class="check">
+                <input type="checkbox" ng-model="vm.siState.methods.create.autoSysFields" ng-change="vm.onSiFieldChange()">
+                Skip updates to system fields <span class="hint" style="margin-left:var(--sp-sm);"><code>autoSysFields(false)</code></span>
+              </label>
+              <label class="field-label" style="margin-top:var(--sp-sm);">Return</label>
+              <gs-select ng-model="vm.siState.methods.create.returnType" ng-change="vm.onSiFieldChange()" gs-options="vm.siWriteReturnTypeOptions" placeholder="return type"></gs-select>
+              <div ng-if="vm.siState.methods.create.returnType === 'object'" style="margin-top:var(--sp-sm);">
+                <label class="field-label">Return specific fields only <span class="hint">(leave empty for every field)</span></label>
+                <div class="empty" ng-if="!vm.siState.methods.create.fields.length">None added.</div>
+                <div class="si-field-row" ng-repeat="f in vm.siState.methods.create.fields track by $index">
+                  <gs-select ng-model="vm.siState.methods.create.fields[$index]" ng-change="vm.onSiFieldChange()"
+                             gs-options="vm.fieldNames(vm.siState.table)" placeholder="field name"
+                             no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+                  <button type="button" class="icon-btn" ng-click="vm.removeSiField('create', $index)" title="Remove">✕</button>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addSiField('create')" style="margin-top:8px;">+ Add field</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="method-block">
+            <label class="check"><input type="checkbox" ng-model="vm.siState.methods.read.on" ng-change="vm.onSiFieldChange()"> Get</label>
+            <div class="method-sub" ng-if="vm.siState.methods.read.on">
+              <label class="field-label">Return</label>
+              <gs-select ng-model="vm.siState.methods.read.returnType" ng-change="vm.onSiFieldChange()" gs-options="vm.siReturnTypeOptions" placeholder="return type"></gs-select>
+              <div ng-if="vm.siState.methods.read.returnType === 'object'" style="margin-top:var(--sp-sm);">
+                <label class="field-label">Return specific fields only <span class="hint">(leave empty for every field)</span></label>
+                <div class="empty" ng-if="!vm.siState.methods.read.fields.length">None added.</div>
+                <div class="si-field-row" ng-repeat="f in vm.siState.methods.read.fields track by $index">
+                  <gs-select ng-model="vm.siState.methods.read.fields[$index]" ng-change="vm.onSiFieldChange()"
+                             gs-options="vm.fieldNames(vm.siState.table)" placeholder="field name"
+                             no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+                  <button type="button" class="icon-btn" ng-click="vm.removeSiField('read', $index)" title="Remove">✕</button>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addSiField('read')" style="margin-top:8px;">+ Add field</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="method-block">
+            <label class="check"><input type="checkbox" ng-model="vm.siState.methods.list.on" ng-change="vm.onSiFieldChange()"> Query</label>
+            <div class="method-sub" ng-if="vm.siState.methods.list.on">
+              <label class="field-label">Return</label>
+              <gs-select ng-model="vm.siState.methods.list.returnType" ng-change="vm.onSiFieldChange()" gs-options="vm.siListReturnTypeOptions" placeholder="return type"></gs-select>
+              <div ng-if="vm.siState.methods.list.returnType === 'object'" style="margin-top:var(--sp-sm);">
+                <label class="field-label">Return specific fields only <span class="hint">(leave empty for every field)</span></label>
+                <div class="empty" ng-if="!vm.siState.methods.list.fields.length">None added.</div>
+                <div class="si-field-row" ng-repeat="f in vm.siState.methods.list.fields track by $index">
+                  <gs-select ng-model="vm.siState.methods.list.fields[$index]" ng-change="vm.onSiFieldChange()"
+                             gs-options="vm.fieldNames(vm.siState.table)" placeholder="field name"
+                             no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+                  <button type="button" class="icon-btn" ng-click="vm.removeSiField('list', $index)" title="Remove">✕</button>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addSiField('list')" style="margin-top:8px;">+ Add field</button>
+              </div>
+              <label class="field-label" style="margin-top:var(--sp-sm);">Limit <span class="hint">(optional - leave blank for no limit)</span></label>
+              <input type="text" inputmode="numeric" placeholder="e.g. 100" autocomplete="off"
+                     ng-model="vm.siState.methods.list.limit" ng-change="vm.onSiFieldChange()">
+            </div>
+          </div>
+
+          <div class="method-block">
+            <label class="check"><input type="checkbox" ng-model="vm.siState.methods.update.on" ng-change="vm.onSiFieldChange()"> Update</label>
+            <div class="method-sub" ng-if="vm.siState.methods.update.on">
+              <label class="check">
+                <input type="checkbox" ng-model="vm.siState.methods.update.setWorkflow" ng-change="vm.onSiFieldChange()">
+                Skip business rules <span class="hint" style="margin-left:var(--sp-sm);"><code>setWorkflow(false)</code></span>
+              </label>
+              <label class="check">
+                <input type="checkbox" ng-model="vm.siState.methods.update.autoSysFields" ng-change="vm.onSiFieldChange()">
+                Skip updates to system fields <span class="hint" style="margin-left:var(--sp-sm);"><code>autoSysFields(false)</code></span>
+              </label>
+              <label class="field-label" style="margin-top:var(--sp-sm);">Return</label>
+              <gs-select ng-model="vm.siState.methods.update.returnType" ng-change="vm.onSiFieldChange()" gs-options="vm.siWriteReturnTypeOptions" placeholder="return type"></gs-select>
+              <div ng-if="vm.siState.methods.update.returnType === 'object'" style="margin-top:var(--sp-sm);">
+                <label class="field-label">Return specific fields only <span class="hint">(leave empty for every field)</span></label>
+                <div class="empty" ng-if="!vm.siState.methods.update.fields.length">None added.</div>
+                <div class="si-field-row" ng-repeat="f in vm.siState.methods.update.fields track by $index">
+                  <gs-select ng-model="vm.siState.methods.update.fields[$index]" ng-change="vm.onSiFieldChange()"
+                             gs-options="vm.fieldNames(vm.siState.table)" placeholder="field name"
+                             no-options-text="{{vm.connection.status === 'connected' ? 'Loading fields…' : 'No options'}}"></gs-select>
+                  <button type="button" class="icon-btn" ng-click="vm.removeSiField('update', $index)" title="Remove">✕</button>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" ng-click="vm.addSiField('update')" style="margin-top:8px;">+ Add field</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="method-block">
+            <label class="check"><input type="checkbox" ng-model="vm.siState.methods.delete.on" ng-change="vm.onSiFieldChange()"> Delete</label>
+            <div class="method-sub" ng-if="vm.siState.methods.delete.on">
+              <label class="check">
+                <input type="checkbox" ng-model="vm.siState.methods.delete.setWorkflow" ng-change="vm.onSiFieldChange()">
+                Skip business rules <span class="hint" style="margin-left:var(--sp-sm);"><code>setWorkflow(false)</code></span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Options</h2></div>
+        <div class="card-body checks">
+          <label class="check">
+            <input type="checkbox" ng-model="vm.errorHandling" ng-change="vm.onSiFieldChange()">
+            Add error handling <span class="hint" style="margin-left:var(--sp-sm);"><code>try/catch</code> + <code>gs.error(this.type…)</code></span>
+          </label>
+          <label class="check">
+            <input type="checkbox" ng-model="vm.siState.jsdoc" ng-change="vm.onSiFieldChange()">
+            Add JSDoc comments <span class="hint" style="margin-left:var(--sp-sm);"><code>/** @param / @return */</code></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <div ng-if="vm.activeMode === 'Encoder'">
+
+      <div class="card">
+        <div class="card-head"><h2>Conditions</h2></div>
+        <div class="card-body">
+          <p class="hint">Conditions inside a group are joined with <b>OR</b> (<code>^OR</code>); separate groups are joined with <b>AND</b> (<code>^</code>).</p>
+          <gs-condition-groups groups="vm.encGroups" gs-change="vm.onEncFieldChange()"
+                                gs-fields="vm.fieldNames(vm.encTable)" gs-table="vm.encTable" gs-conn="vm.connection"></gs-condition-groups>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- The hosted GlideFast standards document (see StandardsService, generated from
+         standards/glidefast-scripting-standards.md). Full-width like Settings (meta-view) -
+         reference reading, no generated output. The std-link tips across the builder modes
+         deep-link into these sections via vm.openStandard(id). Two columns on wide screens: a
+         sticky rail on the left is the ONE nav for the doc (see main.controller.js's
+         IntersectionObserver setup for vm.activeStdId, which keeps it synced to scroll position),
+         and the reading column stays capped at .std-content's measure (860px) rather than
+         stretching to fill the builder pane. The rail hides below std-rail-bp; with no in-page nav
+         at that width, the reader falls back to plain scrolling (the sidenav itself already
+         collapses to a mobile appbar well before that, so this is a narrow window-width band, not
+         the actual mobile case). -->
+    <div ng-if="vm.activeMode === 'Standards'" class="standards-doc" ng-click="vm.onStandardsClick($event)">
+
+      <aside class="std-rail" ng-class="{'std-rail-locked': vm.stdFocusId}" aria-label="On this page">
+        <!-- Search lives here (not just the header) so it sits with the rail, like the approved
+             mockup - but the rail itself hides below std-rail-bp (see its own media query at the
+             bottom of this block), so this copy would disappear at exactly the width where search
+             is needed most. The header keeps its OWN copy (.std-search-wrap-header, index.html
+             below) as a fallback, shown only when this one is hidden (see app.scss) - both bind the
+             same vm.stdQuery, so they can never drift out of sync. -->
+        <div class="std-search-wrap">
+          <input type="text" class="std-search-input" ng-model="vm.stdQuery" placeholder="Search standards…" aria-label="Search standards">
+          <button type="button" class="std-search-clear" ng-if="vm.stdQuery" ng-click="vm.clearStdSearch()" aria-label="Clear search" title="Clear search">✕</button>
+        </div>
+        <button type="button" class="std-rail-overview" ng-class="{active: vm.stdView === 'overview'}" ng-click="vm.showStdOverview()">Overview</button>
+        <!-- Chapters, each expandable to its own sections - the rail stays to "principles and
+             high-level topics" at rest (the mockup's own framing), with sections a click away
+             rather than always-on clutter. Expand/collapse (vm.stdPartExpanded) is driven ONLY by
+             the chevron button below (vm.toggleStdExpand) - clicking the chapter's own name just
+             navigates, same as always, and never touches expand state either way (see
+             main.controller.js's own comment on vm.stdExpanded for why). vm.stdPartHeadingActive
+             lights the chapter's name up only when the reader is at its own heading, not a nested
+             section (that gets its own highlight below, regardless of the chapter's expand state). -->
+        <div class="std-rail-band" ng-repeat="grp in vm.standardsDoc.groups" ng-show="vm.stdGroupVisible(grp)">
+          <button type="button" class="std-rail-band-title" ng-click="vm.openStandard(grp.id)">{{grp.name}}</button>
+          <div class="std-rail-chapter" ng-repeat="part in grp.parts" ng-show="vm.stdPartVisible(part)">
+            <div class="std-rail-part-row">
+              <button type="button" class="std-rail-part"
+                      ng-class="{active: vm.stdPartHeadingActive(part), 'std-dimmed': vm.stdFocusId && !vm.stdPartHasFocus(part)}"
+                      ng-click="vm.openStandard(part.id)">{{part.title}}</button>
+              <button type="button" class="std-rail-expand" ng-class="{expanded: vm.stdPartExpanded(part)}"
+                      ng-click="vm.toggleStdExpand(part, $event)"
+                      aria-label="{{vm.stdPartExpanded(part) ? 'Collapse' : 'Expand'}} {{part.title}} sections"
+                      aria-expanded="{{vm.stdPartExpanded(part)}}">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2l4 3-4 3"/></svg>
+              </button>
+            </div>
+            <div class="std-rail-sections" ng-if="vm.stdPartExpanded(part)">
+              <button type="button" class="std-rail-section" ng-repeat="section in part.sections" ng-show="vm.stdSectionMatches(section)"
+                      ng-class="{active: vm.activeStdId === section.id, 'std-dimmed': vm.stdFocusId && vm.stdFocusId !== section.id}"
+                      ng-click="vm.openStandard(section.id)">{{section.title}}</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="std-doc-main">
+
+        <!-- Overview is a real landing view, not just a scroll position: while active, the whole doc
+             below (every .std-band) is kept OUT of the visible page via .std-reading-hidden
+             (position:absolute + visibility:hidden - see app.scss), never display:none/ng-if. Two
+             reasons: (1) the scroll-spy's IntersectionObserver already snapshotted every
+             <h2 id="std-..."> when Standards mode was entered (see main.controller.js's activeMode
+             $watch) - display:none would still leave those nodes findable, but visibility:hidden
+             keeps them (2) GENUINELY LAID OUT the whole time, which real getBoundingClientRect()
+             measurements depend on - display:none was tried first and caused a real, reproduced bug:
+             the FIRST time ~20000px of never-yet-shown content went display:none -> block, Chrome's
+             layout for that much fresh syntax-highlighted HTML took over a second, and
+             StandardsUiService.scrollTo (which measures immediately) would compute a wildly short
+             target, landing 5+ chapters early. Keeping it always laid out (just visually/
+             positionally out of the way) means scrollTo's measurement is correct instantly, every
+             time, with no retry/wait logic needed on its side. Picking a tile (or any rail link, or
+             an external deep-link - all three route through vm.openStandard) flips vm.stdView to
+             'reading', which drops the class and lets the content rejoin normal flow at its
+             already-known height. A search query keeps the doc out of .std-reading-hidden regardless
+             of vm.stdView, same as it already forced individual sections visible via ng-show. -->
+        <div class="card" ng-show="vm.stdView === 'overview' || vm.stdQuery">
+          <div class="card-head"><h2>Contents</h2></div>
+          <div class="card-body">
+            <!-- The hub: lead text + every chapter as a clickable tile, grouped by band. Ghost
+                 "Planned" tiles (vm.standardsDoc.groups[].planned - see StandardsUiService) show
+                 chapters that don't exist yet, so a thin band reads as a visible roadmap instead of
+                 just sparse. -->
+            <div ng-if="vm.stdView === 'overview' && !vm.stdQuery">
+              <div class="std-content" ng-bind-html="vm.standardsDoc.lead"></div>
+              <div class="std-hub">
+                <div class="std-hub-band" ng-repeat="grp in vm.standardsDoc.groups">
+                  <h3 class="std-hub-band-title">{{grp.name}}</h3>
+                  <div class="std-hub-grid">
+                    <button type="button" class="std-hub-tile" ng-class="{'std-hub-tile-alt': grp.name !== 'Principles'}" ng-repeat="part in grp.parts" ng-click="vm.openStandard(part.id)">
+                      <span class="ic">
+                        <svg ng-if="grp.name === 'Principles'" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="7"/><path d="M6 9.2l2 2 4-4.4"/></svg>
+                        <svg ng-if="grp.name !== 'Principles'" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L2 6.5l7 4.5 7-4.5L9 2z"/><path d="M2.5 9.5L9 13.5l6.5-4"/></svg>
+                      </span>
+                      <span class="t">{{part.title}}</span>
+                      <span class="meta">{{part.sections.length}} section<span ng-if="part.sections.length !== 1">s</span></span>
+                    </button>
+                    <div class="std-hub-tile ghost" ng-class="{'std-hub-tile-alt': grp.name !== 'Principles'}" ng-repeat="p in grp.planned">
+                      <span class="ic">
+                        <svg ng-if="grp.name === 'Principles'" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="7"/><path d="M6 9.2l2 2 4-4.4"/></svg>
+                        <svg ng-if="grp.name !== 'Principles'" width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L2 6.5l7 4.5 7-4.5L9 2z"/><path d="M2.5 9.5L9 13.5l6.5-4"/></svg>
+                      </span>
+                      <span class="t">{{p}}</span>
+                      <span class="badge">Planned</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div ng-if="vm.stdQuery">
+              <p class="empty" ng-if="!vm.stdHasMatches()">No matching sections for "{{vm.stdQuery}}".</p>
+              <p class="hint" ng-if="vm.stdHasMatches()">Showing sections matching "{{vm.stdQuery}}". <button type="button" class="std-link" ng-click="vm.clearStdSearch()">Clear search</button></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="std-band" ng-repeat="grp in vm.standardsDoc.groups" ng-show="vm.stdGroupVisible(grp)"
+             ng-class="{'std-reading-hidden': vm.stdView !== 'reading' && !vm.stdQuery}">
+          <h2 class="std-band-heading" id="std-{{grp.id}}">{{grp.name}}</h2>
+          <div class="card" ng-repeat="part in grp.parts" ng-show="vm.stdPartVisible(part)">
+            <div class="card-head" ng-class="{'std-dimmed': vm.stdFocusId && !vm.stdPartHasFocus(part)}"><h2 id="std-{{part.id}}">{{part.title}}</h2></div>
+            <div class="card-body std-content">
+              <div ng-class="{'std-dimmed': vm.stdFocusId}" ng-bind-html="part.lead"></div>
+              <div ng-repeat="section in part.sections" ng-show="vm.stdSectionMatches(section)"
+                   ng-class="{'std-dimmed': vm.stdFocusId && section.id !== vm.stdFocusId}"
+                   ng-bind-html="section.html"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div ng-if="vm.activeMode === 'Settings'">
+
+      <div class="card">
+        <div class="card-head"><h2>Connection</h2></div>
+        <div class="card-body">
+          <p class="hint" ng-if="!vm.instanceHosted">Connect to a live ServiceNow instance to pull real table/field schema. Your instance admin must first add a <b>CORS Rule</b> (System Web Services &gt; REST &gt; CORS Rule) allowing this page's origin (<code>{{vm.pageOrigin}}</code>) for the Table API, with the <code>Authorization</code> header allowed. Username and password are remembered in this browser.</p>
+          <p class="hint" ng-if="vm.instanceHosted">Running inside this ServiceNow instance - schema is pulled live using its own session automatically. No separate connection is needed.</p>
+
+          <div ng-if="!vm.instanceHosted">
+            <label class="field-label" for="fldConnUrl">Instance URL</label>
+            <input type="text" id="fldConnUrl" placeholder="https://devXXXXX.service-now.com" autocomplete="off"
+                   ng-model="vm.connection.instanceUrl" ng-change="vm.onConnUrlEdit()">
+            <div class="grid2" style="margin-top:9px;">
+              <div>
+                <label class="field-label" for="fldConnUser">Username</label>
+                <input type="text" id="fldConnUser" autocomplete="off" ng-model="vm.connection.username">
+              </div>
+              <div>
+                <label class="field-label" for="fldConnPass">Password</label>
+                <input type="text" id="fldConnPass" class="masked-input" autocomplete="off" spellcheck="false"
+                       data-1p-ignore data-lpignore="true" ng-model="vm.connection.password">
+              </div>
+            </div>
+            <div class="row" style="margin-top:12px;">
+              <button type="button" class="btn btn-accent btn-sm" ng-click="vm.connect()" ng-if="vm.connection.status !== 'connected'">Connect</button>
+              <button type="button" class="btn btn-danger-ghost btn-sm" ng-click="vm.disconnect()" ng-if="vm.connection.status === 'connected'">Disconnect</button>
+            </div>
+          </div>
+          <p class="hint" style="margin-top:9px;">{{vm.connStatusText()}}</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Reset form</h2></div>
+        <div class="card-body">
+          <p class="hint">Reloads the page, returning everything to defaults. Your saved connection is kept.</p>
+          <button type="button" class="btn btn-danger-ghost" ng-click="vm.resetForm()">↺ Reset form</button>
+        </div>
+      </div>
+
+      <div class="card" ng-if="!vm.instanceHosted">
+        <div class="card-head"><h2>Deploy</h2></div>
+        <div class="card-body">
+          <p class="hint">Packages this tool itself as an installable scoped application.</p>
+          <button type="button" class="btn btn-accent" ng-click="vm.deployUi.open()">
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12V2.5M5.5 6L9 2.5 12.5 6"/><path d="M2.5 11.5v3a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-3"/></svg>
+            <span>Deploy</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ng-show, not ng-if: this pane used to be destroyed/recreated on every Standards entry/exit,
+       and even with core-sync-attr setting data-editor-theme synchronously (so the attribute is never
+       actually missing on a live digest), a freshly-inserted subtree's CSS custom properties could
+       still show a one-frame flash of the wrong (light) colors in dark mode - a browser rendering
+       quirk on brand new nodes, not an Angular timing gap. ng-show never destroys the element; it
+       just toggles display:none (zero layout cost, same as ng-if, since it's THE global .ng-hide
+       rule), so there's no fresh insertion event at all when leaving Standards. (The SEPARATE
+       raw-HTML-paints-before-Angular-bootstraps gap that core-sync-attr alone doesn't cover is handled
+       once, at the root - see the ng-cloak comment on .app above - not per-element here.) -->
+  <div class="output-pane" ng-show="vm.activeMode !== 'Settings' && vm.activeMode !== 'Standards'" core-sync-attr="'data-editor-theme'" core-sync-value="vm.editorThemeApplied">
+    <div class="out-top">
+      <span class="title">{{vm.outputTitle()}}</span>
+      <button type="button" class="editor-theme-toggle" ng-click="vm.cycleEditorTheme()"
+              title="{{'Code editor theme: ' + vm.editorThemeLabel() + ' (independent of the app theme) — click to change'}}"
+              aria-label="{{'Code editor theme: ' + vm.editorThemeLabel() + ' — click to change'}}">
+        <svg ng-if="vm.editorTheme === 'light'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg ng-if="vm.editorTheme === 'dark'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg ng-if="vm.editorTheme === 'auto'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>
+      </button>
+    </div>
+    <div class="lint-banner" role="alert" ng-if="vm.activeMode === 'GlideRecord' && vm.lintWarningsList.length">
+      <div class="lint-item" ng-class="w.level" ng-repeat="w in vm.lintWarningsList">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+        <span>{{w.msg}} <button type="button" class="std-link std-link-ed" ng-if="w.stdId" ng-click="vm.openStandard(w.stdId)">Standard: {{w.stdTitle}} ▸</button></span>
+      </div>
+    </div>
+    <div class="lint-banner" role="alert" ng-if="vm.activeMode === 'GlideQuery' && vm.gqLintWarningsList.length">
+      <div class="lint-item" ng-class="w.level" ng-repeat="w in vm.gqLintWarningsList">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+        <span>{{w.msg}} <button type="button" class="std-link std-link-ed" ng-if="w.stdId" ng-click="vm.openStandard(w.stdId)">Standard: {{w.stdTitle}} ▸</button></span>
+      </div>
+    </div>
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-bar">
+          <span class="panel-title">{{vm.mainPanelTitle()}}</span>
+          <div class="panel-actions">
+            <button type="button" class="panel-icon-btn" ng-class="{copied: vm.copyStatus !== 'Copy'}"
+                    data-tip="Copy" aria-label="Copy" ng-click="vm.copyCode()">
+              <svg ng-if="vm.copyStatus === 'Copy'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <svg ng-if="vm.copyStatus !== 'Copy'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button type="button" class="panel-icon-btn" data-tip="Download" aria-label="Download" ng-click="vm.downloadCode()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="panel-info" ng-if="vm.activeMode === 'GlideRecord'">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+          <div class="info-stack">
+            <p>Wrapping the code in a named function keeps its variables out of the shared scope, where they could collide with other scripts. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('wrap-code-in-a-function')">Standard: Wrap code in a function ▸</button></p>
+            <p ng-if="vm.vis.getMethod">The generated get is guarded so a missing record never breaks the caller. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('verify-values-exist-before-using-them')">Standard: Verify values exist before using them ▸</button></p>
+            <p ng-if="vm.vis.order">Cap what a query returns - pulling every row on a large table doesn't scale. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('avoid-complex-queries-on-large-data-sets')">Standard: Avoid complex queries on large data sets ▸</button></p>
+            <p ng-if="vm.vis.exampleSets">Each field is set with setValue() - the explicit, type-safe counterpart to getValue() - never a direct property assignment. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('set-fields-with-setvalue-and-setdisplayvalue')">Standard: Set fields with setValue() ▸</button></p>
+            <p ng-if="vm.state.secure">GlideRecordSecure honors the caller's ACLs, so a query driven by a user's request can't return records they aren't allowed to see. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('enforce-acls-in-server-code-with-gliderecordsecure')">Standard: Enforce ACLs in server code ▸</button></p>
+            <p ng-if="vm.errorHandling">The generated try/catch logs the failure and fails safely instead of aborting the whole transaction. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('handle-errors-gracefully')">Standard: Handle errors gracefully ▸</button></p>
+          </div>
+        </div>
+        <div class="panel-info" ng-if="vm.activeMode === 'GlideQuery'">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+          <div class="info-stack">
+            <p>GlideQuery is null-safe and strict - a missing record has to be handled explicitly (<code>orElse</code>), and a mistyped field name throws instead of quietly returning an empty string. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('prefer-glidequery-for-clear-safe-queries')">Standard: Prefer GlideQuery for clear, safe queries ▸</button></p>
+            <p ng-if="vm.gqVis.getMethod">The generated get is guarded so a missing record never breaks the caller. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('verify-values-exist-before-using-them')">Standard: Verify values exist before using them ▸</button></p>
+            <p ng-if="vm.gqVis.order">Cap what a query returns - pulling every row on a large table doesn't scale. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('avoid-complex-queries-on-large-data-sets')">Standard: Avoid complex queries on large data sets ▸</button></p>
+            <p ng-if="vm.errorHandling">The generated try/catch logs the failure and fails safely instead of aborting the whole transaction. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('handle-errors-gracefully')">Standard: Handle errors gracefully ▸</button></p>
+          </div>
+        </div>
+        <div class="panel-info" ng-if="vm.activeMode === 'GlideAggregate'">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+          <div class="info-stack">
+            <p>GlideAggregate asks the database to count or sum, instead of retrieving every matching record first - it scales far better on large tables. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('use-glideaggregate-for-simple-record-counting')">Standard: Use GlideAggregate for record counting ▸</button></p>
+            <p ng-if="vm.errorHandling">The generated try/catch logs the failure and fails safely instead of aborting the whole transaction. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('handle-errors-gracefully')">Standard: Handle errors gracefully ▸</button></p>
+          </div>
+        </div>
+        <div class="panel-info" ng-if="vm.activeMode === 'GlideAjax'">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+          <div class="info-stack">
+            <p>An async GlideAjax call is the preferred way to pull server data your client script doesn't already have - much lighter than a client-side GlideRecord lookup. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('minimize-server-lookups')">Standard: Minimize server lookups ▸</button></p>
+            <p ng-if="vm.errorHandling">The generated try/catch logs the failure and fails safely instead of letting the call error silently. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('handle-errors-gracefully')">Standard: Handle errors gracefully ▸</button></p>
+          </div>
+        </div>
+        <div class="panel-info" ng-if="vm.activeMode === 'ScriptInclude'">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+          <div class="info-stack">
+            <p>Give the class and its GlideRecord a specific, descriptive name - never the generic <code>gr</code>. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('use-descriptive-names')">Standard: Use descriptive names ▸</button></p>
+            <p ng-if="vm.siState.clientCallable && !vm.siState.alsoServerClass">A Script Include only loads when it's actually called, unlike a global Business Rule or Client Script, which loads on every page. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('prefer-script-includes-to-global-scripts')">Standard: Prefer Script Includes to global scripts ▸</button></p>
+            <p>Script Includes are the standard home for reusable server-side logic - small, specialized methods that other scripts call. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('create-small-modular-components')">Standard: Create small, modular components ▸</button></p>
+            <p>Each method returns a value the caller can act on - a record, a success flag, or null on failure. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('return-a-meaningful-value')">Standard: Return a meaningful value ▸</button></p>
+            <p ng-if="vm.errorHandling">The generated try/catch logs the failure and fails safely instead of aborting the whole transaction. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('handle-errors-gracefully')">Standard: Handle errors gracefully ▸</button></p>
+          </div>
+        </div>
+        <div class="panel-info" ng-if="vm.activeMode === 'Encoder'">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+          <div class="info-stack">
+            <p>Building the filter here and copying its encoded query string is easier to get right - and easier to update later - than chaining <code>addQuery()</code>/<code>addOrCondition()</code> calls by hand. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('avoid-complex-gliderecord-queries')">Standard: Prefer encoded queries for complex filters ▸</button></p>
+          </div>
+        </div>
+        <pre class="code" ng-bind-html="vm.currentHtml()"></pre>
+      </div>
+      <div class="panel" ng-if="vm.currentExampleCode()">
+        <div class="panel-bar">
+          <span class="panel-title">Example call</span>
+          <div class="panel-actions">
+            <button type="button" class="panel-icon-btn" ng-class="{copied: vm.exampleCopyStatus !== 'Copy'}"
+                    data-tip="Copy" aria-label="Copy" ng-click="vm.copyExampleCode()">
+              <svg ng-if="vm.exampleCopyStatus === 'Copy'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <svg ng-if="vm.exampleCopyStatus !== 'Copy'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button type="button" class="panel-icon-btn" data-tip="Download" aria-label="Download" ng-click="vm.downloadExampleCode()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="panel-info" ng-if="vm.currentExampleWarn()">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+          <div class="info-stack">
+            <p>The example hard-codes a sys_id for illustration only - never hard-code sys_ids in real code; pass them in as the parameter. <button type="button" class="std-link std-link-ed" ng-click="vm.openStandard('do-not-use-hard-coded-values')">Standard: Do not use hard-coded values ▸</button></p>
+          </div>
+        </div>
+        <pre class="code" ng-bind-html="vm.currentExampleHtml()"></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" ng-if="vm.preview.open" core-modal="vm.closePreview()" core-modal-focus="previewCloseBtn" ng-click="$event.target === $event.currentTarget && vm.closePreview()">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Record preview">
+      <div class="modal-head">
+        <span ng-if="vm.preview.kind !== 'stats'">Record preview - <code>{{vm.preview.table}}</code></span>
+        <span ng-if="vm.preview.kind === 'stats'">Aggregate preview - <code>{{vm.preview.table}}</code></span>
+        <button id="previewCloseBtn" class="icon-x" type="button" aria-label="Close" ng-click="vm.closePreview()">✕</button>
+      </div>
+      <p class="modal-hint" ng-if="vm.preview.kind !== 'stats'">Up to 10 real records from the connected instance, matching the current example query. Read-only - nothing here is ever written back.</p>
+      <p class="modal-hint" ng-if="vm.preview.kind === 'stats'">Real aggregate results from the connected instance, matching the current example query. Read-only - nothing here is ever written back.</p>
+      <div class="preview-body">
+        <p class="hint" ng-if="vm.preview.loading">Loading…</p>
+        <p class="hint" ng-if="vm.preview.error">{{vm.preview.error}}</p>
+        <p class="hint" ng-if="!vm.preview.loading && !vm.preview.error && vm.preview.kind !== 'stats' && !vm.preview.rows.length">No matching records.</p>
+        <table class="preview-table" ng-if="!vm.preview.loading && !vm.preview.error && vm.preview.kind !== 'stats' && vm.preview.rows.length">
+          <thead><tr><th ng-repeat="c in vm.preview.cols">{{c}}</th></tr></thead>
+          <tbody>
+            <tr ng-repeat="r in vm.preview.rows">
+              <td ng-repeat="c in vm.preview.cols" title="{{vm.previewCell(r[c])}}">{{vm.previewCell(r[c])}}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div ng-if="!vm.preview.loading && !vm.preview.error && vm.preview.kind === 'stats'">
+          <p class="hint" ng-if="!vm.preview.stats.length">No result.</p>
+          <p class="hint" ng-repeat="s in vm.preview.stats"><strong>{{s.label}}:</strong> {{s.value}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" ng-if="vm.deployUi.modal.open" core-modal="vm.deployUi.close()" core-modal-focus="deployCopyBtn" ng-click="$event.target === $event.currentTarget && vm.deployUi.close()">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Scoped application XML">
+      <div class="modal-head">
+        <span>Scoped application XML</span>
+        <button class="icon-x" type="button" aria-label="Close" ng-click="vm.deployUi.close()">✕</button>
+      </div>
+      <p class="modal-hint">Packages the tool as a <b>scoped application</b> (app record + theme, portal, page, widget, instance, all scoped to it). In ServiceNow, open any list ▸ context menu ▸ <b>Import XML</b> and upload this. Enter the <b>target instance</b> you'll import into below and click <b>Detect prefix</b> to fill the scope, or set <b>Scope</b> by hand. A scope is capped at <b>18 characters</b>.</p>
+      <div class="deploy-form">
+        <div class="grid2" style="margin-bottom:var(--sp-sm);">
+          <div>
+            <label class="field-label" for="fldDeployAppName">App name</label>
+            <input type="text" id="fldDeployAppName" autocomplete="off" ng-model="vm.deployUi.deploy.appName" ng-change="vm.deployUi.onAppNameEdit()">
+          </div>
+          <div>
+            <label class="field-label" for="fldDeployVersion">Version</label>
+            <input type="text" id="fldDeployVersion" autocomplete="off" ng-model="vm.deployUi.deploy.version" ng-change="vm.deployUi.onFieldEdit()">
+          </div>
+        </div>
+        <div class="deploy-target">
+          <label class="field-label" for="fldDeployInstanceUrl">Deploy target instance <span class="hint" style="display:inline; margin:0;">— separate from your Settings connection on purpose, so you can stay on your PDI while packaging a deploy for another instance</span></label>
+          <input type="text" id="fldDeployInstanceUrl" autocomplete="off" placeholder="https://devXXXXX.service-now.com" ng-model="vm.deployUi.deploy.instanceUrl" ng-change="vm.deployUi.onFieldEdit()">
+          <div class="grid2" style="margin-top:9px;">
+            <div>
+              <label class="field-label" for="fldDeployUsername">Username</label>
+              <input type="text" id="fldDeployUsername" autocomplete="off" ng-model="vm.deployUi.deploy.username" ng-change="vm.deployUi.onFieldEdit()">
+            </div>
+            <div>
+              <label class="field-label" for="fldDeployPassword">Password</label>
+              <input type="text" id="fldDeployPassword" class="masked-input" autocomplete="off" spellcheck="false"
+                     data-1p-ignore data-lpignore="true" ng-model="vm.deployUi.deploy.password" ng-change="vm.deployUi.onFieldEdit()">
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px; align-items:center;">
+            <button type="button" class="btn btn-primary btn-sm" ng-click="vm.deployUi.detectPrefix()">Detect prefix</button>
+            <span class="hint" style="display:inline; margin:0;">{{vm.deployUi.detectStatus}}</span>
+          </div>
+        </div>
+        <label class="field-label" style="margin:var(--sp-md) 0 4px;" for="fldDeployScope">Scope <span class="hint" style="display:inline; margin:0;">{{vm.deployUi.scopeHint}}</span></label>
+        <input type="text" id="fldDeployScope" autocomplete="off" maxlength="18" ng-model="vm.deployUi.deploy.scope" ng-change="vm.deployUi.onScopeEdit()">
+      </div>
+      <div class="deploy-tabs">
+        <button type="button" class="deploy-tab" ng-class="{active: vm.deployUi.view === v.key}"
+                ng-repeat="v in vm.deployUi.views" ng-click="vm.deployUi.setView(v.key)">{{v.label}}</button>
+      </div>
+      <textarea class="modal-code" readonly spellcheck="false">{{vm.deployUi.tabText}}</textarea>
+      <div class="modal-actions">
+        <button id="deployCopyBtn" class="out-btn" ng-class="{copied: vm.deployUi.copyStatus !== 'Copy'}" type="button" ng-click="vm.deployUi.copyTab()">{{vm.deployUi.copyStatus}}</button>
+        <button class="out-btn" type="button" ng-click="vm.deployUi.downloadTab()">⬇ Download</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" ng-if="vm.confirm.open" core-modal="vm.closeConfirm()" core-modal-focus="confirmCancelBtn">
+    <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-head">
+        <span id="confirmTitle">{{vm.confirm.title}}</span>
+        <button class="icon-x" type="button" aria-label="Close" ng-click="vm.closeConfirm()">✕</button>
+      </div>
+      <p class="modal-hint">{{vm.confirm.body}}</p>
+      <div class="modal-actions">
+        <button id="confirmCancelBtn" class="out-btn" type="button" ng-click="vm.closeConfirm()">{{vm.confirm.cancel}}</button>
+        <button class="out-btn danger-btn" type="button" ng-click="vm.confirmAccept()">{{vm.confirm.ok}}</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+<!-- Vendored js-beautify (dev/authoring only) - DeployService runs the exported widget JS through
+     it so the packaged code matches ServiceNow's own Format Code standard (js-beautify is the
+     engine behind that button). Loaded in this dev harness, NOT shipped in the deployed widget.
+     If absent, DeployService.beautify() degrades to a no-op (exports the raw source instead). -->
+<script src="lib/beautify.js"></script>
+<!-- The shared deploy-packaging core (dev/authoring only) DeployService packages this app's own
+     Update Set XML with. Referenced directly from tools/packager via the single ServiceNow-root
+     dev server - not vendored/copied. Exposes window.SNPackager.core. Never shipped in the
+     deployed widget. -->
+<script src="../../tools/packager/snpackager.core.js"></script>
+<!-- Live-instance connection helper (dev/authoring only) - detectCompanyPrefix, shared with the
+     standalone deploy console. Never shipped in the deployed widget. -->
+<script src="../../tools/packager/snpackager.browser-connect.js"></script>
+<!-- This app's own deploy descriptor (dev/authoring only) - the single source of truth for its
+     packager manifest, also read by the shared deploy console (tools/packager/deploy-console.html).
+     Never shipped in the deployed widget. -->
+<script src="deploy.manifest.js"></script>
+<!-- Core (this app's module depends on it) + the shared providers it hosts. Loaded
+     directly from /apps/core/ via the single ServiceNow-root dev server. In the deployed Service
+     Portal these register into the shared page injector from the installed Core app; this app injects
+     them by name and does NOT ship its own copies (see deploy.service.js - absent from PROVIDER_FILES). -->
+<script src="../core/js/app.module.js"></script>
+<script src="../core/js/services/theme.service.js"></script>
+<script src="../core/js/services/confirm-modal.service.js"></script>
+<script src="../core/js/directives/core-modal.directive.js"></script>
+<script src="../core/js/directives/core-sync-attr.directive.js"></script>
+<script src="js/app.module.js"></script>
+<script src="js/services/schema.service.js"></script>
+<script src="js/services/codegen.service.js"></script>
+<script src="js/services/aggregate.service.js"></script>
+<script src="js/services/ajax.service.js"></script>
+<script src="js/services/encoder.service.js"></script>
+<script src="js/services/scriptinclude.service.js"></script>
+<script src="js/services/glidequery.service.js"></script>
+<script src="js/services/standards.service.js"></script>
+<script src="js/services/example-call.service.js"></script>
+<script src="js/services/connection.service.js"></script>
+<script src="js/services/connection-ui.service.js"></script>
+<script src="js/services/schema-live.service.js"></script>
+<script src="js/services/schema-ui.service.js"></script>
+<script src="js/services/deploy.service.js"></script>
+<script src="js/services/deploy-modal.service.js"></script>
+<script src="js/services/preview-ui.service.js"></script>
+<script src="js/services/standards-ui.service.js"></script>
+<script src="js/directives/gs-select.directive.js"></script>
+<script src="js/directives/gs-condition-groups.directive.js"></script>
+<script src="js/controllers/main.controller.js"></script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+# Manifest schema
+
+`snpackager.core.js` takes two inputs per build: a **manifest** (this app's static
+identity/config — the only thing that lives in the app) and **sources** (already-fetched
+source text — fetching is the host's job, never the core's). This file documents both, plus
+the small `opts` bag `buildParts`/`assembleXml` take.
+
+## manifest
+
+```js
+{
+  // --- identity ---
+  appName: 'Glide Studio',              // required
+  scope: 'x_glide_studio_ng',           // required. Fixed, or derived at runtime via
+                                         // core.deriveScope(appName, companyCode) - see
+                                         // "Dynamic scope" below.
+  vendorPrefix: 'x_glide_studio',       // optional - derived from scope if omitted
+  version: '1.0.0',                     // optional - defaults to '1.0.0'
+  shortDescription: '...',              // optional - defaults to appName
+  urlSuffix: 'glide-studio-ng',         // required - the portal's url_suffix
+
+  // --- sys_id derivation (see snpackager.core.js header comment) ---
+  // A short, distinctive string unique to THIS app, so its derived sys_ids never collide with
+  // another app's if both packages are imported into the same instance. Pick one and never
+  // change it - every sys_id this app's records use is derived from it, so changing it is
+  // equivalent to deploying a brand-new app rather than updating the existing one.
+  sysIdPrefix: 'b2c3d4e5f6',            // required
+
+  // --- Angular wiring ---
+  angularModuleName: 'glideStudio',     // required - the angular.module(...) name in source
+  widgetScopeClass: 'gsb-widget',       // required - CSS wrapper class scopeScss() scopes under,
+                                         // and the class the widget template is wrapped in
+
+  // one entry per file that registers an Angular provider (MainController is NOT listed here -
+  // it becomes the widget's client_script via `controllerFile` below, not a provider)
+  providers: [
+    { file: '/angular/js/services/schema.service.js', name: 'SchemaService', type: 'service' },
+    { file: '/angular/js/directives/gs-select.directive.js', name: 'gsSelect', type: 'directive',
+      // optional: a one-off trailing top-level statement after this file's own .directive() call
+      // (e.g. a shared document-scroll listener) - see extractTrailingMarker's doc comment.
+      trailingMarker: "document.addEventListener('scroll'" },
+  ],
+
+  // dev-harness-only services the controller injects that must NOT ship as real providers (the
+  // deployed widget never calls into them - guarded behind an ng-if the deployed page never
+  // satisfies) but still need an empty stub so AngularJS's injector resolves at instantiation.
+  stubProviders: ['DeployModalService'],  // optional, defaults to []
+
+  // --- opt-in superset layer ---
+  features: { roles: true },              // optional, defaults to {} (no roles/groups/ACLs)
+  roles: {                                // required if features.roles is true
+    userRoleName: 'glide_studio_user', adminRoleName: 'glide_studio_admin',
+    userGroupName: 'Glide Studio Users', adminGroupName: 'Glide Studio Admins',
+    // each *Description is optional - a sensible default is generated from appName if omitted
+  },
+}
+```
+
+### Dynamic scope
+
+Standards hardcodes `scope`. Glide Studio derives it per deploy from the app name + the target
+instance's detected vendor prefix, so the Deploy modal can offer a recommended scope. That
+detection needs a network call (`detectCompanyPrefix`), which is host-owned (see below) - but the
+pure slug/truncation logic is in the core: `core.deriveScope(appName, companyCode)`,
+`core.scopeSlug(s)`, `core.SCOPE_MAX` (18, ServiceNow's cap on a full `x_<code>_<app>` scope).
+
+## sources
+
+Everything the core needs to *read*, already fetched as plain strings - `fetch()` in a browser
+host, `fs.readFileSync` in a Node host. The core never touches the filesystem or network itself.
+
+```js
+{
+  controllerSrc: '...',                 // full text of the file wiring the widget's controller
+  scssSrc: '...',                       // full text of the app's authored SCSS source
+  sharedScss: undefined,                // optional - shared SCSS partial text (e.g. the concatenated
+                                         // contents of tools/theme-foundation/_tokens.scss). Prepended
+                                         // to scssSrc before scoping, so it lands at the TOP of the
+                                         // widget's <css> as `!default` tokens. See theme-foundation/SETUP.md.
+  indexHtml: '...',                     // full text of the authored page markup
+  providerSrcs: {                       // keyed by each providers[].file entry above
+    '/angular/js/services/schema.service.js': '...',
+    // ...
+  },
+  serverScript: undefined,              // optional - raw text for the widget's server script;
+                                         // a generic no-op stub is used if omitted
+  link: undefined,                      // optional - raw text for the widget's Link function
+}
+```
+
+## opts
+
+- `buildParts(manifest, sources, opts)` - `opts.formatFn`: optional `(code) => code` passed over
+  every extracted script body (e.g. a browser host wiring in js-beautify). Defaults to identity.
+- `assembleXml(manifest, parts, opts)` - `opts.stamp`: **required**. The core never calls `Date()`
+  itself, so the same manifest + same parts always produce byte-identical XML unless the host
+  deliberately supplies a fresh wall-clock stamp (a live-deploy host) or a fixed one (a
+  build-script host that wants reproducible diffs).
+
+## Host responsibilities (not in the core)
+
+- **Fetching** every source file (`fetch()` vs `fs.readFileSync`).
+- **The deploy modal UI** (`snpackager.ui.js`, browser-only) - option form, connection fields,
+  theming, copy/download. `tools/packager/deploy-console.html` is a shared instance of this host
+  that works across every app with a `deploy.manifest.js` (see above), instead of each app growing
+  its own copy - use it when you want to build/preview/download a package outside of any one app's
+  own dev harness.
+- **Live-instance connection** - `deployFetch`/`detectCompanyPrefix`-style calls (network I/O).
+  Shared between browser hosts as `tools/packager/snpackager.browser-connect.js`
+  (`window.SNPackager.browserConnect`) rather than each one keeping its own copy - load it via
+  `<script src>` for any app with `deployOptions.showConnection: true`.
+- **Code formatting** (js-beautify or equivalent) - pass it in as `opts.formatFn`.
+- **The timestamp** - pass it in as `opts.stamp`.
+
+## `deploy.manifest.js` — the per-app descriptor file
+
+Every deployable app declares ONE `deploy.manifest.js` at its own root (`apps/<app>/deploy.manifest.js`)
+- a UMD file, same pattern as `snpackager.core.js`, so it loads unchanged via `require()` in Node
+and `<script src>` in a browser. This is the single source of truth for that app's manifest: an
+app's own build host (`scripts/build-deploy.js`, or a live Deploy modal's service) reads it, and so
+does the shared **deploy console** (`tools/packager/deploy-console.html` - see below), so no app's
+manifest is ever hand-copied into a second place.
+
+An app with no `deploy.manifest.js` is simply not deployable by any host - the deploy console
+treats a missing file (404 / load error) as "not eligible," not an error to fix.
+
+```js
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) { module.exports = factory(); }
+  else { root.SNAppManifests = root.SNAppManifests || {}; root.SNAppManifests['<app-folder-name>'] = factory(); }
+})(typeof self !== 'undefined' ? self : this, function () {
+  return {
+    manifest: { /* the manifest object documented above, unchanged shape */ },
+    // Every path below is relative to THIS FILE'S OWN FOLDER (the app root) - a generic host
+    // resolves them uniformly: fs.readFileSync(path.join(appRoot, p)) in Node,
+    // fetch(appRootUrl + '/' + p) in a browser. manifest.providers[].file follows the same rule.
+    files: {
+      controller: 'js/controllers/main.controller.js',
+      scss: 'scss/app.scss',
+      index: 'index.html',
+    },
+    serverScriptSource: undefined,      // optional inline string - omit to use the packager's built-in stub
+    sharedScssPartials: undefined,      // optional array of app-root-relative paths (e.g. shared token partials)
+    deployOptions: undefined,           // optional - see below
+  };
+});
+```
+
+### `deployOptions` — per-app Deploy UI configuration
+
+Optional. Controls what a Deploy UI (a live modal, or the standalone deploy console) shows for
+THIS app, since not every app's manifest needs the same fields:
+
+```js
+deployOptions: {
+  // Show the "Deploy target instance" panel (Instance URL / Username / Password / Detect Prefix
+  // button) - a live Basic-Auth call (see snpackager.browser-connect.js) that reads the target
+  // instance's vendor prefix and recomputes a recommended Scope from it. Only meaningful for an
+  // app whose scope should vary per target instance (today: Glide Studio). Omit/false for an app
+  // with a fixed scope (Core, Standards) - App name/Scope/Version stay plain editable fields with
+  // no connection UI. Default: false.
+  showConnection: true,
+
+}
+```
+
+`showConnection` is the only field so far - App name/Scope/Version are always shown and editable
+for every app regardless of this setting; this only toggles the extra live-connection affordance on
+top of that. Add further `deployOptions` fields here if a future Deploy-UI toggle turns out to be
+genuinely per-app (don't add one speculatively).
+
+The browser key (`root.SNAppManifests['<app-folder-name>']`) is keyed by the app's own folder name
+under `apps/` (e.g. `'core'`, `'glide-studio'`) - the same name the deploy console uses to probe for
+it, so no separate registry has to map folder → key.
+
+## Styling: no separate Theme/CSS-Include
+
+There is no `sp_css` or `m2m_sp_theme_css_include` record in this core, and `sp_theme` never
+carries this app's own tokens. Each widget's `<css>` field is the *sole* styling carrier: it's the
+app's entire authored SCSS source, run through `scopeScss()` once. Because `scopeScss` leaves bare
+`$token: value !default;` statements untouched, that one field ends up holding *both* the app's
+`!default` token declarations *and* its scoped rules - self-sufficient wherever the widget is
+dropped. See `snpackager.core.js`'s header comment for the full reasoning.

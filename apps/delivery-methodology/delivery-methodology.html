@@ -1,0 +1,2476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GlideFast Delivery Methodology</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22g%22%20x1%3D%222%22%20y1%3D%224%22%20x2%3D%2222%22%20y2%3D%2222%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%2317b8a6%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%233fe0c5%22/%3E%0A%20%20%20%20%3C/linearGradient%3E%0A%20%20%3C/defs%3E%0A%20%20%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%2224%22%20height%3D%2224%22%20rx%3D%225.5%22%20fill%3D%22%230a1e33%22/%3E%0A%20%20%3Cpath%20d%3D%22M4.2%2012.6l15.6-6.2-6%2015.6-2.6-6.9-6.9-2.5z%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.7%22%20stroke-linejoin%3D%22round%22%20stroke-linecap%3D%22round%22/%3E%0A%3C/svg%3E%0A" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Homespace design tokens - pulled directly from CSS variables.scss */
+    --hs-navy-0: #0a2136;    /* $brand-secondary */
+    --hs-navy-1: #0a2136;    /* $brand-secondary (page/chrome share one base, per real theme) */
+    --hs-navy-2: #0b2d45;    /* $brand-secondary-light */
+    --hs-navy-3: #013c56;    /* $brand-secondary-lightest */
+    --hs-line: rgba(197, 220, 231, 0.35);   /* $border-tertiary, dimmed for use as a hairline on dark surfaces */
+    --hs-line-soft: rgba(197, 220, 231, 0.18);
+    --hs-border-tertiary: #c5dce7;  /* $border-tertiary at full strength - real toggle-button border color */
+    --hs-teal: #00e0ac;      /* $brand-primary */
+    --hs-mint: #00e0ac;      /* alias - real theme uses one accent, not two */
+    --hs-teal-deep: #007a5e; /* $brand-primary-light */
+    --ink: #ffffff;          /* $text-white */
+    --ink-soft: #c5dce7;     /* $border-tertiary, used as secondary text on navy */
+    --ink-2: var(--ink-soft); /* alias - was referenced but never defined; same secondary-text role as ink-soft */
+    --ink-faint: #7d97a8;
+    --text-on-primary: #0a2136; /* $text-primary - dark text used on top of bright gradient buttons */
+
+    --paper: var(--hs-navy-1);
+    --surface: linear-gradient(160deg, var(--hs-navy-2) 0%, var(--hs-navy-0) 100%);
+    --surface-flat: var(--hs-navy-2);
+    --surface-2: var(--hs-navy-3);
+    --line: var(--hs-line);
+    --line-soft: var(--hs-line-soft);
+    --navy: var(--hs-navy-1);
+    --navy-2: var(--hs-navy-2);
+    --navy-line: var(--hs-line);
+    --teal: var(--hs-teal);
+    --teal-deep: var(--hs-teal-deep);
+    --teal-wash: rgba(0, 224, 172, 0.12);
+
+    /* primary button system - $gradient-light-5 / -7, $gradient-dark-9, from btn-dark / btn-dark-toggle mixins */
+    --gradient-pill: linear-gradient(90deg, #21fbc8 0%, #3ec2f8 100%);
+    --gradient-pill-hover: linear-gradient(90deg, #a7ffeb 0%, #49c6fa 100%);
+    --gradient-selected: linear-gradient(90deg, #1e737e 0%, #055c7c 100%);
+    --gradient-card: linear-gradient(135deg, #275b63 0%, #0d435f 100%);    /* $gradient-dark-10 */
+    --gradient-card-2: linear-gradient(135deg, #327374 0%, #0c506e 100%);  /* $gradient-dark-11 */
+    --shadow-inset: 0px 4px 4px 0px rgba(0, 28, 54, 0.20) inset;
+    --shadow-md: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
+    --shadow-sm: 2px 2px 4px 0 rgba(0, 0, 0, 0.15);
+
+    /* phase progression - theme brand/tertiary "light" family only (the darker steps of each
+       family fail contrast on this dark UI, which is what caused Close to wash out); every
+       step below clears WCAG 1.4.11 (>=3:1) against both the card gradient and the roadmap track */
+    --p1: #00e0ac;  /* $brand-primary */
+    --p2: #21fbc8;  /* $brand-primary-lighter */
+    --p3: #8ef1ff;  /* $brand-tertiary-4 */
+    --p4: #3ec2f8;  /* $brand-info */
+    --p5: #b1f5ff;  /* $brand-tertiary-light */
+
+    /* RACI - theme semantic tokens, not invented hex: R=success, A=warning, C=info, I=a light neutral.
+       (there's no "standard" RACI color convention; this just stops re-inventing what the theme already has) */
+    --r-r: #01cc52;  /* $brand-success - Responsible */
+    --r-a: #e5c20b;  /* $brand-warning - Accountable */
+    --r-c: #3ec2f8;  /* $brand-info - Consulted */
+    --r-i: #bdc2cb;  /* $color-light - Informed */
+
+    --radius: 8px;        /* $border-radius-large */
+    --radius-sm: 4px;     /* $border-radius-base */
+    --radius-round: 50px; /* $border-radius-round */
+    --shadow: var(--shadow-sm);
+    --rail-w: 320px;
+    --font-display: 'Montserrat', 'Lato', sans-serif;
+    --font-body: 'Montserrat', 'Lato', sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+    /* focus ring - $focus-ring-primary (2px solid $brand-primary) + $focus-ring-offset-medium, from the
+       theme's focus-visible mixin. Replaces the missing focus indicators (WCAG 2.4.7) app-wide. */
+    --focus-ring: 2px solid var(--hs-teal);
+    --focus-ring-offset: 2px;
+  }
+  :focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--paper);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button { font-family: inherit; cursor: pointer; }
+
+  ::selection { background: var(--teal); color: var(--text-on-primary); }
+
+  /* ---------- App shell ---------- */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  .body { flex: 1; min-height: 0; }
+
+  /* ---------- Page (content column - the portal supplies the header/nav above this) ---------- */
+  .page { max-width: 1120px; margin: 0 auto; padding: 28px 40px 100px; }
+  .main { }
+
+  /* ---------- Page header (relocated from an app top-bar into the page itself) ---------- */
+  .pagehdr { margin-bottom: 22px; }
+  .pagehdr-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+
+  /* view tabs - segmented toggle */
+  .views { display: inline-flex; gap: 2px; background: var(--surface-flat); border-radius: 10px; padding: 3px; }
+  .vtab { display: inline-flex; align-items: center; gap: 7px; border: none; background: none; color: var(--ink-2); font-family: var(--font-body); font-weight: 600; font-size: 13px; padding: 7px 15px; border-radius: 7px; cursor: pointer; transition: background 0.12s, color 0.12s; }
+  .vtab:hover { color: #fff; }
+  .vtab svg { width: 15px; height: 15px; }
+  .vtab.on { background: var(--surface-2); color: #fff; }
+  .vtab.on svg { stroke: var(--teal); }
+
+  /* controls row below the title: methodology switch (Project/GRS) */
+  .pagehdr-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+  .hsearch { position: relative; }
+  .hsearch input { height: 34px; width: 200px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface-flat); color: #fff; padding: 0 14px 0 34px; font-family: inherit; font-size: 13px; outline: none; }
+  .hsearch input::placeholder { color: var(--ink-faint); }
+  .hsearch input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,224,172,0.2); }
+  .hsearch svg { position: absolute; left: 12px; top: 10px; width: 15px; height: 15px; stroke: var(--ink-faint); fill: none; stroke-width: 2; }
+  /* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
+     color rule regardless of declaration order - the element carries both classes. */
+  .loe-billable-toggle.jargon-toggle { color: var(--ink-2); }
+
+  .pagehdr-title { margin-bottom: 14px; }
+  .pagehdr-title-row { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; margin-bottom: 5px; }
+  .pagehdr-title-row .pg-h1 { margin-bottom: 0; }
+  .pg-h1 { font-family: var(--font-display); font-weight: 800; font-size: 27px; letter-spacing: -0.015em; margin: 0 0 5px; color: #fff; }
+  .pg-sub { margin: 0; color: var(--ink-soft); font-size: 13.5px; max-width: 66ch; line-height: 1.5; }
+
+  /* ---------- Main ---------- */
+
+  /* Methodology switch (just below the title, on Journey / RACI) */
+  .meth-switch { display: inline-flex; gap: 4px; background: var(--navy-2); padding: 4px; border-radius: 24px; border: 1px solid var(--line); flex-shrink: 0; }
+  .meth-tab {
+    border: none; background: transparent; color: #a9c1d6;
+    font-family: var(--font-display); font-weight: 700; font-size: 13px;
+    padding: 8px 22px; border-radius: 20px; cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .meth-tab:hover { color: #fff; }
+  .meth-tab.active { background: var(--gradient-pill); color: var(--text-on-primary); box-shadow: var(--shadow-inset); }
+
+  /* View intro (RACI / What's New / Search headers) */
+  .view-intro { margin-bottom: 22px; }
+  .view-intro h1 { font-family: var(--font-display); font-weight: 800; font-size: 27px; letter-spacing: -0.015em; margin: 0 0 5px; color: #fff; }
+  .view-intro p { margin: 0; color: var(--ink-soft); font-size: 13.5px; max-width: 66ch; line-height: 1.5; }
+
+  /* ---------- Journey roadmap ---------- */
+  .jrny-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
+  .jrny-head h1 { font-family: var(--font-display); font-weight: 800; font-size: 27px; letter-spacing: -0.015em; margin: 0 0 4px; color: #fff; }
+  .jrny-head p { margin: 0; color: var(--ink-soft); font-size: 13.5px; }
+
+  /* Connected journey track - phases as nodes on a progressing line */
+  .road { position: relative; display: grid; grid-template-columns: repeat(var(--stations, 5), 1fr); margin-bottom: 30px; padding-top: 4px; }
+  .road::before { content: ''; position: absolute; left: calc(50% / var(--stations)); right: calc(50% / var(--stations)); top: 26px; height: 3px; border-radius: 3px; background: var(--surface-flat); }
+  .road::after { content: ''; position: absolute; left: calc(50% / var(--stations)); top: 26px; height: 3px; border-radius: 3px; width: calc(100% * var(--active) / var(--stations)); background: linear-gradient(90deg, var(--p1), var(--p3)); transition: width .3s ease; }
+  .station { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0 6px; }
+  .station .n { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; background: var(--surface-2); border: 2px solid var(--nc); position: relative; z-index: 1; transition: transform .18s, box-shadow .18s, background .18s; }
+  .station.done .n { background: color-mix(in srgb, var(--nc) 26%, var(--surface-2)); }
+  .station.on .n { background: var(--nc); color: #06121c; transform: scale(1.12); box-shadow: 0 0 0 5px color-mix(in srgb, var(--nc) 22%, transparent); }
+  .station:hover .n { transform: scale(1.07); }
+  .station.on:hover .n { transform: scale(1.12); }
+  .station .n .udot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: var(--hs-teal); border: 2px solid var(--navy); }
+  .station .nm { font-size: 13.5px; font-weight: 700; color: #fff; margin-top: 11px; transition: color .15s; }
+  .station.on .nm { color: var(--nc); }
+  .station .ct { font-size: 11px; color: #9db3c2; margin-top: 2px; }
+
+  .strip-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 10px 2px; }
+  .film { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 4px; }
+  /* enhanced sub-phase cards: phase-colour accent rail, icon chip, hover lift, glow-ring when selected */
+  .fcard { position: relative; display: flex; flex-direction: column; min-height: 142px; background: var(--gradient-card); border: 1px solid transparent; border-radius: 12px; padding: 12px 15px 13px; cursor: pointer; text-align: left; font-family: inherit; overflow: hidden; transition: transform .16s, box-shadow .16s; }
+  .fcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--pc); opacity: .9; transition: width .16s; }
+  .fcard:hover { transform: translateY(-3px); box-shadow: 0 10px 24px -12px rgba(0,0,0,0.6); }
+  /* selected - thicker left accent bar + a brighter surface, no surrounding ring */
+  .fcard.on { background: linear-gradient(135deg, color-mix(in srgb, var(--pc) 32%, #275b63) 0%, color-mix(in srgb, var(--pc) 20%, #0d435f) 100%); }
+  .fcard.on::before { width: 5px; }
+  /* the brighter selected background washes out --ink-faint (#7d97a8) - lift the muted text */
+  .fcard.on .fsid { color: var(--ink-2); }
+  .fcard.on .fmeta { color: var(--ink-2); }
+  .fcard.stub:not(.on) { background: none; border: 1px dashed var(--line); }
+  .fcard.stub:not(.on)::before { opacity: .3; }
+  .fcard .fhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+  .fcard .ficon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--pc) 22%, transparent); color: var(--pc); flex-shrink: 0; }
+  .fcard .ficon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .fcard .fsid { font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; color: #9db3c2; text-transform: uppercase; }
+  .fcard .fnm { font-size: 14px; font-weight: 700; margin-top: 2px; line-height: 1.25; color: #fff; }
+  .fcard .fmeta { font-size: 11px; color: var(--ink-faint); font-style: italic; margin-top: auto; padding-top: 8px; }
+  .fcard .rbadge, .badge-new { display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; background: var(--gradient-pill); color: var(--text-on-primary); padding: 3px 8px; border-radius: 20px; width: fit-content; flex-shrink: 0; white-space: nowrap; }
+  .fcard .rbadge { margin-top: auto; }
+  .badge-new { margin-top: 9px; }
+
+  /* Detail panel wrapper */
+  .panel { background: var(--navy-2); border-radius: 14px; padding: 30px 34px; margin-top: 20px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- RACI grid ---------- */
+  .rg-controls { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
+  .rg-pfilters { display: flex; gap: 7px; flex-wrap: wrap; }
+  .rg-pchip { font-family: inherit; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 15px; border: 1px solid transparent; cursor: pointer; }
+  .rg-legend { display: flex; gap: 14px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+  .rg-legend .lg { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #b9cdd6; }
+  .rg-legend .sw { width: 16px; height: 16px; border-radius: 4px; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 10px; color: var(--text-on-primary); }
+  .rg-focusbar { display: none; align-items: center; gap: 10px; background: rgba(63,224,197,0.08); border: 1px solid rgba(63,224,197,0.3); border-radius: 8px; padding: 8px 14px; margin-bottom: 14px; font-size: 13px; }
+  .rg-focusbar.show { display: flex; }
+  .rg-focusbar b { color: var(--hs-mint); }
+  .rg-focusbar button { margin-left: auto; font-family: inherit; font-size: 12px; font-weight: 600; color: #9fd; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 4px 12px; cursor: pointer; }
+  .rg-scroller { overflow: auto; max-height: calc(100vh - 220px); border: 1px solid var(--line-soft); border-radius: 12px; }
+  .rg-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
+  .rg-table thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 3; padding: 11px 8px; text-align: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: #7fd8cb; border-bottom: 2px solid var(--line); cursor: pointer; white-space: nowrap; user-select: none; }
+  .rg-table thead th:hover { background: #123a52; color: #fff; }
+  .rg-table thead th.taskcol { position: sticky; left: 0; z-index: 4; text-align: left; width: 300px; min-width: 300px; cursor: default; background: var(--surface-2); }
+  .rg-table thead th.focused { background: var(--teal); color: var(--text-on-primary); }
+  .rg-table th .cnt { display: block; font-size: 9px; color: #5f9; font-weight: 400; margin-top: 2px; }
+  .rg-table th.focused .cnt { color: var(--text-on-primary); }
+  .rg-grouprow td { background: var(--surface-2); font-weight: 700; padding: 9px 12px; font-size: 12.5px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); position: sticky; left: 0; }
+  .rg-grouprow .gsid { font-family: var(--font-mono); color: var(--text-on-primary); padding: 2px 9px; border-radius: 10px; margin-right: 9px; font-size: 11px; }
+  .rg-table tr.taskrow { cursor: pointer; }
+  .rg-table tr.taskrow:hover td { background: #0e2947; }
+  .rg-table tbody td { padding: 10px 8px; border-bottom: 1px solid #142c44; text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: 12.5px; }
+  .rg-table td.tname { position: sticky; left: 0; background: var(--paper); z-index: 1; text-align: left; font-family: var(--font-body); font-weight: 500; font-size: 13px; line-height: 1.4; width: 300px; min-width: 300px; }
+  .rg-table tr.taskrow:hover td.tname { background: #0e2947; }
+  .rg-table td.colhi, .rg-table th.colhi { background: #10314e !important; }
+  .rg-table td.dimmed { opacity: 0.25; }
+  .rg-lt { letter-spacing: 1px; }
+  .rg-dash { color: #294863; }
+  .rg-exrow { display: none; }
+  .rg-exrow.show { display: table-row; }
+  .rg-exrow td { background: var(--surface-flat); text-align: left; font-family: var(--font-body); font-weight: 400; padding: 14px 18px; border-bottom: 2px solid var(--line); position: sticky; left: 0; }
+  .rg-exgrid { display: flex; gap: 34px; flex-wrap: wrap; }
+  .rg-exgrid > div { flex: 1; min-width: 220px; }
+  .rg-exgrid h5 { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hs-mint); margin: 0 0 6px; }
+  .rg-exgrid p { margin: 0; color: #c3d5dd; font-size: 13px; line-height: 1.6; }
+  .rg-exraci { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rg-exraci span { font-family: var(--font-mono); font-size: 11px; background: var(--surface-flat); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; }
+  .rg-total td { background: var(--surface-2); font-family: var(--font-mono); font-size: 11px; color: #7fd8cb; border-top: 2px solid var(--line); padding: 9px 8px; text-align: center; }
+  .rg-total td.tname { text-align: left; font-weight: 600; position: sticky; left: 0; background: var(--surface-2); z-index: 1; }
+
+  .pcrumb { font-size: 12px; color: var(--hs-teal); font-weight: 600; margin-bottom: 8px; }
+
+  /* sub-phase content header - Edit pencil lives here (right of the title), not in app chrome */
+  .sp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .edit-pencil { flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(0,224,172,0.5); background: none; color: var(--teal); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.12s, box-shadow 0.12s; }
+  .edit-pencil svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .edit-pencil:hover { background: var(--teal-wash); box-shadow: var(--shadow-md); }
+
+  h1.sp-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 14px;
+    color: #fff;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .prec {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--gradient-pill);
+    color: var(--text-on-primary);
+    font-size: 10px; font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    vertical-align: middle; margin-left: 8px;
+  }
+
+  .pchange {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--gradient-card-2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 0 0 18px;
+    font-size: 13.5px;
+    color: #fff;
+    max-width: 72ch;
+  }
+  .pchange b { color: #fff; }
+  /* deep-link target highlight - a background pulse so a ?sub=&el= landing is obvious. A fill
+     (not box-shadow) so it works on a <tr> too - box-shadow barely renders on table rows, and
+     an outward ring gets clipped by .ttbl-wrap's overflow-x: auto anyway. */
+  @keyframes jumpPulse { 0% { background-color: transparent; } 8% { background-color: rgba(63,224,197,0.35); } 100% { background-color: transparent; } }
+  .jump-hl { animation: jumpPulse 2s ease-out 1; }
+  .pchange-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .pchange-list li { padding-left: 14px; position: relative; }
+  .pchange-list li::before { content: '•'; position: absolute; left: 0; color: rgba(255,255,255,0.6); }
+  .pchange-ts { color: rgba(255,255,255,0.65); font-size: 12px; }
+
+  h4.sec {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--hs-teal);
+    margin: 22px 0 8px;
+    font-weight: 700;
+  }
+  .lede { font-size: 16px; line-height: 1.7; color: #f0f4f6; max-width: 72ch; margin: 14px 0; }
+  .obj { font-size: 15px; line-height: 1.7; color: #cfe0ee; max-width: 72ch; margin: 0; }
+
+  .metagrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 22px 0; }
+  .metacard { background: var(--surface-2); border-radius: 10px; padding: 16px; }
+  .metacard .mk { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #9db3c2; display: block; margin-bottom: 6px; }
+  .metacard .who { display: flex; gap: 5px; flex-wrap: wrap; }
+  .metacard .who span { font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.12); color: var(--ink); padding: 3px 9px; border-radius: 20px; cursor: help; }
+  .loe-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; color: var(--ink); }
+  .loe-list b { font-family: ui-monospace, monospace; font-size: 11px; color: var(--hs-teal); margin-right: 6px; }
+  .loe-edit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .loe-edit-row:last-child { margin-bottom: 0; }
+  .loe-abbr { font-family: ui-monospace, monospace; font-size: 11px; color: var(--hs-teal); width: 40px; flex-shrink: 0; }
+  .loe-edit-row .edit-in { flex: 1; }
+  .loe-billable { font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; text-transform: uppercase; background: rgba(33,251,200,0.15); color: var(--hs-mint); border-radius: 5px; padding: 1px 6px; }
+  /* Two-tier flag: Mandatory/Optional is the primary decision; Non-billable/Billable is a
+     property of Mandatory specifically, so it's a second, visually subordinate segmented
+     control, dimmed and inert (.disabled) rather than hidden while Optional is selected - hiding
+     it would make the row's width jump depending on state, which reads as jittery. */
+  .loe-flag-group { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .loe-flag { display: inline-flex; gap: 2px; background: var(--surface-flat); border: 1px solid var(--line); border-radius: 20px; padding: 2px; flex-shrink: 0; transition: opacity .15s; }
+  .loe-flag.disabled { opacity: .4; pointer-events: none; }
+  .loe-flag-btn { font-family: var(--font-body); font-size: 11.5px; font-weight: 600; color: var(--ink-faint); background: none; border: none; border-radius: 16px; padding: 4px 11px; cursor: pointer; white-space: nowrap; transition: background .12s, color .12s; }
+  .loe-flag-btn:hover { color: var(--ink-2); }
+  .loe-flag-btn.on[data-loe-flag-val="mandatory"] { background: rgba(255,255,255,0.1); color: var(--ink-2); }
+  .loe-flag-btn.on[data-loe-flag-val="optional"] { background: rgba(240,185,90,0.18); color: #f0b95a; }
+  .loe-flag-btn.on[data-loe-flag-val="nonbillable"] { background: rgba(255,255,255,0.1); color: var(--ink-2); }
+  .loe-flag-btn.on[data-loe-flag-val="billable"] { background: rgba(63,224,197,0.18); color: var(--hs-mint); }
+  .loe-edit-row .x-btn { flex-shrink: 0; }
+  /* modeled on the theme's input-switch mixin: off-track = $color-disabled, on-track = $brand-primary,
+     knob stays white in both states, focus ring = $focus-ring-primary + $focus-ring-offset-medium */
+  .loe-billable-toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-faint); white-space: nowrap; flex-shrink: 0; cursor: pointer; }
+  /* "dark outlined" toggle - dark track + hairline border + muted knob when off, teal + white knob when on */
+  .loe-billable-toggle input { appearance: none; -webkit-appearance: none; position: relative; width: 34px; height: 19px; border-radius: var(--radius-round); background: var(--surface-flat); border: 1px solid var(--line); cursor: pointer; margin: 0; flex-shrink: 0; transition: background .15s, border-color .15s; }
+  .loe-billable-toggle input::after { content: ''; position: absolute; top: 1px; left: 1px; width: 15px; height: 15px; border-radius: 50%; background: #8ba0b0; transition: transform .15s, background .15s; }
+  .loe-billable-toggle input:checked { background: var(--hs-teal); border-color: var(--hs-teal); }
+  .loe-billable-toggle input:checked::after { transform: translateX(15px); background: #fff; }
+  .loe-billable-toggle input:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+
+  /* Level of Effort - Style 1 rows-with-tags */
+  .loe2 { display: flex; flex-direction: column; gap: 2px; }
+  .loe2 .row { display: grid; grid-template-columns: minmax(58px, max-content) 62px 1fr; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; }
+  .loe2 .row:nth-child(odd) { background: rgba(255,255,255,0.025); }
+  .loe2 .lr { font-weight: 800; color: var(--c); font-size: 12.5px; }
+  .loe2 .eff { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+  .loe2 .eff.none { color: var(--ink-faint); }
+  .loe2 .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .loe-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: .02em; }
+  .loe-pill.bill { background: rgba(63,224,197,0.15); color: var(--hs-mint); border: 1px solid rgba(63,224,197,0.4); }
+  .loe-pill.opt { background: rgba(240,185,90,0.14); color: #f0b95a; border: 1px dashed rgba(240,185,90,0.5); }
+  .loe-all { display: flex; align-items: center; gap: 12px; padding: 8px; background: rgba(255,255,255,0.025); border-radius: 8px; font-size: 13px; }
+  .loe-all .lr { font-weight: 800; color: var(--hs-teal); }
+  .loe-all .eff { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+  .loe-all .eff.none { color: var(--ink-faint); }
+  .loe-all .tags { display: flex; gap: 6px; }
+  .loe-mode { display: inline-flex; gap: 2px; background: var(--surface-flat); border-radius: 8px; padding: 3px; margin-bottom: 12px; }
+  .loe-mode-btn { font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--ink-faint); background: none; border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+  .loe-mode-btn.on { background: var(--gradient-pill); color: var(--text-on-primary); }
+
+  /* job aids - read scope chips + editor */
+  .ttbl .ja { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+  .ja-scope { font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 42%, transparent); border-radius: 4px; padding: 0 4px; letter-spacing: .02em; }
+  .ja-edit-wrap { margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.22); }
+  .ja-edit-lbl { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; margin-bottom: 12px; }
+  .ja-edit-lbl svg { width: 13px; height: 13px; color: var(--teal); }
+  .ja-edit { position: relative; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.18); border-left: 3px solid var(--teal); border-radius: 8px; padding: 16px; margin-bottom: 10px; }
+  .ja-edit-row { display: flex; gap: 8px; align-items: center; }
+  .ja-edit-row .link-ic { color: var(--teal); display: flex; flex-shrink: 0; }
+  .ja-edit-row .link-ic svg { width: 15px; height: 15px; }
+  /* exciting add-job-aid CTA - teal-tinted pill with an icon, fills on hover */
+  .ja-roles { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+  .ja-roles-lbl { font-size: 11px; color: var(--ink-2); margin-right: 2px; }
+  .ja-rolechip { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 20px; padding: 4px 11px; cursor: pointer; transition: background .12s, color .12s, border-color .12s, box-shadow .12s; }
+  .ja-rolechip:hover { border-color: var(--teal); }
+  .ja-rolechip.on { color: var(--text-on-primary); background: var(--gradient-pill); border-color: #fff; box-shadow: var(--shadow-inset); }
+
+  /* setup-zone blocks (LOE / participants / comments above the flow) */
+  .setup-block { margin: 20px 0; }
+  .setup-block > .mk { font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 10px; }
+  .notes { display: flex; gap: 10px; align-items: flex-start; background: rgba(255,255,255,0.03); border-left: 2px solid var(--line); border-radius: 0 8px 8px 0; padding: 10px 14px; }
+  .notes svg { width: 15px; height: 15px; stroke: var(--ink-faint); fill: none; stroke-width: 2; flex-shrink: 0; margin-top: 2px; }
+  .notes ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .notes li { font-size: 13px; color: var(--ink-2, var(--ink)); line-height: 1.45; }
+  .mtg-list { display: flex; flex-direction: column; gap: 10px; }
+  .mtg-card { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; }
+  .mtg-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .mtg-ic { display: inline-flex; color: var(--hs-mint); flex-shrink: 0; }
+  .mtg-ic svg { width: 15px; height: 15px; }
+  .mtg-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .mtg-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(240,185,90,0.14); color: #f0b95a; border: 1px dashed rgba(240,185,90,0.5); }
+  .mtg-meta { font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
+  .mtg-edit-row { display: flex; gap: 8px; margin-top: 10px; }
+  .mtg-edit-row select { flex: 1; }
+  .loe-edit-row .loe-billable-toggle + .loe-billable-toggle { margin-left: 2px; }
+
+  .jargon-term {
+    color: inherit;
+    border-bottom: 1.5px dotted var(--hs-mint);
+    cursor: help;
+    padding-bottom: 0.5px;
+  }
+
+  .sechead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 24px 0 8px; }
+  .sechead h4.sec { margin: 0; }
+
+  .tasklist { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .task { background: var(--surface-2); border-radius: 12px; padding: 14px 16px; }
+  /* edit-mode task panel */
+  #edit-tasks .task { padding: 16px; margin-bottom: 16px; }
+  #edit-tasks .task:last-child { margin-bottom: 0; }
+  .te-text { font-size: 14.5px; font-weight: 600; }
+  /* task heading - number badge on the left, delete × on the right */
+  .te-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .te-tools { display: inline-flex; align-items: center; gap: 2px; }
+  /* reorder arrows (edit mode) */
+  .reorder-btn { display: inline-flex; align-items: center; justify-content: center; border: none; background: none; color: var(--ink-2); cursor: pointer; border-radius: 5px; padding: 0; transition: background .12s, color .12s; }
+  .reorder-btn:hover:not(:disabled) { background: var(--teal-wash); color: var(--teal); }
+  .reorder-btn:disabled { opacity: .26; cursor: default; }
+  .reorder-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.4; }
+  .te-tools .reorder-btn { width: 24px; height: 24px; }
+  .row-reorder { position: absolute; top: 5px; right: 30px; display: flex; flex-direction: column; }
+  .row-reorder .reorder-btn { width: 18px; height: 14px; }
+  .te-num { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: rgba(0,224,172,0.18); color: var(--teal); font-family: var(--font-mono); font-size: 12px; font-weight: 800; }
+  /* panel labels - kept light so they read clearly on the gradient */
+  .raci-edit-lbl { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; margin: 18px 0 9px; }
+  .task .tt { font-size: 14px; line-height: 1.4; color: var(--ink); margin-bottom: 10px; }
+  .task .jobaid {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--font-body); font-size: 12px; color: var(--hs-mint); font-weight: 600;
+    text-decoration: none; margin-bottom: 9px;
+  }
+  .task .jobaid svg { width: 13px; height: 13px; }
+  .rchips { display: block; }
+  .rchip {
+    font-family: ui-monospace, monospace; font-size: 10.5px;
+    background: rgba(255,255,255,0.15); border-radius: 6px;
+    padding: 2px 7px; display: inline-block; margin-right: 5px; margin-bottom: 4px; cursor: help;
+  }
+  .rchip.off { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); cursor: default; }
+  .rl-R { color: var(--r-r); }
+  .rl-A { color: var(--r-a); }
+  .rl-C { color: var(--r-c); }
+  .rl-I { color: var(--r-i); }
+
+  /* ---------- Reference view ---------- */
+  .refdoc { max-width: 860px; }
+  .ref-sec { margin-bottom: 34px; }
+  .ref-h { font-size: 17px; font-weight: 700; color: var(--ink); margin: 0 0 8px; display: flex; align-items: center; gap: 10px; }
+  .ref-count { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--teal); background: var(--teal-wash); border-radius: 20px; padding: 2px 10px; }
+  .ref-lead { font-size: 14px; color: var(--ink-2); line-height: 1.6; margin: 0 0 16px; max-width: 72ch; }
+  .ref-raci-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  @media (min-width: 760px) { .ref-raci-grid { grid-template-columns: repeat(2, 1fr); } }
+  .ref-raci-card { display: flex; gap: 12px; background: var(--surface-2); border-radius: 12px; padding: 14px 16px; }
+  .ref-raci-badge { flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 800; font-size: 15px; background: rgba(255,255,255,0.07); }
+  .ref-raci-name { font-weight: 700; font-size: 14px; color: var(--ink); margin-bottom: 3px; }
+  .ref-raci-desc { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+  .ref-rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .ref-rules li { font-size: 13.5px; color: var(--ink-2); line-height: 1.55; padding-left: 18px; position: relative; }
+  .ref-rules li::before { content: '•'; position: absolute; left: 4px; color: var(--teal); }
+  .ref-rules b { color: var(--ink); }
+  .ref-rules .rl-A, .ref-rules .rl-R { font-family: var(--font-mono); font-weight: 700; }
+  .ref-placeholder { display: flex; gap: 12px; align-items: flex-start; background: rgba(255,255,255,0.03); border: 1px dashed var(--line); border-radius: 12px; padding: 18px 20px; }
+  .ref-placeholder svg { width: 19px; height: 19px; stroke: var(--ink-faint); fill: none; stroke-width: 2; flex-shrink: 0; margin-top: 2px; }
+  .ref-placeholder b { color: var(--ink); font-size: 14px; }
+  .ref-placeholder p { font-size: 13px; color: var(--ink-faint); line-height: 1.55; margin: 4px 0 0; }
+  .ref-aids { display: flex; flex-direction: column; gap: 10px; }
+  .ref-aid { display: flex; gap: 14px; align-items: flex-start; background: var(--surface-2); border-radius: 10px; padding: 12px 14px; }
+  .ref-aid .jobaid { flex-shrink: 0; margin: 0; display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--hs-mint); text-decoration: none; white-space: nowrap; }
+  .ref-aid .jobaid svg { width: 13px; height: 13px; }
+  .ref-aid .jobaid:hover { text-decoration: underline; }
+  .ref-aid-body { flex: 1; min-width: 0; }
+  .ref-aid-task { font-size: 13.5px; color: var(--ink); font-weight: 600; line-height: 1.4; margin-bottom: 4px; }
+  .ref-aid-crumb { display: inline-block; font-family: inherit; font-size: 12px; color: var(--hs-mint); background: none; border: none; padding: 0; cursor: pointer; text-align: left; }
+  .ref-aid-crumb:hover { text-decoration: underline; }
+  .ref-aid-scope { font-size: 11.5px; color: var(--ink-faint); margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .ref-allroles { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-2); }
+
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .idlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .idlist li { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; color: var(--ink); }
+  @media (max-width: 640px) { .twocol { grid-template-columns: 1fr; } }
+
+  /* ---------- Redesign: participants, scheduling, connected flow, task table ---------- */
+  .plegend { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin: 20px 0 4px; }
+  .plegend .plabel { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-right: 4px; }
+  .rolechip { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px; background: rgba(255,255,255,.07); color: var(--ink); border: 1px solid var(--line); white-space: nowrap; cursor: help; }
+  .rolechip.ext { background: rgba(255,255,255,.03); color: var(--ink-2); border: 1px dashed var(--line); }
+
+
+  .pipe { position: relative; padding-left: 32px; margin: 18px 0 8px; }
+  .pipe::before { content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(180deg, #7c9cff, var(--hs-mint), #e0b34d); border-radius: 2px; opacity: .5; }
+  .pstep { position: relative; margin-bottom: 24px; }
+  .pstep:last-child { margin-bottom: 0; }
+  .pnum { position: absolute; left: -32px; top: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--surface-flat); border: 2px solid var(--hs-mint); color: var(--hs-mint); font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .pstep .pshead { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 24px; margin: 0 0 3px; }
+  .pstep h5 { margin: 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--hs-teal); font-weight: 700; }
+  .pstep h5 .muted { color: var(--ink-faint); font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .pstep .ordhint { font-size: 11px; color: var(--ink-faint); font-style: italic; margin: 0 0 9px; }
+  .flowlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; counter-reset: io; }
+  .flowlist li { background: var(--surface-2); border-radius: 9px; padding: 9px 12px 9px 34px; font-size: 13px; color: var(--ink-2); line-height: 1.4; position: relative; }
+  .flowlist li::before { counter-increment: io; content: counter(io); position: absolute; left: 11px; top: 9px; width: 15px; height: 15px; border-radius: 50%; background: rgba(255,255,255,.08); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); }
+  .flowlist li.none { padding-left: 12px; color: var(--ink-faint); font-style: italic; }
+  .flowlist li.none::before { display: none; }
+
+  .ttbl-wrap { overflow-x: auto; }
+  table.ttbl { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.ttbl th, table.ttbl td { padding: 9px 8px; text-align: center; border-bottom: 1px solid var(--line); }
+  table.ttbl th.tname, table.ttbl td.tname { text-align: left; width: 46%; color: var(--ink); font-weight: 600; font-size: 14.5px; line-height: 1.4; }
+  table.ttbl thead th { font-size: 11px; font-weight: 800; border-bottom: 2px solid var(--line); }
+  table.ttbl thead th.tname { color: var(--ink-faint); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+  table.ttbl thead th.pcol { color: var(--c); cursor: help; white-space: nowrap; }
+  table.ttbl thead th.pcol.ext { border-bottom-style: dashed; }
+  table.ttbl td.cell { font-family: var(--font-mono); font-weight: 700; font-size: 12.5px; letter-spacing: 1px; }
+  table.ttbl td.cell.off { color: rgba(255,255,255,.16); font-weight: 400; }
+  table.ttbl tbody tr:hover { background: rgba(255,255,255,.03); }
+  table.ttbl .jobaid { display: inline-block; font-size: 11px; color: var(--hs-mint); font-weight: 600; text-decoration: none; white-space: nowrap; margin-top: 3px; }
+  .rlegend { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 0; font-size: 11px; color: var(--ink-faint); }
+  .rlegend .lg { display: inline-flex; align-items: center; gap: 5px; }
+  .rlegend .sw { font-family: var(--font-mono); font-weight: 700; width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; color: #06121c; font-size: 11px; }
+
+
+  /* ---------- Tooltip ---------- */
+  .tip {
+    position: fixed;
+    z-index: 100;
+    max-width: 260px;
+    background: #04131f;
+    color: #fff;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  .tip.show { opacity: 1; }
+  .tip .tname { font-family: var(--font-mono); font-size: 11px; color: var(--hs-mint); display: block; margin-bottom: 3px; letter-spacing: 0.04em; }
+
+  /* ---------- Edit mode ---------- */
+  .editing .main { background: repeating-linear-gradient(45deg, transparent, transparent 22px, rgba(255,210,63,0.045) 22px, rgba(255,210,63,0.045) 23px); }
+  /* Everything above the sub-phase title (page header + the roadmap/sub-phase-card strip) is
+     already functionally inert while editing - openSubPhase() and the phase-pill handler both
+     no-op during editMode - this just makes that visible: blurred + faded so the eye has nowhere
+     to go but the edit panel below. pointer-events:none backs up the existing JS guards. */
+  .editing .pagehdr, .editing .journey-chrome { opacity: .5; filter: blur(2.5px) saturate(.7); pointer-events: none; transition: filter .2s, opacity .2s; }
+  .edit-in {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    background: #0e2740;
+    resize: vertical;
+    outline: none;
+  }
+  .edit-in::placeholder { color: var(--ink-faint); }
+  .edit-in:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(23,184,166,0.22); }
+  textarea.edit-in { line-height: 1.5; }
+  /* custom-styled selects - no browser-default chrome, themed chevron */
+  select.edit-in {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    padding: 8px 34px 8px 12px;
+    background-color: #0e2740;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c5dce7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+    text-overflow: ellipsis;
+  }
+  select.edit-in:hover { border-color: var(--ink-faint); }
+  select.edit-in:hover { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
+  select.edit-in option { background: #0b2137; color: var(--ink); }
+  .edit-in.title-in { font-family: var(--font-display); font-weight: 700; font-size: 28px; color: #fff; }
+  .edit-hint { font-size: 11.5px; color: var(--ink-faint); margin: 4px 0 0; font-family: var(--font-mono); }
+
+  /* dark theme surface (matches every other panel/card), with a warning-amber accent border and
+     "● Editing" label - $brand-warning used as a highlight, not as the whole bar's background */
+  .edit-bar {
+    position: sticky;
+    top: 70px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid #e5c20b;
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    margin-top: 22px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .edit-bar .flag { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #e5c20b; font-weight: 600; }
+  .edit-bar .spacer { flex: 1; }
+  /* btn-dark mixin (secondary/Cancel default) - transparent, border-tertiary, brightens+lifts on hover, insets on press */
+  .btn {
+    height: 34px; padding: 0 20px; border-radius: var(--radius-round);
+    border: 1px solid var(--hs-border-tertiary); background: transparent; color: var(--ink);
+    font-size: 14px; font-weight: 600;
+    transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+  }
+  .btn:hover { background: var(--hs-border-tertiary); color: var(--text-on-primary); border-color: #fff; box-shadow: var(--shadow-md); }
+  .btn:active { background: transparent; color: var(--ink); border-color: #fff; box-shadow: var(--shadow-inset); }
+  /* btn-dark mixin (primary/Save) - gradient-light-5, brightens to gradient-light-7 on hover, insets on press */
+  .btn.primary { background: var(--gradient-pill); border-color: transparent; color: var(--text-on-primary); font-weight: 600; }
+  .btn.primary:hover { background: var(--gradient-pill-hover); border-color: #fff; box-shadow: var(--shadow-md); }
+  .btn.primary:active { background: var(--gradient-pill); border-color: #fff; box-shadow: var(--shadow-inset); }
+  .btn.sm { height: 28px; padding: 0 12px; font-size: 12.5px; }
+
+  /* transparent table - rows sit on the panel, separated by light divider lines */
+  .raci-matrix { border-top: 1px solid rgba(255,255,255,0.22); border-radius: 0; overflow: visible; margin-top: 0; background: none; }
+  .raci-matrix-row { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-top: 1px solid rgba(255,255,255,0.16); background: none; }
+  .raci-matrix-row:first-child { border-top: none; }
+  .raci-matrix-row .rm-name { flex: 1; font-size: 13px; color: var(--ink); }
+  .raci-matrix-row .rm-name .abbr { font-family: var(--font-mono); font-size: 11px; color: var(--hs-mint); margin-right: 6px; }
+  .raci-toggle {
+    width: 26px; height: 26px; border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.05); color: var(--ink-2);
+    font-family: var(--font-mono); font-weight: 700; font-size: 12px;
+  }
+  .raci-toggle:hover { border-color: var(--ink-2); }
+  .raci-toggle.on { color: var(--text-on-primary); border-color: transparent; }
+  .raci-toggle.on.t-R { background: var(--r-r); }
+  .raci-toggle.on.t-A { background: var(--r-a); }
+  .raci-toggle.on.t-C { background: var(--r-c); }
+  .raci-toggle.on.t-I { background: var(--r-i); }
+  /* delete buttons - trash-can icon, red fill on hover */
+  .del-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; color: var(--ink-faint); cursor: pointer; flex-shrink: 0; transition: background .12s, color .12s, border-color .12s; }
+  .del-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .del-btn:hover { background: #c0392b; border-color: #c0392b; color: #fff; }
+  .del-btn.sm { width: 26px; height: 26px; border-radius: 7px; }
+  .del-btn.sm svg { width: 13px; height: 13px; }
+  /* plain "×" delete - for block-level removals (meeting, task) that aren't inside a text field
+     (see .field-x for the in-field corner version used by inputs/deliverables/comments) */
+  /* same treatment as .field-x (the in-field corner ×) - borderless, just a hover-red highlight,
+     so every "×" delete in the app looks identical whether it's overlaying a field or standalone */
+  .x-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: none; border-radius: 6px; background: none; color: var(--ink-faint); font-size: 18px; line-height: 1; cursor: pointer; flex-shrink: 0; transition: background .12s, color .12s; }
+  .x-btn:hover { background: #c0392b; color: #fff; }
+  .x-btn:focus-visible { outline: var(--focus-ring); outline-offset: 1px; }
+  .add-jt-row { display: flex; gap: 8px; padding: 8px 2px 0; background: none; border-top: 1px solid rgba(255,255,255,0.16); }
+  .add-jt-row select { flex: 1; font-size: 13px; }
+
+  /* ---------- Job Title view / What's New / Search ---------- */
+  .view-head { margin-bottom: 22px; }
+  .view-head h1 {
+    font-family: var(--font-display);
+    font-weight: 800; font-size: 27px; letter-spacing: -0.015em;
+    margin: 0 0 5px; color: #fff;
+  }
+  .view-head p { margin: 0; color: var(--ink-soft); font-size: 13.5px; line-height: 1.5; max-width: 66ch; }
+
+  .jt-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 30px; }
+  .jt-pick-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 15px; border-radius: 22px;
+    border: 1px solid var(--line); background: var(--surface-2);
+    font-size: 13.5px; font-weight: 500; color: var(--ink);
+  }
+  .jt-pick-btn:hover { border-color: var(--teal); }
+  .jt-pick-btn.active { background: var(--gradient-pill); color: var(--text-on-primary); border-color: #fff; font-weight: 700; box-shadow: var(--shadow-inset); }
+  .jt-pick-btn .abbr { font-family: var(--font-mono); font-size: 11px; color: var(--hs-mint); }
+  .jt-pick-btn.active .abbr { color: var(--text-on-primary); }
+  .jt-pick-btn .n { font-family: var(--font-mono); font-size: 11px; opacity: 0.7; }
+
+  .jt-group { margin-bottom: 28px; }
+  .jt-group-head {
+    display: flex; align-items: baseline; gap: 12px;
+    font-family: var(--font-display); font-weight: 600; font-size: 16px;
+    padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--line);
+    color: #fff;
+  }
+  .jt-group-head .sid { font-family: var(--font-mono); font-size: 12px; color: var(--text-on-primary); padding: 2px 9px; border-radius: 12px; font-weight: 700; }
+  .jt-task {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--line-soft);
+  }
+  .jt-task .rt-raci {
+    flex-shrink: 0; display: inline-flex; gap: 3px;
+    font-family: var(--font-mono); font-weight: 700; font-size: 12px;
+    min-width: 46px;
+  }
+  .jt-task .rt-text { font-size: 14px; color: var(--ink); }
+  .jt-task .rt-loc { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); }
+  .jt-task a.rt-jump { color: var(--hs-mint); text-decoration: none; }
+  .jt-task a.rt-jump:hover { text-decoration: underline; }
+
+  .whatsnew-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--teal);
+    border-radius: var(--radius);
+    padding: 15px 18px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .whatsnew-item:hover { border-left-color: var(--hs-mint); filter: brightness(1.08); }
+  .whatsnew-item .wn-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 5px; }
+  .whatsnew-item .wn-loc { font-family: var(--font-mono); font-size: 11px; color: var(--text-on-primary); padding: 2px 9px; border-radius: 12px; font-weight: 700; }
+  .whatsnew-item .wn-title { font-family: var(--font-display); font-weight: 600; font-size: 15.5px; color: #fff; }
+  .whatsnew-item .wn-date { margin-left: auto; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-faint); }
+  .whatsnew-item .wn-summary { font-size: 14px; color: var(--ink-soft); }
+
+  .search-result {
+    display: block; width: 100%; text-align: left;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 16px; margin-bottom: 10px; box-shadow: var(--shadow);
+  }
+  .search-result:hover { border-color: var(--teal); }
+  .search-result .sr-loc { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); margin-bottom: 4px; }
+  .search-result .sr-title { font-family: var(--font-display); font-weight: 600; font-size: 15px; margin-bottom: 3px; color: #fff; }
+  .search-result .sr-snip { font-size: 13.5px; color: var(--ink-soft); }
+  .search-result mark { background: #ffd23f; color: #241d02; padding: 0 1px; border-radius: 2px; }
+
+  .empty { color: var(--ink-faint); font-size: 14px; padding: 30px 0; text-align: center; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #04131f; color: #fff; padding: 11px 20px; border-radius: 24px;
+    border: 1px solid var(--line);
+    font-size: 13.5px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); opacity: 0;
+    transition: opacity 0.2s, transform 0.2s; z-index: 200; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* margin-top is the single source of truth for the gap before every "+ Add" button - each list's
+     own last-item margin is zeroed (below) so this value is the ONLY thing producing that gap.
+     Card-style lists (tasks, meetings, job aids) use the 14px default; plain text-row lists
+     (inputs, deliverables, comments) look over-spaced at that size since the row itself has no
+     border/card weight, so ".tight" gives them a smaller, better-matched gap. */
+  .add-item-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 14px; font-size: 12.5px; color: var(--hs-mint); font-weight: 600;
+    background: none; border: 1px dashed var(--line); border-radius: var(--radius-sm);
+    padding: 6px 10px; width: 100%; justify-content: center;
+    cursor: pointer; transition: background .14s, color .14s, border-color .14s, box-shadow .14s;
+  }
+  .add-item-btn.tight { margin-top: 6px; }
+  .add-item-btn:hover { border-color: var(--teal); background: var(--teal-wash); }
+  .add-item-btn:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+  .list-edit-row:last-child { margin-bottom: 0; }
+  .ja-edit:last-of-type { margin-bottom: 12px; }
+
+  .list-edit-row { position: relative; margin-bottom: 6px; }
+  .list-edit-row textarea { width: 100%; min-height: 40px; padding-right: 54px; }
+  /* corner "×" delete for simple list items (inputs / deliverables / comments) - red on hover, like the trash cans */
+  .field-x { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 6px; border: none; background: none; color: var(--ink-faint); font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .12s, color .12s; }
+  .field-x:hover { background: #c0392b; color: #fff; }
+  .field-x:focus-visible { outline: var(--focus-ring); outline-offset: 1px; }
+
+  @media (max-width: 1000px) {
+    .page { padding: 24px 24px 70px; }
+  }
+  @media (max-width: 620px) {
+    .pagehdr-top { flex-direction: column; align-items: stretch; }
+    .hsearch, .hsearch input { width: 100%; }
+    .vtab span { display: none; }
+    .views { justify-content: space-between; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="body">
+    <div class="page">
+      <div class="pagehdr">
+        <div class="pagehdr-top">
+          <div class="views" role="tablist">
+            <button class="vtab" data-view="browse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Journey</span></button>
+            <button class="vtab" data-view="raci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11M15 9v11"/></svg><span>RACI</span></button>
+            <button class="vtab" data-view="ref"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5a6 6 0 0 0-8 0v12a6 6 0 0 1 8 0 6 6 0 0 1 8 0v-12a6 6 0 0 0-8 0zM12 6.5V19"/></svg><span>Reference</span></button>
+            <button class="vtab" data-view="new" id="newTab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>What's New</span></button>
+          </div>
+          <div class="hsearch">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input id="searchInput" type="text" placeholder="Search…" autocomplete="off" />
+          </div>
+        </div>
+        <div class="pagehdr-title">
+          <div class="pagehdr-title-row">
+            <h1 id="pgTitle" class="pg-h1">The Delivery Journey</h1>
+            <label class="loe-billable-toggle jargon-toggle" id="jargonWrap" title="Highlight jargon and acronyms with hover-over definitions"><input type="checkbox" id="jargonToggle" /> Explain terms</label>
+          </div>
+          <p id="pgSub" class="pg-sub"></p>
+        </div>
+        <div class="pagehdr-controls" id="pagehdrControls">
+          <div class="meth-switch" id="methSwitch"></div>
+        </div>
+      </div>
+      <main class="main" id="main"></main>
+    </div>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   Seed data - mirrors the future ServiceNow table shape 1:1.
+   methodologies > phases > subPhases > tasks; jobTitles are shared.
+   raci: { jobTitleId: ['A','R'] }  (A/R means both Accountable & Responsible)
+   Terminology note: "Job Title" (Architect/BPC/EM/TC/...), not "Role" -
+   avoids colliding with ServiceNow's own Role/RBAC concept.
+   ============================================================ */
+const DEFAULT_DATA = {
+  jobTitles: [
+    { id: 'arch', name: 'Architect', abbr: 'ARCH', description: 'Owns the technical solution design and integrity of the build across the engagement.' },
+    { id: 'em', name: 'Engagement Manager', abbr: 'EM', description: 'Owns delivery, client relationship, scope, schedule and internal coordination.' },
+    { id: 'bpc', name: 'Business Process Consultant', abbr: 'BPC', description: 'Owns process design, requirements facilitation and workshop readiness.' },
+    { id: 'tc', name: 'Technical Consultant', abbr: 'TC', description: 'Builds and configures the ServiceNow solution against approved stories.' },
+    { id: 'ux', name: 'UX Designer', abbr: 'UX', description: 'Designs portal and interface experience when in scope for the project.' },
+    { id: 'sa', name: 'Solutions Consultant', abbr: 'SC', description: 'Solutions-side consultant supporting scoping, handoff and closure.' },
+    { id: 'es', name: 'Executive Sponsor', abbr: 'ES', description: 'GlideFast executive accountable for the account relationship.' },
+    { id: 'mktg', name: 'Marketing Specialist', abbr: 'MS', description: 'Marketing team representative capturing the engagement narrative into a case study.' },
+    { id: 'ae', name: 'Sales Executive', abbr: 'SE', description: 'Owns the commercial relationship and CRM opportunity, and schedules GRS transition touchpoints.' },
+    { id: 'csm', name: 'Customer Success Manager', abbr: 'CSM', description: 'Owns the customer relationship after go-live, driving adoption, renewal and expansion.' },
+    { id: 'trainer', name: 'Training Specialist', abbr: 'TS', description: 'Delivers end-user training and enablement sessions for the customer team.' },
+    { id: 'resourcing', name: 'Resourcing Specialist', abbr: 'RS', description: 'Assigns and staffs the delivery team, and sets up engagement Slack channels ahead of kickoff.' },
+    { id: 'customer', name: 'Customer', abbr: 'CUST', external: true, description: 'The customer / client stakeholders - included in the RACI wherever the engagement requires their input, approval or participation.' }
+  ],
+  methodologies: [
+    {
+      id: 'delivery2', name: 'Project', order: 1,
+      phases: [
+        {
+          id: 'd2-initiate', name: 'Initiate', order: 1,
+          subPhases: [
+            {
+              id: 'd2-1-1', sid: '1.1', name: 'Pre-IPKT', order: 1, changelog: [
+                { id: 'c1', ts: '2026-07-14', text: 'Input added: “ROM”', read: false },
+                { id: 'c2', ts: '2026-07-14', text: 'Task edited: “Review SOW inputs”', read: false }
+              ],
+              overview: 'At this phase, the engagement is extremely likely to commence. Sales Executive has moved the opportunity in the Customer Relations Management (CRM) system to “Verbal” and we assign the future project team to get ready.',
+              objective: 'The primary objective of this step is to familiarize yourself with the sales & contracting assets, ensure we have matched the correct skills to the customer expectations and call out any conflicts or anomalies well ahead of customer engagement.',
+              schedulingNote: '', levelOfEffort: { arch: { text: '3–5 hours', billable: true }, em: { text: '3–5 hours', billable: true }, bpc: { text: '3–5 hours', billable: true }, tc: { text: '3–5 hours', billable: true } }, comments: ['To be reviewed in advance of the IPKT. Recommended, over a week prior.'],
+              inputs: ['Addition to Slack Channel by Resourcing team', 'SoW / Work Order', 'IPKT Document', 'ROM'],
+              deliverables: ['Notes and risks to the bottom section of the IPKT document', 'If time sensitive and applicable (prior to IPKT), discuss with Sales team in advance'],
+              tasks: [
+                { id: 'd2-1-1-t1', order: 1, text: 'Review SOW inputs', jobAidUrl: '', jobAidLabel: '', raci: { arch: ['R'], em: ['A','R'], bpc: ['R'], tc: ['R'] } },
+                { id: 'd2-1-1-t2', order: 2, text: 'Take thorough notes', jobAidUrl: '', jobAidLabel: '', raci: { arch: ['R'], em: ['A','R'], bpc: ['R'], tc: ['R'] } },
+                { id: 'd2-1-1-t3', order: 3, text: 'Review and/or consult with AE / other Delivery personnel regarding previous / concurrent projects / GRSs conducted with the client', jobAidUrl: '', jobAidLabel: '', raci: { arch: ['R'], em: ['R'], bpc: ['R'], tc: ['R'] } }
+              ]
+            },
+            { id: 'd2-1-2', sid: '1.2', name: 'IPKT', order: 2, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-1-3', sid: '1.3', name: 'Customer Pre-Kickoff', order: 3, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-1-4', sid: '1.4', name: 'Get to Know the Team', order: 4, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-1-5', sid: '1.5', name: 'Kickoff', order: 5, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] }
+          ]
+        },
+        {
+          id: 'd2-plan', name: 'Plan', order: 2,
+          subPhases: [
+            {
+              id: 'd2-2-1', sid: '2.1', name: 'Pre-Workshop Planning', order: 1, changelog: [
+                { id: 'c3', ts: '2026-07-10', text: 'Task added: “Prepare Demo instance”', read: false }
+              ],
+              overview: 'At this phase, we are getting our customer team ready for a successful and efficient start of the project. Most of the steps are internal readiness activities, but coordination is needed while interfacing with the client.',
+              objective: 'The primary objective of this stage is to ensure all logistics are cared for on our end, customer expectations are fully aligned, and we maximize the time and effort during the actual workshops, once they begin. This is our first big effort with the customer, and we need to show up prepared, aligned and productive.',
+              scheduling: [{ id: 'm-d221', scheduledBy: 'bpc', runBy: 'bpc', when: 'As needed, pre-workshop', external: false }], levelOfEffort: { arch: { text: '2 hours', billable: true }, bpc: { text: '3 hours', billable: true }, em: { text: '1 hour', billable: true }, ux: { text: '1 hour', billable: true } }, comments: ['BPC facilitates readiness and logistics'],
+              inputs: ['Customer demo instance', 'Completed customer value statement', 'Completed customer startup checklist'],
+              deliverables: ['Workshop calendar invites & Workshop agenda (embedded in calendar invite & provided separately) sent to customer participants, by EM', 'Customer pre-reads, prerequisites', 'Workshop assets finalized (demo instance, decks, etc.)'],
+              tasks: [
+                { id: 'd2-2-1-t1', order: 1, text: 'Review completed Startup checklist', jobAidUrl: '', jobAidLabel: '', raci: { em: ['R'], bpc: ['A','R'], arch: ['R'], tc: ['C'] } },
+                { id: 'd2-2-1-t2', order: 2, text: 'Align on future workshop needs (including agenda) and logistics', jobAidUrl: '', jobAidLabel: '', raci: { em: ['R'], bpc: ['A','R'], arch: ['R'], tc: ['C'] } },
+                { id: 'd2-2-1-t3', order: 3, text: 'Role play prep for workshop', jobAidUrl: '#', jobAidLabel: 'Job Aid', raci: { em: ['R'], bpc: ['A','R'], arch: ['R'], tc: ['C'] } },
+                { id: 'd2-2-1-t4', order: 4, text: 'Prepare Demo instance', jobAids: [{ id: 'ja-d221t4-1', url: '#', roles: [] }, { id: 'ja-d221t4-2', url: '#', roles: ['arch'] }], raci: { em: ['I'], bpc: ['C'], arch: ['A','R'], tc: ['C'] } }
+              ]
+            },
+            { id: 'd2-2-2', sid: '2.2', name: 'Customer Workshops', order: 2, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-2-3', sid: '2.3', name: 'Post Workshop', order: 3, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-2-4', sid: '2.4', name: 'Scope Rebalancing', order: 4, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-2-5', sid: '2.5', name: 'Refinement & Sprint Planning', order: 5, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-2-6', sid: '2.6', name: 'Sprint Planning with Customer', order: 6, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] }
+          ]
+        },
+        {
+          id: 'd2-execute', name: 'Execute', order: 3,
+          subPhases: [
+            {
+              id: 'd2-3-1', sid: '3.1', name: 'Build Activities', order: 1, changelog: [],
+              overview: 'This phase is where we execute high quality development and code configurations within the ServiceNow platform. We do this iteratively and incrementally, ensuring that the output evolves in alignment with the plans set forth with the customer, prior.',
+              objective: 'The objective of the development phase is to build upon the user stories established and create a working ServiceNow platform environment that will help customer meet their stated business objectives, in the timeline set forth.',
+              schedulingNote: '', levelOfEffort: { em: { text: 'As Defined', billable: true }, bpc: { text: 'As Defined', billable: true }, arch: { text: 'As Defined', billable: true }, tc: { text: 'As Defined', billable: true } }, comments: [],
+              inputs: ['Sprint roadmap', 'Approved stories', 'New requirements & defects', 'Project Plan', 'Resource Plan', 'Requirements traceability matrix (RTM)'],
+              deliverables: ['Completion & sign off of stories within sprint(s)', 'Code release', 'Weekly status reports (EM)', 'Requirements traceability matrix (RTM)', 'Sprint plan'],
+              tasks: [
+                { id: 'd2-3-1-t1', order: 1, text: 'Facilitate and prepare for Sprint planning prior to start of the upcoming sprint', jobAidUrl: '#', jobAidLabel: 'Job Aid', raci: { em: ['A','R'], bpc: ['R'], arch: ['R'], tc: ['R'] } },
+                { id: 'd2-3-1-t2', order: 2, text: 'Review stories with the project team and ensure plan for the sprint is aligned with GF and client', jobAidUrl: '#', jobAidLabel: 'Job Aid', raci: { em: ['A','R'], bpc: ['R'], arch: ['R'], tc: ['R'] } },
+                { id: 'd2-3-1-t3', order: 3, text: 'User story refining and unblocking', jobAidUrl: '#', jobAidLabel: 'Job Aid', raci: { em: ['C'], bpc: ['A','R'], arch: ['R'], tc: ['C'] } }
+              ]
+            },
+            { id: 'd2-3-2', sid: '3.2', name: 'Build Validation and UAT Readiness', order: 2, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] }
+          ]
+        },
+        {
+          id: 'd2-deliver', name: 'Deliver', order: 4,
+          subPhases: [
+            {
+              id: 'd2-4-1', sid: '4.1', name: 'UAT', order: 1, changelog: [],
+              overview: 'The User Acceptance Testing (UAT) is a phase in our overall engagement in which the software/configuration built by GlideFast is tested in “real world” environments with representatives of the personas who will be using ServiceNow simulating their future use and accepting the work performed based on the requirements.',
+              objective: 'The primary objective of UAT is to ensure the ServiceNow code we delivered can perform required tasks in “real world” scenarios, based on the battery of tests built prior. Furthermore, to ensure that defects, if any, are worked on and resolved satisfactorily.',
+              scheduling: [{ id: 'm-d241', scheduledBy: 'em', runBy: 'em', when: 'Determined with the client', external: true }], levelOfEffort: { em: { text: 'As Defined', billable: true }, bpc: { text: 'As Defined', billable: true }, arch: { text: 'As Defined', billable: true }, tc: { text: 'As Defined', billable: true } }, comments: ['User Acceptance Testing is critical because it validates that the configured solution meets business requirements and workflows before go-live, reducing the risk of defects and ensuring user adoption.'],
+              inputs: ['UAT strategy & plan from kick off'],
+              deliverables: ['Progress and status reports throughout UAT phase', 'UAT signoff', 'Backlog inventory within customer’s agile platform'],
+              tasks: [
+                { id: 'd2-4-1-t1', order: 1, text: 'Execute UAT based on testing services in the SOW. Note: baseline testing efforts of premium testing not purchased by customer', jobAidUrl: '', jobAidLabel: '', raci: { em: ['R'], bpc: ['A','R'], arch: ['R'], tc: ['C'], customer: ['R'] } },
+                { id: 'd2-4-1-t2', order: 2, text: 'Establish UAT reporting cadence', jobAidUrl: '#', jobAidLabel: 'Job Aid', raci: { em: ['A','R'], bpc: ['C'], arch: ['C'], tc: ['C'] } },
+                { id: 'd2-4-1-t3', order: 3, text: 'Prioritize and address defects thru resolution', jobAidUrl: '', jobAidLabel: '', raci: { em: ['C'], bpc: ['C'], arch: ['R'], tc: ['R'], customer: ['I'] } }
+              ]
+            },
+            { id: 'd2-4-2', sid: '4.2', name: 'Go Live Preparedness', order: 2, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-4-3', sid: '4.3', name: 'Customer Signoff & Go Live Readiness', order: 3, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-4-4', sid: '4.4', name: 'Deploy', order: 4, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-4-5', sid: '4.5', name: 'Hypercare', order: 5, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] }
+          ]
+        },
+        {
+          id: 'd2-close', name: 'Close', order: 5,
+          subPhases: [
+            {
+              id: 'd2-5-1', sid: '5.1', name: 'Internal Closure Meeting', order: 1, changelog: [],
+              overview: 'This is the phase in the journey where we prepare for the customer official closure meeting, discuss lessons learned, and care for any internal logistics necessary and associated with the closure of the engagement.',
+              objective: 'The primary objective of this step is to capture all learnings from the engagement for the purpose of internal improvement and closely align on what is expected at the customer closure meeting.',
+              scheduling: [{ id: 'm-d251', scheduledBy: 'em', runBy: 'em', when: '', external: false }], levelOfEffort: { em: { text: '1 hour', billable: true }, bpc: { text: '1 hour', billable: true }, arch: { text: '1 hour', billable: true }, tc: { text: '1 hour', billable: true }, sa: { text: '1 hour', billable: false }, es: { text: '1 hour', billable: false, optional: true }, mktg: { text: '1 hour', billable: false }, ae: { text: '1 hour', billable: false } }, comments: [],
+              inputs: ['Internal closure deck template'],
+              deliverables: ['Revised external closure deck', 'Schedule external closure meeting', 'Lessons learned', 'Draft marketing case study'],
+              tasks: [
+                { id: 'd2-5-1-t1', order: 1, text: 'Schedule and facilitates internal retrospective & executes internal lesson learned gathering and document in SPACE', jobAidUrl: '#', jobAidLabel: 'Job Aid', raci: { em: ['A','R'], bpc: ['R'], arch: ['R'], tc: ['R'], sa: ['R'], es: ['I','C'], mktg: ['R'], ae: ['I','C'] } },
+                { id: 'd2-5-1-t2', order: 2, text: 'Confirms customer equipment return process and facilitates with each GlideFast team member', jobAidUrl: '', jobAidLabel: '', raci: { em: ['A','R'], bpc: ['C'], arch: ['C'], tc: ['C'] } }
+              ]
+            },
+            { id: 'd2-5-2', sid: '5.2', name: 'Customer Retrospective', order: 2, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'd2-5-3', sid: '5.3', name: 'Customer Closure Meeting', order: 3, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'grs', name: 'GRS', order: 2,
+      phases: [
+        {
+          id: 'grs-initiate', name: 'Initiate', order: 1,
+          subPhases: [
+            {
+              id: 'grs-1-2', sid: '1.2', name: 'IPKT', order: 1, changelog: [],
+              overview: 'At this phase, the GRS engagement is confirmed. The Account Executive has moved the opportunity in the Customer Relations Management (CRM) system to “Closed Won” and we are just about ready to meet the client and commence the GRS engagement. The heart of this step is the completion and live review of the IPKT document (and supporting documents) which serves as the transition phase.',
+              objective: 'The primary objective of this step is to obtain knowledge from the sales team that negotiated the merits of the client engagement. A proper “handoff” will help ensure we come across as One company, remove any seams in the transition to Delivery and address any insights, risks and actions that we must take prior to meeting the client for the first time.',
+              scheduling: [{ id: 'm-grs12', scheduledBy: 'ae', runBy: 'arch', when: '', external: false }], levelOfEffort: { arch: { text: '1 hour', billable: true }, tc: { text: '1 hour', billable: true }, ae: { text: '1 hour', billable: true } }, comments: ['Aligned to AE'],
+              inputs: ['IPKT Document', 'CRM opportunity record'],
+              deliverables: ['Completed IPKT review', 'Transition risks & actions logged'],
+              tasks: [
+                { id: 'grs-1-2-t1', order: 1, text: 'Complete and live-review the IPKT document with the sales team', jobAidUrl: '', jobAidLabel: '', raci: { arch: ['A','R'], tc: ['A','R'], ae: ['C'] } }
+              ]
+            },
+            { id: 'grs-1-3', sid: '1.3', name: 'Team Touchpoint', order: 2, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] },
+            { id: 'grs-1-4', sid: '1.4', name: 'Kickoff', order: 3, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] }
+          ]
+        },
+        {
+          id: 'grs-lifecycle', name: 'Lifecycle Check-ins', order: 2,
+          subPhases: [
+            { id: 'grs-2-1', sid: '2.1', name: 'Periodic Check-in', order: 1, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] }
+          ]
+        },
+        {
+          id: 'grs-closure', name: 'Closure', order: 3,
+          subPhases: [
+            { id: 'grs-3-1', sid: '3.1', name: 'Closure', order: 1, changelog: [], overview: '', objective: '', schedulingNote: '', levelOfEffort: {}, comments: [], inputs: [], deliverables: [], tasks: [] }
+          ]
+        }
+      ]
+    }
+  ],
+  appendix: {
+    raciExplainer: 'RACI designations appear next to each task to indicate baseline job title expectations. Responsible (R) does the work; Accountable (A) owns the outcome; Consulted (C) provides input; Informed (I) is kept up to date. Teams should validate and tailor these during the initiation phase based on the specific engagement.',
+    jargon: {
+      'IPKT': 'Internal Project Kickoff Transition - the handoff of a sold engagement from Sales to Delivery.',
+      'RTM': 'Requirements Traceability Matrix - maps requirements to stories and tests through delivery.',
+      'SOW': 'Statement of Work - the contracted scope, deliverables and terms of the engagement.',
+      'ROM': 'Rough Order of Magnitude - an early, approximate estimate of effort or cost.',
+      'UAT': 'User Acceptance Testing - customer validation of the built solution against requirements.',
+      'GRS': 'GlideFast Remote Services - ongoing remote delivery/support engagements.',
+      'HLD': 'High Level Design - the architectural design document for the solution.'
+    }
+  }
+};
+
+const PHASE_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--p5)'];
+const RACI_LETTERS = ['R', 'A', 'C', 'I'];
+const RACI_NAMES = { R: 'Responsible', A: 'Accountable', C: 'Consulted', I: 'Informed' };
+const RACI_HEX = { R: '#01cc52', A: '#e5c20b', C: '#3ec2f8', I: '#bdc2cb' }; /* $brand-success / -warning / -info / $color-light */
+/* Fixed display order for job titles everywhere a set of them is shown - anything not
+   listed here (e.g. GRS-only titles) sorts after, in whatever order it was found. */
+const JOB_TITLE_ORDER = ['em', 'bpc', 'arch', 'tc', 'ux'];
+const CORE_TEAM = ['em', 'bpc', 'arch', 'tc']; // "Core technical team" quick-add for task RACI
+function sortJobTitleIds(ids) {
+  return [...ids].sort((a, b) => {
+    // external participants (e.g. Customer) always sort to the very end
+    const ea = isExternalJobTitle(a), eb = isExternalJobTitle(b);
+    if (ea !== eb) { return ea ? 1 : -1; }
+    const ia = JOB_TITLE_ORDER.indexOf(a);
+    const ib = JOB_TITLE_ORDER.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+}
+/* No per-role colour - job titles are told apart by their abbreviation only (theme has no
+   room for ~12 distinct hues). RACI letters keep their own R/A/C/I colours as the one colour
+   signal. External participants (the customer) keep a neutral-but-dashed treatment via .ext -
+   a category signal (internal vs. external), not a per-person colour. */
+const NEUTRAL_ROLE_COLOR = '#c5dce7'; /* $border-tertiary - same as --ink-2 */
+const CUSTOMER_COLOR = '#c5dce7';
+function jobTitleColor(id) { return id === 'customer' ? CUSTOMER_COLOR : NEUTRAL_ROLE_COLOR; }
+function isExternalJobTitle(id) { const jt = jobTitleById(id); return !!(jt && jt.external); }
+const STORAGE_KEY = 'gf_delivery_methodology_v3';
+const PREFS_KEY = 'gf_delivery_methodology_prefs_v1';
+const TODAY = '2026-07-15';
+let changelogSeq = 1000;
+let taskSeq = 1;
+let jaSeq = 1;
+let meetingSeq = 1;
+
+/* ---------------- State ---------------- */
+let data = load();
+let prefs = loadPrefs();
+let state = {
+  view: 'browse',            // browse | raci | new | search
+  methodologyId: data.methodologies[0].id,
+  subPhaseId: firstContentSubPhase(data.methodologies[0]),
+  editMode: false,
+  editSnapshot: null,
+  search: '',
+  showJargon: prefs.showJargon,
+  justRead: []               // changelog entries just marked read by opening the current sub-phase
+};
+// The landed-on sub-phase is deliberately NOT auto-marked read on load - otherwise its unread
+// changes would be silently consumed and never surface in What's New. It stays unread (the read
+// view's header pill signals it) until the user actually navigates to it or opens it from What's New.
+
+/* ---------------- Persistence ---------------- */
+const LOE_ROLE_DEFAULTS = {
+  em: { billable: true, optional: false }, bpc: { billable: true, optional: false },
+  arch: { billable: true, optional: false }, tc: { billable: true, optional: false }, ux: { billable: true, optional: false },
+  ae: { billable: false, optional: false }, sa: { billable: false, optional: false },
+  es: { billable: false, optional: true }
+};
+function defaultLoeEntry(roleId) {
+  const d = LOE_ROLE_DEFAULTS[roleId] || { billable: false, optional: false };
+  return { text: '', billable: d.billable, optional: d.optional };
+}
+function normLoeEntry(v) {
+  if (typeof v === 'string') { v = { text: v }; }
+  else if (!v || typeof v !== 'object') { v = {}; }
+  // billable / optional / neither - mutually exclusive; billable wins if legacy data somehow has both.
+  const billable = !!v.billable;
+  const optional = !billable && !!v.optional;
+  return { text: v.text || '', billable, optional };
+}
+function normalizeLoe(loe) {
+  if (!loe || typeof loe !== 'object') { loe = {}; }
+  // already the new shape ({mode, all, roles})?
+  if ('mode' in loe || 'all' in loe || 'roles' in loe) {
+    return {
+      mode: loe.mode === 'byRole' ? 'byRole' : 'all',
+      all: normLoeEntry(loe.all),
+      roles: (() => { const r = {}; Object.keys(loe.roles || {}).forEach(k => { r[k] = normLoeEntry(loe.roles[k]); }); return r; })()
+    };
+  }
+  // legacy { jobTitleId: {...} } → collapse to a single value when uniform, else per-role
+  const keys = Object.keys(loe);
+  if (!keys.length) { return { mode: 'all', all: normLoeEntry(), roles: {} }; }
+  const entries = keys.map(k => normLoeEntry(loe[k]));
+  const first = entries[0];
+  const uniform = entries.every(e => e.text === first.text && e.billable === first.billable && e.optional === first.optional);
+  if (uniform) { return { mode: 'all', all: { ...first }, roles: {} }; }
+  const roles = {};
+  keys.forEach((k, i) => { roles[k] = entries[i]; });
+  return { mode: 'byRole', all: normLoeEntry(), roles };
+}
+function normalizeTask(t) {
+  if (!Array.isArray(t.jobAids)) {
+    t.jobAids = [];
+    if (t.jobAidUrl) { t.jobAids.push({ id: 'ja' + (jaSeq++), url: t.jobAidUrl, roles: [] }); }
+  }
+  t.jobAids.forEach(j => {
+    if (!j.id) { j.id = 'ja' + (jaSeq++); }
+    j.url = j.url || '';
+    j.roles = Array.isArray(j.roles) ? j.roles : [];
+    delete j.label;
+  });
+  delete t.jobAidUrl;
+  delete t.jobAidLabel;
+}
+function normalizeMeeting(m) {
+  if (!m.id) { m.id = 'mt' + (meetingSeq++); }
+  m.name = m.name || '';
+  m.scheduledBy = m.scheduledBy || '';
+  m.ledBy = m.ledBy || '';
+  m.external = !!m.external;
+  delete m.attendees;
+  delete m.when;
+  return m;
+}
+function normalizeSubPhase(s) {
+  if (typeof s.comments === 'string') {
+    s.comments = s.comments ? s.comments.split('\n').map(x => x.trim()).filter(Boolean) : [];
+  } else if (!Array.isArray(s.comments)) {
+    s.comments = [];
+  }
+  s.levelOfEffort = normalizeLoe(s.levelOfEffort);
+  if (!Array.isArray(s.inputs)) { s.inputs = []; }
+  if (!Array.isArray(s.deliverables)) { s.deliverables = []; }
+  if (!Array.isArray(s.tasks)) { s.tasks = []; }
+  if (!Array.isArray(s.meetings)) { s.meetings = []; }
+  // Meetings are first-class again (not folded into tasks). Convert any legacy scheduling[]
+  // entries (or a free-text schedulingNote) into meetings - who scheduled/ran it becomes
+  // scheduledBy/ledBy - then drop the old field.
+  const legacyMeetings = Array.isArray(s.scheduling)
+    ? s.scheduling
+    : (typeof s.schedulingNote === 'string' && s.schedulingNote.trim()
+        ? [{ scheduledBy: '', runBy: '', external: false }]
+        : []);
+  legacyMeetings.forEach(m => {
+    s.meetings.push({ id: 'mt' + (meetingSeq++), scheduledBy: m.scheduledBy || '', ledBy: m.runBy || m.scheduledBy || '', external: !!m.external });
+  });
+  delete s.scheduling;
+  delete s.schedulingNote;
+  // Also reverse-migrate the auto-generated "Schedule and facilitate…" tasks from the brief
+  // period meetings were folded into tasks, in case a saved session still has them.
+  s.tasks = (s.tasks || []).filter(t => {
+    if (typeof t.id !== 'string' || t.id.indexOf('t-mig-') !== 0) { return true; }
+    const ledBy = Object.keys(t.raci || {})[0] || '';
+    s.meetings.push({ id: 'mt' + (meetingSeq++), scheduledBy: '', ledBy, external: false });
+    return false;
+  });
+  s.meetings.forEach(normalizeMeeting);
+  s.tasks.forEach(normalizeTask);
+  if (!Array.isArray(s.changelog)) { s.changelog = []; }
+}
+function normalizeData(d) {
+  // ensure the external Customer participant exists even in older saved data
+  d.jobTitles = d.jobTitles || [];
+  if (!d.jobTitles.some(r => r.id === 'customer')) {
+    d.jobTitles.push({ id: 'customer', name: 'Customer', abbr: 'CUST', external: true, description: 'The customer / client stakeholders - included in the RACI wherever the engagement requires their input, approval or participation.' });
+  }
+  (d.methodologies || []).forEach(m => (m.phases || []).forEach(p => (p.subPhases || []).forEach(normalizeSubPhase)));
+  return d;
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { return normalizeData(JSON.parse(raw)); }
+  } catch (e) { /* fall through to defaults */ }
+  return normalizeData(deepClone(DEFAULT_DATA));
+}
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  catch (e) { toast('Could not save to browser storage'); }
+}
+function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (raw) { return JSON.parse(raw); }
+  } catch (e) { /* fall through to defaults */ }
+  return { showJargon: true };
+}
+function savePrefs() {
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify({ showJargon: state.showJargon })); }
+  catch (e) { /* ignore */ }
+}
+
+/* ---------------- Lookups ---------------- */
+function curMeth() { return data.methodologies.find(m => m.id === state.methodologyId); }
+function jobTitleById(id) { return data.jobTitles.find(r => r.id === id); }
+function firstContentSubPhase(meth) {
+  for (const p of meth.phases) {
+    for (const s of p.subPhases) { if (hasContent(s)) { return s.id; } }
+  }
+  return meth.phases[0].subPhases[0].id;
+}
+function hasContent(sp) { return !!(sp.overview || sp.objective || (sp.tasks && sp.tasks.length)); }
+function findSubPhase(id) {
+  for (const m of data.methodologies) {
+    for (let pi = 0; pi < m.phases.length; pi++) {
+      const p = m.phases[pi];
+      const s = p.subPhases.find(x => x.id === id);
+      if (s) { return { meth: m, phase: p, phaseIndex: pi, sp: s }; }
+    }
+  }
+  return null;
+}
+function derivedParticipants(sp) {
+  const ids = [];
+  (sp.tasks || []).forEach(t => {
+    Object.keys(t.raci || {}).forEach(rid => { if (!ids.includes(rid)) { ids.push(rid); } });
+  });
+  return sortJobTitleIds(ids).map(jobTitleById).filter(Boolean);
+}
+function daysAgo(dateStr) {
+  const d = (Date.parse(TODAY) - Date.parse(dateStr)) / 86400000;
+  return Math.round(d);
+}
+
+/* ---------------- Change tracking - auto-detected, per-entry, read/unread ---------------- */
+function unreadEntries(sp) { return (sp.changelog || []).filter(c => !c.read); }
+function hasUnread(sp) { return unreadEntries(sp).length > 0; }
+function unreadCount(sp) { return unreadEntries(sp).length; }
+function anyUnread() { return data.methodologies.some(m => m.phases.some(p => p.subPhases.some(hasUnread))); }
+function markRead(sp) {
+  const entries = unreadEntries(sp);
+  if (!entries.length) { return []; }
+  entries.forEach(c => { c.read = true; });
+  save();
+  return entries;
+}
+function truncateText(s, n) {
+  s = String(s);
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+function diffListField(before, after, label) {
+  const out = [];
+  (after || []).filter(x => !(before || []).includes(x)).forEach(x => out.push(`${label} added: “${truncateText(x, 60)}”`));
+  (before || []).filter(x => !(after || []).includes(x)).forEach(x => out.push(`${label} removed: “${truncateText(x, 60)}”`));
+  return out;
+}
+function diffRaci(before, after, taskLabel) {
+  before = before || {}; after = after || {};
+  const ids = new Set([...Object.keys(before), ...Object.keys(after)]);
+  const out = [];
+  ids.forEach(id => {
+    const b = (before[id] || []).join('');
+    const a = (after[id] || []).join('');
+    if (b === a) { return; }
+    const jt = jobTitleById(id);
+    const abbr = jt ? jt.abbr : id;
+    if (!b) { out.push(`RACI added on “${taskLabel}”: ${abbr} (${a})`); }
+    else if (!a) { out.push(`RACI removed on “${taskLabel}”: ${abbr}`); }
+    else { out.push(`RACI changed on “${taskLabel}”: ${abbr} ${b} → ${a}`); }
+  });
+  return out;
+}
+function loeEntrySame(a, b) {
+  a = a || {}; b = b || {};
+  return (a.text || '') === (b.text || '') && !!a.billable === !!b.billable && !!a.optional === !!b.optional;
+}
+function diffLoe(before, after) {
+  before = normalizeLoe(before); after = normalizeLoe(after);
+  const out = [];
+  if (before.mode !== after.mode) {
+    out.push(after.mode === 'all' ? 'Level of effort set to one value for all participants' : 'Level of effort broken out per role');
+  }
+  if (after.mode === 'all') {
+    if (!loeEntrySame(before.all, after.all)) { out.push('Level of effort updated (all participants)'); }
+  } else {
+    const ids = new Set([...Object.keys(before.roles), ...Object.keys(after.roles)]);
+    ids.forEach(id => {
+      if (loeEntrySame(before.roles[id], after.roles[id])) { return; }
+      const jt = jobTitleById(id);
+      out.push(`Level of effort updated for ${jt ? jt.abbr : id}`);
+    });
+  }
+  return out;
+}
+function meetingLabel(m) {
+  if (m.name) { return m.name; }
+  const parts = [];
+  const sb = m.scheduledBy && jobTitleById(m.scheduledBy);
+  const lb = m.ledBy && jobTitleById(m.ledBy);
+  if (sb) { parts.push('scheduled by ' + sb.abbr); }
+  if (lb) { parts.push('led by ' + lb.abbr); }
+  return parts.length ? parts.join(', ') : 'meeting';
+}
+function meetingSame(a, b) {
+  return a.name === b.name && a.scheduledBy === b.scheduledBy && a.ledBy === b.ledBy && !!a.external === !!b.external;
+}
+function diffMeetings(before, after) {
+  const changes = [];
+  const beforeMeetings = new Map((before || []).map(m => [m.id, m]));
+  const afterMeetings = new Map((after || []).map(m => [m.id, m]));
+  afterMeetings.forEach((m, id) => {
+    if (!beforeMeetings.has(id)) { changes.push(`Meeting added: “${meetingLabel(m)}”`); return; }
+    const bm = beforeMeetings.get(id);
+    if (!meetingSame(bm, m)) { changes.push(`Meeting edited: “${meetingLabel(m)}”`); }
+  });
+  beforeMeetings.forEach((m, id) => {
+    if (!afterMeetings.has(id)) { changes.push(`Meeting removed: “${meetingLabel(m)}”`); }
+  });
+  return changes;
+}
+function describeChanges(before, after) {
+  const changes = [];
+  if (before.name !== after.name) { changes.push(`Renamed to “${after.name}”`); }
+  if (before.overview !== after.overview) { changes.push('Overview edited'); }
+  if (before.objective !== after.objective) { changes.push('Objective edited'); }
+  changes.push(...diffLoe(before.levelOfEffort, after.levelOfEffort));
+  changes.push(...diffMeetings(before.meetings, after.meetings));
+  changes.push(...diffListField(before.inputs, after.inputs, 'Input'));
+  changes.push(...diffListField(before.deliverables, after.deliverables, 'Deliverable'));
+  changes.push(...diffListField(before.comments, after.comments, 'Comment'));
+
+  const beforeTasks = new Map((before.tasks || []).map(t => [t.id, t]));
+  const afterTasks = new Map((after.tasks || []).map(t => [t.id, t]));
+  afterTasks.forEach((t, id) => {
+    const label = truncateText(t.text, 50);
+    if (!beforeTasks.has(id)) { changes.push(`Task added: “${label}”`); return; }
+    const bt = beforeTasks.get(id);
+    if (bt.text !== t.text) { changes.push(`Task edited: “${label}”`); }
+    if (JSON.stringify(bt.jobAids || []) !== JSON.stringify(t.jobAids || [])) { changes.push(`Job aids updated on “${label}”`); }
+    changes.push(...diffRaci(bt.raci, t.raci, label));
+  });
+  beforeTasks.forEach((t, id) => {
+    if (!afterTasks.has(id)) { changes.push(`Task removed: “${truncateText(t.text, 50)}”`); }
+  });
+  return changes;
+}
+
+/* ---------------- Render root ---------------- */
+const main = document.getElementById('main');
+let rgActivePhases = null;   // Set of phase names shown in the RACI grid
+let rgFocusJob = null;       // job-title id the RACI grid is focused on
+let raciMode = 'grid';       // 'grid' | 'byrole' - how the RACI view presents itself
+
+function render() {
+  document.getElementById('app').classList.toggle('editing', state.editMode);
+  updatePageHeader();
+  renderMain();
+}
+const PENCIL_SVG = '<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+function pageTitleFor(view) {
+  if (view === 'raci') { return { title: 'Who does what', sub: `Every task and every job title in ${curMeth().name}. Focus a column to see one role across the whole engagement, or open a task row for its full context.` }; }
+  if (view === 'new') { return { title: "What's New", sub: 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.' }; }
+  if (view === 'search') { return { title: 'Search', sub: `Results for “${esc(state.search.trim())}” across every methodology.` }; }
+  if (view === 'ref') { return { title: 'Reference', sub: 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.' }; }
+  return { title: 'The Delivery Journey', sub: 'Follow the engagement phase by phase. Select a sub-phase to read it in full.' };
+}
+function updatePageHeader() {
+  // "What's New" only earns a tab when there's actually something new - an always-visible tab
+  // that's usually empty just becomes chrome nobody looks at.
+  const showNewTab = anyUnread();
+  document.getElementById('newTab').style.display = showNewTab ? '' : 'none';
+  if (!showNewTab && state.view === 'new') { state.view = 'browse'; }
+  const v = state.view === 'search' ? null : state.view;
+  document.querySelectorAll('.vtab').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  const t = pageTitleFor(state.view);
+  document.getElementById('pgTitle').textContent = t.title;
+  document.getElementById('pgSub').textContent = t.sub;
+  const ms = document.getElementById('methSwitch');
+  const showMeth = (state.view === 'browse' || state.view === 'raci');
+  ms.style.display = showMeth ? '' : 'none';
+  if (showMeth) {
+    ms.innerHTML = data.methodologies.map(mm => `<button class="meth-tab ${mm.id === state.methodologyId ? 'active' : ''}" data-meth="${mm.id}">${esc(mm.name)}</button>`).join('');
+    ms.querySelectorAll('[data-meth]').forEach(b => { b.onclick = () => { if (state.editMode) { toast('Finish editing first'); return; } switchMethodology(b.dataset.meth); }; });
+  }
+  // Explain terms (top-row utility) shown only where jargon renders: Journey + Reference.
+  const showJargon = (state.view === 'browse' || state.view === 'ref');
+  document.getElementById('jargonWrap').style.display = showJargon ? '' : 'none';
+  document.getElementById('pagehdrControls').style.display = showMeth ? '' : 'none';
+  document.getElementById('jargonToggle').checked = state.showJargon;
+}
+
+/* ---------------- Journey chrome (methodology switch + roadmap + filmstrip) ---------------- */
+function phaseIndexOfSub(subId) {
+  const m = curMeth();
+  for (let i = 0; i < m.phases.length; i++) {
+    if (m.phases[i].subPhases.some(s => s.id === subId)) { return i; }
+  }
+  return 0;
+}
+function firstSubOfPhase(p) {
+  const written = p.subPhases.find(s => hasContent(s));
+  return (written || p.subPhases[0]).id;
+}
+function phaseHasUnread(p) {
+  return p.subPhases.some(s => hasUnread(s));
+}
+const SUBPHASE_ICONS = {
+  exchange: '<path d="M17 3l4 4-4 4"/><path d="M21 7H8"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h13"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h13l-2.5 4L18 12H5"/>',
+  users: '<circle cx="8.5" cy="8" r="3"/><path d="M2.5 20a6 6 0 0 1 12 0"/><circle cx="17" cy="8.5" r="2.3"/><path d="M15 20a5 5 0 0 1 7-4.5"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+  code: '<path d="M8 9l-4 3 4 3"/><path d="M16 9l4 3-4 3"/><path d="M13 7l-2 10"/>',
+  shield: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+  clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h6"/>',
+  cloud: '<path d="M7 18a4 4 0 0 1-1-7.9 5 5 0 0 1 9.6-1.7A4.5 4.5 0 0 1 17 18H7z"/><path d="M12 17v-6M9.5 13.5L12 11l2.5 2.5"/>',
+  check: '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 5-5"/>',
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>'
+};
+function subPhaseIconKey(name) {
+  const n = name.toLowerCase();
+  if (/ipkt|pre-kickoff|touchpoint/.test(n)) { return 'exchange'; }
+  if (/kickoff/.test(n)) { return 'flag'; }
+  if (/team/.test(n)) { return 'users'; }
+  if (/workshop|check-in/.test(n)) { return 'calendar'; }
+  if (/build/.test(n)) { return 'code'; }
+  if (/uat|validation|readiness|signoff/.test(n)) { return 'shield'; }
+  if (/sprint|planning|scope|refinement/.test(n)) { return 'clipboard'; }
+  if (/deploy|go live|hypercare|preparedness/.test(n)) { return 'cloud'; }
+  if (/retrospective|closure|lesson/.test(n)) { return 'check'; }
+  return 'doc';
+}
+function journeyChromeHtml() {
+  const m = curMeth();
+  const pi = phaseIndexOfSub(state.subPhaseId);
+  const ps = m.phases;
+  const activeColor = PHASE_COLORS[pi % PHASE_COLORS.length];
+  let h = '<div class="journey-chrome">';
+
+  h += `<div class="road" style="--stations:${ps.length};--active:${pi}">`;
+  h += ps.map((p, i) => {
+    const cls = [i < pi ? 'done' : '', i === pi ? 'on' : ''].join(' ');
+    const nc = PHASE_COLORS[i % PHASE_COLORS.length];
+    return `<button class="station ${cls}" data-phase-i="${i}" style="--nc:${nc}"><span class="n">${i + 1}${phaseHasUnread(p) ? '<span class="udot" title="Unread changes in this phase"></span>' : ''}</span><span class="nm">${esc(p.name)}</span><span class="ct">${p.subPhases.length} sub-phase${p.subPhases.length > 1 ? 's' : ''}</span></button>`;
+  }).join('') + '</div>';
+
+  const phase = ps[pi];
+  h += `<p class="strip-label">${esc(phase.name)} - sub-phases</p><div class="film">`;
+  h += phase.subPhases.map(s => {
+    const on = s.id === state.subPhaseId;
+    const unread = unreadCount(s);
+    const iconPaths = SUBPHASE_ICONS[subPhaseIconKey(s.name)];
+    let inner = `<div class="fhead"><span class="ficon"><svg viewBox="0 0 24 24">${iconPaths}</svg></span></div><span class="fsid">Sub-phase ${esc(s.sid)}</span><div class="fnm">${esc(s.name)}</div>${(hasContent(s) && unread) ? `<div class="rbadge">● ${unread} new change${unread > 1 ? 's' : ''}</div>` : ''}`;
+    if (!hasContent(s)) { inner += '<div class="fmeta">Not yet written</div>'; }
+    return `<button class="fcard ${on ? 'on' : ''} ${hasContent(s) ? '' : 'stub'}" data-sub="${s.id}" style="--pc:${activeColor}">${inner}</button>`;
+  }).join('') + '</div>';
+  return h + '</div>';
+}
+function wireJourneyChrome() {
+  main.querySelectorAll('[data-phase-i]').forEach(b => b.onclick = () => {
+    if (state.editMode) { return; }
+    openSubPhase(firstSubOfPhase(curMeth().phases[+b.dataset.phaseI]));
+  });
+  main.querySelectorAll('.fcard[data-sub]').forEach(b => b.onclick = () => openSubPhase(b.dataset.sub));
+}
+function wireMethSwitch() {
+  main.querySelectorAll('[data-meth]').forEach(b => b.onclick = () => switchMethodology(b.dataset.meth));
+}
+
+function switchMethodology(id) {
+  if (state.editMode) { return; }
+  state.methodologyId = id;
+  state.subPhaseId = firstContentSubPhase(curMeth());
+  rgActivePhases = null;
+  rgFocusJob = null;
+  const loc = findSubPhase(state.subPhaseId);
+  state.justRead = loc ? markRead(loc.sp) : [];
+  render();
+}
+function openSubPhase(id) {
+  if (state.editMode) { return; }
+  state.subPhaseId = id;
+  state.view = 'browse';
+  const loc = findSubPhase(id);
+  state.justRead = loc ? markRead(loc.sp) : [];
+  render();
+}
+
+/* ---------------- Main dispatcher ---------------- */
+function renderMain() {
+  if (state.view === 'raci') { return renderRaci(); }
+  if (state.view === 'new') { return renderWhatsNew(); }
+  if (state.view === 'ref') { return renderReference(); }
+  if (state.view === 'search') { return renderSearch(); }
+  return renderBrowse();
+}
+
+/* ---------------- Browse (Journey + sub-phase detail) ---------------- */
+function renderBrowse() {
+  const loc = findSubPhase(state.subPhaseId);
+  if (!loc) { main.innerHTML = '<p class="empty">Nothing selected.</p>'; return; }
+  const { phase, phaseIndex, sp } = loc;
+  const color = PHASE_COLORS[phaseIndex % PHASE_COLORS.length];
+
+  let html = journeyChromeHtml();
+
+  if (state.editMode) {
+    html += editPanelHtml(loc, color);
+    main.innerHTML = html;
+    wireJourneyChrome();
+    wireEditHandlers(sp);
+    return;
+  }
+
+  const parts = derivedParticipants(sp);
+  const unread = unreadCount(sp);
+  html += `<div class="panel" style="--c:${color}">`;
+  html += `<div class="sp-header"><div>
+    <div class="pcrumb">${esc(phase.name)} › ${esc(sp.sid)}</div>
+    <h1 class="sp-title">${esc(sp.name)}${unread ? `<span class="prec">● ${unread} new change${unread > 1 ? 's' : ''}</span>` : ''}</h1>
+  </div><button class="edit-pencil" data-edit-sp title="Edit this sub-phase">${PENCIL_SVG}</button></div>`;
+
+  if (!hasContent(sp)) {
+    html += `<p class="obj" style="color:var(--ink-faint)">This sub-phase hasn’t been written yet. Use the <b>edit ✎</b> button above to add its overview, tasks and deliverables.</p></div>`;
+    main.innerHTML = html;
+    wireJourneyChrome();
+    main.querySelector('[data-edit-sp]').onclick = () => enterEdit();
+    return;
+  }
+
+  const shownChanges = (state.justRead || []).filter(c => sp.changelog && sp.changelog.includes(c));
+  if (shownChanges.length) {
+    html += `<div class="pchange"><div><b>What changed</b> - you're seeing this because it's new since your last visit:<ul class="pchange-list">${shownChanges.map(c => `<li>${esc(c.text)} <span class="pchange-ts">· ${esc(fmtDate(c.ts))}</span></li>`).join('')}</ul></div></div>`;
+  }
+
+  if (sp.overview) { html += `<h4 class="sec">Overview</h4><p class="lede">${withJargon(esc(sp.overview))}</p>`; }
+  if (sp.objective) { html += `<h4 class="sec">Objective</h4><p class="obj">${withJargon(esc(sp.objective))}</p>`; }
+
+  // Comments - directly below objective
+  if (sp.comments && sp.comments.length) {
+    html += `<div class="setup-block"><span class="mk">Comments</span><div class="notes"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><ul>${sp.comments.map((c, i) => `<li data-el="comment:${i}">${withJargon(esc(c))}</li>`).join('')}</ul></div></div>`;
+  }
+
+
+  if (parts.length) {
+    html += `<div class="plegend"><span class="plabel">Participants</span>${parts.map(jobTitleChipHtml).join('')}</div>`;
+  }
+
+  // Level of Effort - below participants, above inputs
+  const loeHtml = loeReadHtml(sp);
+  if (loeHtml) {
+    html += `<div class="setup-block"><span class="mk">Level of Effort</span>${loeHtml}</div>`;
+  }
+
+  // Meetings - logistics/setup, so it sits with LOE/comments rather than in the work flow
+  const meetingsHtml = meetingsReadHtml(sp);
+  if (meetingsHtml) {
+    html += `<div class="setup-block"><span class="mk">Meetings</span>${meetingsHtml}</div>`;
+  }
+
+  // Connected flow: what you need → the work → what you deliver
+  html += '<div class="pipe">';
+  html += `<div class="pstep"><div class="pnum">1</div><div class="pshead"><h5>What you need <span class="muted">- Inputs</span></h5></div><p class="ordhint">In the order they’re used</p>${flowListHtml(sp.inputs, 'input')}</div>`;
+  html += `<div class="pstep"><div class="pnum">2</div><div class="pshead"><h5>The work <span class="muted">- Tasks (who does what)</span></h5></div>${taskTableHtml(sp, parts)}</div>`;
+  html += `<div class="pstep"><div class="pnum">3</div><div class="pshead"><h5>What you deliver <span class="muted">- Deliverables</span></h5></div><p class="ordhint">In the order they’re delivered</p>${flowListHtml(sp.deliverables, 'deliverable')}</div>`;
+  html += '</div>';
+
+  html += '</div>'; // close .panel
+  main.innerHTML = html;
+  wireJourneyChrome();
+  wireTooltips();
+  const ep = main.querySelector('[data-edit-sp]');
+  if (ep) { ep.onclick = () => enterEdit(); }
+}
+
+function flowListHtml(arr, kind) {
+  if (!arr || !arr.length) { return '<ul class="flowlist"><li class="none">None yet</li></ul>'; }
+  return '<ul class="flowlist">' + arr.map((x, i) => `<li data-el="${kind}:${i}">${withJargon(esc(x))}</li>`).join('') + '</ul>';
+}
+
+const LINK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+const CALENDAR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>';
+const CHEVUP_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
+const CHEVDOWN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+const TRASH_SVG = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6"/><path d="M10 11v6M14 11v6"/></svg>';
+function taskTableHtml(sp, parts) {
+  if (!sp.tasks.length) { return '<p style="color:var(--ink-faint);font-size:14px">No tasks yet.</p>'; }
+  let h = '<div class="ttbl-wrap"><table class="ttbl"><thead><tr><th class="tname">Task</th>';
+  parts.forEach(r => {
+    h += `<th class="pcol${r.external ? ' ext' : ''}" style="--c:${jobTitleColor(r.id)}" data-tip-name="${esc(r.name)}" data-tip="${esc(r.description)}">${r.external ? '◇ ' : ''}${esc(r.abbr)}</th>`;
+  });
+  h += '</tr></thead><tbody>';
+  sp.tasks.forEach(t => {
+    let name = withJargon(esc(t.text));
+    (t.jobAids || []).forEach(j => {
+      if (!j.url) { return; }
+      const scope = (j.roles && j.roles.length)
+        ? sortJobTitleIds(j.roles).map(rid => { const r = jobTitleById(rid); return r ? `<span class="ja-scope" style="--c:${jobTitleColor(rid)}">${r.external ? '◇ ' : ''}${esc(r.abbr)}</span>` : ''; }).join('')
+        : '';
+      name += `<div class="ja" data-el="jobaid:${j.id}"><a class="jobaid" href="${esc(j.url)}" target="_blank" rel="noopener">↗ Job Aid</a>${scope}</div>`;
+    });
+    h += `<tr data-el="task:${t.id}"><td class="tname">${name}</td>`;
+    parts.forEach(r => {
+      const letters = (t.raci || {})[r.id];
+      if (letters && letters.length) {
+        const tip = letters.map(l => RACI_NAMES[l]).join(' / ');
+        h += `<td class="cell" data-tip-name="${esc(r.abbr)}" data-tip="${esc(tip)}">${letters.map(l => `<span class="rl-${l}">${l}</span>`).join('')}</td>`;
+      } else {
+        h += '<td class="cell off">·</td>';
+      }
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+  h += '<div class="rlegend">' + RACI_LETTERS.map(l => `<span class="lg"><span class="sw" style="background:${RACI_HEX[l]}">${l}</span>${RACI_NAMES[l]}</span>`).join('') + '</div>';
+  return h;
+}
+
+function jobTitleChipHtml(r) {
+  const cls = r.external ? 'rolechip ext' : 'rolechip';
+  const label = r.external ? '◇ ' + esc(r.abbr) : esc(r.abbr);
+  return `<span class="${cls}" style="--c:${jobTitleColor(r.id)}" data-tip-name="${esc(r.name)}" data-tip="${esc(r.description)}">${label}</span>`;
+}
+function loeTagsHtml(v) {
+  let t = '';
+  if (v && v.billable) { t += '<span class="loe-pill bill">Billable</span>'; }
+  if (v && v.optional) { t += '<span class="loe-pill opt">Optional</span>'; }
+  return t;
+}
+function loeReadHtml(sp) {
+  const loe = sp.levelOfEffort || { mode: 'all', all: {}, roles: {} };
+  if (loe.mode === 'all') {
+    const v = loe.all || {};
+    if (!v.text && !v.billable && !v.optional) { return ''; }
+    return `<div class="loe-all"><span class="lr">All participants</span><span class="eff${v.text ? '' : ' none'}">${v.text ? esc(v.text) : '-'}</span><span class="tags">${loeTagsHtml(v)}</span></div>`;
+  }
+  // per-role: roles are explicitly selected (edit mode's "+ Add role"), not derived from task RACI -
+  // only show ones that actually have an effort entered.
+  const withLoe = sortJobTitleIds(Object.keys(loe.roles || {})).map(jobTitleById).filter(Boolean)
+    .filter(r => { const v = (loe.roles || {})[r.id]; return v && v.text; });
+  if (!withLoe.length) { return ''; }
+  return '<div class="loe2">' + withLoe.map(r => {
+    const v = loe.roles[r.id];
+    return `<div class="row">
+      <span class="lr" style="--c:${jobTitleColor(r.id)}">${esc(r.abbr)}</span>
+      <span class="eff">${esc(v.text)}</span>
+      <span class="tags">${loeTagsHtml(v)}</span>
+    </div>`;
+  }).join('') + '</div>';
+}
+function meetingsReadHtml(sp) {
+  const meetings = sp.meetings || [];
+  if (!meetings.length) { return ''; }
+  return '<div class="mtg-list">' + meetings.map(m => {
+    const scheduledBy = m.scheduledBy ? jobTitleById(m.scheduledBy) : null;
+    const ledBy = m.ledBy ? jobTitleById(m.ledBy) : null;
+    const metaBits = [];
+    if (scheduledBy) { metaBits.push(`Scheduled by <b>${esc(scheduledBy.abbr)}</b>`); }
+    if (ledBy) { metaBits.push(`Led by <b>${esc(ledBy.abbr)}</b>`); }
+    return `<div class="mtg-card" data-el="meeting:${m.id}">
+      <div class="mtg-head"><span class="mtg-ic">${CALENDAR_SVG}</span><span class="mtg-name">${withJargon(esc(m.name || 'Untitled meeting'))}</span>${m.external ? '<span class="mtg-badge">Customer-facing</span>' : ''}</div>
+      ${metaBits.length ? `<div class="mtg-meta">${metaBits.join(' · ')}</div>` : ''}
+    </div>`;
+  }).join('') + '</div>';
+}
+// Two-tier control, not a flat 3-way pick: a participant is first Mandatory or Optional; only a
+// Mandatory participant has a meaningful Billable/Non-billable distinction (an optional
+// participant's time is moot either way), so that second toggle is dimmed and inert - not
+// hidden, so the row's width stays consistent whichever state it's in - whenever Optional is on.
+function loeFlagHtml(key, v) {
+  const isOptional = !!v.optional;
+  const isBillable = !!v.billable;
+  const btn = (val, label, on) => `<button type="button" class="loe-flag-btn${on ? ' on' : ''}" data-loe-flag-key="${key}" data-loe-flag-val="${val}">${label}</button>`;
+  return `<div class="loe-flag-group">
+    <div class="loe-flag">${btn('mandatory', 'Mandatory', !isOptional)}${btn('optional', 'Optional', isOptional)}</div>
+    <div class="loe-flag${isOptional ? ' disabled' : ''}">${btn('nonbillable', 'Non-billable', !isBillable)}${btn('billable', 'Billable', isBillable)}</div>
+  </div>`;
+}
+function loeEditRowHtml(key, label, v, opts) {
+  opts = opts || {};
+  v = v || {};
+  return `<div class="loe-edit-row">
+    <span class="loe-abbr"${opts.wide ? ' style="width:auto"' : ''}>${esc(label)}</span>
+    <input class="edit-in" data-loe-key="${key}" data-loe-field="text" value="${esc(v.text || '')}" placeholder="e.g. 2 hours" />
+    ${loeFlagHtml(key, v)}
+    ${opts.removable ? `<button class="x-btn" data-loe-role-del="${opts.roleId}" title="Remove role" aria-label="Remove role">×</button>` : ''}
+  </div>`;
+}
+function loeEditHtml(sp) {
+  const loe = sp.levelOfEffort || (sp.levelOfEffort = { mode: 'all', all: { text: '', billable: false, optional: false }, roles: {} });
+  let h = `<div class="loe-mode">
+    <button class="loe-mode-btn ${loe.mode === 'all' ? 'on' : ''}" data-loe-mode="all" type="button">Same for all</button>
+    <button class="loe-mode-btn ${loe.mode === 'byRole' ? 'on' : ''}" data-loe-mode="byRole" type="button">Per role</button>
+  </div>`;
+  if (loe.mode === 'all') {
+    h += loeEditRowHtml('all', 'All participants', loe.all, { wide: true });
+    return h;
+  }
+  if (!loe.roles) { loe.roles = {}; }
+  const roleIds = sortJobTitleIds(Object.keys(loe.roles));
+  if (!roleIds.length) {
+    h += '<p style="font-size:13px;color:var(--ink-faint);margin:0 0 10px">No roles added yet - add one below.</p>';
+  } else {
+    h += roleIds.map(rid => {
+      const r = jobTitleById(rid);
+      return r ? loeEditRowHtml('role:' + rid, r.abbr, loe.roles[rid], { removable: true, roleId: rid }) : '';
+    }).join('');
+  }
+  const avail = data.jobTitles.filter(r => !r.external && !loe.roles[r.id]);
+  if (avail.length) {
+    h += `<div class="add-jt-row"><select class="edit-in" data-add-loe-role><option value="">+ Add role…</option>${avail.map(r => `<option value="${r.id}">${esc(r.abbr)} - ${esc(r.name)}</option>`).join('')}</select></div>`;
+  }
+  return h;
+}
+/* ---------------- Browse EDIT ---------------- */
+function editPanelHtml(loc, color) {
+  const { phase, sp } = loc;
+  let html = '';
+  html += `<div class="edit-bar">
+    <span class="flag">● Editing</span>
+    <span style="font-size:13px;color:var(--ink-2)">${esc(phase.name)} · ${esc(sp.sid)} ${esc(sp.name)}</span>
+    <span class="spacer"></span>
+    <button class="btn" id="editCancel">Cancel</button>
+    <button class="btn primary" id="editSave">Save changes</button>
+  </div>`;
+
+  html += `<div class="pcrumb">${esc(phase.name)} › ${esc(sp.sid)}</div>`;
+  html += `<input class="edit-in title-in" id="f-name" value="${esc(sp.name)}" />`;
+  html += '<div style="height:18px"></div>';
+
+  html += `<p class="mk" style="font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--hs-mint);margin:0 0 6px">Overview</p><textarea class="edit-in" id="f-overview" rows="4">${esc(sp.overview)}</textarea>`;
+  html += `<h4 class="sec">Objective</h4><textarea class="edit-in" id="f-objective" rows="4">${esc(sp.objective)}</textarea>`;
+
+  html += '<div class="metagrid" style="grid-template-columns:1fr">';
+  html += `<div class="metacard"><span class="mk">Level of Effort</span><div id="edit-loe">${loeEditHtml(sp)}</div><p class="edit-hint">Same for all participants, or add roles one at a time for a per-role breakdown.</p></div>`;
+  html += `<div class="metacard"><span class="mk">Comments</span><div id="edit-comments">${listEditHtml(sp.comments, 'comment')}</div><button class="add-item-btn tight" data-add="comment">+ Add comment</button></div>`;
+  html += `<div class="metacard"><span class="mk">Participants</span><p style="font-size:13px;color:var(--ink-faint);margin:0">Auto-derived from task RACI below - nothing to edit here.</p></div>`;
+  html += '</div>';
+
+  html += `<div class="sechead" style="margin-top:24px"><h4 class="sec">Meetings</h4></div><div id="edit-meetings">`;
+  sp.meetings.forEach((m, mi) => { html += meetingEditHtml(m, mi, sp.meetings.length); });
+  html += `</div><button class="add-item-btn tight" data-add="meeting">+ Add meeting</button>`;
+
+  html += `<div class="sechead" style="margin-top:24px"><h4 class="sec">Inputs</h4></div><div id="edit-inputs">${listEditHtml(sp.inputs, 'input')}</div><button class="add-item-btn tight" data-add="input">+ Add input</button>`;
+
+  html += `<div class="sechead" style="margin-top:24px"><h4 class="sec">Tasks</h4></div><div id="edit-tasks">`;
+  sp.tasks.forEach((t, ti) => { html += taskEditHtml(t, ti, sp.tasks.length); });
+  html += `</div><button class="add-item-btn" data-add="task">+ Add task</button>`;
+
+  html += `<div class="sechead" style="margin-top:24px"><h4 class="sec">Deliverables</h4></div><div id="edit-deliverables">${listEditHtml(sp.deliverables, 'deliverable')}</div><button class="add-item-btn tight" data-add="deliverable">+ Add deliverable</button>`;
+
+  return html;
+}
+
+function listEditHtml(arr, kind) {
+  return arr.map((v, i) => `<div class="list-edit-row">
+    <textarea class="edit-in" data-list="${kind}" data-idx="${i}" rows="2">${esc(v)}</textarea>
+    <div class="row-reorder">
+      <button class="reorder-btn" data-move="${kind}:${i}:up" ${i === 0 ? 'disabled' : ''} title="Move up" aria-label="Move up">${CHEVUP_SVG}</button>
+      <button class="reorder-btn" data-move="${kind}:${i}:down" ${i === arr.length - 1 ? 'disabled' : ''} title="Move down" aria-label="Move down">${CHEVDOWN_SVG}</button>
+    </div>
+    <button class="field-x" data-del-list="${kind}" data-idx="${i}" title="Remove" aria-label="Remove">×</button>
+  </div>`).join('');
+}
+
+function taskEditHtml(t, ti, n) {
+  let h = `<div class="task" data-task-idx="${ti}">`;
+  h += `<div class="te-head"><span class="te-num">${ti + 1}</span><span class="te-tools">`
+    + `<button class="reorder-btn" data-move="task:${ti}:up" ${ti === 0 ? 'disabled' : ''} title="Move up" aria-label="Move task up">${CHEVUP_SVG}</button>`
+    + `<button class="reorder-btn" data-move="task:${ti}:down" ${ti === n - 1 ? 'disabled' : ''} title="Move down" aria-label="Move task down">${CHEVDOWN_SVG}</button>`
+    + `<button class="x-btn" data-del-task="${ti}" title="Delete task" aria-label="Delete task">×</button>`
+    + `</span></div>`;
+  h += `<textarea class="edit-in te-text" data-task-field="text" data-idx="${ti}" rows="2" placeholder="Describe the task">${esc(t.text)}</textarea>`;
+  // RACI matrix
+  h += `<span class="raci-edit-lbl">Responsibility (RACI)</span>`;
+  h += '<div class="raci-matrix">';
+  sortJobTitleIds(Object.keys(t.raci || {})).forEach(rid => {
+    const r = jobTitleById(rid);
+    if (!r) { return; }
+    h += `<div class="raci-matrix-row">
+      <span class="rm-name"><span class="abbr">${esc(r.abbr)}</span>${esc(r.name)}</span>`;
+    RACI_LETTERS.forEach(l => {
+      const on = t.raci[rid].includes(l);
+      h += `<button class="raci-toggle ${on ? 'on t-' + l : ''}" data-raci-task="${ti}" data-raci-jt="${rid}" data-raci-letter="${l}">${l}</button>`;
+    });
+    h += `<button class="x-btn" data-raci-remove-task="${ti}" data-raci-remove-jt="${rid}" title="Remove job title" aria-label="Remove job title">×</button></div>`;
+  });
+  // add job title
+  const used = Object.keys(t.raci || {});
+  const avail = data.jobTitles.filter(r => !used.includes(r.id));
+  const coreMissing = CORE_TEAM.some(id => !used.includes(id));
+  if (avail.length) {
+    h += `<div class="add-jt-row"><select class="edit-in" data-add-jt-task="${ti}"><option value="">+ Add job title…</option>`;
+    if (coreMissing) { h += '<option value="__core__">+ Core technical team (EM, BPC, ARCH, TC)</option>'; }
+    avail.forEach(r => { h += `<option value="${r.id}">${esc(r.abbr)} - ${esc(r.name)}</option>`; });
+    h += '</select></div>';
+  }
+  h += '</div>';
+  // job aids
+  h += `<div class="ja-edit-wrap"><span class="ja-edit-lbl">${LINK_SVG}Job aids</span>`;
+  (t.jobAids || []).forEach((j, ji) => { h += jobAidEditHtml(t, ti, j, ji); });
+  h += `<button class="add-item-btn tight" data-ja-add="${ti}">+ Add job aid</button></div>`;
+  h += '</div>'; // .task
+  return h;
+}
+function jobAidEditHtml(t, ti, j, ji) {
+  const roleIds = sortJobTitleIds(Object.keys(t.raci || {}));
+  const roles = j.roles || [];
+  const chips = roleIds.map(rid => {
+    const r = jobTitleById(rid);
+    if (!r) { return ''; }
+    const on = !roles.length || roles.includes(rid);
+    return `<button class="ja-rolechip ${on ? 'on' : ''}" data-ja-role="${ti}:${ji}:${rid}" type="button">${r.external ? '◇ ' : ''}${esc(r.abbr)}</button>`;
+  }).join('');
+  return `<div class="ja-edit">
+    <div class="ja-edit-row">
+      <span class="link-ic">${LINK_SVG}</span>
+      <input class="edit-in" data-ja-idx="${ti}:${ji}" data-ja-field="url" value="${esc(j.url)}" placeholder="Job aid URL" style="flex:1" />
+      <button class="x-btn" data-ja-del="${ti}:${ji}" title="Remove job aid" aria-label="Remove job aid">×</button>
+    </div>
+    <div class="ja-roles"><span class="ja-roles-lbl">Applies to:</span>${chips}</div>
+  </div>`;
+}
+function meetingEditHtml(m, mi, n) {
+  const roleOptions = (selected) => data.jobTitles.filter(r => !r.external).map(r => `<option value="${r.id}" ${selected === r.id ? 'selected' : ''}>${esc(r.abbr)} - ${esc(r.name)}</option>`).join('');
+  let h = `<div class="task meeting" data-meeting-idx="${mi}">`;
+  h += `<div class="te-head"><span class="te-num">${mi + 1}</span><span class="te-tools">`
+    + `<button class="reorder-btn" data-move="meeting:${mi}:up" ${mi === 0 ? 'disabled' : ''} title="Move up" aria-label="Move meeting up">${CHEVUP_SVG}</button>`
+    + `<button class="reorder-btn" data-move="meeting:${mi}:down" ${mi === n - 1 ? 'disabled' : ''} title="Move down" aria-label="Move meeting down">${CHEVDOWN_SVG}</button>`
+    + `<button class="x-btn" data-del-meeting="${mi}" title="Delete meeting" aria-label="Delete meeting">×</button>`
+    + `</span></div>`;
+  h += `<input class="edit-in te-text" data-meeting-field="name" data-idx="${mi}" placeholder="Meeting name / purpose" value="${esc(m.name)}" />`;
+  h += `<div class="mtg-edit-row">
+    <select class="edit-in" data-meeting-scheduledby="${mi}">
+      <option value="">Scheduled by…</option>
+      ${roleOptions(m.scheduledBy)}
+    </select>
+    <select class="edit-in" data-meeting-ledby="${mi}">
+      <option value="">Led by…</option>
+      ${roleOptions(m.ledBy)}
+    </select>
+  </div>`;
+  h += `<div class="loe-mode" style="margin:10px 0 0">
+    <button class="loe-mode-btn ${!m.external ? 'on' : ''}" data-meeting-external="${mi}:false" type="button">Internal</button>
+    <button class="loe-mode-btn ${m.external ? 'on' : ''}" data-meeting-external="${mi}:true" type="button">Customer-facing</button>
+  </div>`;
+  h += '</div>'; // .meeting
+  return h;
+}
+
+function wireEditHandlers(sp) {
+  document.getElementById('editCancel').onclick = cancelEdit;
+  document.getElementById('editSave').onclick = saveEdit;
+
+  const bind = (id, field) => {
+    const el = document.getElementById(id);
+    if (el) { el.oninput = () => { sp[field] = el.value; save(); }; }
+  };
+  bind('f-name', 'name');
+  bind('f-overview', 'overview');
+  bind('f-objective', 'objective');
+
+  // reorder tasks / meetings / inputs / deliverables / comments (▲ / ▼)
+  const moveArrFor = kind => kind === 'task' ? sp.tasks
+    : kind === 'meeting' ? sp.meetings
+    : kind === 'input' ? sp.inputs
+    : kind === 'deliverable' ? sp.deliverables
+    : kind === 'comment' ? sp.comments : null;
+  main.querySelectorAll('[data-move]').forEach(b => {
+    b.onclick = () => {
+      const [kind, idxStr, dir] = b.dataset.move.split(':');
+      const arr = moveArrFor(kind);
+      if (!arr) { return; }
+      const i = +idxStr, j = dir === 'up' ? i - 1 : i + 1;
+      if (j < 0 || j >= arr.length) { return; }
+      const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      if (kind === 'task') { arr.forEach((t, k) => { t.order = k + 1; }); }
+      save(); reRenderEdit();
+    };
+  });
+
+  if (!sp.levelOfEffort) { sp.levelOfEffort = { mode: 'all', all: { text: '', billable: false, optional: false }, roles: {} }; }
+  const loeTarget = key => {
+    const loe = sp.levelOfEffort;
+    if (key === 'all') { if (!loe.all) { loe.all = { text: '', billable: false, optional: false }; } return loe.all; }
+    const rid = key.slice(5); // strip 'role:'
+    if (!loe.roles) { loe.roles = {}; }
+    if (!loe.roles[rid]) { loe.roles[rid] = defaultLoeEntry(rid); }
+    return loe.roles[rid];
+  };
+  main.querySelectorAll('[data-loe-mode]').forEach(b => {
+    b.onclick = () => {
+      const mode = b.dataset.loeMode;
+      sp.levelOfEffort.mode = mode;
+      // seed "Per role" with today's task participants the first time it's opened, so it's not
+      // empty - after that, roles are fully manual (add/remove below).
+      if (mode === 'byRole' && !Object.keys(sp.levelOfEffort.roles || {}).length) {
+        if (!sp.levelOfEffort.roles) { sp.levelOfEffort.roles = {}; }
+        derivedParticipants(sp).filter(r => !r.external).forEach(r => {
+          sp.levelOfEffort.roles[r.id] = defaultLoeEntry(r.id);
+        });
+      }
+      save(); reRenderEdit();
+    };
+  });
+  main.querySelectorAll('input[data-loe-key]').forEach(el => {
+    const apply = () => { loeTarget(el.dataset.loeKey)[el.dataset.loeField] = el.value; save(); };
+    el.oninput = apply;
+  });
+  main.querySelectorAll('[data-loe-flag-key]').forEach(b => {
+    b.onclick = () => {
+      const t = loeTarget(b.dataset.loeFlagKey);
+      const val = b.dataset.loeFlagVal;
+      if (val === 'optional') { t.optional = true; t.billable = false; } // billable is moot once optional
+      else if (val === 'mandatory') { t.optional = false; }
+      else if (val === 'billable' && !t.optional) { t.billable = true; }
+      else if (val === 'nonbillable' && !t.optional) { t.billable = false; }
+      save(); reRenderEdit();
+    };
+  });
+  main.querySelectorAll('[data-add-loe-role]').forEach(sel => {
+    sel.onchange = () => {
+      const rid = sel.value;
+      if (!rid) { return; }
+      if (!sp.levelOfEffort.roles) { sp.levelOfEffort.roles = {}; }
+      if (!sp.levelOfEffort.roles[rid]) { sp.levelOfEffort.roles[rid] = defaultLoeEntry(rid); }
+      save(); reRenderEdit();
+    };
+  });
+  main.querySelectorAll('[data-loe-role-del]').forEach(b => {
+    b.onclick = () => { delete sp.levelOfEffort.roles[b.dataset.loeRoleDel]; save(); reRenderEdit(); };
+  });
+
+  // list fields (inputs / deliverables / comments)
+  const listArr = kind => kind === 'input' ? sp.inputs : kind === 'deliverable' ? sp.deliverables : sp.comments;
+  main.querySelectorAll('[data-list]').forEach(el => {
+    el.oninput = () => {
+      const arr = listArr(el.dataset.list);
+      arr[+el.dataset.idx] = el.value; save();
+    };
+  });
+  main.querySelectorAll('[data-del-list]').forEach(b => {
+    b.onclick = () => {
+      const arr = listArr(b.dataset.delList);
+      arr.splice(+b.dataset.idx, 1); save(); reRenderEdit();
+    };
+  });
+  // add list item / task
+  main.querySelectorAll('[data-add]').forEach(b => {
+    b.onclick = () => {
+      if (b.dataset.add === 'input') { sp.inputs.push(''); }
+      else if (b.dataset.add === 'deliverable') { sp.deliverables.push(''); }
+      else if (b.dataset.add === 'comment') { sp.comments.push(''); }
+      else if (b.dataset.add === 'task') { sp.tasks.push({ id: 't' + Date.now(), order: sp.tasks.length + 1, text: '', jobAids: [], raci: {} }); }
+      else if (b.dataset.add === 'meeting') { sp.meetings.push(normalizeMeeting({})); }
+      save(); reRenderEdit();
+    };
+  });
+  // task fields
+  main.querySelectorAll('[data-task-field]').forEach(el => {
+    el.oninput = () => { sp.tasks[+el.dataset.idx][el.dataset.taskField] = el.value; save(); };
+  });
+  main.querySelectorAll('[data-del-task]').forEach(b => {
+    b.onclick = () => { sp.tasks.splice(+b.dataset.delTask, 1); save(); reRenderEdit(); };
+  });
+  // meetings
+  main.querySelectorAll('[data-meeting-field]').forEach(el => {
+    el.oninput = () => { sp.meetings[+el.dataset.idx][el.dataset.meetingField] = el.value; save(); };
+  });
+  main.querySelectorAll('[data-del-meeting]').forEach(b => {
+    b.onclick = () => { sp.meetings.splice(+b.dataset.delMeeting, 1); save(); reRenderEdit(); };
+  });
+  main.querySelectorAll('[data-meeting-scheduledby]').forEach(sel => {
+    sel.onchange = () => { sp.meetings[+sel.dataset.meetingScheduledby].scheduledBy = sel.value; save(); };
+  });
+  main.querySelectorAll('[data-meeting-ledby]').forEach(sel => {
+    sel.onchange = () => { sp.meetings[+sel.dataset.meetingLedby].ledBy = sel.value; save(); };
+  });
+  main.querySelectorAll('[data-meeting-external]').forEach(b => {
+    b.onclick = () => {
+      const [mi, val] = b.dataset.meetingExternal.split(':');
+      sp.meetings[+mi].external = (val === 'true');
+      save(); reRenderEdit();
+    };
+  });
+  // job aids
+  const jaAt = (ti, ji) => sp.tasks[+ti].jobAids[+ji];
+  main.querySelectorAll('[data-ja-field]').forEach(el => {
+    el.oninput = () => { const [ti, ji] = el.dataset.jaIdx.split(':'); jaAt(ti, ji)[el.dataset.jaField] = el.value; save(); };
+  });
+  main.querySelectorAll('[data-ja-add]').forEach(b => {
+    b.onclick = () => { const t = sp.tasks[+b.dataset.jaAdd]; if (!Array.isArray(t.jobAids)) { t.jobAids = []; } t.jobAids.push({ id: 'ja' + (jaSeq++), url: '', roles: [] }); save(); reRenderEdit(); };
+  });
+  main.querySelectorAll('[data-ja-del]').forEach(b => {
+    b.onclick = () => { const [ti, ji] = b.dataset.jaDel.split(':'); sp.tasks[+ti].jobAids.splice(+ji, 1); save(); reRenderEdit(); };
+  });
+  main.querySelectorAll('[data-ja-role]').forEach(b => {
+    b.onclick = () => {
+      const [ti, ji, rid] = b.dataset.jaRole.split(':');
+      const t = sp.tasks[+ti];
+      const roleIds = sortJobTitleIds(Object.keys(t.raci || {}));
+      const j = jaAt(ti, ji);
+      const arr = (j.roles && j.roles.length) ? j.roles.slice() : roleIds.slice();
+      const i = arr.indexOf(rid);
+      if (i >= 0) { arr.splice(i, 1); } else { arr.push(rid); }
+      j.roles = (roleIds.length && roleIds.every(r => arr.includes(r))) ? [] : arr;
+      save(); reRenderEdit();
+    };
+  });
+  // raci toggles
+  main.querySelectorAll('[data-raci-task]').forEach(b => {
+    b.onclick = () => {
+      const t = sp.tasks[+b.dataset.raciTask];
+      const rid = b.dataset.raciJt;
+      const l = b.dataset.raciLetter;
+      const arr = t.raci[rid] || (t.raci[rid] = []);
+      const i = arr.indexOf(l);
+      if (i >= 0) { arr.splice(i, 1); } else { arr.push(l); arr.sort((a, z) => RACI_LETTERS.indexOf(a) - RACI_LETTERS.indexOf(z)); }
+      save(); reRenderEdit();
+    };
+  });
+  main.querySelectorAll('[data-raci-remove-task]').forEach(b => {
+    b.onclick = () => { delete sp.tasks[+b.dataset.raciRemoveTask].raci[b.dataset.raciRemoveJt]; save(); reRenderEdit(); };
+  });
+  main.querySelectorAll('[data-add-jt-task]').forEach(sel => {
+    sel.onchange = () => {
+      if (!sel.value) { return; }
+      const raci = sp.tasks[+sel.dataset.addJtTask].raci;
+      if (sel.value === '__core__') {
+        CORE_TEAM.forEach(id => { if (!raci[id]) { raci[id] = []; } });
+      } else {
+        raci[sel.value] = [];
+      }
+      save(); reRenderEdit();
+    };
+  });
+}
+function reRenderEdit() {
+  renderBrowse();
+}
+
+function enterEdit() {
+  if (state.view !== 'browse') { state.view = 'browse'; }
+  const loc = findSubPhase(state.subPhaseId);
+  if (!loc) { return; }
+  state.editSnapshot = deepClone(loc.sp);
+  state.editMode = true;
+  render();
+}
+function cancelEdit() {
+  const loc = findSubPhase(state.subPhaseId);
+  if (loc && state.editSnapshot) {
+    Object.keys(loc.sp).forEach(k => delete loc.sp[k]);
+    Object.assign(loc.sp, state.editSnapshot);
+  }
+  state.editMode = false;
+  state.editSnapshot = null;
+  save();
+  render();
+  toast('Edit cancelled - changes reverted');
+}
+function collapseJobAidRoles(sp) {
+  (sp.tasks || []).forEach(t => {
+    const roleIds = sortJobTitleIds(Object.keys(t.raci || {}));
+    (t.jobAids || []).forEach(j => {
+      if (Array.isArray(j.roles) && j.roles.length && roleIds.length && roleIds.every(rid => j.roles.includes(rid))) {
+        j.roles = [];
+      }
+    });
+  });
+}
+function saveEdit() {
+  const loc = findSubPhase(state.subPhaseId);
+  collapseJobAidRoles(loc.sp);
+  const changeTexts = describeChanges(state.editSnapshot, loc.sp);
+  let newEntries = [];
+  if (changeTexts.length) {
+    if (!loc.sp.changelog) { loc.sp.changelog = []; }
+    newEntries = changeTexts.map(text => ({ id: 'c' + (changelogSeq++), ts: TODAY, text, read: false }));
+    loc.sp.changelog.unshift(...newEntries);
+  }
+  state.editMode = false;
+  state.editSnapshot = null;
+  state.justRead = newEntries;
+  save();
+  render();
+  toast(changeTexts.length ? `Saved - ${changeTexts.length} change${changeTexts.length > 1 ? 's' : ''} detected and logged automatically` : 'Saved - no changes detected');
+}
+
+/* ---------------- RACI grid ---------------- */
+function rgJtIds() {
+  const ids = [];
+  curMeth().phases.forEach(p => p.subPhases.forEach(s => {
+    if (hasContent(s)) { s.tasks.forEach(t => Object.keys(t.raci || {}).forEach(id => { if (!ids.includes(id)) { ids.push(id); } })); }
+  }));
+  return sortJobTitleIds(ids);
+}
+function rgCounts() {
+  const c = {};
+  curMeth().phases.forEach(p => {
+    if (!rgActivePhases.has(p.name)) { return; }
+    p.subPhases.forEach(s => { if (hasContent(s)) { s.tasks.forEach(t => Object.keys(t.raci || {}).forEach(id => { c[id] = (c[id] || 0) + t.raci[id].length; })); } });
+  });
+  return c;
+}
+function renderRaci() {
+  const m = curMeth();
+  const names = m.phases.map(p => p.name);
+  if (!rgActivePhases || [...rgActivePhases].some(n => !names.includes(n))) { rgActivePhases = new Set(names); }
+  const ids = rgJtIds();
+  const counts = rgCounts();
+  let rgRowSeq = 0;
+
+  let html = '';
+
+  html += '<div class="meth-tabs" style="display:inline-flex;margin-bottom:18px">';
+  html += `<button class="meth-tab ${raciMode === 'grid' ? 'active' : ''}" data-rgmode="grid">Grid</button>`;
+  html += `<button class="meth-tab ${raciMode === 'byrole' ? 'active' : ''}" data-rgmode="byrole">By Role</button>`;
+  html += '</div>';
+
+  if (raciMode === 'byrole') {
+    if (!rgFocusJob || !ids.includes(rgFocusJob)) { rgFocusJob = ids[0] || null; }
+    html += '<div class="jt-picker">';
+    ids.forEach(id => {
+      const jt = jobTitleById(id);
+      html += `<button class="jt-pick-btn ${rgFocusJob === id ? 'active' : ''}" data-rgby="${id}"><span class="abbr">${esc(jt.abbr)}</span>${esc(jt.name)}<span class="n">${counts[id] || 0}</span></button>`;
+    });
+    html += '</div>';
+    if (rgFocusJob) {
+      m.phases.filter(p => rgActivePhases.has(p.name)).forEach(p => {
+        const pColor = PHASE_COLORS[m.phases.indexOf(p) % PHASE_COLORS.length];
+        p.subPhases.filter(s => hasContent(s)).forEach(s => {
+          const matched = s.tasks.filter(t => t.raci[rgFocusJob]);
+          if (!matched.length) { return; }
+          html += `<div class="jt-group"><div class="jt-group-head"><span class="sid" style="background:${pColor}">${esc(s.sid)}</span>${esc(p.name)} - ${esc(s.name)}</div>`;
+          matched.forEach(t => {
+            const letters = t.raci[rgFocusJob].map(l => `<span class="rl-${l}">${l}</span>`).join('');
+            html += `<div class="jt-task"><span class="rt-raci">${letters}</span><div><div class="rt-text">${esc(t.text)}</div><a class="rt-jump rt-loc" data-jump="${s.id}">${esc(p.name)} › ${esc(s.sid)} ${esc(s.name)} ↗</a></div></div>`;
+          });
+          html += '</div>';
+        });
+      });
+    } else {
+      html += '<p class="empty">No job titles have tasks yet.</p>';
+    }
+    main.innerHTML = html;
+    wireMethSwitch();
+    main.querySelectorAll('[data-rgmode]').forEach(b => b.onclick = () => { raciMode = b.dataset.rgmode; renderRaci(); });
+    main.querySelectorAll('[data-rgby]').forEach(b => b.onclick = () => { rgFocusJob = b.dataset.rgby; renderRaci(); });
+    main.querySelectorAll('[data-jump]').forEach(a => a.onclick = () => openSubPhase(a.dataset.jump));
+    return;
+  }
+
+  html += '<div class="rg-controls"><div class="rg-pfilters">';
+  m.phases.forEach((p, i) => {
+    const on = rgActivePhases.has(p.name);
+    const c = PHASE_COLORS[i % PHASE_COLORS.length];
+    html += `<button class="rg-pchip" data-rgp="${esc(p.name)}" style="background:${on ? c : 'var(--surface-flat)'};color:${on ? 'var(--text-on-primary)' : 'var(--ink-soft)'};border-color:${on ? '#fff' : 'var(--line)'};box-shadow:${on ? 'var(--shadow-inset)' : 'none'}">${esc(p.name)}</button>`;
+  });
+  html += '</div><div class="rg-legend">';
+  RACI_LETTERS.forEach(l => { html += `<span class="lg"><span class="sw" style="background:${RACI_HEX[l]}">${l}</span>${RACI_NAMES[l]}</span>`; });
+  html += '</div></div>';
+
+  if (rgFocusJob) {
+    const jt = jobTitleById(rgFocusJob);
+    html += `<div class="rg-focusbar show">Focused on <b>&nbsp;${esc(jt.name)}</b>&nbsp;- showing only tasks where they carry a RACI designation.<button id="rgClear">Clear focus</button></div>`;
+  }
+
+  html += '<div class="rg-scroller"><table class="rg-table"><thead><tr><th class="taskcol">Task</th>';
+  ids.forEach(id => {
+    const foc = rgFocusJob === id ? ' focused' : '';
+    html += `<th class="jt${foc}" data-rgcol="${id}">${esc(jobTitleById(id).abbr)}<span class="cnt">${counts[id] || 0}</span></th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  let body = '';
+  m.phases.filter(p => rgActivePhases.has(p.name)).forEach(p => {
+    const pColor = PHASE_COLORS[m.phases.indexOf(p) % PHASE_COLORS.length];
+    p.subPhases.filter(s => hasContent(s)).forEach(s => {
+      const rows = rgFocusJob ? s.tasks.filter(t => t.raci[rgFocusJob]) : s.tasks;
+      if (!rows.length) { return; }
+      body += `<tr class="rg-grouprow" data-rgsid="${esc(s.id)}"><td colspan="${ids.length + 1}"><span class="gsid" style="background:${pColor}">${esc(s.sid)}</span>${esc(p.name)} - ${esc(s.name)}</td></tr>`;
+      rows.forEach(t => {
+        const rid = 'rgex' + (rgRowSeq++);
+        const cells = ids.map(id => {
+          const dim = rgFocusJob && id !== rgFocusJob ? ' dimmed' : '';
+          if (!t.raci[id]) { return `<td class="rgcell${dim}" data-rgcell="${id}"><span class="rg-dash">–</span></td>`; }
+          const lt = t.raci[id].map(l => `<span class="rl-${l}">${l}</span>`).join('');
+          return `<td class="rgcell${dim}" data-rgcell="${id}"><span class="rg-lt">${lt}</span></td>`;
+        }).join('');
+        body += `<tr class="taskrow" data-rgex="${rid}"><td class="tname">${esc(t.text)}</td>${cells}</tr>`;
+        const exraci = sortJobTitleIds(Object.keys(t.raci)).map(id => `<span><b>${esc(jobTitleById(id).abbr)}</b> ${t.raci[id].map(l => RACI_NAMES[l]).join(', ')}</span>`).join('');
+        body += `<tr class="rg-exrow" id="${rid}"><td colspan="${ids.length + 1}"><div class="rg-exgrid"><div><h5>Phase context</h5><p>${esc(s.overview || '-')}</p></div><div><h5>This task - full RACI</h5><div class="rg-exraci">${exraci}</div></div></div></td></tr>`;
+      });
+    });
+  });
+  if (!body) { body = `<tr><td class="tname" colspan="${ids.length + 1}" style="padding:26px;color:var(--ink-faint)">No tasks match the current filters.</td></tr>`; }
+  html += body + '</tbody><tfoot><tr class="rg-total"><td class="tname">Total involvements</td>' + ids.map(id => `<td>${counts[id] || 0}</td>`).join('') + '</tr></tfoot></table></div>';
+
+  main.innerHTML = html;
+  wireMethSwitch();
+  main.querySelectorAll('[data-rgmode]').forEach(b => b.onclick = () => { raciMode = b.dataset.rgmode; renderRaci(); });
+  main.querySelectorAll('[data-rgp]').forEach(b => b.onclick = () => {
+    const n = b.dataset.rgp;
+    if (rgActivePhases.has(n)) { rgActivePhases.delete(n); } else { rgActivePhases.add(n); }
+    renderRaci();
+  });
+  main.querySelectorAll('th[data-rgcol]').forEach(th => {
+    th.onmouseenter = () => {
+      if (rgFocusJob) { return; }
+      main.querySelectorAll('[data-rgcell="' + th.dataset.rgcol + '"]').forEach(td => td.classList.add('colhi'));
+      th.classList.add('colhi');
+    };
+    th.onmouseleave = () => { main.querySelectorAll('.colhi').forEach(el => el.classList.remove('colhi')); };
+    th.onclick = () => { rgFocusJob = rgFocusJob === th.dataset.rgcol ? null : th.dataset.rgcol; renderRaci(); };
+  });
+  const clr = document.getElementById('rgClear');
+  if (clr) { clr.onclick = () => { rgFocusJob = null; renderRaci(); }; }
+  main.querySelectorAll('.taskrow[data-rgex]').forEach(tr => tr.onclick = () => {
+    const ex = document.getElementById(tr.dataset.rgex);
+    const open = ex.classList.contains('show');
+    main.querySelectorAll('.rg-exrow.show').forEach(e => e.classList.remove('show'));
+    if (!open) { ex.classList.add('show'); }
+  });
+}
+
+/* ---------------- What's New ---------------- */
+function renderWhatsNew() {
+  const items = [];
+  data.methodologies.forEach(m => m.phases.forEach((p, pi) => p.subPhases.forEach(s => {
+    unreadEntries(s).forEach(entry => items.push({ m, p, pi, s, entry }));
+  })));
+  items.sort((a, b) => Date.parse(b.entry.ts) - Date.parse(a.entry.ts));
+
+  let html = '';
+  if (!items.length) { html += '<p class="empty">Nothing unread. You’re caught up.</p>'; }
+  items.forEach(it => {
+    const color = PHASE_COLORS[it.pi % PHASE_COLORS.length];
+    html += `<button class="whatsnew-item" data-jump="${it.s.id}" data-meth="${it.m.id}">
+      <div class="wn-top">
+        <span class="wn-loc" style="background:${color}">${esc(it.m.name)} · ${esc(it.s.sid)}</span>
+        <span class="wn-title">${esc(it.s.name)}</span>
+        <span class="wn-date">${esc(fmtDate(it.entry.ts))} · ${daysAgo(it.entry.ts)}d ago</span>
+      </div>
+      <div class="wn-summary">${esc(it.entry.text)}</div>
+    </button>`;
+  });
+  main.innerHTML = html;
+  main.querySelectorAll('[data-jump]').forEach(b => b.onclick = () => {
+    if (b.dataset.meth !== state.methodologyId) { state.methodologyId = b.dataset.meth; }
+    jumpTo(b.dataset.jump);
+  });
+}
+
+/* ---------------- Reference (RACI explainer · escalation · job-aids index) ---------------- */
+function raciDefCard(letter, name, desc) {
+  return `<div class="ref-raci-card"><span class="ref-raci-badge rl-${letter}">${letter}</span><div><div class="ref-raci-name">${name}</div><div class="ref-raci-desc">${desc}</div></div></div>`;
+}
+function renderReference() {
+  let html = '<div class="refdoc">';
+
+  // 1 · How to use RACI (generic, well-established guidance)
+  html += `<section class="ref-sec">
+    <h3 class="ref-h">How to use RACI</h3>
+    <p class="ref-lead">Every task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person's relationship to the work?</p>
+    <div class="ref-raci-grid">
+      ${raciDefCard('R', 'Responsible', 'Does the work. At least one per task - the people who actually carry it out.')}
+      ${raciDefCard('A', 'Accountable', 'Owns the outcome and signs off. Exactly one per task - the single point of ownership.')}
+      ${raciDefCard('C', 'Consulted', 'Two-way input. Consulted for their expertise before or while the work happens.')}
+      ${raciDefCard('I', 'Informed', 'One-way update. Kept informed of progress or completion, but not part of the doing.')}
+    </div>
+    <ul class="ref-rules">
+      <li><b>Exactly one A per task.</b> Accountability shouldn't be shared - if two people sign off, no one does.</li>
+      <li><b>R and A can be the same person</b> (shown together as <span class="rl-A">A</span> <span class="rl-R">R</span>) - they do it and own it.</li>
+      <li><b>Every task needs at least an R and an A</b> - someone doing the work, someone owning the result.</li>
+      <li><b>The customer</b> appears in the RACI wherever the engagement requires their input, approval, or participation.</li>
+    </ul>
+  </section>`;
+
+  // 2 · Escalation Management - scaffolded, GlideFast-specific content authored later (not invented)
+  html += `<section class="ref-sec">
+    <h3 class="ref-h">Escalation Management</h3>
+    <div class="ref-placeholder">
+      <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+      <div><b>Not yet authored.</b><p>This section will hold GlideFast's escalation guidance - when and how to raise an issue, severity tiers, and who to contact at each level. Add the real content here when it's ready.</p></div>
+    </div>
+  </section>`;
+
+  // 3 · Job Aids index - auto-derived from every task's jobAids across all methodologies
+  const aids = [];
+  data.methodologies.forEach(m => m.phases.forEach(p => p.subPhases.forEach(s => (s.tasks || []).forEach(t => (t.jobAids || []).forEach(j => { if (j.url) { aids.push({ m, p, s, t, j }); } })))));
+  html += `<section class="ref-sec">
+    <h3 class="ref-h">Job Aids index <span class="ref-count">${aids.length}</span></h3>
+    <p class="ref-lead">Every job aid referenced by a task, across all methodologies, in one place. This list builds itself from the tasks - add a job aid to a task and it appears here.</p>`;
+  if (!aids.length) {
+    html += '<p class="empty">No job aids yet.</p>';
+  } else {
+    html += '<div class="ref-aids">';
+    aids.forEach(a => {
+      const scope = (a.j.roles && a.j.roles.length)
+        ? sortJobTitleIds(a.j.roles).map(rid => { const r = jobTitleById(rid); return r ? `<span class="ja-scope" style="--c:${jobTitleColor(rid)}">${r.external ? '◇ ' : ''}${esc(r.abbr)}</span>` : ''; }).join('')
+        : '<span class="ref-allroles">All roles</span>';
+      html += `<div class="ref-aid">
+        <a class="jobaid" href="${esc(a.j.url)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/></svg>Job Aid</a>
+        <div class="ref-aid-body">
+          <div class="ref-aid-task">${withJargon(esc(a.t.text))}</div>
+          <button class="ref-aid-crumb" data-jump="${a.s.id}" data-meth="${a.m.id}">${esc(a.m.name)} › ${esc(a.p.name)} › ${esc(a.s.sid)} ${esc(a.s.name)} ↗</button>
+          <div class="ref-aid-scope"><span>Applies to:</span> ${scope}</div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += '</section></div>';
+
+  main.innerHTML = html;
+  main.querySelectorAll('[data-jump]').forEach(b => b.onclick = () => {
+    if (b.dataset.meth !== state.methodologyId) { state.methodologyId = b.dataset.meth; }
+    jumpTo(b.dataset.jump);
+  });
+}
+
+/* ---------------- Search ---------------- */
+function renderSearch() {
+  const q = state.search.trim().toLowerCase();
+  let html = '';
+  if (q.length < 2) { html += '<p class="empty">Type at least two characters.</p>'; main.innerHTML = html; return; }
+
+  const results = [];
+  data.methodologies.forEach(m => m.phases.forEach(p => p.subPhases.forEach(s => {
+    const hay = [s.name, s.overview, s.objective, ...(s.comments || []), ...(s.inputs || []), ...(s.deliverables || []), ...(s.tasks || []).map(t => t.text)].join('  ');
+    if (hay.toLowerCase().includes(q)) {
+      results.push({ m, p, s, snippet: makeSnippet(hay, q) });
+    }
+  })));
+
+  if (!results.length) { html += '<p class="empty">No matches.</p>'; }
+  results.forEach(r => {
+    html += `<button class="search-result" data-jump="${r.s.id}" data-meth="${r.m.id}">
+      <div class="sr-loc">${esc(r.m.name)} › ${esc(r.p.name)} › ${esc(r.s.sid)}</div>
+      <div class="sr-title">${esc(r.s.name)}</div>
+      <div class="sr-snip">${r.snippet}</div>
+    </button>`;
+  });
+  main.innerHTML = html;
+  main.querySelectorAll('[data-jump]').forEach(b => b.onclick = () => {
+    if (b.dataset.meth !== state.methodologyId) { state.methodologyId = b.dataset.meth; }
+    jumpTo(b.dataset.jump);
+  });
+}
+function makeSnippet(hay, q) {
+  const clean = hay.replace(/\n+/g, ' · ');
+  const i = clean.toLowerCase().indexOf(q);
+  if (i < 0) { return esc(clean.slice(0, 120)); }
+  const start = Math.max(0, i - 40);
+  const seg = clean.slice(start, i + q.length + 60);
+  return (start > 0 ? '…' : '') + esc(seg.slice(0, i - start)) + '<mark>' + esc(seg.slice(i - start, i - start + q.length)) + '</mark>' + esc(seg.slice(i - start + q.length)) + '…';
+}
+
+function jumpTo(subId) {
+  state.subPhaseId = subId;
+  state.view = 'browse';
+  const loc = findSubPhase(subId);
+  state.justRead = loc ? markRead(loc.sp) : [];
+  document.getElementById('searchInput').value = '';
+  state.search = '';
+  render();
+  main.scrollIntoView({ block: 'start' });
+}
+
+/* ---------------- Deep links: ?sub=<sub-phase id>&el=<kind:key> ----------------
+   el addresses one rendered element within that sub-phase:
+     task:<taskId>  meeting:<meetingId>  jobaid:<jobAidId>  input:<index>  deliverable:<index>  comment:<index>
+   (input/deliverable/comment are plain string lists with no id of their own, so they're addressed
+   by position - see data-el on flowListHtml/comments in renderBrowse.) */
+function applyDeepLinkFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const subId = params.get('sub');
+  if (!subId) { return false; }
+  const loc = findSubPhase(subId);
+  if (!loc) { return false; }
+  state.methodologyId = loc.meth.id;
+  state.subPhaseId = subId;
+  state.view = 'browse';
+  state.justRead = markRead(loc.sp);
+  render();
+  // render() just set main.innerHTML synchronously, so the target already exists in the DOM -
+  // no need to wait a frame (and waiting on requestAnimationFrame is fragile: it doesn't fire at
+  // all in a backgrounded/inactive tab, e.g. an iframe embed that isn't the focused one).
+  const elKey = params.get('el');
+  const target = elKey ? [...main.querySelectorAll('[data-el]')].find(el => el.dataset.el === elKey) : null;
+  if (target) {
+    target.scrollIntoView({ block: 'center' });
+    target.classList.add('jump-hl');
+    setTimeout(() => target.classList.remove('jump-hl'), 2000);
+  } else {
+    main.scrollIntoView({ block: 'start' });
+  }
+  return true;
+}
+
+/* ---------------- Jargon inline tooltips ---------------- */
+function withJargon(escaped) {
+  if (!state.showJargon) { return escaped; }
+  const terms = Object.keys(data.appendix.jargon || {});
+  if (!terms.length) { return escaped; }
+  const re = new RegExp('\\b(' + terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'g');
+  return escaped.replace(re, (mtch) => {
+    const def = data.appendix.jargon[mtch];
+    return `<span class="jargon-term" data-tip-name="${esc(mtch)}" data-tip="${esc(def)}">${esc(mtch)}</span>`;
+  });
+}
+
+/* ---------------- Tooltip engine ---------------- */
+const tip = document.getElementById('tip');
+function wireTooltips() {
+  document.querySelectorAll('[data-tip]').forEach(el => {
+    el.onmouseenter = () => showTip(el);
+    el.onmouseleave = hideTip;
+    el.onmousemove = (e) => positionTip(e);
+  });
+}
+function showTip(el) {
+  const name = el.dataset.tipName || '';
+  tip.innerHTML = (name ? `<span class="tname">${esc(name)}</span>` : '') + esc(el.dataset.tip);
+  tip.classList.add('show');
+}
+function hideTip() { tip.classList.remove('show'); }
+function positionTip(e) {
+  const pad = 14;
+  let x = e.clientX + pad;
+  let y = e.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width > window.innerWidth - 8) { x = e.clientX - r.width - pad; }
+  if (y + r.height > window.innerHeight - 8) { y = e.clientY - r.height - pad; }
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}
+
+/* ---------------- Top bar actions ---------------- */
+// view tabs (Journey / RACI / What's New)
+document.querySelectorAll('.vtab').forEach(b => {
+  b.onclick = () => {
+    if (state.editMode) { toast('Finish editing first'); return; }
+    if (state.view === b.dataset.view) { return; }
+    state.view = b.dataset.view;
+    if (state.search) { state.search = ''; document.getElementById('searchInput').value = ''; }
+    render();
+  };
+});
+document.getElementById('jargonToggle').onchange = (e) => {
+  state.showJargon = e.target.checked;
+  savePrefs();
+  render();
+};
+const searchInput = document.getElementById('searchInput');
+searchInput.oninput = () => {
+  state.search = searchInput.value;
+  if (state.search.trim().length >= 1) {
+    if (state.editMode) { return; }
+    state.view = 'search';
+  } else if (state.view === 'search') {
+    state.view = 'browse';
+  }
+  render();
+};
+
+/* ---------------- Utils ---------------- */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function fmtDate(d) {
+  const parts = String(d).split('-');
+  if (parts.length !== 3) { return d; }
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[+parts[1] - 1]} ${+parts[2]}, ${parts[0]}`;
+}
+let toastTimer = null;
+const toastEl = document.getElementById('toast');
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+}
+
+if (!applyDeepLinkFromUrl()) { render(); }
+</script>
+</body>
+</html>

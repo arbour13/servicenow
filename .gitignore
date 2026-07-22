@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Build/log noise
+*.log
+npm-debug.log*
+dist/
+dist-ssr/
+*.local
+
+# OS / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.sw?

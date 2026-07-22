@@ -1,0 +1,61 @@
+/* Shared design tokens for the ServiceNow app suite - the single source of truth for the suite's
+   SCSS color/spacing/type vocabulary. Every value is declared with `!default`, which is what makes
+   a widget portable across portals and instances:
+
+   - The packager inlines these declarations at the TOP of each widget's own <css> field (before the
+     widget's scoped rules). See tools/packager + an app's build-deploy.js `sharedScssPartials`.
+   - `!default` means "use this value UNLESS the variable is already defined." A ServiceNow portal
+     theme's own CSS Variables are compiled AHEAD of a widget's SCSS, so if the target portal already
+     defines a token (e.g. `$brand-primary`), that wins and this default is a no-op. Where the portal
+     defines nothing, the widget falls back to these bundled defaults and still looks right.
+
+   So an app references these token names in its scss/app.scss (it does NOT redefine them), and gets
+   both a consistent suite vocabulary AND portability for free. Category-variant naming
+   (`$background-*`, `$text-*`, `$brand-*`, `$border-*`, ...) per the suite convention.
+
+   NOTE: these are the COMPILE-TIME ($) layer - portal/brand integration. An app's own runtime
+   light/dark flipping is a SEPARATE concern (CSS custom properties + `data-theme`), seeded from
+   these values but living in the app's own scss. */
+
+// ---------- Surfaces ----------
+$background-primary:   #f4f5f7 !default;   // page background (most used)
+$background-secondary: #ffffff !default;   // panel / card surface
+$background-tertiary:  #fbfbfd !default;   // subtle alternate surface
+
+// ---------- Text ----------
+$text-primary: #1c2128 !default;   // body text
+$text-muted:   #6b7280 !default;   // secondary text
+$text-faint:   #9aa1ab !default;   // tertiary / placeholder
+
+// ---------- Brand / accent ----------
+$brand-primary:       #054b80 !default;
+$brand-primary-hover: #043a63 !default;
+$brand-primary-soft:  #e6eef5 !default;   // tinted accent background
+$brand-secondary:     #6d3fc9 !default;
+
+// ---------- Borders ----------
+$border-primary: #e2e5ea !default;
+$border-strong:  #d2d6dd !default;
+
+// ---------- Status ----------
+$status-danger:  #dc2626 !default;
+$status-success: #15803d !default;
+$status-warning: #f0ad4e !default;
+
+// ---------- Radius ----------
+$border-radius-base:  10px !default;
+$border-radius-small: 7px  !default;
+
+// ---------- Shadow ----------
+$box-shadow-base: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10) !default;
+
+// ---------- Spacing ----------
+$spacing-xs: 4px  !default;
+$spacing-sm: 8px  !default;
+$spacing-md: 12px !default;
+$spacing-lg: 16px !default;
+$spacing-xl: 24px !default;
+
+// ---------- Typography ----------
+$font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !default;
+$font-family-mono: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace !default;

@@ -1,0 +1,1263 @@
+/* Glide Studio's visual identity: navy brand accent, card-based layout, light/dark theming.
+
+   SCSS SOURCE, not hand-edited CSS - `css/app.css` is a BUILD OUTPUT (compiled via `npm run
+   build:css` in this `angular/` folder, see package.json). Edit this file, not that one.
+
+   Why SCSS: this app's color tokens ($gs-*) are written as real SCSS variables with `!default`,
+   specifically so they map onto ServiceNow's own theming model - a Theme record's CSS Variables
+   (sp_css_variable) are compiled as SCSS variable ASSIGNMENTS ahead of every CSS Include/widget
+   CSS field on that portal, so a CSS Include declaring `$gs-accent: #054b80 !default;` picks up
+   whatever the theme defines for `$gs-accent` instead, with the value here only ever used as a
+   fallback (e.g. compiling this file standalone, outside ServiceNow, like the `build:css` step
+   does for this dev harness). DeployService.js's generated Update Set ships these same $gs-*
+   defaults as the packaged sp_theme's actual `css_variables`, and ships this file's CONTENT
+   (uncompiled, still referencing $gs-*) as an sp_css CSS Include tied to that theme - see that
+   file's header comment for the full mechanism and what's verified vs. best-effort against a real
+   instance.
+
+   Dark mode ($gs-*-dark below) is this APP's own feature (a runtime data-theme attribute + CSS
+   custom-property override, toggled via JS - see the :root[data-theme="dark"] block), not a
+   second ServiceNow theme - SCSS variables are compile-time-only, so they can't be the thing that
+   flips at runtime. They're still expressed as SCSS variables here (not literals) purely for the
+   same single-source-of-truth/maintainability reason as the light palette; ServiceNow's theme
+   system itself only ever needs to know about the light/default set. */
+
+// ---------- Light (default) palette - these map 1:1 onto sp_css_variable records on the
+// portal's Theme once deployed; !default means "use this UNLESS the theme already defines it".
+$gs-bg: #f4f5f7 !default;
+$gs-panel: #ffffff !default;
+$gs-panel-alt: #fbfbfd !default;
+$gs-border: #e2e5ea !default;
+$gs-border-strong: #d2d6dd !default;
+$gs-text: #1c2128 !default;
+$gs-muted: #6b7280 !default;
+$gs-faint: #9aa1ab !default;
+$gs-accent: #054b80 !default;
+$gs-accent-hover: #043a63 !default;
+$gs-accent-soft: #e6eef5 !default;
+$gs-accent-soft-hover: #d6e6f2 !default;
+$gs-accent-border: #b3cae0 !default;
+// Solid-fill accent (primary buttons, the "on" state of a toggle switch) - distinct from $gs-accent
+// itself, which is *also* used for text/icons/borders where a light, high-contrast value is
+// correct against a dark background. In light mode these are identical (the same navy already
+// works great as a solid fill against white); dark mode is where they diverge - see the -dark set.
+$gs-accent-fill: $gs-accent !default;
+$gs-accent-fill-hover: $gs-accent-hover !default;
+$gs-danger: #dc2626 !default;
+$gs-danger-soft: #fdecec !default;
+$gs-danger-soft-hover: #fde8e8 !default;
+$gs-danger-border: #f3c1c1 !default;
+$gs-sidenav-bg: #054b80 !default;
+// The sidenav's active-item pill - a solid white "pill" reads fine in light mode (high contrast
+// against the navy sidenav either way); dark mode gets its own, more subtle treatment below.
+$gs-sidenav-active-bg: #ffffff !default;
+$gs-sidenav-active-text: #054b80 !default;
+$gs-btn-hover: rgba(100, 116, 139, 0.10) !default;
+$gs-btn-hover-destroy: rgba(207, 34, 46, 0.10) !default;
+
+// Composer node-kind accents (card left-border + tag colors) - purple for declarations
+// (variable/function), green for actions, blue reuses the existing $gs-accent for if/control-flow.
+// Kept as their own soft/border/text triplet (not reusing $gs-accent-*) so the four kinds stay
+// visually distinct at a glance - the whole point of the card+accent redesign.
+$gs-purple: #6d3fc9 !default;
+$gs-purple-soft: #f1ecfb !default;
+$gs-purple-border: #d3c2ee !default;
+$gs-green: #15803d !default;
+$gs-green-soft: #e8f5ec !default;
+$gs-green-border: #bfe3cb !default;
+
+// Code editor (output pane) palette - has its OWN light/dark/auto toggle, independent of the
+// app's theme toggle above (see main.controller.js's vm.editorTheme). "auto" resolves to
+// whichever concrete value (light/dark) matches vm.theme at the time - these two variable sets
+// are what it resolves to, never used standalone as "auto" itself. Light is the default/light
+// palette by the same convention as the rest of this file; the dark set below carries what used
+// to be this pane's only (hardcoded, always-on) palette.
+$gs-ed-bg: #ffffff !default;
+$gs-ed-text: #1c2128 !default;
+$gs-ed-border: #e2e5ea !default;
+$gs-ed-border-soft: #eceff3 !default;
+$gs-ed-topbar-title: #4b5563 !default;
+$gs-ed-panelbar-bg: #f4f5f7 !default;
+$gs-ed-panel-title: #6b7280 !default;
+$gs-ed-btn-bg: #eef0f3 !default;
+$gs-ed-btn-border: #d2d6dd !default;
+$gs-ed-btn-text: #374151 !default;
+$gs-ed-btn-hover-bg: #e2e5ea !default;
+$gs-ed-icon-text: #6b7280 !default;
+$gs-ed-icon-hover-bg: #e2e5ea !default;
+$gs-ed-icon-hover-text: #1c2128 !default;
+$gs-ed-tooltip-bg: #1c2128 !default;
+$gs-ed-tooltip-text: #f4f5f7 !default;
+$gs-ed-tooltip-border: #333a49 !default;
+$gs-ed-warn-bg: #fff7e0 !default;
+$gs-ed-warn-text: #7a5107 !default;
+$gs-ed-warn-border: #f1d78c !default;
+$gs-ed-danger-bg: #fdecec !default;
+$gs-ed-danger-text: #a12622 !default;
+$gs-ed-danger-border: #f3c1c1 !default;
+$gs-ed-info-bg: #eaf2fb !default;
+$gs-ed-info-text: #0a4a86 !default;
+$gs-ed-info-border: #bcd6ef !default;
+$gs-ed-info-rule: #d3e6f8 !default;
+$gs-ed-kw: #8250df !default;
+$gs-ed-str: #116329 !default;
+$gs-ed-num: #953800 !default;
+$gs-ed-com: #6b7280 !default;
+$gs-ed-fn: #0550ae !default;
+
+$gs-ed-bg-dark: #1b1f2a !default;
+$gs-ed-text-dark: #e6e9ef !default;
+$gs-ed-border-dark: #2c3242 !default;
+$gs-ed-border-soft-dark: #232838 !default;
+$gs-ed-topbar-title-dark: #c7cbd6 !default;
+$gs-ed-panelbar-bg-dark: #161a24 !default;
+$gs-ed-panel-title-dark: #aeb4c2 !default;
+$gs-ed-btn-bg-dark: #2a3040 !default;
+$gs-ed-btn-border-dark: #39404f !default;
+$gs-ed-btn-text-dark: #d7dbe4 !default;
+$gs-ed-btn-hover-bg-dark: #343c4e !default;
+$gs-ed-icon-text-dark: #aeb4c2 !default;
+$gs-ed-icon-hover-bg-dark: #2a3040 !default;
+$gs-ed-icon-hover-text-dark: #e6e9ef !default;
+$gs-ed-tooltip-bg-dark: #0f1219 !default;
+$gs-ed-tooltip-text-dark: #e6e9ef !default;
+$gs-ed-tooltip-border-dark: #2c3242 !default;
+$gs-ed-warn-bg-dark: #332a13 !default;
+$gs-ed-warn-text-dark: #fde68a !default;
+$gs-ed-warn-border-dark: #4d3f1c !default;
+$gs-ed-danger-bg-dark: #3a1518 !default;
+$gs-ed-danger-text-dark: #fecaca !default;
+$gs-ed-danger-border-dark: #5b1d22 !default;
+$gs-ed-info-bg-dark: #16283d !default;
+$gs-ed-info-text-dark: #8ec2f2 !default;
+$gs-ed-info-border-dark: #24405f !default;
+$gs-ed-info-rule-dark: #223a56 !default;
+$gs-ed-kw-dark: #c792ea !default;
+$gs-ed-str-dark: #c3e88d !default;
+$gs-ed-num-dark: #f78c6c !default;
+$gs-ed-com-dark: #5a6275 !default;
+$gs-ed-fn-dark: #82aaff !default;
+
+// ---------- Dark palette - app-level toggle only, not a ServiceNow theme concern (see header
+// comment).
+$gs-bg-dark: #10131a !default;
+$gs-panel-dark: #1a1f29 !default;
+$gs-panel-alt-dark: #20262f !default;
+$gs-border-dark: #2a3040 !default;
+$gs-border-strong-dark: #3b4353 !default;
+$gs-text-dark: #e7ebf2 !default;
+$gs-muted-dark: #9aa3b6 !default;
+$gs-faint-dark: #6b7385 !default;
+$gs-accent-dark: #5b9fe0 !default;
+$gs-accent-hover-dark: #7ab3ea !default;
+$gs-accent-soft-dark: rgba(91, 159, 224, 0.16) !default;
+$gs-accent-soft-hover-dark: rgba(91, 159, 224, 0.28) !default;
+$gs-accent-border-dark: rgba(91, 159, 224, 0.4) !default;
+$gs-danger-dark: #f87171 !default;
+$gs-danger-soft-dark: rgba(248, 113, 113, 0.14) !default;
+$gs-danger-soft-hover-dark: rgba(248, 113, 113, 0.22) !default;
+$gs-danger-border-dark: rgba(248, 113, 113, 0.4) !default;
+// A darker SHADE of the brand color ($gs-sidenav-bg/$gs-accent, #054b80 - same hue/saturation,
+// lower lightness), not just some other muted color - keeps the sidenav clearly the same brand
+// blue in both themes while still sitting comfortably in the dark palette (a flat carry-over of
+// the vivid light-mode navy at full lightness read as too bright/jarring next to the rest of it).
+$gs-sidenav-bg-dark: #043962 !default;
+// A solid white pill (the light-mode treatment) reads as way too bright/glaring against a dark
+// sidenav - a translucent light overlay (a stronger version of the existing :hover tint) plus
+// plain white text reads as "selected" without the glare.
+$gs-sidenav-active-bg-dark: rgba(255, 255, 255, 0.16) !default;
+$gs-sidenav-active-text-dark: #ffffff !default;
+$gs-btn-hover-dark: rgba(255, 255, 255, 0.06) !default;
+$gs-btn-hover-destroy-dark: rgba(248, 113, 113, 0.14) !default;
+// $gs-accent-dark (#5b9fe0) is deliberately light/vivid for legible TEXT against a dark
+// background - using it as a large SOLID FILL (a primary button) at that same lightness reads as
+// way too bright/glowing, so solid fills get their own, more muted mid-tone blue instead.
+$gs-accent-fill-dark: #2f6f9e !default;
+$gs-accent-fill-hover-dark: #3a80b3 !default;
+$gs-purple-dark: #b79cf0 !default;
+$gs-purple-soft-dark: rgba(183, 156, 240, 0.16) !default;
+$gs-purple-border-dark: rgba(183, 156, 240, 0.4) !default;
+$gs-green-dark: #6ee7a0 !default;
+$gs-green-soft-dark: rgba(110, 231, 160, 0.14) !default;
+$gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;
+
+:root {
+  --bg: #{$gs-bg};
+  --panel: #{$gs-panel};
+  --panel-alt: #{$gs-panel-alt};
+  --border: #{$gs-border};
+  --border-strong: #{$gs-border-strong};
+  --text: #{$gs-text};
+  --muted: #{$gs-muted};
+  --faint: #{$gs-faint};
+  --accent: #{$gs-accent};
+  --accent-hover: #{$gs-accent-hover};
+  --accent-soft: #{$gs-accent-soft};
+  --accent-soft-hover: #{$gs-accent-soft-hover};
+  --accent-border: #{$gs-accent-border};
+  --accent-fill: #{$gs-accent-fill};
+  --accent-fill-hover: #{$gs-accent-fill-hover};
+  --danger: #{$gs-danger};
+  --danger-soft: #{$gs-danger-soft};
+  --danger-soft-hover: #{$gs-danger-soft-hover};
+  --danger-border: #{$gs-danger-border};
+  --sidenav-bg: #{$gs-sidenav-bg};
+  --sidenav-active-bg: #{$gs-sidenav-active-bg};
+  --sidenav-active-text: #{$gs-sidenav-active-text};
+  // Code editor (output pane) - light values by default (see the $gs-ed-* header comment above);
+  // .output-pane[data-editor-theme="dark"] below overrides the whole set.
+  --ed-bg: #{$gs-ed-bg};
+  --ed-text: #{$gs-ed-text};
+  --ed-border: #{$gs-ed-border};
+  --ed-border-soft: #{$gs-ed-border-soft};
+  --ed-topbar-title: #{$gs-ed-topbar-title};
+  --ed-panelbar-bg: #{$gs-ed-panelbar-bg};
+  --ed-panel-title: #{$gs-ed-panel-title};
+  --ed-btn-bg: #{$gs-ed-btn-bg};
+  --ed-btn-border: #{$gs-ed-btn-border};
+  --ed-btn-text: #{$gs-ed-btn-text};
+  --ed-btn-hover-bg: #{$gs-ed-btn-hover-bg};
+  --ed-icon-text: #{$gs-ed-icon-text};
+  --ed-icon-hover-bg: #{$gs-ed-icon-hover-bg};
+  --ed-icon-hover-text: #{$gs-ed-icon-hover-text};
+  --ed-tooltip-bg: #{$gs-ed-tooltip-bg};
+  --ed-tooltip-text: #{$gs-ed-tooltip-text};
+  --ed-tooltip-border: #{$gs-ed-tooltip-border};
+  --ed-warn-bg: #{$gs-ed-warn-bg};
+  --ed-warn-text: #{$gs-ed-warn-text};
+  --ed-warn-border: #{$gs-ed-warn-border};
+  --ed-danger-bg: #{$gs-ed-danger-bg};
+  --ed-danger-text: #{$gs-ed-danger-text};
+  --ed-danger-border: #{$gs-ed-danger-border};
+  --ed-info-bg: #{$gs-ed-info-bg};
+  --ed-info-text: #{$gs-ed-info-text};
+  --ed-info-border: #{$gs-ed-info-border};
+  --ed-info-rule: #{$gs-ed-info-rule};
+  --ed-kw: #{$gs-ed-kw};
+  --ed-str: #{$gs-ed-str};
+  --ed-num: #{$gs-ed-num};
+  --ed-com: #{$gs-ed-com};
+  --ed-fn: #{$gs-ed-fn};
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+  --ctrl-h: 34px;
+  --ctrl-h-sm: 28px;
+  --btn-hover: #{$gs-btn-hover};
+  --btn-hover-destroy: #{$gs-btn-hover-destroy};
+  --sp-xxs: 2px;
+  --sp-xs:  4px;
+  --sp-sm:  8px;
+  --sp-md:  12px;
+  --sp-lg:  16px;
+  --sp-xl:  20px;
+  --sp-xxl: 24px;
+  --font: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+  --purple: #{$gs-purple};
+  --purple-soft: #{$gs-purple-soft};
+  --purple-border: #{$gs-purple-border};
+  --green: #{$gs-green};
+  --green-soft: #{$gs-green-soft};
+  --green-border: #{$gs-green-border};
+}
+/* Dark mode. The record-preview/confirm modals (permanently dark,
+   built that way from the start for code readability) don't change; the output pane has its own
+   separate light/dark/auto toggle instead (see .output-pane[data-editor-theme] below).
+   `data-theme` is set on <html> by vm.toggleTheme() in the controller; overriding the custom
+   properties here is enough to
+   re-theme every component that already references var(--...) instead of a literal color - see
+   the literal-color fixups below for the handful of places that weren't (input/button
+   backgrounds, the select arrow, etc.). The sidenav keeps its brand hue but goes darker/more
+   muted too (a flat carry-over of the vivid light-mode navy read as too bright/jarring against
+   the rest of the dark palette). */
+:root[data-theme="dark"] {
+  --bg: #{$gs-bg-dark};
+  --panel: #{$gs-panel-dark};
+  --panel-alt: #{$gs-panel-alt-dark};
+  --border: #{$gs-border-dark};
+  --border-strong: #{$gs-border-strong-dark};
+  --text: #{$gs-text-dark};
+  --muted: #{$gs-muted-dark};
+  --faint: #{$gs-faint-dark};
+  --accent: #{$gs-accent-dark};
+  --accent-hover: #{$gs-accent-hover-dark};
+  --accent-soft: #{$gs-accent-soft-dark};
+  --accent-soft-hover: #{$gs-accent-soft-hover-dark};
+  --accent-border: #{$gs-accent-border-dark};
+  --danger: #{$gs-danger-dark};
+  --danger-soft: #{$gs-danger-soft-dark};
+  --danger-soft-hover: #{$gs-danger-soft-hover-dark};
+  --danger-border: #{$gs-danger-border-dark};
+  --sidenav-bg: #{$gs-sidenav-bg-dark};
+  --sidenav-active-bg: #{$gs-sidenav-active-bg-dark};
+  --sidenav-active-text: #{$gs-sidenav-active-text-dark};
+  --shadow: 0 1px 2px rgba(0,0,0,.24), 0 1px 3px rgba(0,0,0,.32);
+  --btn-hover: #{$gs-btn-hover-dark};
+  --btn-hover-destroy: #{$gs-btn-hover-destroy-dark};
+  --accent-fill: #{$gs-accent-fill-dark};
+  --accent-fill-hover: #{$gs-accent-fill-hover-dark};
+  --purple: #{$gs-purple-dark};
+  --purple-soft: #{$gs-purple-soft-dark};
+  --purple-border: #{$gs-purple-border-dark};
+  --green: #{$gs-green-dark};
+  --green-soft: #{$gs-green-soft-dark};
+  --green-border: #{$gs-green-border-dark};
+}
+/* Code editor (output pane) dark palette - a SEPARATE toggle from the app theme above (see
+   main.controller.js's vm.editorTheme: light/dark/auto, where "auto" just resolves to whichever
+   of these two blocks matches vm.theme). Scoped to .output-pane itself, keyed off its own
+   data-editor-theme attribute, not html[data-theme] - the two can disagree on purpose (e.g. a
+   light app with a dark code editor). That attribute is set synchronously by the gsSyncAttr
+   directive (index.html/gs-sync-attr.directive.js) rather than ng-attr-*'s interpolation, so it's
+   already present the instant .output-pane is inserted - see that directive's comment for why
+   ng-attr's own timing left a real gap (a flash of light editor colors on a freshly-recreated
+   pane, e.g. leaving Standards, in dark app mode). */
+.output-pane[data-editor-theme="dark"] {
+  --ed-bg: #{$gs-ed-bg-dark};
+  --ed-text: #{$gs-ed-text-dark};
+  --ed-border: #{$gs-ed-border-dark};
+  --ed-border-soft: #{$gs-ed-border-soft-dark};
+  --ed-topbar-title: #{$gs-ed-topbar-title-dark};
+  --ed-panelbar-bg: #{$gs-ed-panelbar-bg-dark};
+  --ed-panel-title: #{$gs-ed-panel-title-dark};
+  --ed-btn-bg: #{$gs-ed-btn-bg-dark};
+  --ed-btn-border: #{$gs-ed-btn-border-dark};
+  --ed-btn-text: #{$gs-ed-btn-text-dark};
+  --ed-btn-hover-bg: #{$gs-ed-btn-hover-bg-dark};
+  --ed-icon-text: #{$gs-ed-icon-text-dark};
+  --ed-icon-hover-bg: #{$gs-ed-icon-hover-bg-dark};
+  --ed-icon-hover-text: #{$gs-ed-icon-hover-text-dark};
+  --ed-tooltip-bg: #{$gs-ed-tooltip-bg-dark};
+  --ed-tooltip-text: #{$gs-ed-tooltip-text-dark};
+  --ed-tooltip-border: #{$gs-ed-tooltip-border-dark};
+  --ed-warn-bg: #{$gs-ed-warn-bg-dark};
+  --ed-warn-text: #{$gs-ed-warn-text-dark};
+  --ed-warn-border: #{$gs-ed-warn-border-dark};
+  --ed-danger-bg: #{$gs-ed-danger-bg-dark};
+  --ed-danger-text: #{$gs-ed-danger-text-dark};
+  --ed-danger-border: #{$gs-ed-danger-border-dark};
+  --ed-info-bg: #{$gs-ed-info-bg-dark};
+  --ed-info-text: #{$gs-ed-info-text-dark};
+  --ed-info-border: #{$gs-ed-info-border-dark};
+  --ed-info-rule: #{$gs-ed-info-rule-dark};
+  --ed-kw: #{$gs-ed-kw-dark};
+  --ed-str: #{$gs-ed-str-dark};
+  --ed-num: #{$gs-ed-num-dark};
+  --ed-com: #{$gs-ed-com-dark};
+  --ed-fn: #{$gs-ed-fn-dark};
+}
+* { box-sizing: border-box; }
+// Angular's built-in ngCloak directive strips the ng-cloak attribute once it compiles the element
+// that carries it, but the HIDING has to come from plain CSS (not JS) to do any good - this rule is
+// what actually keeps raw, not-yet-compiled markup (literal "{{...}}" text, every ng-if'd element
+// regardless of its condition, .output-pane's data-editor-theme-dependent colors, ...) off the
+// screen during the real-world gap between the browser parsing the static HTML and Angular (loaded
+// from a CDN) finishing bootstrap. index.html carries the ng-cloak attribute ONCE, on the app root
+// (see its own comment there for the fuller writeup on why per-element cloaking was the wrong shape
+// of fix) - this rule just needs to exist so that attribute, wherever it's used, does something.
+[ng-cloak] { display: none !important; }
+/* Animates the light/dark toggle: vm.toggleTheme() just flips the data-theme attribute, which
+   changes every var(--...) custom property at once - transitioning the few concrete properties
+   that actually consume them (not the custom properties themselves, which aren't natively
+   animatable without @property) is what makes that swap read as a fade instead of a hard cut.
+   Universal-selector so it reaches everything without hand-editing every rule in this file, but
+   LOWER specificity than any element's own `transition` declaration (e.g. .btn's hover-feedback
+   transition) - those keep their own snappier duration/property list entirely, since a
+   more-specific selector's `transition` shorthand replaces this one rather than merging with it. */
+*, *::before, *::after {
+  transition: background-color .22s ease, color .22s ease, border-color .22s ease, box-shadow .22s ease, fill .22s ease, stroke .22s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  font-size: 13.5px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 210px minmax(380px, 1fr) minmax(400px, 1fr);
+  height: 100vh;
+}
+/* Settings has no generated output - give the builder the full width. */
+.app.meta-view { grid-template-columns: 210px 1fr; }
+
+/* App bar replaces the side nav at narrow widths; hidden on desktop. */
+.appbar { display: none; }
+.appbar-brand { display: flex; align-items: center; gap: var(--sp-sm); font-weight: 650; font-size: 13px; color: #fff; white-space: nowrap; }
+.appbar-logo { width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+// A <gs-select> (see the directive's own header comment), not a native <select> - the mobile
+// appbar's mode picker used a plain <select> originally, but a native control can't be restyled
+// past its OS-drawn dropdown list, and (see git history) a shorthand background/padding property
+// here once collided with the base `select` rule's chevron positioning and tiled a chevron icon
+// across the whole control. gs-select sidesteps both: it's already the app's own fully-styled
+// dropdown everywhere else, so this just re-skins ITS trigger pill for the navy appbar instead of
+// the card-toned default (var(--panel)/var(--border-strong)/var(--text)) gs-select uses elsewhere
+// - the appbar's own background is a fixed navy ($gs-sidenav-bg/-dark, not a theme variable; see
+// .sidenav below), so this pill is fixed light-on-navy too, not theme-tied.
+.appbar-select { flex: 1; min-width: 0; }
+.appbar-select .gs-sel-trigger {
+  height: 34px; padding: 0 var(--sp-sm);
+  border-color: rgba(255,255,255,.25); border-radius: var(--sp-sm);
+  background: rgba(255,255,255,.12); color: #fff; font-size: 13px; font-weight: 600;
+}
+.appbar-select .gs-sel-trigger:hover { border-color: rgba(255,255,255,.4); }
+.appbar-select .gs-sel-chevron { color: rgba(255,255,255,.7); }
+
+@media (max-width: 920px) {
+  .app,
+  .app.meta-view { grid-template-columns: 1fr; height: auto; }
+  .app .sidenav { display: none; }
+  .app .appbar {
+    display: flex; align-items: center; gap: var(--sp-md);
+    padding: var(--sp-sm) var(--sp-md); background: var(--sidenav-bg);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .output-pane { position: static !important; height: 70vh; }
+}
+
+/* ---------- Side nav ---------- */
+.sidenav {
+  background: var(--sidenav-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 0 var(--sp-md);
+}
+.sidenav-brand {
+  display: flex; align-items: center;
+  gap: var(--sp-sm); padding: var(--sp-lg) var(--sp-md) var(--sp-md); width: 100%;
+}
+.sidenav-logo {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: rgba(255,255,255,.16);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 16px;
+  flex-shrink: 0;
+}
+.sidenav-brand-name { font-size: 13px; font-weight: 650; color: #fff; line-height: 1.15; margin: 0 0 var(--sp-xxs); }
+.sidenav-brand-desc { font-size: 10px; color: rgba(255,255,255,.5); line-height: 1.3; margin: 0; }
+.sidenav-modes {
+  display: flex; flex-direction: column; align-items: stretch;
+  gap: var(--sp-xxs); width: 100%; padding: var(--sp-sm) var(--sp-sm) 0;
+  border-top: 1px solid rgba(255,255,255,.1);
+  flex: 1;
+}
+.sidenav-btn {
+  width: 100%; position: relative;
+  display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
+  gap: var(--sp-md); padding: var(--sp-sm) var(--sp-md);
+  border: 0; border-radius: var(--sp-sm); background: transparent;
+  color: rgba(255,255,255,.45);
+  cursor: pointer; font: inherit;
+  transition: background .12s, color .12s;
+}
+/* The icon is ng-bind-html'd into a wrapping <span> (the original just has a bare <svg> as the
+   direct flex child) - a plain inline span sizes to its content's line box, which includes the
+   font's descender space below the SVG, inflating this row ~3.5px taller than the original.
+   display:flex collapses that span down to exactly the SVG's own box. Same fix applied to
+   .page-title's icon span below, for the same reason. */
+.sidenav-btn > span:first-child { display: flex; }
+.sidenav-btn:hover { background: rgba(255,255,255,.12); color: rgba(255,255,255,.84); }
+.sidenav-btn.active { background: var(--sidenav-active-bg); color: var(--sidenav-active-text); }
+.sidenav-btn:focus-visible { outline: 2px solid rgba(255,255,255,.55); outline-offset: -2px; }
+.sidenav-btn:disabled { cursor: not-allowed; }
+.sidenav-btn:disabled:hover { background: transparent; color: rgba(255,255,255,.3); }
+.sidenav-spacer {
+  flex: 1; min-height: var(--sp-sm);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  margin: var(--sp-xs) var(--sp-xxs) var(--sp-xs);
+}
+.sidenav-label { display: flex; flex-direction: column; font-size: 12.5px; font-weight: 600; line-height: 1.2; text-align: left; }
+.sidenav-badge {
+  margin-left: auto; font-size: 9px; font-weight: 700; letter-spacing: .04em;
+  color: rgba(255,255,255,.55); background: rgba(255,255,255,.12);
+  border-radius: 20px; padding: 2px 7px; text-transform: uppercase;
+}
+/* Connection status dot, right-justified on the Settings nav item - hidden while offline. */
+.sidenav-conn-dot {
+  position: absolute; top: 50%; right: var(--sp-md); transform: translateY(-50%);
+  width: 8px; height: 8px; border-radius: 50%; display: none;
+}
+.sidenav-btn.connected .sidenav-conn-dot { display: block; background: #3ecf7e; }
+.sidenav-btn.connecting .sidenav-conn-dot { display: block; background: #f5b942; }
+.sidenav-btn.error .sidenav-conn-dot { display: block; background: #e5534b; }
+
+/* ---------- Left builder pane ---------- */
+// padding-top lives HERE, not on .builder (below) - see .page-title-sticky's comment for why. The
+// visual result for every non-Standards mode is identical either way (this is still the first
+// child, so its own padding-top reads the same as inherited space from the parent) - only the
+// Standards page, where this becomes sticky, actually depends on padding living on this side.
+.page-title { display: flex; align-items: flex-start; gap: var(--sp-md); margin: 0 0 var(--sp-xxl); padding-top: var(--sp-xl); }
+.page-title > span:first-child { display: flex; }
+.page-title-name { font-size: 20px; font-weight: 650; color: var(--text); line-height: 1.1; }
+.page-title-sub { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-top: var(--sp-xxs); }
+// Standards focus mode's two-button decision row (Back to X / Stay & browse - see
+// vm.backFromStandards/vm.exitStdFocus) - pushed to the row's far end rather than sitting inline
+// after the title/subtitle text.
+.page-title-actions { margin-left: auto; align-self: center; display: flex; gap: var(--sp-sm); flex-wrap: wrap; justify-content: flex-end; }
+// Standards-only sticky header (ng-class'd, not global - keeps the "Back to X" button reachable
+// while scrolled, since the doc runs far longer than one screen). A REAL gotcha here, not just a
+// theoretical one: the first attempt tried to keep padding-top on .builder and have this element
+// bleed into it with a negative margin - measured live, that did NOT work (this element's
+// getBoundingClientRect().top stayed at 20px even scrolled thousands of pixels down, never
+// actually reaching 0), so a thin strip of whatever card is scrolled up that far kept showing
+// above the "sticky" header. Root cause: .builder's OWN top padding is a region only ITS
+// background can ever paint - no descendant's negative margin reliably bleeds into an ancestor's
+// padding box under `overflow: auto` in the way border-box geometry might suggest. Moving the
+// padding onto THIS element instead (see above) sidesteps the whole problem: there's no ancestor
+// padding left for anything to peek through, since this box's own background now covers its own
+// padding-top completely, and that's true whether it's in normal flow or pinned.
+.page-title-sticky {
+  position: sticky; top: 0; z-index: 5; background: var(--bg);
+}
+// overflow-anchor:none - every scroll position in this pane is set explicitly by JS
+// (StandardsUiService's animateScrollTop, the Standards Overview<->reading toggle, focus-mode
+// landings). Chrome's scroll anchoring is a heuristic for the OPPOSITE case (content silently
+// reflowing above an unaware reader) and was observed live to fight our own explicit writes:
+// switching Standards from Overview to reading removes the Contents hub AND reveals the doc in
+// the same digest, a large simultaneous layout shift right as StandardsUiService.scrollTo's own
+// scrollTop write lands - the anchor heuristic would then "correct" position on its own initiative
+// afterward, snapping an otherwise-correct scroll back toward 0. We already own scroll intent
+// here; the browser's guess isn't wanted.
+.builder { overflow-y: auto; overflow-anchor: none; padding: 0 var(--sp-xl) 80px; }
+// Standards focus mode's scroll lock (vm.stdFocusId) - freezes .builder exactly where the
+// deep-linked section landed until the reader picks Back or Stay. `overflow: hidden` blocks
+// wheel/trackpad/keyboard scrolling but does NOT reset the element's current scrollTop and does
+// NOT block a script from setting it - openStandard's own scrollTop assignment (which runs in the
+// same tick this lock engages) still lands the view correctly.
+.builder-focus-lock { overflow: hidden; }
+
+// The header's shared-context row (one table picker, persistent across every table-driven mode) -
+// see main.controller.js's vm.onWorkingTableChange header comment for why this exists: switching
+// modes used to silently reset which table you were working on. Lives inside a plain .card (the
+// "Source" panel, see index.html) now, so its OWN spacing/background/border all come from
+// .card/.card-body like every other panel - this is just the inner field row's flex layout. The
+// connection chip (.working-context-conn) moved to the card-head itself, right-justified via the
+// same justify-content:space-between every other card-head with a header action already uses.
+.working-context-row { display: flex; align-items: center; gap: var(--sp-md); }
+.working-context-field { display: flex; align-items: center; gap: var(--sp-sm); flex: 1; min-width: 240px; }
+.working-context-field gs-select { flex: 1; min-width: 160px; }
+.working-context-label { font-size: 11.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.working-context-conn {
+  display: flex; align-items: center; gap: var(--sp-xs);
+  border: 0; background: transparent; padding: var(--sp-xxs) var(--sp-xs);
+  font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap;
+  border-radius: var(--radius-sm); transition: background .12s, color .12s;
+}
+// var(--panel-alt), not var(--panel) - this sits in a .card-head (background: var(--panel)), so a
+// var(--panel) hover would be invisible against its own container; -alt is the one that contrasts.
+.working-context-conn:hover { background: var(--panel-alt); color: var(--text); }
+.working-context-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex-shrink: 0; }
+.working-context-dot.connected { background: #3ecf7e; }
+.working-context-dot.connecting { background: #f5b942; }
+.working-context-dot.error { background: #e5534b; }
+
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: var(--sp-lg); overflow: hidden; }
+.card-head { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--border); }
+.card-head h2 { margin: 0; font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.card-body { padding: var(--sp-md) var(--sp-lg); }
+
+.row { display: flex; gap: var(--sp-sm); align-items: center; }
+.row + .row { margin-top: var(--sp-sm); }
+.field-label { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); margin-bottom: var(--sp-xs); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-md); }
+// Variable name folded into the Function card (GlideRecord/GlideAggregate/GlideAjax) alongside
+// Function name/Parameters, rather than sitting alone in its own single-field "Source" card - all
+// three are naming concerns for the same generated snippet. Collapses to one column under 640px so
+// three inputs don't get too cramped on the mobile appbar layout (see the 920px sidenav breakpoint
+// below for where that layout switch itself happens).
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-md); }
+@media (max-width: 640px) {
+  .grid3 { grid-template-columns: 1fr; }
+}
+.hint { font-size: 11.5px; color: var(--muted); margin: 0 0 var(--sp-md); line-height: 1.5; }
+.check .hint { margin: 0; }
+
+// One method's checkbox + its own inline options (Script Include's Methods card) - each method
+// gets its own scoped options rather than one options set pooled across every method, so
+// .method-sub is a left-guideline + indent (nested content belongs to the row directly above it).
+.method-block + .method-block { margin-top: var(--sp-md); }
+.method-sub {
+  display: flex; flex-direction: column; gap: var(--sp-sm);
+  margin: var(--sp-sm) 0 0 var(--sp-md); padding-left: var(--sp-md);
+  border-left: 2px solid var(--border);
+}
+
+input[type=text], input[type=number], select, textarea {
+  width: 100%; height: var(--ctrl-h); padding: 0 var(--sp-md);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel); font: inherit; font-size: 13px; color: var(--text);
+  transition: border-color .12s, box-shadow .12s;
+}
+textarea { height: auto; padding: var(--sp-sm) var(--sp-md); resize: vertical; font-family: var(--mono); font-size: 12px; line-height: 1.5; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input::placeholder, textarea::placeholder { color: var(--faint); }
+select { cursor: pointer; appearance: none;
+  /* var() can't be interpolated inside a data-URI string, so the dark-mode variant is a whole
+     separate background-image override below (:root[data-theme="dark"] select) rather than a
+     custom-property swap like everywhere else in this file. */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5L6 7.5L9 4.5' stroke='%236b7280' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat; background-position: right 9px center; padding-right: 26px;
+}
+:root[data-theme="dark"] select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5L6 7.5L9 4.5' stroke='%239aa3b6' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+}
+
+.check { display: flex; align-items: center; gap: var(--sp-sm); font-size: 12.5px; color: var(--text); cursor: pointer; user-select: none; width: fit-content; max-width: 100%; }
+.checks { display: flex; flex-direction: column; gap: var(--sp-md); }
+.builder input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  position: relative; flex: 0 0 auto; vertical-align: middle;
+  width: 34px; height: 20px; margin: 0;
+  background: var(--border-strong); border-radius: 20px;
+  cursor: pointer; transition: background .15s;
+}
+.builder input[type="checkbox"]::before {
+  content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+  background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+.builder input[type="checkbox"]:checked { background: var(--accent-fill); }
+.builder input[type="checkbox"]:checked::before { transform: translateX(14px); }
+
+.btn {
+  height: var(--ctrl-h); display: inline-flex; align-items: center; gap: var(--sp-sm);
+  padding: 0 var(--sp-md); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--text); font: inherit; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: background .12s, border-color .12s;
+}
+.btn:hover { background: var(--btn-hover); border-color: var(--faint); }
+.btn-ghost { border-style: dashed; color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
+.btn-accent { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
+.btn-accent:hover { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); }
+.btn-danger-ghost { color: var(--danger); border-color: var(--danger-border); background: var(--danger-soft); }
+.btn-danger-ghost:hover { background: var(--danger-soft-hover); border-color: var(--danger); }
+input.masked-input { -webkit-text-security: disc; text-security: disc; }
+.btn-ghost:hover { background: var(--accent-soft-hover); border-color: var(--accent); }
+.btn-sm { height: var(--ctrl-h-sm); padding: 0 var(--sp-sm); font-size: 12px; }
+.icon-btn {
+  width: var(--ctrl-h); height: var(--ctrl-h); flex: 0 0 auto;
+  display: grid; place-items: center;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel); cursor: pointer; color: var(--muted); transition: all .12s;
+}
+.icon-btn:hover { background: var(--btn-hover-destroy); border-color: var(--danger-border); color: var(--danger); }
+
+.order-row, .set-row, .group-row, .agg-row, .having-row, .si-field-row { display: grid; gap: var(--sp-sm); align-items: center; }
+.order-row + .order-row, .set-row + .set-row, .group-row + .group-row,
+.agg-row + .agg-row, .having-row + .having-row, .si-field-row + .si-field-row { margin-top: var(--sp-sm); }
+.set-row { grid-template-columns: 1.4fr 1fr auto; }
+.order-row { grid-template-columns: 1.6fr 1fr auto; }
+.agg-row { grid-template-columns: 1fr 1.4fr auto; }
+.group-row { grid-template-columns: 1.6fr 1fr auto; }
+.having-row { grid-template-columns: 1.2fr 1fr 1fr auto; }
+.si-field-row { grid-template-columns: 1fr auto; }
+.empty { font-size: 12px; color: var(--faint); font-style: italic; padding: var(--sp-xs) 0; }
+.param-row { display: grid; grid-template-columns: 1.4fr 1fr auto; gap: var(--sp-sm); align-items: center; }
+.param-row + .param-row { margin-top: var(--sp-sm); }
+
+/* ---------- Standards page (hosted GlideFast best-practices document) ---------- */
+// Rendered from StandardsService's pre-parsed HTML (see scripts/build-standards.js). Reference
+// reading, so the typography is roomier than the builder forms; code samples reuse the app's
+// panel-alt/mono treatment rather than the output pane's editor theme - this is a document, not
+// generated output.
+
+// Two-column layout: the reading column caps at .std-content's measure (940px, see below) rather
+// than stretching to fill the builder pane, and a sticky rail uses the reclaimed width for an
+// "on this page" nav instead of leaving it blank. max-width + margin:auto on the row centers the
+// pair - left-justified was tried first (matching every other mode's panels) but read as the rail
+// sitting too close under the page title/header; centering gives it breathing room on both sides
+// instead. 940px (not wider) keeps line length readable - a wider column was tried and ran
+// ~110+ characters/line, too long for comfortable prose - this is the widest that still reads well.
+.standards-doc { display: flex; align-items: flex-start; gap: var(--sp-xxl); max-width: 1204px; margin: 0 auto; }
+// position: relative - the containing block .std-reading-hidden's position:absolute resolves
+// against, below. Without this it'd position against the next positioned ANCESTOR up the tree
+// (or the viewport), not this column.
+// overflow: hidden matters more than it looks like it should: a position:absolute descendant
+// still extends its nearest ancestor's SCROLLABLE overflow region even though it's out of normal
+// flow and contributes no in-flow height - that's exactly what .std-reading-hidden is during
+// Overview (see below). Without this, .builder was scrollable ~18000px deep behind a ~600px-tall
+// Contents hub, because the hidden (but still fully laid-out, per the comment below) reading
+// content was still there to scroll to. getBoundingClientRect() (what scrollTo below actually
+// needs) ignores clipping entirely, so this doesn't undo that fix - it just stops the invisible
+// content from being SCROLLABLE, without stopping it from being MEASURABLE.
+.std-doc-main { flex: 1; min-width: 0; max-width: 940px; position: relative; overflow: hidden; }
+// Keeps a .std-band genuinely laid out (never display:none) while Overview is showing, so
+// StandardsUiService.scrollTo's getBoundingClientRect() measurement is always accurate the instant
+// a tile/rail-link is clicked - see main.controller.js's vm.stdView comment for the real bug this
+// replaced (display:none's first-reveal layout lag). position:absolute removes it from normal
+// flow (so it doesn't add ~20000px of empty scroll below the Contents hub); visibility:hidden (not
+// opacity/display) keeps it un-paintable and non-interactive while still contributing to layout.
+.std-reading-hidden { position: absolute; top: 0; left: 0; width: 100%; visibility: hidden; pointer-events: none; }
+
+// Sticky within .builder (the scroll container) - stays in view while reading, tracks the
+// current section via vm.activeStdId (see main.controller.js's IntersectionObserver setup).
+// padding-left/right: NONE of the rail's own children (search, Overview, band titles) carry any
+// left inset of their own - only the nested chapter/section links do (var(--sp-sm)/var(--sp-lg),
+// stacking on TOP of this), which is what keeps them visually indented a level further than
+// Overview/band titles rather than flush with them. Without this, every top-level item (most
+// visibly Overview's left border) sits flush against the rail's own edge with zero breathing
+// room - reported directly as "right up against the left border."
+.std-rail {
+  width: 240px; flex-shrink: 0; align-self: flex-start;
+  position: sticky; top: 75px;
+  max-height: calc(100vh - 75px - var(--sp-xl));
+  overflow-y: auto; padding: 0 var(--sp-sm) var(--sp-lg);
+}
+// Focus mode (vm.stdFocusId): the whole rail goes inert, not just the dimmed non-active links -
+// otherwise the ONE undimmed (active) link would stay clickable, letting the reader pick a
+// different section without going through Back/Stay. Also blocks its own scrollbar - .std-rail
+// has its own overflow-y separate from .builder-focus-lock, so it needs the same treatment.
+.std-rail-locked { pointer-events: none; overflow: hidden; }
+// Pinned above the bands - switches the whole doc back to the Contents hub view
+// (vm.showStdOverview). Same left-border/color active treatment, and now the same left padding,
+// as .std-rail-part below (not a filled pill - tried first, read as too heavy against the rest of
+// the rail's plain-text links).
+.std-rail-overview {
+  display: block; width: 100%; text-align: left; border: 0; border-left: 2px solid transparent; background: transparent; cursor: pointer;
+  font: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted);
+  padding: var(--sp-xs) 0 var(--sp-xs) var(--sp-sm); margin-left: -1px; margin-bottom: var(--sp-lg);
+  transition: color .12s, border-color .12s;
+}
+// The rail's own search copy (not .std-search-wrap-header - see its comment) pinned to the top of
+// .std-rail's own internal scroll (.std-rail is `overflow-y: auto` in addition to being sticky
+// against .builder - see above), so it stays reachable even if the chapter list ever grows past a
+// short viewport's max-height instead of scrolling away with it. `background: var(--bg)` (matching
+// .page-title-sticky's own pinned-header treatment) keeps chapter labels from showing through as
+// they scroll underneath it.
+.std-rail .std-search-wrap {
+  position: sticky; top: 0; z-index: 1; background: var(--bg);
+  margin-bottom: var(--sp-md);
+}
+// .std-search-wrap .std-search-input's own base rule (below) hardcodes width: 220px - chosen for
+// the HEADER copy, which sits in a row next to other controls and needs a fixed compact width. The
+// rail's own copy has no such neighbor - it's the sole content of its row - and .std-rail is 240px,
+// not 220px, so the un-overridden fixed width left a 20px gap between the input's own right edge
+// and .std-search-wrap's (which stretches to the rail's full width same as any other block box).
+// .std-search-clear positions itself against THAT wrap, not the input, so it rendered mostly
+// outside the input's visible border, in that 20px gap - stretching the input to match with
+// width: 100% (higher specificity than the base rule already, since this selector has one more
+// class, but see it placed here for colocation with the rail's other search-box overrides above).
+.std-rail .std-search-wrap .std-search-input { width: 100%; }
+.std-rail-overview:hover { color: var(--text); }
+.std-rail-overview.active { color: var(--accent); border-left-color: var(--accent); }
+// Chapter bands ("Principles" / "Build It Well" - see build-standards.js's group tag). A visual
+// grouping layer only - vm.standardsDoc.groups is a derived VIEW over the existing flat parts[],
+// not a schema change (see StandardsUiService).
+.std-rail-band + .std-rail-band { margin-top: var(--sp-xl); }
+// Both clickable (jump to the band/chapter heading in the reading pane, via the same
+// vm.openStandard(id) the section links below use - see StandardsUiService for the chapter-*/
+// band-* id scheme) - button-reset since these render as <button> now, not plain <div> labels.
+// border-left: 2px solid transparent + margin-left: -1px, even though this label never shows a
+// colored border (no "active" state of its own) - reserves the same 2px every other rail item
+// (.std-rail-overview, .std-rail-part) reserves for its accent active-indicator, so this label's
+// TEXT still starts flush with theirs despite having no left padding of its own - without it, the
+// text would sit 2px further right than a plain box-left comparison would suggest.
+.std-rail-band-title {
+  display: block; width: 100%; text-align: left; border: 0; border-left: 2px solid transparent; background: transparent; cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text); margin-left: -1px; margin-bottom: var(--sp-sm);
+}
+.std-rail-band-title:hover { color: var(--accent); }
+.std-rail-chapter { margin-bottom: 2px; }
+// Chapter link + its expand/collapse chevron, side by side - two separate buttons (not one nested
+// inside the other), so a click lands unambiguously on one or the other with no
+// stopPropagation-on-the-wrong-target risk. .std-rail-part keeps its own click going straight to
+// vm.openStandard(part.id) like before; only the chevron toggles vm.stdExpanded.
+.std-rail-part-row { display: flex; align-items: stretch; }
+// Absorbs the styling .std-rail-link used to own before an earlier pass removed then reinstated
+// section-level links (see vm.stdPartExpanded), including the same font-weight/letter-spacing
+// trick: font-weight:600 alone was wide enough to wrap a long label ("Prefer Script Includes to
+// Global Scripts") onto a second line right as it became active, shifting every chapter below it -
+// the tightened letter-spacing offsets that extra bold width (measured live against the longest
+// rail label - see project memory) so the box stays the same size at both weights.
+.std-rail-part {
+  flex: 1; min-width: 0; text-align: left; border: 0; background: transparent;
+  border-left: 2px solid transparent; margin-left: -1px;
+  padding: 3px 0 3px var(--sp-sm); cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  color: var(--muted);
+}
+.std-rail-part:hover { color: var(--text); }
+.std-rail-part.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; letter-spacing: -0.02em; }
+// Chevron toggle for a chapter's section list (vm.toggleStdExpand) - deliberately tiny and quiet
+// (transparent until hovered) so it reads as a secondary affordance next to the chapter's own
+// name, not a competing control. Rotates 90deg open via the SVG's own transform, not a class swap
+// on two different icons - one glyph, one transition, and it can't flash mid-toggle.
+.std-rail-expand {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 20px; border: 0; background: transparent; border-radius: var(--radius-sm);
+  color: var(--faint); cursor: pointer; padding: 0;
+  transition: color .12s, background .12s;
+}
+.std-rail-expand svg { transition: transform .15s; }
+.std-rail-expand.expanded svg { transform: rotate(90deg); }
+.std-rail-expand:hover { color: var(--text); background: var(--panel-alt); }
+// Nested one level further than .std-rail-part (padding-left var(--sp-lg), not var(--sp-sm)) so
+// the section list visibly belongs to its chapter rather than reading as more chapters at the same
+// rank. Same active-indicator language as the rest of the rail (left border + accent color) -
+// vm.activeStdId already holds a section id whenever the scroll-spy has landed inside one, so this
+// needs no new controller state, just a direct comparison.
+.std-rail-sections { margin-bottom: 2px; }
+.std-rail-section {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  border-left: 2px solid transparent; margin-left: -1px;
+  padding: 2px 0 2px var(--sp-lg); cursor: pointer; font: inherit; font-size: 11.5px; line-height: 1.6;
+  color: var(--faint);
+}
+.std-rail-section:hover { color: var(--text); }
+.std-rail-section.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+// Below this, .std-doc-main alone (940px) plus padding doesn't leave enough room for a 240px
+// rail without cramping the reading column - the rail is the ONLY in-page nav, so below this
+// width the reader falls back to plain scrolling (see index.html's header comment on the doc).
+@media (max-width: 1260px) {
+  .std-rail { display: none; }
+}
+
+// The inline "Standard: ... ▸" / "View standard ▸" tips shown wherever a builder surfaces a best
+// practice - a plain text button so it sits inside hint/warning prose. The -ed variant sits on
+// the output pane's warn/lint banners, which have their own fixed text colors, so it inherits
+// rather than forcing the builder accent onto a dark banner.
+.std-link {
+  border: 0; background: transparent; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 600; color: var(--accent); white-space: nowrap;
+}
+.std-link:hover { text-decoration: underline; }
+.std-link-ed { color: inherit; text-decoration: underline; text-underline-offset: 2px; opacity: .85; }
+.std-link-ed:hover { opacity: 1; }
+
+// Chapter bands in the reading pane - the top-most structural level (bigger than a chapter card),
+// so this reads as a real section break as you scroll, not another small-caps card-head label.
+.std-band + .std-band { margin-top: var(--sp-xxl); }
+.std-band-heading {
+  font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--text); margin: 0 0 var(--sp-lg);
+}
+
+// Standards search box - lives in the sticky .page-title (see index.html's own comment on why:
+// stays reachable at the top of the page regardless of scroll position or viewport width, unlike
+// the Contents card it started in or the TOC rail, which hides below std-rail-bp). Reuses
+// .page-title-actions for its flex/margin-left:auto positioning; this is just the input+clear group.
+// The clear "×" sits INSIDE the input's own box (position:absolute within this relatively-positioned
+// wrapper), not as a flex sibling - a sibling button would grow the row's total width the moment a
+// query is typed, which is exactly the "search keeps getting wider" bug this replaced.
+.std-search-wrap { position: relative; display: flex; align-items: center; }
+// The global `input[type=text]` rule (below) is (0,1,1) specificity - a bare .std-search-input
+// class alone is only (0,1,0) and would lose the width battle; nest it under .std-search-wrap so
+// the compound selector (0,2,0) wins without an !important. Fixed width regardless of the clear
+// button's presence - only padding-right changes to make room for it.
+.std-search-wrap .std-search-input { width: 220px; padding-right: 26px; }
+.std-search-clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; padding: 0; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; line-height: 1;
+}
+.std-search-clear:hover { color: var(--text); background: var(--panel-alt); }
+// The rail carries its own search box now (see index.html) so it sits where the approved mockup
+// put it - but the rail itself hides below std-rail-bp, so its copy would vanish exactly where
+// search matters most on a narrow viewport. The header keeps a second copy
+// (.std-search-wrap-header) as the sole fallback below that width; hidden here whenever the rail's
+// copy is on-screen so exactly one of the two ever renders. Placed AFTER .std-search-wrap above -
+// same (0,1,0) specificity as its `display: flex`, so cascade order (not just the media query) is
+// what makes this win.
+@media (min-width: 1261px) {
+  .std-search-wrap-header { display: none; }
+}
+
+.std-content { font-size: 13px; line-height: 1.65; color: var(--text); max-width: 940px; }
+.std-content h2 { font-size: 16px; font-weight: 650; margin: var(--sp-xxl) 0 var(--sp-sm); }
+.std-content h3 { font-size: 13.5px; font-weight: 650; margin: var(--sp-xl) 0 var(--sp-sm); }
+.std-content h2:first-child, .std-content > div > h2:first-child { margin-top: var(--sp-sm); }
+// scroll-margin keeps a deep-linked heading clear of the pane edge when scrollIntoView lands.
+.std-content h2, .std-content h3 { scroll-margin-top: var(--sp-lg); }
+.std-content p { margin: 0 0 var(--sp-md); }
+.std-content ul, .std-content ol { margin: 0 0 var(--sp-md); padding-left: 22px; }
+.std-content li { margin-bottom: var(--sp-xxs); }
+.std-content code {
+  font-family: var(--mono); font-size: 12px;
+  background: var(--panel-alt); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+}
+// Inline markdown links (e.g. the jsdoc.app reference) render as plain <a> tags with no class,
+// so without this they'd fall back to the browser's default link blue - unthemed and illegible
+// against the dark panel background.
+.std-content a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.std-content a:hover { color: var(--accent-hover); }
+// Code samples reuse the generated-script highlighter's .c-* token spans, which are styled
+// globally to the LIGHT --ed-* palette. To make a snippet in the doc look identical to the same
+// snippet in the output pane in BOTH themes, bind this block's surface, base text, and (below)
+// token colors to the editor palette per APP theme - the dark --ed-* values are otherwise scoped
+// to the output pane only, so the doc's code would stay light in app dark mode without this.
+.std-pre {
+  margin: 0 0 var(--sp-md); padding: var(--sp-md) var(--sp-lg); overflow-x: auto;
+  font-family: var(--mono); border-radius: var(--radius-sm);
+  background: #{$gs-ed-bg}; border: 1px solid #{$gs-ed-border};
+}
+.std-pre code { background: transparent; border: 0; padding: 0; font-size: 12.5px; line-height: 1.6; color: #{$gs-ed-text}; }
+:root[data-theme="dark"] .std-pre { background: #{$gs-ed-bg-dark}; border-color: #{$gs-ed-border-dark}; }
+:root[data-theme="dark"] .std-pre code { color: #{$gs-ed-text-dark}; }
+// Light token colors come from the global .c-* rules (var(--ed-kw) etc. = :root light); add the
+// dark side, scoped to the doc so it tracks the app theme rather than the output pane's toggle.
+:root[data-theme="dark"] .std-content .c-kw  { color: #{$gs-ed-kw-dark}; }
+:root[data-theme="dark"] .std-content .c-str { color: #{$gs-ed-str-dark}; }
+:root[data-theme="dark"] .std-content .c-num { color: #{$gs-ed-num-dark}; }
+:root[data-theme="dark"] .std-content .c-com { color: #{$gs-ed-com-dark}; }
+:root[data-theme="dark"] .std-content .c-fn  { color: #{$gs-ed-fn-dark}; }
+
+// "Build this in <mode>" buttons in the doc (under a generated example, or under a section
+// heading). Same accent-ghost look as .btn-ghost; clicks bubble to the one delegated handler on
+// the .standards-doc wrapper (vm.onStandardsClick), since ng-click can't live inside injected HTML.
+.std-build-row { margin: var(--sp-md) 0 var(--sp-lg); }
+.std-build {
+  display: inline-flex; align-items: center; gap: var(--sp-xs);
+  border: 1px solid var(--accent-border); background: var(--accent-soft); color: var(--accent);
+  border-radius: var(--radius-sm); padding: var(--sp-xs) var(--sp-md);
+  font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .12s, border-color .12s;
+}
+.std-build:hover { background: var(--accent-soft-hover); border-color: var(--accent); }
+
+// Origin badge next to a section heading (see extractSource in build-standards.js) - informational,
+// not clickable, so it's a neutral/muted chip rather than .std-build's accent treatment.
+.std-source-badge {
+  display: inline-flex; align-items: center;
+  margin-left: var(--sp-sm); vertical-align: middle;
+  border: 1px solid var(--border); background: var(--panel-alt); color: var(--muted);
+  border-radius: var(--radius-sm); padding: 2px var(--sp-sm);
+  font-size: 10.5px; font-weight: 650; letter-spacing: .02em; text-transform: uppercase;
+}
+
+.std-table { border-collapse: collapse; margin: 0 0 var(--sp-md); width: 100%; }
+.std-table th, .std-table td { border: 1px solid var(--border); padding: var(--sp-xs) var(--sp-md); text-align: left; vertical-align: top; }
+
+.std-table th { background: var(--panel-alt); font-weight: 650; }
+
+// The Contents card's chapter hub (see index.html) - a tile per chapter, grouped by band. This IS
+// the landing view for Standards mode (vm.stdView === 'overview'): the doc itself stays mounted
+// underneath (search/scroll-spy/deep-links all depend on that) but is hidden via .std-reading-hidden
+// until a tile (or a rail link) switches vm.stdView to 'reading'.
+.std-hub { margin-top: var(--sp-xl); }
+.std-hub-band + .std-hub-band { margin-top: var(--sp-xl); }
+.std-hub-band-title {
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--faint); margin: 0 0 var(--sp-md);
+}
+.std-hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-md); }
+.std-hub-tile {
+  display: flex; flex-direction: column; gap: var(--sp-xxs); text-align: left;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel);
+  padding: var(--sp-md); font: inherit; cursor: pointer; transition: border-color .12s, box-shadow .12s;
+}
+.std-hub-tile:hover { border-color: var(--accent-border); box-shadow: var(--shadow); }
+.std-hub-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+// One of exactly 2 reusable shapes per tile (check = Principles, layers = Build It Well - see
+// index.html) - not a unique icon per chapter, which would need upkeep every time a chapter is
+// added. Band-tinted (not the flat --muted the rest of the tile uses) so the two bands still read
+// apart at a glance even with the icon simplified down to a single reused glyph.
+.std-hub-tile .ic { display: block; width: 15px; height: 15px; margin-bottom: 2px; color: var(--accent); }
+.std-hub-tile-alt .ic { color: var(--purple); }
+.std-hub-tile.ghost .ic { color: var(--faint); }
+.std-hub-tile .t { font-size: 12.5px; font-weight: 650; color: var(--text); line-height: 1.35; }
+.std-hub-tile .meta { font-size: 10.5px; color: var(--faint); }
+// Planned-but-unwritten chapters (see StandardsUiService's PLANNED_BY_GROUP) - dashed and inert
+// (a div, not a button - nothing to click through to yet), so a thin band still shows its shape.
+.std-hub-tile.ghost { border-style: dashed; cursor: default; opacity: .7; }
+.std-hub-tile.ghost:hover { border-color: var(--border); box-shadow: none; }
+.std-hub-tile .badge {
+  align-self: flex-start; margin-top: 2px; font-size: 9px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--faint); background: var(--panel-alt); border: 1px solid var(--border-strong);
+  border-radius: 20px; padding: 2px 7px;
+}
+
+// Deep-link landing flash - marks WHICH heading a std-link tip pointed at (targets are often
+// mid-page). Animation, not a transition, so the reduced-motion override below still kills it.
+@keyframes stdFlash {
+  0% { background: var(--accent-soft); box-shadow: 0 0 0 6px var(--accent-soft); }
+  100% { background: transparent; box-shadow: 0 0 0 6px transparent; }
+}
+.std-flash { animation: stdFlash 1.5s ease-out; border-radius: var(--radius-sm); }
+
+// Focus mode (vm.stdFocusId - see main.controller.js's openStandard): everything except the
+// section the reader deep-linked to fades and softens, so the one they came for is the only thing
+// easy to read. Not interactive while dimmed - reading it isn't the point, and it'd otherwise
+// intercept clicks meant for the sharp content around it. A transition, not just the raw state
+// change, so entering/exiting focus reads as a deliberate shift rather than a jump-cut; the
+// reduced-motion override elsewhere in this file already kills it for anyone who wants that off.
+.std-dimmed {
+  filter: blur(2.5px); opacity: .35; pointer-events: none; user-select: none;
+  transition: filter .3s ease, opacity .3s ease;
+}
+
+.enc-box { margin-top: var(--sp-md); display: none; }
+.enc-box.show { display: block; }
+.enc-box textarea.import-error { border-color: var(--danger); }
+.rel-date-row { display: flex; gap: var(--sp-xs); align-items: center; margin: 2px 0 var(--sp-sm); }
+.rel-date-row select { font-size: 11.5px; color: var(--muted); flex: 1; min-width: 0; max-width: 260px; }
+.cond-val-wrap { display: flex; gap: var(--sp-xs); align-items: center; min-width: 0; }
+.cond-val-wrap input, .cond-val-wrap select, .cond-val-wrap .gs-sel-wrap { flex: 1; min-width: 0; }
+.between-pair { display: flex; gap: var(--sp-xs); align-items: center; min-width: 0; flex: 1; }
+.between-sep { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+
+/* Condition groups (Encoded Query mode) */
+.group { border: 1px solid var(--border); border-radius: 9px; padding: var(--sp-md); background: var(--panel-alt); }
+// Each ng-repeat iteration's own root element holds .group-join THEN its .group as plain children
+// (Angular repeats the host element itself, it doesn't add a wrapper) - so .group-join is never
+// preceded by a .group sibling; it's the FIRST child of its own iteration, and the previous
+// iteration's .group lives in an entirely different parent. `.group + .group-join` never matched
+// anything, silently dropping the centering/spacing below and leaving the "AND" pill left-aligned
+// with no breathing room from the group above it.
+.group-join { display: flex; align-items: center; justify-content: center; gap: var(--sp-xs); margin: var(--sp-sm) 0; }
+.group-join .and-sep-pill { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 20px; background: var(--panel); }
+.group-join .and-sep-label { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: var(--faint); padding: var(--sp-xxs) var(--sp-md); }
+.cond-row { display: grid; grid-template-columns: 1.3fr 1fr 1.3fr auto; gap: var(--sp-sm); align-items: center; }
+// Same ng-repeat-on-host-element pitfall as .group-join above: `c in g.conds` repeats the row's
+// own root, so .or-tag is the FIRST child of its own iteration, never preceded by the previous
+// iteration's .cond-row - `.cond-row + .or-tag` never matched, leaving "OR" with no styling at all.
+.or-tag { display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .08em; margin: var(--sp-sm) 0; }
+.or-tag + .cond-row { margin-top: 0; }
+.cond-row + .cond-row { margin-top: var(--sp-sm); }
+.group-foot { margin-top: var(--sp-sm); }
+
+/* Script Include: method toggles + their nested options */
+.switch-row { display: flex; align-items: center; gap: var(--sp-md); font-size: 12.5px; color: var(--text); cursor: pointer; user-select: none; width: fit-content; }
+.switch-row.sub { font-size: 12px; color: var(--muted); }
+.method-item + .method-item { margin-top: var(--sp-md); }
+.method-options { margin: var(--sp-sm) 0 var(--sp-xxs) 44px; padding-left: var(--sp-md); border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: var(--sp-md); }
+.opt-row { display: flex; align-items: center; gap: var(--sp-sm); font-size: 12px; color: var(--muted); }
+.opt-label { width: 52px; flex: 0 0 auto; }
+.opt-row select, .opt-row input { width: auto; flex: 1; }
+
+/* gs-select: searchable dropdown directive, used for every table/field/enum picker in the app. */
+gs-select { display: block; width: 100%; min-width: 0; }
+.gs-sel-wrap { position: relative; width: 100%; }
+.gs-sel-trigger {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; height: var(--ctrl-h); padding: 0 var(--sp-md);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel); font: inherit; font-size: 13px; color: var(--text);
+  cursor: pointer; text-align: left; gap: var(--sp-sm);
+  transition: border-color .12s, box-shadow .12s;
+}
+.gs-sel-trigger:hover { border-color: var(--faint); }
+.gs-sel-trigger.open, .gs-sel-trigger:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.gs-sel-val { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gs-sel-val.placeholder { color: var(--faint); }
+.gs-sel-chevron { flex: 0 0 auto; color: var(--muted); display: flex; align-items: center; transition: transform .15s; }
+.gs-sel-trigger.open .gs-sel-chevron { transform: rotate(180deg); }
+.gs-sel-dropdown {
+  position: fixed; z-index: 9999;
+  background: var(--panel); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  overflow-y: auto; max-height: 280px; display: none;
+}
+.gs-sel-dropdown.open { display: block; }
+.gs-sel-opt { padding: var(--sp-sm) var(--sp-md); cursor: pointer; font-size: 13px; color: var(--text); overflow: hidden; transition: background .08s; }
+.gs-sel-opt:hover { background: var(--accent-soft); color: var(--accent); }
+.gs-sel-opt.selected { font-weight: 600; color: var(--accent); }
+.gs-sel-opt-label { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-sel-opt-name { display: block; font-size: 11.5px; color: var(--muted); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-sel-opt:hover .gs-sel-opt-name { color: var(--accent); opacity: .7; }
+.gs-sel-opt.selected .gs-sel-opt-label { font-weight: 600; color: var(--accent); }
+.gs-sel-search-wrap { padding: var(--sp-sm) var(--sp-sm) var(--sp-xs); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); }
+.gs-sel-search { width: 100%; background: transparent; border: none; outline: none; font: inherit; font-size: 12.5px; color: var(--text); }
+.gs-sel-search::placeholder { color: var(--muted); }
+.gs-sel-no-opts { padding: var(--sp-sm) var(--sp-md); font-size: 12.5px; color: var(--muted); }
+.gs-sel-custom-opt { color: var(--accent); }
+
+/* Generic confirmation modal */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(10, 12, 18, .62);
+  display: flex; align-items: center; justify-content: center; padding: var(--sp-xxl);
+}
+.modal {
+  width: min(780px, 100%); max-height: 84vh;
+  background: #1b1f2a; border: 1px solid #39404f; border-radius: 12px;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, .55);
+}
+.modal.modal-sm { width: min(440px, 100%); }
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--sp-lg) var(--sp-xl); border-bottom: 1px solid #2c3242;
+  color: #e6e9ef; font-weight: 600; font-size: 13px;
+}
+.icon-x { background: transparent; border: 0; color: #9aa1ab; font-size: 15px; cursor: pointer; line-height: 1; }
+.icon-x:hover { color: #fff; }
+.modal-hint { margin: var(--sp-md) var(--sp-xl) 0; color: #8b93a4; font-size: 12px; line-height: 1.55; }
+.modal-sm .modal-hint { margin-bottom: var(--sp-lg); }
+.modal-actions { display: flex; gap: var(--sp-sm); justify-content: flex-end; padding: 0 var(--sp-xl) var(--sp-lg); }
+/* Fixed dark colors, not theme-tied vars - every modal in this app is permanently dark regardless
+   of the app's light/dark theme (see .preview-table's comment below), so a button that appears
+   inside one (Confirm's Cancel/Reset, Deploy's Copy/Download) needs its own always-dark palette
+   too, not whichever theme happens to be active. */
+.out-btn {
+  height: 30px; padding: 0 var(--sp-md); background: #2a3040; border: 1px solid #39404f; color: #d7dbe4;
+  border-radius: 7px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: var(--sp-sm); transition: background .12s;
+}
+.out-btn:hover { background: #343c4e; }
+.out-btn.copied { background: #15803d; border-color: #15803d; color: #fff; }
+.out-btn.danger-btn { background: #b42318; border-color: #b42318; color: #fff; }
+.out-btn.danger-btn:hover { background: #912018; border-color: #912018; }
+.preview-body { margin: var(--sp-md) var(--sp-xl) var(--sp-lg); overflow: auto; max-height: 50vh; }
+.preview-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+/* Fixed colors, not the theme-tied --border/--text vars - .modal is permanently dark regardless
+   of the app's light/dark theme (same reasoning as .modal-head/.modal-hint's own hardcoded
+   colors just above), so this table needs its own always-dark palette instead of inheriting
+   whichever theme happens to be active. */
+.preview-table th, .preview-table td {
+  border: 1px solid #2c3242; padding: var(--sp-xs) var(--sp-sm); color: #e6e9ef;
+  text-align: left; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis;
+}
+.preview-table th { background: #232838; font-weight: 650; }
+
+/* Deploy dialog - packages this app as a scoped application (see DeployService's header
+   comment). This app's modals are ALWAYS dark regardless of the active app theme (see
+   .preview-table's comment above), so the dialog's inputs/tabs use fixed dark colors (matching
+   the modal's own chrome, plus this app's own $gs-accent-dark/$gs-accent-soft-dark for the one
+   accent this dialog needs) rather than the app's ordinary theme-tied vars - otherwise they'd
+   randomly shift between light and dark chrome depending on whatever theme the REST of the app
+   happens to be in. */
+.deploy-form { margin: var(--sp-md) var(--sp-xl) 0; }
+.deploy-form .field-label, .deploy-target .field-label { color: #8b93a4; }
+.deploy-form input[type="text"], .deploy-target input[type="text"] {
+  background: #12151d; border: 1px solid #39404f; color: #e6e9ef;
+}
+.deploy-form input[type="text"]::placeholder, .deploy-target input[type="text"]::placeholder { color: #6e7681; }
+.deploy-form input[type="text"]:focus, .deploy-target input[type="text"]:focus {
+  outline: none; border-color: #{$gs-accent-dark}; box-shadow: 0 0 0 3px #{$gs-accent-soft-dark};
+}
+.deploy-target {
+  border: 1px solid #39404f; border-radius: var(--radius-sm); padding: var(--sp-md); background: #12151d;
+}
+.deploy-target .hint { color: #8b93a4; margin: 0 0 var(--sp-sm); }
+/* One shared "primary" fill for accent-colored controls in this dialog (Detect prefix, the active
+   tab below) - fixed to the same $gs-accent-dark, for the same reason everything else in this
+   block is fixed rather than theme-tied (see this section's header comment). .btn-primary is a
+   MODAL-scoped counterpart to the app-wide .btn-accent (which stays correctly theme-tied for
+   buttons outside modals) - .btn-accent inside a modal would make Detect prefix silently drift
+   out of sync with the tab's fixed accent depending on whatever theme the rest of the app happens
+   to be in, the exact bug this replaces. */
+.btn-primary { background: #{$gs-accent-dark}; border-color: #{$gs-accent-dark}; color: #fff; }
+.btn-primary:hover { background: #{$gs-accent-hover-dark}; border-color: #{$gs-accent-hover-dark}; }
+.deploy-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: var(--sp-md) var(--sp-xl) 0; }
+.deploy-tab {
+  font: inherit; font-size: 12px; padding: 4px 10px; border: 1px solid #39404f; border-radius: var(--radius-sm);
+  background: #232838; color: #9aa1ab; cursor: pointer;
+}
+.deploy-tab:hover { color: #e6e9ef; }
+.deploy-tab.active { background: #{$gs-accent-dark}; border-color: #{$gs-accent-dark}; color: #fff; }
+.modal-code {
+  margin: var(--sp-md) var(--sp-xl); flex: 1; min-height: 220px;
+  background: #11141d; border: 1px solid #2c3242; border-radius: var(--sp-sm);
+  color: #c3e88d; font-family: var(--mono); font-size: 12px; line-height: 1.5;
+  padding: var(--sp-md); resize: none;
+}
+.modal-code:focus { outline: none; border-color: #{$gs-accent-dark}; }
+
+/* ---------- Output pane ---------- */
+/* Every color here reads from the --ed-* custom properties (see the .output-pane[data-editor-theme]
+   blocks up top) rather than app-theme vars or literals - this pane has its own independent
+   light/dark/auto toggle (vm.editorTheme), separate from the rest of the app. */
+/* border-left, not just the background-color contrast between this pane and .builder - the two
+   used to read as clearly separate purely because the output pane was always dark, but now that
+   it can be light too (light app + light/auto editor theme), their fills land within a few
+   percent of each other's lightness and the seam all but disappears without an explicit line. */
+.output-pane { position: sticky; top: 0; height: 100vh; background: var(--ed-bg); border-left: 1px solid var(--ed-border); display: flex; flex-direction: column; }
+.out-top { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-md) var(--sp-xl); border-bottom: 1px solid var(--ed-border); flex: 0 0 auto; }
+.out-top .title { color: var(--ed-topbar-title); font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+/* Editor theme toggle - independent of the sidenav's own app-theme toggle. A single button that
+   cycles auto -> light -> dark -> auto on click (not a 3-way direct-pick switch, matching the
+   sidenav toggle's own click-to-cycle interaction). Just a plain clickable icon button - it has
+   no "selected" state to highlight (clicking it always DOES something, cycling to the next
+   theme, rather than picking one of several fixed options), so it stays neutral/transparent like
+   the copy/download icon buttons next to it rather than a permanently accent-filled chip. */
+.editor-theme-toggle {
+  width: 24px; height: 24px; padding: 0; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  color: var(--ed-icon-text); cursor: pointer; transition: background .12s, color .12s;
+}
+.editor-theme-toggle:hover { background: var(--ed-icon-hover-bg); color: var(--ed-icon-hover-text); }
+.panels { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.panel { flex: 1 1 0; display: flex; flex-direction: column; min-height: 0; border-bottom: 1px solid var(--ed-border); }
+.panel:last-child { border-bottom: 0; }
+.panel-bar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-sm) var(--sp-lg); background: var(--ed-panelbar-bg); border-bottom: 1px solid var(--ed-border-soft); flex: 0 0 auto; }
+.panel-title { color: var(--ed-panel-title); font-size: 11.5px; font-weight: 600; letter-spacing: .02em; }
+.panel-actions { display: flex; align-items: center; gap: var(--sp-sm); }
+.panel-icon-btn {
+  position: relative;
+  width: 30px; height: 30px;
+  background: transparent; border: 1px solid transparent; color: var(--ed-icon-text);
+  border-radius: 7px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s;
+}
+.panel-icon-btn:hover { background: var(--ed-icon-hover-bg); color: var(--ed-icon-hover-text); }
+.panel-icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.panel-icon-btn.copied { color: #4ade80; }
+.panel-icon-btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; top: calc(100% + 6px); right: 0;
+  background: var(--ed-tooltip-bg); color: var(--ed-tooltip-text); border: 1px solid var(--ed-tooltip-border);
+  padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500;
+  line-height: 1.4; white-space: nowrap; pointer-events: none;
+  opacity: 0; transform: translateY(-2px);
+  transition: opacity .12s, transform .12s; z-index: 70;
+}
+.panel-icon-btn[data-tip]:hover::after,
+.panel-icon-btn[data-tip]:focus-visible::after { opacity: 1; transform: translateY(0); }
+// Anchored to a code panel, above the pre - an affirming/explanatory tone, e.g. "here's why this
+// generated code looks the way it does," not a caution. Every code-panel banner in the app uses
+// this now (the sys_id hard-code notice used to be a separate .panel-warning; folded in here since
+// every one of these turned out to be explanatory, not a real warning about something risky).
+//
+// One icon, one border per panel, regardless of how many standards apply (GlideRecord/Script
+// Include can have up to three/four at once) - each tip is a <p> in .info-stack, hairline-
+// separated instead of stacking whole separate .panel-info boxes with a repeated icon each. The
+// icon is a sibling of .info-stack (not nested in the first tip) so it reads as labeling the
+// whole panel; its margin-top matches .info-stack p's own top padding so it still lands on
+// exactly the first line of text, not the vertical center of the full stack.
+.panel-info { display: flex; gap: var(--sp-sm); align-items: flex-start; padding: 0 var(--sp-lg); font-size: 12px; line-height: 1.45; background: var(--ed-info-bg); color: var(--ed-info-text); border-top: 1px solid var(--ed-info-border); border-bottom: 1px solid var(--ed-info-border); }
+.panel-info .ico { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; height: 17.4px; margin-top: var(--sp-sm); }
+.panel-info .ico svg { width: 15px; height: 15px; }
+.info-stack { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.info-stack p { margin: 0; padding: var(--sp-sm) 0; }
+.info-stack p + p { border-top: 1px solid var(--ed-info-rule); }
+.lint-banner { flex: 0 0 auto; display: flex; flex-direction: column; gap: 1px; }
+.lint-item { display: flex; gap: var(--sp-sm); align-items: flex-start; padding: var(--sp-sm) var(--sp-xl); font-size: 12px; line-height: 1.45; }
+.lint-item .ico { flex: 0 0 auto; display: flex; align-items: center; height: 17.4px; }
+.lint-item .ico svg { width: 15px; height: 15px; }
+.lint-item.danger { background: var(--ed-danger-bg); color: var(--ed-danger-text); border-top: 1px solid var(--ed-danger-border); border-bottom: 1px solid var(--ed-danger-border); }
+.lint-item.warn { background: var(--ed-warn-bg); color: var(--ed-warn-text); border-top: 1px solid var(--ed-warn-border); border-bottom: 1px solid var(--ed-warn-border); }
+pre.code {
+  margin: 0; flex: 1; min-height: 0; overflow: auto;
+  padding: var(--sp-xl) var(--sp-xl);
+  font-family: var(--mono); font-size: 13px; line-height: 1.65;
+  color: var(--ed-text); tab-size: 2; white-space: pre;
+}
+.c-kw  { color: var(--ed-kw); }
+.c-str { color: var(--ed-str); }
+.c-num { color: var(--ed-num); }
+.c-com { color: var(--ed-com); font-style: italic; }
+.c-fn  { color: var(--ed-fn); }
+
+.phase-note {
+  margin: var(--sp-xl) var(--sp-xl) 0; padding: var(--sp-md) var(--sp-lg);
+  background: #221c0f; border: 1px solid #4d3f1c; border-radius: var(--radius-sm);
+  color: #fde68a; font-size: 12px; line-height: 1.5;
+}
+
+.stub-card { padding: var(--sp-xxl); text-align: center; color: var(--muted); font-size: 13px; }
+
+// No inline <code> styling here on purpose - every <code> in this app (hint text like
+// `try/catch`, the Settings page's `{{vm.pageOrigin}}`, ...) renders as plain browser-default
+// monospace text. An earlier pass here added a chip look (background/padding/border-radius, plus
+// a --inline-code-bg theme token and a .modal-head-specific override) - removed, not needed.

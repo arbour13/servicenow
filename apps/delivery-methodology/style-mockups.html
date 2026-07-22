@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Delivery Playbook — Style Explorations</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, 'Segoe UI', sans-serif;
+    background: #0d0f12;
+    color: #e8eaed;
+    display: flex;
+    flex-direction: column;
+  }
+  .gallery-bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 22px;
+    background: #16191d;
+    border-bottom: 1px solid #262b31;
+    flex-shrink: 0;
+  }
+  .gallery-bar h1 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: #8b93a0;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .concept-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .concept-tabs button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: #b7bfca;
+    background: #1e2227;
+    border: 1px solid #2c3138;
+    padding: 7px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .concept-tabs button:hover { background: #262b31; color: #fff; }
+  .concept-tabs button.active { background: #fff; color: #16191d; border-color: #fff; font-weight: 600; }
+  .concept-desc {
+    font-size: 12.5px;
+    color: #6b7280;
+    margin-left: auto;
+    max-width: 460px;
+    text-align: right;
+    line-height: 1.4;
+  }
+  .stage-wrap { flex: 1; min-height: 0; padding: 18px; }
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #262b31;
+    border-radius: 10px;
+    background: #fff;
+  }
+  @media (max-width: 900px) {
+    .gallery-bar { flex-wrap: wrap; }
+    .concept-desc { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="gallery-bar">
+    <h1>STYLE&nbsp;EXPLORATIONS</h1>
+    <div class="concept-tabs" id="tabs"></div>
+    <div class="concept-desc" id="desc"></div>
+  </div>
+  <div class="stage-wrap"><iframe id="stage" title="Style concept preview"></iframe></div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   Same trimmed real dataset as the layout exploration — one
+   flagship (fully-written) sub-phase per phase, rest as stubs.
+   ============================================================ */
+const JT = {
+  arch: { name: 'Architect', abbr: 'ARCH' },
+  em:   { name: 'Engagement Manager', abbr: 'EM' },
+  bpc:  { name: 'Business Process Consultant', abbr: 'BPC' },
+  tc:   { name: 'Technical Consultant', abbr: 'TC' },
+  ux:   { name: 'UX Designer', abbr: 'UX' },
+  pre:  { name: 'Sales & Presales', abbr: 'PRE' },
+  es:   { name: 'Executive Sponsor', abbr: 'ES' },
+  csw:  { name: 'Case Study Writer', abbr: 'CSW' },
+  se:   { name: 'Sales Executive', abbr: 'SE' }
+};
+
+const PHASES = [
+  {
+    name: 'Initiate',
+    subs: [
+      {
+        sid: '1.1', name: 'Pre-IPKT', detailed: true, recent: true,
+        overview: 'At this phase, the engagement is extremely likely to commence. Sales Executive has moved the opportunity in the Customer Relations Management (CRM) system to “Verbal” and we assign the future project team to get ready.',
+        objective: 'Familiarize yourself with the sales & contracting assets, ensure we have matched the correct skills to the customer expectations, and call out any conflicts or anomalies well ahead of customer engagement.',
+        changeSummary: 'Added ROM to required inputs and clarified the SOW review task ownership.',
+        loe: '3–5 hours',
+        inputs: ['Addition to Slack Channel by Resourcing team', 'SoW / Work Order', 'IPKT Document', 'ROM'],
+        deliverables: ['Notes and risks to the bottom section of the IPKT document', 'Discuss with Sales team in advance if time-sensitive'],
+        tasks: [
+          { text: 'Review SOW inputs', raci: { arch: ['R'], em: ['A','R'], bpc: ['R'], tc: ['R'] } },
+          { text: 'Take thorough notes', raci: { arch: ['R'], em: ['A','R'], bpc: ['R'], tc: ['R'] } },
+          { text: 'Review previous / concurrent projects or GRSs conducted with the client', raci: { arch: ['R'], em: ['R'], bpc: ['R'], tc: ['R'] } }
+        ]
+      },
+      { sid: '1.2', name: 'IPKT' },
+      { sid: '1.3', name: 'Customer Pre-Kickoff' },
+      { sid: '1.4', name: 'Get to Know the Team' },
+      { sid: '1.5', name: 'Kickoff' }
+    ]
+  },
+  {
+    name: 'Plan',
+    subs: [
+      {
+        sid: '2.1', name: 'Pre-Workshop Planning', detailed: true, recent: true,
+        overview: 'We are getting our customer team ready for a successful and efficient start of the project. Most steps are internal readiness activities, but coordination is needed while interfacing with the client.',
+        objective: 'Ensure all logistics are cared for on our end, customer expectations are fully aligned, and we maximize the time and effort during the actual workshops once they begin.',
+        changeSummary: 'Added the “Prepare Demo instance” task with its job aid.',
+        loe: 'Architects 2h · BPC 3h · EM 1h · UX 1h',
+        inputs: ['Customer demo instance', 'Completed customer value statement', 'Completed customer startup checklist'],
+        deliverables: ['Workshop calendar invites & agenda sent to customer, by EM', 'Customer pre-reads, prerequisites', 'Workshop assets finalized'],
+        tasks: [
+          { text: 'Review completed Startup checklist', raci: { em: ['R'], bpc: ['A','R'], arch: ['R'], tc: ['C'] } },
+          { text: 'Align on future workshop needs and logistics', raci: { em: ['R'], bpc: ['A','R'], arch: ['R'], tc: ['C'] } },
+          { text: 'Role play prep for workshop', raci: { em: ['R'], bpc: ['A','R'], arch: ['R'], tc: ['C'] } },
+          { text: 'Prepare Demo instance', raci: { em: ['I'], bpc: ['C'], arch: ['A','R'], tc: ['C'] } }
+        ]
+      },
+      { sid: '2.2', name: 'Customer Workshops' },
+      { sid: '2.3', name: 'Post Workshop' },
+      { sid: '2.4', name: 'Scope Rebalancing' },
+      { sid: '2.5', name: 'Refinement & Sprint Planning' },
+      { sid: '2.6', name: 'Sprint Planning with Customer' }
+    ]
+  },
+  {
+    name: 'Execute',
+    subs: [
+      {
+        sid: '3.1', name: 'Build Activities', detailed: true, recent: false,
+        overview: 'This phase is where we execute high quality development and code configurations within the ServiceNow platform, iteratively and incrementally, ensuring the output evolves in alignment with the plans set forth with the customer.',
+        objective: 'Build upon the established user stories and create a working ServiceNow environment that helps the customer meet their stated business objectives, in the timeline set forth.',
+        changeSummary: '',
+        loe: 'As defined · UIX by portal complexity',
+        inputs: ['Sprint roadmap', 'Approved stories', 'New requirements & defects', 'Project Plan', 'Resource Plan', 'RTM'],
+        deliverables: ['Completion & sign off of stories within sprint(s)', 'Code release', 'Weekly status reports (EM)', 'RTM', 'Sprint plan'],
+        tasks: [
+          { text: 'Facilitate and prepare for Sprint planning', raci: { em: ['A','R'], bpc: ['R'], arch: ['R'], tc: ['R'] } },
+          { text: 'Review stories with the project team, ensure sprint plan aligned with GF and client', raci: { em: ['A','R'], bpc: ['R'], arch: ['R'], tc: ['R'] } },
+          { text: 'User story refining and unblocking', raci: { em: ['C'], bpc: ['A','R'], arch: ['R'], tc: ['C'] } }
+        ]
+      },
+      { sid: '3.2', name: 'Build Validation and UAT Readiness' }
+    ]
+  },
+  {
+    name: 'Deliver',
+    subs: [
+      {
+        sid: '4.1', name: 'UAT', detailed: true, recent: false,
+        overview: 'User Acceptance Testing is the phase in which the software/configuration built by GlideFast is tested in “real world” environments with representatives of the personas who will be using ServiceNow, simulating their future use.',
+        objective: 'Ensure the delivered ServiceNow code performs required tasks in real-world scenarios, and that any defects are worked on and resolved satisfactorily.',
+        changeSummary: '',
+        loe: 'As Defined',
+        inputs: ['UAT strategy & plan from kick off'],
+        deliverables: ['Progress and status reports throughout UAT', 'UAT signoff', 'Backlog inventory within customer’s agile platform'],
+        tasks: [
+          { text: 'Execute UAT based on testing services in the SOW', raci: { em: ['R'], bpc: ['A','R'], arch: ['R'], tc: ['C'] } },
+          { text: 'Establish UAT reporting cadence', raci: { em: ['A','R'], bpc: ['C'], arch: ['C'], tc: ['C'] } },
+          { text: 'Prioritize and address defects thru resolution', raci: { em: ['C'], bpc: ['C'], arch: ['R'], tc: ['R'] } }
+        ]
+      },
+      { sid: '4.2', name: 'Go Live Preparedness' },
+      { sid: '4.3', name: 'Customer Signoff & Go Live Readiness' },
+      { sid: '4.4', name: 'Deploy' },
+      { sid: '4.5', name: 'Hypercare' }
+    ]
+  },
+  {
+    name: 'Close',
+    subs: [
+      {
+        sid: '5.1', name: 'Internal Closure Meeting', detailed: true, recent: false,
+        overview: 'This is the phase in the journey where we prepare for the customer official closure meeting, discuss lessons learned, and care for any internal logistics necessary and associated with the closure of the engagement.',
+        objective: 'Capture all learnings from the engagement for internal improvement, and closely align on what is expected at the customer closure meeting.',
+        changeSummary: '',
+        loe: '1 hr all job titles',
+        inputs: ['Internal closure deck template'],
+        deliverables: ['Revised external closure deck', 'Schedule external closure meeting', 'Lessons learned', 'Draft marketing case study'],
+        tasks: [
+          { text: 'Schedule and facilitate internal retrospective; document lessons learned', raci: { em: ['A','R'], bpc: ['R'], arch: ['R'], tc: ['R'], pre: ['R'], es: ['I','C'], csw: ['R'], se: ['I','C'] } },
+          { text: 'Confirm customer equipment return process with each team member', raci: { em: ['A','R'], bpc: ['C'], arch: ['C'], tc: ['C'] } }
+        ]
+      },
+      { sid: '5.2', name: 'Customer Retrospective' },
+      { sid: '5.3', name: 'Customer Closure Meeting' }
+    ]
+  }
+];
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* Shared real Homespace tokens (from CSS variables.scss) as a CSS block every concept includes */
+const TOKENS_CSS = `
+  :root {
+    --navy: #0a2136;            /* $brand-secondary */
+    --navy-light: #0b2d45;      /* $brand-secondary-light */
+    --navy-lighter: #002e52;    /* $brand-secondary-lighter */
+    --navy-lightest: #013c56;   /* $brand-secondary-lightest */
+    --primary: #00e0ac;         /* $brand-primary */
+    --border-tertiary: #c5dce7;
+    --text-on-primary: #0a2136;
+    --gradient-pill: linear-gradient(90deg, #21fbc8 0%, #3ec2f8 100%);      /* $gradient-light-5 */
+    --gradient-pill-hover: linear-gradient(90deg, #a7ffeb 0%, #49c6fa 100%);
+    --gradient-card: linear-gradient(135deg, #275b63 0%, #0d435f 100%);    /* $gradient-dark-10 */
+    --gradient-card-2: linear-gradient(135deg, #327374 0%, #0c506e 100%);  /* $gradient-dark-11 */
+    --shadow-inset: 0px 4px 4px 0px rgba(0,28,54,0.20) inset;
+    --shadow-md: 0 4px 4px 0 rgba(0,0,0,0.25);
+    --r-R: #38caa0; --r-A: #f0a94e; --r-C: #57a6f2; --r-I: #9aabb8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--navy); color: #fff; font-family: 'Montserrat', 'Lato', sans-serif; }
+`;
+
+/* ============================================================
+   Style 1 — Card Tiles: everything rendered as Homespace's own
+   gradient content-card, the way "Recommended for you" tiles work.
+   ============================================================ */
+function styleCardTiles() {
+  const dataJson = JSON.stringify({ PHASES, JT });
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>${TOKENS_CSS}
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 36px 32px 90px; }
+  h1 { font-size: 26px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: #9db3c2; font-size: 14px; margin: 0 0 28px; }
+  .switch { display: inline-flex; gap: 4px; background: var(--navy-light); padding: 4px; border-radius: 50px; margin-bottom: 28px; }
+  .switch button { font-family: inherit; border: none; background: transparent; color: #cfe0ee; font-weight: 600; font-size: 13px; padding: 7px 18px; border-radius: 50px; cursor: pointer; }
+  .switch button.on { background: var(--gradient-pill); color: var(--text-on-primary); box-shadow: var(--shadow-inset); }
+  .road { display: flex; justify-content: space-between; margin-bottom: 28px; gap: 10px; }
+  .station { flex: 1; text-align: center; cursor: pointer; padding: 14px 8px; border-radius: 12px; border: 1px solid transparent; }
+  .station.on { background: var(--gradient-card); border-color: var(--border-tertiary); }
+  .station .n { font-size: 20px; font-weight: 700; }
+  .station .l { font-size: 13px; font-weight: 600; margin-top: 2px; }
+  .station .c { font-size: 11px; color: #9db3c2; margin-top: 2px; }
+  .tiles { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 26px; }
+  .tile { flex: 0 0 220px; background: var(--gradient-card); border-radius: 12px; padding: 16px; cursor: pointer; border: 2px solid transparent; position: relative; }
+  .tile.on { border-color: #fff; }
+  .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; background: rgba(255,255,255,0.15); padding: 3px 9px; border-radius: 20px; margin-bottom: 10px; }
+  .tile .nm { font-size: 15px; font-weight: 700; }
+  .tile .st { font-size: 12px; font-style: italic; color: #cfe0ee; margin-top: 6px; }
+  .badge-new { display: inline-flex; align-items: center; gap: 5px; background: var(--gradient-pill); color: var(--text-on-primary); font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-top: 10px; }
+  .panel { background: var(--navy-light); border-radius: 14px; padding: 30px 34px; }
+  .crumb { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+  h2 { font-size: 26px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .changed-card { display: flex; gap: 10px; background: var(--gradient-card-2); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 13.5px; }
+  p.ov { font-size: 16px; line-height: 1.7; color: #f0f4f6; max-width: 72ch; }
+  h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--primary); margin: 22px 0 8px; }
+  p.obj { font-size: 15px; line-height: 1.7; color: #cfe0ee; max-width: 72ch; margin: 0; }
+  .metagrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 12px; margin: 22px 0; }
+  .metacard { background: var(--navy-lightest); border-radius: 10px; padding: 14px 16px; }
+  .metacard .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #9db3c2; margin-bottom: 6px; }
+  .who span { display: inline-block; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.12); padding: 3px 9px; border-radius: 20px; margin: 2px 4px 0 0; }
+  .tasks { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 12px; margin-bottom: 22px; }
+  .task { background: var(--gradient-card); border-radius: 12px; padding: 14px 16px; }
+  .task .tt { font-size: 14px; margin-bottom: 10px; }
+  .rchips span { font-family: ui-monospace,monospace; font-size: 10.5px; background: rgba(255,255,255,0.15); border-radius: 6px; padding: 2px 7px; margin-right: 5px; }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .idcard { background: var(--navy-lightest); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; margin-bottom: 8px; }
+  @media (max-width:640px){ .twocol{grid-template-columns:1fr} }
+  </style></head><body><div class="wrap">
+  <h1>Delivery Playbook</h1><p class="sub">Card-native styling — every unit of content rendered the way Homespace already renders its own tiles.</p>
+  <div class="switch"><button class="on" data-m="0">Project</button><button data-m="1">GRS</button></div>
+  <div class="road" id="road"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="panel" id="panel"></div>
+  </div>
+  <script>
+  const { PHASES, JT } = ${dataJson};
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  let pi=0, si=0;
+  function renderRoad(){
+    document.getElementById('road').innerHTML = PHASES.map((p,i)=>'<div class="station '+(i===pi?'on':'')+'" data-p="'+i+'"><div class="n">'+(i+1)+'</div><div class="l">'+esc(p.name)+'</div><div class="c">'+p.subs.length+' sub-phases</div></div>').join('');
+    document.querySelectorAll('.station').forEach(el=>el.onclick=()=>{ pi=+el.dataset.p; si=0; renderRoad(); renderTiles(); renderPanel(); });
+  }
+  function renderTiles(){
+    const p = PHASES[pi];
+    document.getElementById('tiles').innerHTML = p.subs.map((s,i)=>'<div class="tile '+(i===si?'on':'')+'" data-s="'+i+'"><span class="tag">📄 Sub-phase '+esc(s.sid)+'</span><div class="nm">'+esc(s.name)+'</div>'+(s.detailed? (s.recent?'<div class="badge-new">● Recently changed</div>':'') : '<div class="st">Not yet written</div>')+'</div>').join('');
+    document.querySelectorAll('.tile').forEach(el=>el.onclick=()=>{ si=+el.dataset.s; renderTiles(); renderPanel(); });
+  }
+  function renderPanel(){
+    const p = PHASES[pi], s = p.subs[si];
+    const host = document.getElementById('panel');
+    if (!s.detailed) { host.innerHTML = '<div class="crumb">'+esc(p.name)+' › '+esc(s.sid)+'</div><h2>'+esc(s.name)+'</h2><p class="obj">Not yet written.</p>'; return; }
+    let h = '<div class="crumb">'+esc(p.name)+' › '+esc(s.sid)+'</div>';
+    h += '<h2>'+esc(s.name)+(s.recent?'<span class="badge-new">● Recently changed</span>':'')+'</h2>';
+    if (s.recent && s.changeSummary) { h += '<div class="changed-card"><b>What changed:</b>&nbsp;'+esc(s.changeSummary)+'</div>'; }
+    h += '<p class="ov">'+esc(s.overview)+'</p>';
+    h += '<h4>Objective</h4><p class="obj">'+esc(s.objective)+'</p>';
+    const who = [...new Set(s.tasks.flatMap(t=>Object.keys(t.raci)))];
+    h += '<div class="metagrid"><div class="metacard"><div class="k">Level of Effort</div>'+esc(s.loe)+'</div><div class="metacard"><div class="k">Participants</div><div class="who">'+who.map(id=>'<span>'+esc(JT[id].abbr)+'</span>').join('')+'</div></div></div>';
+    h += '<h4>Tasks</h4><div class="tasks">'+s.tasks.map(t=>'<div class="task"><div class="tt">'+esc(t.text)+'</div><div class="rchips">'+Object.keys(t.raci).map(id=>'<span>'+esc(JT[id].abbr)+' '+t.raci[id].join('')+'</span>').join('')+'</div></div>').join('')+'</div>';
+    h += '<h4>Inputs &amp; Deliverables</h4><div class="twocol"><div>'+s.inputs.map(i=>'<div class="idcard">'+esc(i)+'</div>').join('')+'</div><div>'+s.deliverables.map(d=>'<div class="idcard">'+esc(d)+'</div>').join('')+'</div></div>';
+    host.innerHTML = h;
+  }
+  renderRoad(); renderTiles(); renderPanel();
+  <\/script></body></html>`;
+}
+
+/* ============================================================
+   Style 2 — Left Nav Revival: sidebar back, saves vertical space;
+   content area still uses the real card-tile language.
+   ============================================================ */
+function styleLeftNav() {
+  const dataJson = JSON.stringify({ PHASES, JT });
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>${TOKENS_CSS}
+  .shell { display: flex; min-height: 100vh; }
+  .rail { width: 260px; flex-shrink: 0; background: var(--navy-light); padding: 20px 0 40px; }
+  .switch { display: flex; gap: 4px; background: var(--navy-lighter); padding: 4px; border-radius: 50px; margin: 0 16px 18px; }
+  .switch button { flex: 1; font-family: inherit; border: none; background: transparent; color: #cfe0ee; font-weight: 600; font-size: 12.5px; padding: 6px 4px; border-radius: 50px; cursor: pointer; }
+  .switch button.on { background: var(--gradient-pill); color: var(--text-on-primary); box-shadow: var(--shadow-inset); }
+  .phead { display: flex; align-items: center; gap: 10px; width: 100%; background: transparent; border: none; color: #fff; text-align: left; padding: 10px 16px; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; }
+  .phead .n { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border-tertiary); display: grid; place-items: center; font-size: 11px; flex-shrink: 0; }
+  .phead.open { background: var(--navy-lighter); }
+  .slink { display: block; width: 100%; background: transparent; border: none; color: #b9cdd6; text-align: left; padding: 8px 16px 8px 48px; font-family: inherit; font-size: 13px; cursor: pointer; border-radius: 0 20px 20px 0; }
+  .slink.on { background: var(--gradient-pill); color: var(--text-on-primary); font-weight: 600; box-shadow: var(--shadow-inset); }
+  .slink.stub { font-style: italic; color: #5f7688; }
+  .main { flex: 1; min-width: 0; padding: 30px 40px 90px; max-width: 900px; }
+  .crumb { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+  h2 { font-size: 27px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge-new { display: inline-flex; align-items: center; gap: 5px; background: var(--gradient-pill); color: var(--text-on-primary); font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+  .changed-card { display: flex; gap: 10px; background: var(--gradient-card-2); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 13.5px; }
+  p.ov { font-size: 16px; line-height: 1.7; color: #f0f4f6; max-width: 72ch; }
+  h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--primary); margin: 22px 0 8px; }
+  p.obj { font-size: 15px; line-height: 1.7; color: #cfe0ee; max-width: 72ch; margin: 0; }
+  .metagrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 12px; margin: 22px 0; }
+  .metacard { background: var(--navy-lightest); border-radius: 10px; padding: 14px 16px; }
+  .metacard .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #9db3c2; margin-bottom: 6px; }
+  .who span { display: inline-block; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.12); padding: 3px 9px; border-radius: 20px; margin: 2px 4px 0 0; }
+  .tasks { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+  .task { background: var(--gradient-card); border-radius: 12px; padding: 14px 16px; }
+  .task .tt { font-size: 14px; margin-bottom: 8px; }
+  .rchips span { font-family: ui-monospace,monospace; font-size: 10.5px; background: rgba(255,255,255,0.15); border-radius: 6px; padding: 2px 7px; margin-right: 5px; }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .idcard { background: var(--navy-lightest); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; margin-bottom: 8px; }
+  @media (max-width:640px){ .twocol{grid-template-columns:1fr} }
+  </style></head><body><div class="shell">
+  <nav class="rail" id="rail"></nav>
+  <main class="main" id="panel"></main>
+  </div>
+  <script>
+  const { PHASES, JT } = ${dataJson};
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  let mIdx=0, pi=0, si=0, open={0:true};
+  function renderRail(){
+    let h = '<div class="switch"><button class="'+(mIdx===0?'on':'')+'" data-m="0">Project</button><button class="'+(mIdx===1?'on':'')+'" data-m="1">GRS</button></div>';
+    PHASES.forEach((p,i)=>{
+      h += '<button class="phead '+(open[i]?'open':'')+'" data-ph="'+i+'"><span class="n">'+(i+1)+'</span>'+esc(p.name)+'</button>';
+      if (open[i]) {
+        p.subs.forEach((s,j)=>{
+          h += '<button class="slink '+(i===pi&&j===si?'on':'')+' '+(s.detailed?'':'stub')+'" data-p="'+i+'" data-s="'+j+'">'+esc(s.sid)+' '+esc(s.name)+'</button>';
+        });
+      }
+    });
+    document.getElementById('rail').innerHTML = h;
+    document.querySelectorAll('[data-ph]').forEach(el=>el.onclick=()=>{ const i=+el.dataset.ph; open[i]=!open[i]; renderRail(); });
+    document.querySelectorAll('.slink').forEach(el=>el.onclick=()=>{ pi=+el.dataset.p; si=+el.dataset.s; renderRail(); renderPanel(); });
+    document.querySelectorAll('.switch button').forEach(el=>el.onclick=()=>{ mIdx=+el.dataset.m; renderRail(); });
+  }
+  function renderPanel(){
+    const p = PHASES[pi], s = p.subs[si];
+    const host = document.getElementById('panel');
+    if (!s.detailed) { host.innerHTML = '<div class="crumb">'+esc(p.name)+' › '+esc(s.sid)+'</div><h2>'+esc(s.name)+'</h2><p class="obj">Not yet written.</p>'; return; }
+    let h = '<div class="crumb">'+esc(p.name)+' › '+esc(s.sid)+'</div>';
+    h += '<h2>'+esc(s.name)+(s.recent?'<span class="badge-new">● Recently changed</span>':'')+'</h2>';
+    if (s.recent && s.changeSummary) { h += '<div class="changed-card"><b>What changed:</b>&nbsp;'+esc(s.changeSummary)+'</div>'; }
+    h += '<p class="ov">'+esc(s.overview)+'</p>';
+    h += '<h4>Objective</h4><p class="obj">'+esc(s.objective)+'</p>';
+    const who = [...new Set(s.tasks.flatMap(t=>Object.keys(t.raci)))];
+    h += '<div class="metagrid"><div class="metacard"><div class="k">Level of Effort</div>'+esc(s.loe)+'</div><div class="metacard"><div class="k">Participants</div><div class="who">'+who.map(id=>'<span>'+esc(JT[id].abbr)+'</span>').join('')+'</div></div></div>';
+    h += '<h4>Tasks</h4><div class="tasks">'+s.tasks.map(t=>'<div class="task"><div class="tt">'+esc(t.text)+'</div><div class="rchips">'+Object.keys(t.raci).map(id=>'<span>'+esc(JT[id].abbr)+' '+t.raci[id].join('')+'</span>').join('')+'</div></div>').join('')+'</div>';
+    h += '<h4>Inputs &amp; Deliverables</h4><div class="twocol"><div>'+s.inputs.map(i=>'<div class="idcard">'+esc(i)+'</div>').join('')+'</div><div>'+s.deliverables.map(d=>'<div class="idcard">'+esc(d)+'</div>').join('')+'</div></div>';
+    host.innerHTML = h;
+  }
+  renderRail(); renderPanel();
+  <\/script></body></html>`;
+}
+
+/* ============================================================
+   Style 3 — Tabs + Step Cards: phases as an underlined tab row
+   (like Travel/Standard Expenses), sub-phases as big numbered
+   step cards (like the "1 2 3" travel-booking steps).
+   ============================================================ */
+function styleTabsSteps() {
+  const dataJson = JSON.stringify({ PHASES, JT });
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>${TOKENS_CSS}
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 36px 32px 90px; }
+  h1 { font-size: 26px; font-weight: 700; margin: 0 0 4px; }
+  .sub { color: #9db3c2; font-size: 14px; margin: 0 0 26px; }
+  .switch { display: inline-flex; gap: 4px; background: var(--navy-light); padding: 4px; border-radius: 50px; margin-bottom: 22px; }
+  .switch button { font-family: inherit; border: none; background: transparent; color: #cfe0ee; font-weight: 600; font-size: 13px; padding: 7px 18px; border-radius: 50px; cursor: pointer; }
+  .switch button.on { background: var(--gradient-pill); color: var(--text-on-primary); box-shadow: var(--shadow-inset); }
+  .tabbar { display: flex; gap: 32px; border-bottom: 1px solid var(--border-tertiary); margin-bottom: 26px; }
+  .tabbar button { font-family: inherit; background: none; border: none; color: #9db3c2; font-size: 15px; font-weight: 600; padding: 0 0 12px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+  .tabbar button.on { color: #fff; border-bottom-color: var(--primary); }
+  .steps { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 30px; }
+  .step { flex: 1; min-width: 190px; background: var(--navy-light); border: 1px solid var(--border-tertiary); border-radius: 10px; padding: 16px; cursor: pointer; position: relative; }
+  .step.on { border-color: var(--primary); border-width: 2px; background: var(--navy-lightest); }
+  .step .num { font-size: 28px; font-weight: 700; color: var(--primary); line-height: 1; margin-bottom: 8px; }
+  .step .nm { font-size: 14px; font-weight: 600; }
+  .step .st { font-size: 12px; font-style: italic; color: #7d97a8; margin-top: 4px; }
+  .step .badge-new { display: inline-block; font-size: 9.5px; font-weight: 700; color: var(--primary); margin-top: 6px; text-transform: uppercase; letter-spacing: .05em; }
+  .panel { background: var(--navy-light); border-radius: 14px; padding: 30px 34px; }
+  .crumb { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+  h2 { font-size: 26px; margin: 0 0 14px; }
+  .changed-card { display: flex; gap: 10px; background: var(--gradient-card-2); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 13.5px; }
+  p.ov { font-size: 16px; line-height: 1.7; color: #f0f4f6; max-width: 72ch; }
+  h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--primary); margin: 22px 0 8px; }
+  p.obj { font-size: 15px; line-height: 1.7; color: #cfe0ee; max-width: 72ch; margin: 0; }
+  .metagrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 12px; margin: 22px 0; }
+  .metacard { background: var(--navy-lightest); border-radius: 10px; padding: 14px 16px; }
+  .metacard .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #9db3c2; margin-bottom: 6px; }
+  .who span { display: inline-block; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.12); padding: 3px 9px; border-radius: 20px; margin: 2px 4px 0 0; }
+  .tasks { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+  .task { background: var(--navy-lightest); border-radius: 10px; padding: 14px 16px; }
+  .task .tt { font-size: 14px; margin-bottom: 8px; }
+  .rchips span { font-family: ui-monospace,monospace; font-size: 10.5px; background: rgba(255,255,255,0.15); border-radius: 6px; padding: 2px 7px; margin-right: 5px; }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .idcard { background: var(--navy-lightest); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; margin-bottom: 8px; }
+  @media (max-width:640px){ .twocol{grid-template-columns:1fr} }
+  </style></head><body><div class="wrap">
+  <h1>Delivery Playbook</h1><p class="sub">Segmented tabs + numbered step cards — the same pattern as the expense/travel steps in Homespace.</p>
+  <div class="switch"><button class="on" data-m="0">Project</button><button data-m="1">GRS</button></div>
+  <div class="tabbar" id="tabbar"></div>
+  <div class="steps" id="steps"></div>
+  <div class="panel" id="panel"></div>
+  </div>
+  <script>
+  const { PHASES, JT } = ${dataJson};
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  let pi=0, si=0;
+  function renderTabbar(){
+    document.getElementById('tabbar').innerHTML = PHASES.map((p,i)=>'<button class="'+(i===pi?'on':'')+'" data-p="'+i+'">'+esc(p.name)+'</button>').join('');
+    document.querySelectorAll('.tabbar button').forEach(el=>el.onclick=()=>{ pi=+el.dataset.p; si=0; renderTabbar(); renderSteps(); renderPanel(); });
+  }
+  function renderSteps(){
+    const p = PHASES[pi];
+    document.getElementById('steps').innerHTML = p.subs.map((s,i)=>'<div class="step '+(i===si?'on':'')+'" data-s="'+i+'"><div class="num">'+(i+1)+'</div><div class="nm">'+esc(s.name)+'</div>'+(s.detailed?(s.recent?'<div class="badge-new">● Recently changed</div>':''):'<div class="st">Not yet written</div>')+'</div>').join('');
+    document.querySelectorAll('.step').forEach(el=>el.onclick=()=>{ si=+el.dataset.s; renderSteps(); renderPanel(); });
+  }
+  function renderPanel(){
+    const p = PHASES[pi], s = p.subs[si];
+    const host = document.getElementById('panel');
+    if (!s.detailed) { host.innerHTML = '<div class="crumb">'+esc(p.name)+' › '+esc(s.sid)+'</div><h2>'+esc(s.name)+'</h2><p class="obj">Not yet written.</p>'; return; }
+    let h = '<div class="crumb">'+esc(p.name)+' › '+esc(s.sid)+'</div><h2>'+esc(s.name)+'</h2>';
+    if (s.recent && s.changeSummary) { h += '<div class="changed-card"><b>What changed:</b>&nbsp;'+esc(s.changeSummary)+'</div>'; }
+    h += '<p class="ov">'+esc(s.overview)+'</p>';
+    h += '<h4>Objective</h4><p class="obj">'+esc(s.objective)+'</p>';
+    const who = [...new Set(s.tasks.flatMap(t=>Object.keys(t.raci)))];
+    h += '<div class="metagrid"><div class="metacard"><div class="k">Level of Effort</div>'+esc(s.loe)+'</div><div class="metacard"><div class="k">Participants</div><div class="who">'+who.map(id=>'<span>'+esc(JT[id].abbr)+'</span>').join('')+'</div></div></div>';
+    h += '<h4>Tasks</h4><div class="tasks">'+s.tasks.map(t=>'<div class="task"><div class="tt">'+esc(t.text)+'</div><div class="rchips">'+Object.keys(t.raci).map(id=>'<span>'+esc(JT[id].abbr)+' '+t.raci[id].join('')+'</span>').join('')+'</div></div>').join('')+'</div>';
+    h += '<h4>Inputs &amp; Deliverables</h4><div class="twocol"><div>'+s.inputs.map(i=>'<div class="idcard">'+esc(i)+'</div>').join('')+'</div><div>'+s.deliverables.map(d=>'<div class="idcard">'+esc(d)+'</div>').join('')+'</div></div>';
+    host.innerHTML = h;
+  }
+  renderTabbar(); renderSteps(); renderPanel();
+  <\/script></body></html>`;
+}
+
+/* ---------------- Gallery wiring ---------------- */
+const CONCEPTS = [
+  { key: 'a', label: 'A · Card Tiles', desc: 'Keeps the circle roadmap at top, but every content unit (sub-phase, task, input) renders as Homespace’s own gradient content-card tile — matching "Recommended for you" and the activity cards directly.', fn: styleCardTiles },
+  { key: 'b', label: 'B · Left Nav Revival', desc: 'Brings back the left sidebar to save vertical space at the top, styled with the real pill/gradient system. Content area keeps the card-tile language from A.', fn: styleLeftNav },
+  { key: 'c', label: 'C · Tabs + Step Cards', desc: 'Phases as an underlined tab row (like Travel/Standard Expenses), sub-phases as big numbered step cards (like the 1-2-3 travel-booking steps) — the most literal reuse of a specific Homespace pattern.', fn: styleTabsSteps }
+];
+
+const tabsEl = document.getElementById('tabs');
+const descEl = document.getElementById('desc');
+const stage = document.getElementById('stage');
+
+function selectConcept(key) {
+  const c = CONCEPTS.find(x => x.key === key);
+  tabsEl.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.key === key));
+  descEl.textContent = c.desc;
+  stage.srcdoc = c.fn();
+}
+
+tabsEl.innerHTML = CONCEPTS.map(c => `<button data-key="${c.key}">${c.label}</button>`).join('');
+tabsEl.querySelectorAll('button').forEach(b => b.onclick = () => selectConcept(b.dataset.key));
+selectConcept('a');
+</script>
+</body>
+</html>
