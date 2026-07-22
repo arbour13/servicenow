@@ -56,6 +56,14 @@ hand-roll the XML-assembly/extraction logic.** Use `tools/packager/`:
   wiring a new app. If the core lacks something (a new record type, extraction case), extend the
   core — don't duplicate its logic locally.
 
+**Two output targets, same extraction.** `buildParts()` feeds either serializer:
+`assembleXml` (Update Set `<unload>`) or `snpackager.fluent.js`'s `assembleFluent` (a
+**ServiceNow Fluent / Now SDK** TypeScript project as a file-map — typed `SPWidget`/`SPAngularProvider`
++ generic `Record()` for the page/portal/roles, identity shared with the XML path). The deploy console
+offers both (XML tabs, or a Fluent file tree with full-project/files-only + a `.zip` download via the
+dependency-free `snpackager.zip.js`). Live-instance prefix detection is shared as
+`snpackager.browser-connect.js`.
+
 ### How to consume it
 
 One server serves the whole `ServiceNow/` tree, so cross-tree files are referenced **by relative

@@ -8,6 +8,8 @@
   'use strict';
 
   var core = window.SNPackager.core;
+  var fluent = window.SNPackager.fluent;
+  var zipper = window.SNPackager.zip;
 
   // Every app folder this suite currently has (mirrors ServiceNow/CLAUDE.md's apps/ listing) -
   // adding a new app means adding its folder name here so the console probes it. An app with no
@@ -104,11 +106,18 @@
   var fldScope = document.getElementById('fldScope');
   var fldVersion = document.getElementById('fldVersion');
   var tabsSection = document.getElementById('tabsSection');
-  var tabButtons = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
+  var tabButtons = Array.prototype.slice.call(document.querySelectorAll('#xmlTabs .tab-btn'));
+  var xmlTabs = document.getElementById('xmlTabs');
   var outputArea = document.getElementById('outputArea');
   var sysIdSummary = document.getElementById('sysIdSummary');
   var copyBtn = document.getElementById('copyBtn');
   var downloadBtn = document.getElementById('downloadBtn');
+  var formatXmlBtn = document.getElementById('formatXmlBtn');
+  var formatFluentBtn = document.getElementById('formatFluentBtn');
+  var fluentControls = document.getElementById('fluentControls');
+  var fluentProjectBtn = document.getElementById('fluentProjectBtn');
+  var fluentFilesBtn = document.getElementById('fluentFilesBtn');
+  var fluentFileSelect = document.getElementById('fluentFileSelect');
 
   var eligibleApps = {};    // folder -> descriptor
   var currentFolder = null;
@@ -116,6 +125,11 @@
   var currentXml = '';
   var activeTab = 'xml';
   var tabText = { xml: '', template: '', client: '', server: '', services: '', css: '', link: '' };
+
+  var format = 'xml';          // 'xml' | 'fluent' - which output target is shown
+  var fluentMode = 'project';  // 'project' | 'files' - full runnable project vs. just src/fluent/**
+  var fluentFiles = {};        // { path: contents } for the current Fluent build
+  var fluentActivePath = '';   // which generated file the textarea is showing
 
   // Only meaningful for apps with deployOptions.showConnection - scopeAuto tracks whether Scope
   // should keep recomputing from App name/detected company code (true until the user edits Scope
@@ -173,13 +187,26 @@
     outputArea.value = tabText[tab] || '';
   }
 
-  function rebuildXmlTab() {
-    if (!currentParts) { return; }
+  // The manifest as edited in the override fields (App name / Scope / Version), used by both output
+  // targets so they stay in sync with what's typed.
+  function manifestFromFields() {
     var manifest = {};
     for (var k in currentParts.manifest) { if (Object.prototype.hasOwnProperty.call(currentParts.manifest, k)) { manifest[k] = currentParts.manifest[k]; } }
     manifest.appName = fldAppName.value.trim() || manifest.appName;
     manifest.scope = fldScope.value.trim() || manifest.scope;
     manifest.version = fldVersion.value.trim() || manifest.version;
+    return manifest;
+  }
+
+  // Dispatches to whichever output target is active. Called on every field edit and format switch.
+  function rebuildOutput() {
+    if (!currentParts) { return; }
+    if (format === 'fluent') { rebuildFluent(); } else { rebuildXmlTab(); }
+  }
+
+  function rebuildXmlTab() {
+    if (!currentParts) { return; }
+    var manifest = manifestFromFields();
     currentXml = core.assembleXml(manifest, currentParts.parts, { stamp: nowStamp() });
     tabText.xml = currentXml;
     if (activeTab === 'xml') { outputArea.value = currentXml; }
@@ -190,6 +217,51 @@
       .concat((manifest.stubProviders || []).map(function (n) { return core.stableSysId(manifest.sysIdPrefix, n); }));
     var dupes = allSysIds.filter(function (id, i) { return allSysIds.indexOf(id) !== i; });
     sysIdSummary.textContent = allSysIds.length + ' unique sys_ids' + (dupes.length ? ' — WARNING: ' + dupes.length + ' duplicate(s)!' : '') + ', scope ' + manifest.scope;
+  }
+
+  // Sorted so folders group naturally (package.json / now.config.json first, then src/fluent/**).
+  function sortedFluentPaths() {
+    return Object.keys(fluentFiles).sort(function (a, b) {
+      var ar = a.indexOf('/') === -1 ? 0 : 1, br = b.indexOf('/') === -1 ? 0 : 1;
+      return ar !== br ? ar - br : (a < b ? -1 : a > b ? 1 : 0);
+    });
+  }
+
+  function rebuildFluent() {
+    if (!currentParts) { return; }
+    var manifest = manifestFromFields();
+    fluentFiles = fluent.assembleFluent(manifest, currentParts.parts, {
+      mode: fluentMode,
+      sdkVersion: manifest.deployOptions && manifest.deployOptions.fluent && manifest.deployOptions.fluent.sdkVersion,
+    });
+    var paths = sortedFluentPaths();
+    if (paths.indexOf(fluentActivePath) === -1) {
+      // Default to the widget's .now.ts - the most useful file to land on.
+      fluentActivePath = paths.filter(function (p) { return /widgets\/.*\.now\.ts$/.test(p); })[0] || paths[0] || '';
+    }
+    fluentFileSelect.innerHTML = paths.map(function (p) {
+      return '<option value="' + p + '"' + (p === fluentActivePath ? ' selected' : '') + '>' + p + '</option>';
+    }).join('');
+    outputArea.value = fluentActivePath ? fluentFiles[fluentActivePath] : '';
+    sysIdSummary.textContent = paths.length + ' files · ' + (fluentMode === 'project' ? 'full Now SDK project' : 'src/fluent/** only') + ', scope ' + manifest.scope;
+  }
+
+  // Switch output target (XML <-> Fluent), toggling which control row is visible.
+  function setFormat(next) {
+    format = next;
+    formatXmlBtn.classList.toggle('active', next === 'xml');
+    formatFluentBtn.classList.toggle('active', next === 'fluent');
+    xmlTabs.style.display = next === 'xml' ? '' : 'none';
+    fluentControls.style.display = next === 'fluent' ? '' : 'none';
+    downloadBtn.textContent = next === 'fluent' ? 'Download .zip' : 'Download';
+    if (next === 'xml') { rebuildXmlTab(); setActiveTab(activeTab); } else { rebuildFluent(); }
+  }
+
+  function setFluentMode(next) {
+    fluentMode = next;
+    fluentProjectBtn.classList.toggle('active', next === 'project');
+    fluentFilesBtn.classList.toggle('active', next === 'files');
+    rebuildFluent();
   }
 
   function onAppSelected() {
@@ -230,11 +302,11 @@
       tabText.services = formatProviders(parts.providers);
       tabText.css = parts.css;
       tabText.link = parts.link;
-      rebuildXmlTab();
 
+      fluentActivePath = ''; // let the Fluent view re-default to the widget file for the new app
       overridesSection.style.display = '';
       tabsSection.style.display = '';
-      setActiveTab('xml');
+      if (format === 'xml') { rebuildXmlTab(); setActiveTab('xml'); } else { rebuildFluent(); }
       setStatus(buildStatus, 'Built ' + descriptor.manifest.appName + ' successfully.', false);
     }).catch(function (err) {
       setStatus(buildStatus, 'Build failed: ' + err.message, true);
@@ -254,7 +326,7 @@
     if (currentlyShowsConnection() && connState.scopeAuto) {
       fldScope.value = recommendedScope();
     }
-    rebuildXmlTab();
+    rebuildOutput();
   }
 
   function onScopeInput() {
@@ -262,7 +334,7 @@
       connState.scopeAuto = false; // the user has taken manual control
       scopeHint.textContent = '';
     }
-    rebuildXmlTab();
+    rebuildOutput();
   }
 
   function onDetectPrefix() {
@@ -281,7 +353,7 @@
       scopeHint.textContent = '· detected from ' + fldInstanceUrl.value.replace(/^https?:\/\//, '').replace(/\/$/, '');
       var truncated = recommendedScope().length >= core.SCOPE_MAX;
       detectStatus.textContent = 'Prefix detected: x_' + code + (truncated ? ' (app name shortened to fit 18 chars)' : '');
-      rebuildXmlTab();
+      rebuildOutput();
     }).catch(function (e) {
       detectStatus.textContent = 'Connection failed: ' + ((e && e.message) || e);
     });
@@ -290,12 +362,20 @@
   appSelect.addEventListener('change', onAppSelected);
   fldAppName.addEventListener('input', onAppNameInput);
   fldScope.addEventListener('input', onScopeInput);
-  fldVersion.addEventListener('input', rebuildXmlTab);
+  fldVersion.addEventListener('input', rebuildOutput);
   detectPrefixBtn.addEventListener('click', onDetectPrefix);
   [fldInstanceUrl, fldUsername, fldPassword].forEach(function (el) {
     el.addEventListener('input', function () { saveConn(currentFolder); });
   });
   tabButtons.forEach(function (b) { b.addEventListener('click', function () { setActiveTab(b.dataset.tab); }); });
+  formatXmlBtn.addEventListener('click', function () { setFormat('xml'); });
+  formatFluentBtn.addEventListener('click', function () { setFormat('fluent'); });
+  fluentProjectBtn.addEventListener('click', function () { setFluentMode('project'); });
+  fluentFilesBtn.addEventListener('click', function () { setFluentMode('files'); });
+  fluentFileSelect.addEventListener('change', function () {
+    fluentActivePath = fluentFileSelect.value;
+    outputArea.value = fluentFiles[fluentActivePath] || '';
+  });
 
   copyBtn.addEventListener('click', function () {
     navigator.clipboard.writeText(outputArea.value).then(function () {
@@ -304,18 +384,26 @@
       setTimeout(function () { copyBtn.textContent = original; }, 1200);
     });
   });
-  downloadBtn.addEventListener('click', function () {
-    if (!currentFolder) { return; }
-    var ext = activeTab === 'xml' ? 'xml' : (activeTab === 'css' ? 'css' : (activeTab === 'template' ? 'html' : 'js'));
-    var blob = new Blob([outputArea.value], { type: 'text/plain' });
+  function triggerDownload(blob, filename) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = currentFolder + '-' + activeTab + '.' + ext;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  downloadBtn.addEventListener('click', function () {
+    if (!currentFolder) { return; }
+    if (format === 'fluent') {
+      // The whole generated Now SDK project as one .zip.
+      triggerDownload(zipper.zip(fluentFiles), currentFolder + '-fluent.zip');
+      return;
+    }
+    var ext = activeTab === 'xml' ? 'xml' : (activeTab === 'css' ? 'css' : (activeTab === 'template' ? 'html' : 'js'));
+    triggerDownload(new Blob([outputArea.value], { type: 'text/plain' }), currentFolder + '-' + activeTab + '.' + ext);
   });
 
   runDiscovery();

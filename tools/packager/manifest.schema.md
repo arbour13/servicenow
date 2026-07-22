@@ -164,14 +164,51 @@ deployOptions: {
 }
 ```
 
-`showConnection` is the only field so far - App name/Scope/Version are always shown and editable
-for every app regardless of this setting; this only toggles the extra live-connection affordance on
-top of that. Add further `deployOptions` fields here if a future Deploy-UI toggle turns out to be
+```js
+deployOptions: {
+  // ... showConnection above ...
+  // Optional per-app Fluent (Now SDK) output tuning. The Fluent target is available for EVERY app
+  // regardless of this key (it needs no opt-in) - this only overrides defaults when present.
+  fluent: {
+    sdkVersion: 'latest',   // the @servicenow/sdk / @servicenow/glide version pinned in the
+                            //   generated package.json (default 'latest').
+  },
+}
+```
+
+App name/Scope/Version are always shown and editable for every app regardless of `deployOptions`;
+`showConnection` only toggles the extra live-connection affordance, and `fluent` only tunes the
+Fluent output. Add further `deployOptions` fields here if a future Deploy-UI toggle turns out to be
 genuinely per-app (don't add one speculatively).
 
 The browser key (`root.SNAppManifests['<app-folder-name>']`) is keyed by the app's own folder name
 under `apps/` (e.g. `'core'`, `'glide-studio'`) - the same name the deploy console uses to probe for
 it, so no separate registry has to map folder → key.
+
+## Two output targets: Update Set XML and Fluent (Now SDK)
+
+The same `buildParts()` extraction feeds two serializers:
+
+- `snpackager.core.js`'s **`assembleXml(manifest, parts, opts)`** → one Update Set `<unload>` string
+  (the classic import-an-XML path).
+- `snpackager.fluent.js`'s **`assembleFluent(manifest, parts, opts)`** → a **file-map**
+  (`{ 'relative/path': 'contents' }`) making up a ServiceNow **Now SDK / Fluent** TypeScript project.
+  `opts.mode` is `'project'` (full runnable project: `package.json`, `now.config.json`,
+  `src/fluent/generated/keys.ts`, `README`) or `'files'` (just the `src/fluent/**` tree, to drop
+  into an existing SDK project). `opts.sdkVersion` overrides the pinned SDK dependency.
+
+Both share identity: every record's sys_id comes from the same `deriveSysIds()`/`stableSysId()`, so
+the two outputs describe the *same* records - installing one over the other updates in place.
+
+Fidelity notes (verified against `ServiceNow/sdk-examples`): the widget and each Angular provider use
+Fluent's **typed** `SPWidget` / `SPAngularProvider` APIs (widget template/css/client/server become
+external files pulled via `Now.include`); the page tree, portal, theme, and roles/ACL layer have no
+typed Fluent API and are emitted via the **generic `Record({ $id, table, data })`** API, exactly as
+the official sample does. The widget lists no `angularProviders` (providers register globally and
+inject by name at runtime - same as the XML path, which creates no widget→provider m2m link).
+
+The host owns **zipping/delivery** of the file-map - the deploy console uses the dependency-free
+`snpackager.zip.js` (`window.SNPackager.zip`, store-only) to hand it over as one `.zip`.
 
 ## Styling: no separate Theme/CSS-Include
 
