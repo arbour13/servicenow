@@ -3,13 +3,30 @@
 Everything under `ServiceNow/` is work that targets the ServiceNow platform. It's organized by
 *purpose*, and these conventions apply to the **deployed apps** here.
 
-## Working per app — one chat, one app, one branch
+## Working across apps — one folder, one branch (`main`)
 
-This repo is worked on **one app per chat/session**. Each app has its own branch **named for the
-app** (`packager`, `standards`, `glide-studio`, …). Do that app's work on its branch and merge to
-`main` when it's ready — don't commit app work straight to `main`. The user manages which branch
-each chat is on. There is a single shared checkout, so only one branch is checked out at a time;
-**never switch branches out from under another active chat.**
+This whole repo lives in the single folder `~/Documents/Projects/servicenow`, always on the
+**`main`** branch. That's it — there is no branch-per-app scheme, and no git worktrees. The user
+often has several app-chats open at once (one per app), and that is fine: every chat works in this
+same folder on `main`, each editing its own app's files under `apps/<app>/`. Concurrent chats do
+**not** collide, because nobody switches branches — different apps are just different files.
+
+**Rules for every chat:**
+- **Stay on `main`. Do not create branches, switch branches, or make git worktrees.** Branch-per-app
+  is exactly what this repo deliberately abandoned; re-introducing it causes the concurrent-chat
+  collisions this layout exists to avoid. If a task ever seems to genuinely need a branch, stop and
+  ask the user first — don't create one unprompted.
+- **Commit on `main`** as work reaches sensible checkpoints (the user may just say "save a
+  checkpoint" — that means commit).
+- **GitHub is only an off-site backup.** The `origin` remote exists so the user can `git push` a copy
+  of `main` to GitHub whenever they want. No pull requests, no feature branches — a push is just a
+  backup. Push when the user asks (e.g. "back up to GitHub"); don't push unprompted.
+- The user does **not** need to know git commands — they ask in plain English ("what changed?",
+  "save a checkpoint", "back up to GitHub") and you run the right command for them.
+
+Per-app context, when an app needs its own notes beyond this file, lives in `apps/<app>/CLAUDE.md`
+(read automatically when working in that app's folder). This root file is shared context every chat
+reads.
 
 ## What lives where
 
