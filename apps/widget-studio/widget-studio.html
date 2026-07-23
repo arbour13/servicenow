@@ -3430,11 +3430,30 @@ class Component extends DCLogic {
   clearFieldErr(node,key){ if(this.fieldErr(node,key)!=null){ delete this._fieldErr[node.id+'|'+key]; this.forceUpdate(); } }
   cssAccepts(key,val){ if(val==='') return true; try{ return !window.CSS||!CSS.supports||CSS.supports(this.kebab(key),val); }catch(e){ return true; } }
   errClr(){ return this.dark?'#f85149':'#cf222e'; }
-  rawField(t,node,key,ph){ const err=this.fieldErr(node,key);
-    return React.createElement('input',{value:err!=null?err:this.csVal(node,key),placeholder:ph||'',
+  // A raw value that happens to exactly equal an existing token's value gets a small one-click
+  // swap-to-token nudge below the field — reuses the same tokenMatch() the pre-flight checklist's
+  // token-match rule runs in batch, so a value fixed here never shows up there. "Keep raw" (×)
+  // is remembered per node+key+VALUE (not the field in general), so it doesn't nag again for that
+  // exact value but still nudges if the value later changes to match a different token. Skipped
+  // entirely for the spacing box-model popover, which already resolves typed token step-names
+  // (e.g. "lg") through its own commitText() — a second nudge there would be redundant.
+  tokenNudge(t,node,key,value){ const tk=this.tokenMatch(value); if(!tk) return null;
+    const dk=node.id+'|'+key+'|'+value; if(this._tokenNudgeDismissed&&this._tokenNudgeDismissed[dk]) return null;
+    const h=React.createElement;
+    const use=()=>{ this.setCS(node,key,'var(--'+tk.name+')'); };
+    const dismiss=()=>{ (this._tokenNudgeDismissed=this._tokenNudgeDismissed||{})[dk]=true; this.forceUpdate(); };
+    return h('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:5,fontSize:10.5}},
+      h('span',{style:{color:t.faint,flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},'Matches $'+tk.name),
+      h('span',Object.assign({onClick:use},this.a11y(use,{label:'Use $'+tk.name}),{style:{cursor:'pointer',fontWeight:600,color:t.accent}}),'Use'),
+      h('span',Object.assign({onClick:dismiss},this.a11y(dismiss,{label:'Keep raw value'}),this.tt('Keep raw value'),{style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 2px'}}),'×')
+    ); }
+  rawField(t,node,key,ph){ const err=this.fieldErr(node,key); const cur=this.csVal(node,key);
+    const input=React.createElement('input',{value:err!=null?err:cur,placeholder:ph||'',
       onChange:e=>{ const v=e.target.value; if(this.cssAccepts(key,v.trim())){ this.clearFieldErr(node,key); this.setCS(node,key,v); } else { this.setFieldErr(node,key,v); } },
       onBlur:()=>this.clearFieldErr(node,key),
-      style:{width:'100%',height:30,border:'1px solid '+(err!=null?this.errClr():t.border),borderRadius:6,padding:'0 8px',fontSize:12,color:err!=null?this.errClr():t.text,background:t.panel,outline:'none'}}); }
+      style:{width:'100%',height:30,border:'1px solid '+(err!=null?this.errClr():t.border),borderRadius:6,padding:'0 8px',fontSize:12,color:err!=null?this.errClr():t.text,background:t.panel,outline:'none'}});
+    const nudge=err==null?this.tokenNudge(t,node,key,cur):null;
+    return nudge?React.createElement('div',null,input,nudge):input; }
   // opts.clearKeys: other prop keys to blank out whenever this field's value changes — for a
   // shorthand field (borderWidth/borderRadius) that sits alongside per-side/per-corner longhand
   // overrides, so editing "all sides/corners" unambiguously wins instead of silently losing to
@@ -3452,11 +3471,12 @@ class Component extends DCLogic {
       onBlur:()=>this.clearFieldErr(node,key),
       style:{width:'100%',height:30,border:'1px solid '+(err!=null?this.errClr():t.border),borderRadius:6,padding:sizeToks.length?'0 26px 0 8px':'0 8px',fontSize:12,color:err!=null?this.errClr():t.text,background:t.panel,outline:'none'}});
     const SIZEKEYS={fontSize:1,borderRadius:1,borderTopLeftRadius:1,borderTopRightRadius:1,borderBottomLeftRadius:1,borderBottomRightRadius:1,borderWidth:1,borderTopWidth:1,borderRightWidth:1,borderBottomWidth:1,borderLeftWidth:1};
-    if(!sizeToks.length || !SIZEKEYS[key]) return input;
+    const nudge=err==null?this.tokenNudge(t,node,key,raw):null;
+    if(!sizeToks.length || !SIZEKEYS[key]) return nudge?h('div',null,input,nudge):input;
     const onVar=!!this.tokenByVar(raw);
     const openTok=e=>{e.stopPropagation(); const r=e.currentTarget.getBoundingClientRect(); this._sizeTokMenu={nodeId:node.id,key,clearKeys:opts.clearKeys,x:Math.min(r.right-150,window.innerWidth-160),y:Math.min(r.bottom+4,window.innerHeight-180)}; this.forceUpdate();};
     const btn=h('div',{onClick:openTok,...this.tt('Use a size token'),...this.a11y(openTok,{pressed:onVar,label:'Use a size token'}),style:{position:'absolute',right:5,top:5,width:20,height:20,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:4,cursor:'pointer',fontSize:11,fontFamily:'ui-monospace,monospace',color:onVar?t.accent:t.faint,background:onVar?t.accentSoft:'transparent'}},'{}');
-    return h('div',{style:{position:'relative'}}, onVar?React.createElement('input',{value:raw,readOnly:true,...this.tt(raw),style:{width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 26px 0 8px',fontSize:12,color:t.accent,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}):input, btn);
+    return h('div',null, h('div',{style:{position:'relative'}}, onVar?React.createElement('input',{value:raw,readOnly:true,...this.tt(raw),style:{width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 26px 0 8px',fontSize:12,color:t.accent,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}):input, btn), nudge);
   }
   // Opener for the ◇ token menu — anchored to the clicked field, filtered to a token type.
   openTokMenu(node,key,e,tokType){ e.stopPropagation(); const r=e.currentTarget.getBoundingClientRect(); this._sizeTokMenu={nodeId:node.id,key,tokType:tokType||'size',x:Math.min(r.left,window.innerWidth-172),y:Math.min(r.bottom+4,window.innerHeight-220)}; this.forceUpdate(); }
