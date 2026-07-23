@@ -120,7 +120,6 @@ class Component extends DCLogic {
     this.optionSchema = [];   // Service Portal widget option schema (in-memory, like this.code)
     this.instanceClass = 'base';  // sp_instance subclass → which inherited fields the instance provides
     this.instanceFields = [];     // which inherited field NAMES the author chose to surface (opt-in)
-    this._firstRunDone = false;   // has this browser session already been through the starter picker for THIS widget?
     this._previewValues = {};     // preview-only option/instance-field values (never exported)
     this._optExpanded = null; this._optJson = false; this._optCommonOpen = false; this._optSeq = 0;
     this.LABELC = {default:'#777',primary:'#337ab7',success:'#5cb85c',info:'#5bc0de',warning:'#f0ad4e',danger:'#d9534f'};
@@ -210,7 +209,7 @@ class Component extends DCLogic {
     this.load();
   }
   // ---------- persistence ----------
-  save(){ this.code.html=null; this.htmlError=null; this._dirty=true; this._firstRunDone=true; this.pushHistory(); this.rawSave(); }
+  save(){ this.code.html=null; this.htmlError=null; this._dirty=true; this.pushHistory(); this.rawSave(); }
   // Draft auto-persist: every mutation choke point already funnels through rawSave(), which mirrors
   // the working widget to localStorage — a refresh or crash restores exactly where you were,
   // including which library record was open and whether it had unsaved changes. Save (⌘S) into the
@@ -219,7 +218,7 @@ class Component extends DCLogic {
   // the pending write so the last edits aren't lost. Undo/redo history stays in-memory.
   DRAFT_KEY(){ return 'widgetStudio_draft'; }
   rawSave(){ clearTimeout(this._draftT); this._draftT=setTimeout(()=>this.writeDraft(),400); }
-  writeDraft(){ try{ localStorage.setItem(this.DRAFT_KEY(), JSON.stringify({data:this.serializeWidget(),savedId:this._savedId||null,dirty:!!this._dirty,firstRunDone:!!this._firstRunDone,at:Date.now()})); }catch(e){} }
+  writeDraft(){ try{ localStorage.setItem(this.DRAFT_KEY(), JSON.stringify({data:this.serializeWidget(),savedId:this._savedId||null,dirty:!!this._dirty,at:Date.now()})); }catch(e){} }
   readDraft(){ try{ const d=JSON.parse(localStorage.getItem(this.DRAFT_KEY())||'null'); return (d&&d.data)?d:null; }catch(e){ return null; } }
   // UI preferences (drawer height, split layout) ARE persisted — they're editor chrome, not widget
   // content, so they should survive a refresh.
@@ -255,11 +254,7 @@ class Component extends DCLogic {
     // Restore the auto-persisted draft if one exists (loadWidgetData resets _dirty/_savedId, so
     // re-apply the draft's after it); otherwise start from a clean default widget.
     const draft=this.readDraft();
-    // firstRunDone comes from the draft itself (falls back to false/undefined for drafts written
-    // before this flag existed, or for a genuinely never-touched blank widget) — NOT hardcoded
-    // true, or an empty unsaved draft (e.g. after picking "Start blank" then refreshing, or just
-    // an old blank session) would wrongly suppress the starter picker forever.
-    if(draft){ this.loadWidgetData(draft.data); this._savedId=draft.savedId||null; this._dirty=!!draft.dirty; this._firstRunDone=!!draft.firstRunDone; return; }
+    if(draft){ this.loadWidgetData(draft.data); this._savedId=draft.savedId||null; this._dirty=!!draft.dirty; return; }
     this.tree={id:'root',type:'root',classes:[],data:{tag:'div'},children:[]};
     this.focusStack=[];
     this.history=[this.snapshot()]; this.histIdx=0; this._lastPush=0;
@@ -295,7 +290,7 @@ class Component extends DCLogic {
     this._tokCss=null; this._dirty=false; this.exportOpen=false;
     this.history=[this.snapshot()]; this.histIdx=0; this._lastPush=0;
   }
-  resetWidget(){ this.loadWidgetData({}); this._savedId=null; this._firstRunDone=false; }
+  resetWidget(){ this.loadWidgetData({}); this._savedId=null; }
   saveWidget(asNew){ const list=this.listWidgets(); const name=(this.wname||'Untitled').trim()||'Untitled'; const data=this.serializeWidget(); const now=Date.now();
     let rec=(!asNew&&this._savedId)?list.find(w=>w.id===this._savedId):null;
     if(rec){ rec.name=name; rec.wid=this.wid; rec.updatedAt=now; rec.data=data; }
@@ -304,7 +299,7 @@ class Component extends DCLogic {
     if(ok){ this._savedId=rec.id; this._dirty=false; this.writeDraft(); this._saveFlash=Date.now(); clearTimeout(this._saveFlashT); this._saveFlashT=setTimeout(()=>{this._saveFlash=0;this.forceUpdate();},1600); }
     else { this._saveErr=1; clearTimeout(this._saveErrT); this._saveErrT=setTimeout(()=>{this._saveErr=0;this.forceUpdate();},2800); }
     this.forceUpdate(); return ok; }
-  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this._firstRunDone=true; this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
+  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
   deleteWidget(id){ const list=this.listWidgets().filter(w=>w.id!==id); this.writeWidgets(list); if(this._savedId===id) this._savedId=null; if(this._delArm===id) this._delArm=null; clearTimeout(this._delArmT); this.forceUpdate(); }
   // Two-step delete: first click arms the button (fills red, "click again to delete"); second click
   // (while still armed) actually deletes. Arming auto-clears after a few seconds so a stray click
@@ -2658,10 +2653,14 @@ class Component extends DCLogic {
             // overlay ignores the root's layout entirely, so it stays centered under any display.
             const isEmpty=!(this.tree.children&&this.tree.children.length);
             const kids=isEmpty?null:this.tree.children.map(c=>this.nwNode(c,this.tree,lightT));
-            // A brand-new widget shows the starter picker (instance type + shape) instead of the
-            // plain add-element prompt — see showStarterPicker() for exactly which loads qualify.
-            const emptyPrompt=isEmpty?h('div',{key:'__rootprompt',style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',zIndex:1}},
-              h('div',{style:{pointerEvents:'auto'}}, this.showStarterPicker()?this.renderStarterPicker(lightT):this.renderEmptyState(lightT,'root',false))):null;
+            // Any time the canvas is empty — first run, or emptied back out later by deleting
+            // everything — show the starter picker (instance type + shape), not just once.
+            // Anchored from the TOP (not vertically centered): the starter-card row's height varies
+            // by instance type (some have none, some wrap to more lines) — centering the whole box
+            // would shift the title/chip row every time that height changes. Top-anchoring keeps
+            // everything above the cards fixed in place; only the cards area grows/shrinks.
+            const emptyPrompt=isEmpty?h('div',{key:'__rootprompt',style:{position:'absolute',inset:0,display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:56,pointerEvents:'none',zIndex:1}},
+              h('div',{style:{pointerEvents:'auto'}}, this.renderStarterPicker(lightT))):null;
             return h('div',{className:'ws-stage',
               onMouseOver:e=>{e.stopPropagation(); if(this.focusLocked('root')){ if(this.hoverId!=null){this.hoverId=null;this.forceUpdate();} return; } if(this.hoverId!=='root'){this.hoverId='root';this.forceUpdate();}},
               onClick:e=>this.select('root',e),
@@ -2731,58 +2730,7 @@ class Component extends DCLogic {
     if(isRoot) return [E('div'),E('section'),C('panel')];
     return [E('div'),C('panel'),E('h2','heading'),E('p')];  // generic block container default
   }
-  openColAddPopover(targetId,col,e){ const r=e.currentTarget.getBoundingClientRect();
-    this.addPopover={nodeId:targetId, col:col||null, x:Math.min(Math.max(8,r.left), window.innerWidth-242), y:Math.min(r.bottom+6, window.innerHeight-340), via:'canvasPill'};
-    this._popFilter=''; if(this.treeCollapsed && targetId!=='root') this.treeCollapsed[targetId]=false; this.forceUpdate();
-  }
-  // Empty-column prompt: one calm "Add element" button (Option F + A).
-  // Idle = just the button. Hover = a row of the top quick-adds for one-tap insert.
-  // Click = the same anchored "Add inside" popover used elsewhere in the editor.
-  columnAddPrompt(t,targetId,col,hint,gridColumn){ const h=React.createElement; const key=targetId+'#'+(col||0);
-    const popOpen=!!(this.addPopover && this.addPopover.via==='canvasPill' && this.addPopover.nodeId===targetId && (this.addPopover.col||0)===(col||0));
-    const dragging=!!(this.drag && this.drag.started);
-    const tn=targetId==='root'?this.tree:(((this.find(targetId)||{}).node)||this.tree);
-    const chips=this.addChipsFor(tn).slice(0,4);
-    // A grid-column placeholder (col!=null) wears the shared layout violet — it's an empty grid SLOT, so its
-    // add affordance ties to the grid identity and reads distinctly from a real element's blue "Add element".
-    // A flex container's own empty-state prompt (col==null but the container itself is display:flex) wears
-    // the same violet, for the same reason: flex reads as a layout container in every state, not just its
-    // outline/label. A plain block container's prompt (col==null, not flex) keeps the blue element accent.
-    const containerEst=this.effectiveStyle(tn);
-    const gcol = col!=null || containerEst.display==='flex';
-    // A ≥2-column ("framed") grid's own container padding is zeroed out (see childrenBox/gridChrome) so the
-    // column-cell frame sits flush at the true edge — but that removed 20px (10px top+bottom) that used to
-    // pad the box's auto-height. Restore it here, on the PROMPT's own padding, so the container's overall
-    // rendered height stays the same as before switching to grid — the breathing room just moves from the
-    // container to its content instead of disappearing.
-    const containerCols=containerEst.display==='grid'?Math.max(1,this.gridColCount(containerEst.gridTemplateColumns)):1;
-    const framed=containerEst.display==='grid'&&containerCols>=2;
-    const acc = gcol ? this.layoutClr(1) : t.accent;
-    const accSoft = gcol ? this.layoutClr(this.dark?0.09:0.05) : t.accentSoft;   // as pale as the selected Display tile (accentSoft)
-    const pillBd = gcol ? this.layoutClr(this.dark?0.5:0.42) : (this.dark?t.border:'#bcd6f5');
-    const chipBd = gcol ? this.layoutClr(this.dark?0.42:0.34) : (this.dark?t.border:'#d6e2f5');
-    const chipBdHover = gcol ? this.layoutClr(0.6) : (this.dark?t.accent:'#9db8e8');
-    const pill=h('div',{onMouseDown:e=>e.stopPropagation(),onClick:e=>{e.stopPropagation();this.openColAddPopover(targetId,col,e);},
-      ...this.a11y(e=>{e.stopPropagation();this.openColAddPopover(targetId,col,e);},{label:'Add element'}),
-      onMouseEnter:e=>{if(!dragging)e.currentTarget.style.background=accSoft;},onMouseLeave:e=>{if(!popOpen)e.currentTarget.style.background=this.dark?'transparent':'#fff';},
-      style:{display:'flex',alignItems:'center',gap:7,padding:'7px 13px',borderRadius:7,border:'1px dashed '+(dragging?t.border:(popOpen?acc:pillBd)),color:dragging?t.faint:acc,font:'600 13px -apple-system,sans-serif',cursor:'pointer',whiteSpace:'nowrap',background:dragging?'transparent':(popOpen?accSoft:(this.dark?'transparent':'#fff')),pointerEvents:dragging?'none':undefined,transition:'background-color .12s, border-color .12s, color .12s'}},
-      h('span',{style:{fontSize:15,fontWeight:300,lineHeight:1}},'+'),'Add element');
-    const chipRow=h('div',{style:{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',maxWidth:240}},
-      chips.map(c=>h('div',{key:c.l,onMouseDown:e=>e.stopPropagation(),onClick:e=>{e.stopPropagation();this.quickAdd(c,targetId,col);},
-        ...this.a11y(e=>{e.stopPropagation();this.quickAdd(c,targetId,col);},{label:'Add '+c.l}),
-        onMouseEnter:e=>{if(!dragging){e.currentTarget.style.background=accSoft;e.currentTarget.style.borderColor=chipBdHover;}},
-        onMouseLeave:e=>{e.currentTarget.style.background=this.dark?t.segBg:'#fff';e.currentTarget.style.borderColor=chipBd;},
-        style:{cursor:'pointer',fontFamily:'ui-monospace,monospace',fontSize:11,color:dragging?t.faint:acc,background:dragging?'transparent':(this.dark?t.segBg:'#fff'),border:'1px solid '+(dragging?t.border:chipBd),borderRadius:6,padding:'4px 8px',pointerEvents:dragging?'none':'auto',transition:'background-color .12s, border-color .12s, color .12s'}},'+ '+c.l)));
-    return h('div',{'data-col-prompt':'1',style:{minHeight:88,maxWidth:'100%',boxSizing:'border-box',overflow:'hidden',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:9,padding:(framed?'34px 12px 30px':'24px 12px 20px'),gridColumn,position:'relative',zIndex:1}},
-      hint?h('div',{style:{fontSize:11.5,color:t.muted,marginBottom:-1,textAlign:'center',maxWidth:220}}, 'Click or drag an element from the palette, or'):null,
-      pill, chipRow);
-  }
-  // Sole remaining prompt entry point: the ROOT first-run overlay (renderApp's canvas). Container/
-  // column-level prompts were removed deliberately — do not reintroduce them here.
-  renderEmptyState(t,targetId,compact){
-    return this.columnAddPrompt(t,targetId,null,!compact);
-  }
-  // ---- Starters: instance-type-driven first-run scaffolds ----
+  // ---- Starters: instance-type-driven scaffolds for the empty canvas ----
   // Primary goal is faster/easier CORRECT widgets, not a tutorial — starters exist because most
   // widgets begin from one of a few common shapes, not because an empty canvas needs a lesson.
   // Only base/table/ais have drafted shapes so far; the rest just set instanceClass and start
@@ -2815,11 +2763,7 @@ class Component extends DCLogic {
       ]
     };
   }
-  // True only for a widget this browser session hasn't started building yet — a fresh "+ New", not
-  // a reopened saved widget or a resumed draft (see the _firstRunDone set-sites: resetWidget,
-  // openWidget, load()'s draft-restore branch).
-  showStarterPicker(){ return !this._savedId && !this._firstRunDone; }
-  applyStarter(def){ this.tree.children=(def.build?def.build():[]); this.migrateToBem(); this._firstRunDone=true; this.selectedId='root'; this.save(); this.forceUpdate(); }
+  applyStarter(def){ this.tree.children=(def.build?def.build():[]); this.migrateToBem(); this.selectedId='root'; this.save(); this.forceUpdate(); }
   renderStarterPicker(t){ const h=React.createElement; const cls=this.instanceClass||'base';
     const defs=(this.STARTER_DEFS()[cls])||[];
     const typeChip=(v,label)=>{ const on=cls===v; const go=()=>{ this.instanceClass=v; this.forceUpdate(); };
