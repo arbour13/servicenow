@@ -210,7 +210,7 @@ class Component extends DCLogic {
     this.load();
   }
   // ---------- persistence ----------
-  save(){ this.code.html=null; this.htmlError=null; this._dirty=true; this.pushHistory(); this.rawSave(); }
+  save(){ this.code.html=null; this.htmlError=null; this._dirty=true; this._firstRunDone=true; this.pushHistory(); this.rawSave(); }
   // Draft auto-persist: every mutation choke point already funnels through rawSave(), which mirrors
   // the working widget to localStorage — a refresh or crash restores exactly where you were,
   // including which library record was open and whether it had unsaved changes. Save (⌘S) into the
@@ -219,7 +219,7 @@ class Component extends DCLogic {
   // the pending write so the last edits aren't lost. Undo/redo history stays in-memory.
   DRAFT_KEY(){ return 'widgetStudio_draft'; }
   rawSave(){ clearTimeout(this._draftT); this._draftT=setTimeout(()=>this.writeDraft(),400); }
-  writeDraft(){ try{ localStorage.setItem(this.DRAFT_KEY(), JSON.stringify({data:this.serializeWidget(),savedId:this._savedId||null,dirty:!!this._dirty,at:Date.now()})); }catch(e){} }
+  writeDraft(){ try{ localStorage.setItem(this.DRAFT_KEY(), JSON.stringify({data:this.serializeWidget(),savedId:this._savedId||null,dirty:!!this._dirty,firstRunDone:!!this._firstRunDone,at:Date.now()})); }catch(e){} }
   readDraft(){ try{ const d=JSON.parse(localStorage.getItem(this.DRAFT_KEY())||'null'); return (d&&d.data)?d:null; }catch(e){ return null; } }
   // UI preferences (drawer height, split layout) ARE persisted — they're editor chrome, not widget
   // content, so they should survive a refresh.
@@ -255,7 +255,11 @@ class Component extends DCLogic {
     // Restore the auto-persisted draft if one exists (loadWidgetData resets _dirty/_savedId, so
     // re-apply the draft's after it); otherwise start from a clean default widget.
     const draft=this.readDraft();
-    if(draft){ this.loadWidgetData(draft.data); this._savedId=draft.savedId||null; this._dirty=!!draft.dirty; this._firstRunDone=true; return; }
+    // firstRunDone comes from the draft itself (falls back to false/undefined for drafts written
+    // before this flag existed, or for a genuinely never-touched blank widget) — NOT hardcoded
+    // true, or an empty unsaved draft (e.g. after picking "Start blank" then refreshing, or just
+    // an old blank session) would wrongly suppress the starter picker forever.
+    if(draft){ this.loadWidgetData(draft.data); this._savedId=draft.savedId||null; this._dirty=!!draft.dirty; this._firstRunDone=!!draft.firstRunDone; return; }
     this.tree={id:'root',type:'root',classes:[],data:{tag:'div'},children:[]};
     this.focusStack=[];
     this.history=[this.snapshot()]; this.histIdx=0; this._lastPush=0;
