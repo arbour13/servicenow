@@ -2653,13 +2653,18 @@ class Component extends DCLogic {
             // overlay ignores the root's layout entirely, so it stays centered under any display.
             const isEmpty=!(this.tree.children&&this.tree.children.length);
             const kids=isEmpty?null:this.tree.children.map(c=>this.nwNode(c,this.tree,lightT));
-            // Any time the canvas is empty — first run, or emptied back out later by deleting
-            // everything — show the starter picker (instance type + shape), not just once.
-            // Anchored from the TOP (not vertically centered): the starter-card row's height varies
-            // by instance type (some have none, some wrap to more lines) — centering the whole box
-            // would shift the title/chip row every time that height changes. Top-anchoring keeps
-            // everything above the cards fixed in place; only the cards area grows/shrinks.
-            const emptyPrompt=isEmpty?h('div',{key:'__rootprompt',style:{position:'absolute',inset:0,display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:56,pointerEvents:'none',zIndex:1}},
+            // Any time the canvas newly BECOMES empty — first render, or emptied back out later by
+            // deleting everything — the starter picker is due again, even if "Start blank" dismissed
+            // it for a previous empty stretch. _starterDismissed only lasts until the next such
+            // transition (tracked here, the file's usual spot for this kind of derived render state).
+            if(isEmpty && !this._wasEmpty) this._starterDismissed=false;
+            this._wasEmpty=isEmpty;
+            const showPicker=isEmpty && !this._starterDismissed;
+            // Anchored from a fixed top offset (not vertically centered): the starter-card row's
+            // height varies by instance type (some have none, some wrap to more lines) — centering
+            // the whole box would shift the title/chip row every time that height changes. A fixed
+            // offset reads as roughly centered for the common case without ever moving on its own.
+            const emptyPrompt=showPicker?h('div',{key:'__rootprompt',style:{position:'absolute',inset:0,display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:100,pointerEvents:'none',zIndex:1}},
               h('div',{style:{pointerEvents:'auto'}}, this.renderStarterPicker(lightT))):null;
             return h('div',{className:'ws-stage',
               onMouseOver:e=>{e.stopPropagation(); if(this.focusLocked('root')){ if(this.hoverId!=null){this.hoverId=null;this.forceUpdate();} return; } if(this.hoverId!=='root'){this.hoverId='root';this.forceUpdate();}},
@@ -2763,7 +2768,7 @@ class Component extends DCLogic {
       ]
     };
   }
-  applyStarter(def){ this.tree.children=(def.build?def.build():[]); this.migrateToBem(); this.selectedId='root'; this.save(); this.forceUpdate(); }
+  applyStarter(def){ this.tree.children=(def.build?def.build():[]); this.migrateToBem(); this._starterDismissed=true; this.selectedId='root'; this.save(); this.forceUpdate(); }
   renderStarterPicker(t){ const h=React.createElement; const cls=this.instanceClass||'base';
     const defs=(this.STARTER_DEFS()[cls])||[];
     const typeChip=(v,label)=>{ const on=cls===v; const go=()=>{ this.instanceClass=v; this.forceUpdate(); };
