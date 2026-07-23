@@ -1079,6 +1079,21 @@ class Component extends DCLogic {
     if((e.metaKey||e.ctrlKey)&&(e.key==='s'||e.key==='S')){ e.preventDefault(); this.saveWidget(false); return; }
     if(e.key==='Escape'){ if(this._discard){ this._discard=null; this.forceUpdate(); return; } if(this.libOpen){ this.libOpen=false; clearTimeout(this._delArmT); this._delArm=null; this.forceUpdate(); return; } if(this.ctxMenu){ this.closeContextMenu(); return; } if(this._spPop){ this._spPop=null; this.forceUpdate(); return; }if(this._crumbOpen){ this._crumbOpen=null; this._crumbFlip=false; this.forceUpdate(); return; } if(this._editing){ this._editing=null; } else if(this.focusStack.length){ this.selectedId=this.focusId(); } else { this.selectedId='root'; this.exportOpen=false; } this.forceUpdate(); return; }
     if(inField) return;
+    // Tree navigation: ↑/↓ move selection between siblings, Enter descends into the first child
+    // (Esc already walks back up, above). ⌘/Ctrl+↑/↓ reorders the selection among its siblings via
+    // the same moveSib() the Layers row up/down buttons use. Single-select only (multiSel active
+    // skips these — a multi-selection has no single "current" node to move from/reorder).
+    if(!this.multiSel.length && (e.metaKey||e.ctrlKey) && (e.key==='ArrowUp'||e.key==='ArrowDown')){
+      if(this.selectedId!=='root'){ e.preventDefault(); this.moveSib(this.selectedId,e.key==='ArrowUp'?-1:1); } return; }
+    if(!this.multiSel.length && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='ArrowUp'||e.key==='ArrowDown')){
+      const r=this.find(this.selectedId);
+      if(r&&r.parent){ const sibs=r.parent.children; const i=sibs.indexOf(r.node); const j=i+(e.key==='ArrowUp'?-1:1);
+        if(j>=0&&j<sibs.length){ e.preventDefault(); this.select(sibs[j].id); } }
+      return; }
+    if(!this.multiSel.length && !e.metaKey && !e.ctrlKey && !e.altKey && e.key==='Enter'){
+      const r=this.find(this.selectedId);
+      if(r&&r.node.children&&r.node.children.length){ e.preventDefault(); this.select(r.node.children[0].id); }
+      return; }
     if((e.metaKey||e.ctrlKey)&&(e.key==='z'||e.key==='Z')){ e.preventDefault(); if(e.shiftKey) this.redo(); else this.undo(); return; }
     if((e.metaKey||e.ctrlKey)&&e.key==='y'){ e.preventDefault(); this.redo(); return; }
     if((e.key==='Delete'||e.key==='Backspace')&&this.selectedId!=='root'){ e.preventDefault(); this.deleteSelection(); }
