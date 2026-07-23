@@ -206,9 +206,16 @@ class Component extends DCLogic {
   }
   // ---------- persistence ----------
   save(){ this.code.html=null; this.htmlError=null; this._dirty=true; this.pushHistory(); this.rawSave(); }
-  // Persistence intentionally disabled: state lives in memory only (per the requirement not to use
-  // localStorage). rawSave is a no-op; undo/redo history below is in-memory and unaffected.
-  rawSave(){ }
+  // Draft auto-persist: every mutation choke point already funnels through rawSave(), which mirrors
+  // the working widget to localStorage — a refresh or crash restores exactly where you were,
+  // including which library record was open and whether it had unsaved changes. Save (⌘S) into the
+  // library remains the explicit durable copy; the draft is just the in-progress buffer. Writes are
+  // debounced (serializing a big tree on every keystroke is wasteful); the unload listener flushes
+  // the pending write so the last edits aren't lost. Undo/redo history stays in-memory.
+  DRAFT_KEY(){ return 'widgetStudio_draft'; }
+  rawSave(){ clearTimeout(this._draftT); this._draftT=setTimeout(()=>this.writeDraft(),400); }
+  writeDraft(){ try{ localStorage.setItem(this.DRAFT_KEY(), JSON.stringify({data:this.serializeWidget(),savedId:this._savedId||null,dirty:!!this._dirty,at:Date.now()})); }catch(e){} }
+  readDraft(){ try{ const d=JSON.parse(localStorage.getItem(this.DRAFT_KEY())||'null'); return (d&&d.data)?d:null; }catch(e){ return null; } }
   // UI preferences (drawer height, split layout) ARE persisted — they're editor chrome, not widget
   // content, so they should survive a refresh.
   loadUiPrefs(){ try{ const p=JSON.parse(localStorage.getItem('widgetStudio_ui')||'{}');
@@ -238,8 +245,10 @@ class Component extends DCLogic {
   redo(){ if(this.history&&this.histIdx<this.history.length-1){ this.histIdx++; this.restoreHist(this.history[this.histIdx]); } }
   restoreHist(snap){ const o=JSON.parse(snap); this.tree=o.tree; this.classStyles=o.classStyles||{}; this.stateStyles=o.stateStyles||{}; this.responsive=o.responsive||{md:{},sm:{},xs:{}}; if(o.tokens) this.tokens=o.tokens; this.multiSel=[]; this.selectedId=o.sel||'root'; this._editing=null; this._lastPush=0; this.rawSave(); this.forceUpdate(); }
   load(){
-    // No localStorage: always start from a clean default widget. (In ServiceNow the widget is
-    // loaded/saved server-side; this standalone editor holds state in memory for the session only.)
+    // Restore the auto-persisted draft if one exists (loadWidgetData resets _dirty/_savedId, so
+    // re-apply the draft's after it); otherwise start from a clean default widget.
+    const draft=this.readDraft();
+    if(draft){ this.loadWidgetData(draft.data); this._savedId=draft.savedId||null; this._dirty=!!draft.dirty; return; }
     this.tree={id:'root',type:'root',classes:[],data:{tag:'div'},children:[]};
     this.focusStack=[];
     this.history=[this.snapshot()]; this.histIdx=0; this._lastPush=0;
@@ -280,10 +289,10 @@ class Component extends DCLogic {
     if(rec){ rec.name=name; rec.wid=this.wid; rec.updatedAt=now; rec.data=data; }
     else { rec={id:'w_'+now.toString(36)+'_'+((this._recSeq=(this._recSeq||0)+1)),name,wid:this.wid,createdAt:now,updatedAt:now,data}; list.push(rec); }
     const ok=this.writeWidgets(list);
-    if(ok){ this._savedId=rec.id; this._dirty=false; this._saveFlash=Date.now(); clearTimeout(this._saveFlashT); this._saveFlashT=setTimeout(()=>{this._saveFlash=0;this.forceUpdate();},1600); }
+    if(ok){ this._savedId=rec.id; this._dirty=false; this.writeDraft(); this._saveFlash=Date.now(); clearTimeout(this._saveFlashT); this._saveFlashT=setTimeout(()=>{this._saveFlash=0;this.forceUpdate();},1600); }
     else { this._saveErr=1; clearTimeout(this._saveErrT); this._saveErrT=setTimeout(()=>{this._saveErr=0;this.forceUpdate();},2800); }
     this.forceUpdate(); return ok; }
-  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this.libOpen=false; this._discard=null; this.forceUpdate(); }
+  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
   deleteWidget(id){ const list=this.listWidgets().filter(w=>w.id!==id); this.writeWidgets(list); if(this._savedId===id) this._savedId=null; if(this._delArm===id) this._delArm=null; clearTimeout(this._delArmT); this.forceUpdate(); }
   // Two-step delete: first click arms the button (fills red, "click again to delete"); second click
   // (while still armed) actually deletes. Arming auto-clears after a few seconds so a stray click
@@ -293,7 +302,7 @@ class Component extends DCLogic {
     this._delArm=id; clearTimeout(this._delArmT); this._delArmT=setTimeout(()=>{ this._delArm=null; this.forceUpdate(); },2500);
     this.forceUpdate();
   }
-  newBlankWidget(){ this.resetWidget(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
+  newBlankWidget(){ this.resetWidget(); this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
   // Route any action that DISCARDS the current widget (open another / new) through the unsaved-changes guard.
   requestDiscard(fn){ if(this._dirty){ this._discard={go:fn}; this.forceUpdate(); } else { fn(); } }
   relTime(ms){ const d=Date.now()-ms; const s=Math.floor(d/1000); if(s<45) return 'just now'; const m=Math.floor(s/60); if(m<60) return m+' min ago'; const hr=Math.floor(m/60); if(hr<24) return hr+' hr ago'; const dd=Math.floor(hr/24); if(dd<7) return dd+' day'+(dd>1?'s':'')+' ago'; return new Date(ms).toLocaleDateString(); }
@@ -1069,9 +1078,10 @@ class Component extends DCLogic {
   // floating selection toolbar re-measures its rect from the DOM.
   this._winResize=()=>{ this.forceUpdate(); };
   window.addEventListener('resize',this._winResize);
-  // Browser-level exits (refresh/close) can't go through requestDiscard, so warn there too when
-  // there's unsaved work — otherwise F5 silently destroys the widget being built.
-  this._beforeUnload=e=>{ if(this._dirty){ e.preventDefault(); e.returnValue=''; } };
+  // Browser-level exits (refresh/close): flush the debounced draft write so the very last edits
+  // survive. No blocking dialog — the draft restore on next load makes refresh lossless, which is
+  // better protection than the native "Reload site?" prompt (which can't be styled or replaced).
+  this._beforeUnload=()=>{ clearTimeout(this._draftT); this.writeDraft(); };
   window.addEventListener('beforeunload',this._beforeUnload);
   this.loadMonaco(); this.injectGlyphs();
   [0,300,800,1600,3000].forEach(d=>setTimeout(()=>{ if(!this._faIcons) this.scanIcons(); },d));
