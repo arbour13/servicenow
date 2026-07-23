@@ -74,7 +74,7 @@ class Component extends DCLogic {
     this.uidc = 1; this.clsc = {};
     this.CANVAS_GAP = '0';  // no synthetic spacing between siblings — elements render flush (real gap/margin only)
     this.REPEAT_PREVIEW_N = 6;  // fixed ghost-copy count for a repeating element with no real sample array to size from — no longer user-editable ("Preview copies" field removed, it just confused people)
-    this._inspOpen = {attributes:false, angular:false};  // inspector section open/closed state (Attributes/Angular closed by default)
+    this._inspOpen = {};  // big-card (Structure/Appearance) open/closed state; inspector sections are tabs now
     this.dark = false; this.device = 'lg';
     this.codeTheme = 'auto';  // Monaco theme: 'auto' follows the app theme, or pin 'light'/'dark' independently
     this.exportUnit = 'px'; this.exportBase = 16;
@@ -97,6 +97,8 @@ class Component extends DCLogic {
     this.ctxMenu = null;    // right-click context menu: {nodeId,x,y} | null
     this.clipboard = null;  // copy/paste: array of deep-cloned nodes (re-idded fresh at paste time)
     this.leftTab = 'layers'; this.panelMode = 'split'; this.addPopover = null; this.leftW = 292; this.rightW = 340;
+    this.paletteSplit = 0.55;      // palette's share of the Build tab height (Layers gets the rest); drag the seam to change
+    this.paletteCollapsed = null;  // {cat:bool} — null = defaults (Layout/Text open, the rest collapsed)
     this.drag = null; this.dropContainer = null; this.dropIndex = null; this.dropSlot = null; this.dropCol = null; this.dropZone = null; this.dropWrap = null; this.dropAxis = null; this.dropFlexAxis = null; this.ghostXY = {x:0,y:0};
     this.classStyles = {};
     this.stateStyles = {};   // { [cls]: { hover:{…}, focus:{…}, active:{…}, disabled:{…}, checked:{…} } } — pseudo-state rules
@@ -150,7 +152,9 @@ class Component extends DCLogic {
         {type:'el',tag:'button',label:'button'},{type:'el',tag:'input',label:'input'},
         {type:'el',tag:'select',label:'select'},{type:'el',tag:'textarea',label:'textarea'}
       ]},
-      {cat:'Components', items:[
+      // "Bootstrap": these chips emit Bootstrap 3 markup/classes (panel panel-default, alert, …) that
+      // any Service Portal theme already styles — distinct from the plain semantic elements above.
+      {cat:'Bootstrap', items:[
         {type:'panel',label:'panel'},
         {type:'alert',label:'alert'},
         {type:'badge',label:'badge'},
@@ -228,8 +232,10 @@ class Component extends DCLogic {
     if(typeof p.rightW==='number') this.rightW=Math.max(340,Math.min(540,p.rightW));
     if(typeof p.dark==='boolean') this.dark=p.dark;
     if(['auto','light','dark'].includes(p.codeTheme)) this.codeTheme=p.codeTheme;
+    if(typeof p.paletteSplit==='number') this.paletteSplit=Math.max(0.15,Math.min(0.85,p.paletteSplit));
+    if(p.paletteCats&&typeof p.paletteCats==='object') this.paletteCollapsed=p.paletteCats;
   }catch(e){} }
-  saveUiPrefs(){ try{ localStorage.setItem('widgetStudio_ui', JSON.stringify({previewH:this.previewH,splitW:this.splitW,splitView:this.splitView,drawerOpen:this.drawerOpen,cssVarBridge:this.cssVarBridge,leftW:this.leftW,rightW:this.rightW,dark:this.dark,codeTheme:this.codeTheme})); }catch(e){} }
+  saveUiPrefs(){ try{ localStorage.setItem('widgetStudio_ui', JSON.stringify({previewH:this.previewH,splitW:this.splitW,splitView:this.splitView,drawerOpen:this.drawerOpen,cssVarBridge:this.cssVarBridge,leftW:this.leftW,rightW:this.rightW,dark:this.dark,codeTheme:this.codeTheme,paletteSplit:this.paletteSplit,paletteCats:this.paletteCollapsed})); }catch(e){} }
   // Background-color is excluded from the chrome's normal transition list (so selection highlights snap
   // instantly — see the .ws-chrome rule) — briefly add it back just for the theme flip so light↔dark fades
   // instead of snapping, then drop it again so ordinary interactions stay snappy.
@@ -1984,7 +1990,7 @@ class Component extends DCLogic {
   renderLeft(t){ const h=React.createElement;
     if(this.leftTab!=='variables'&&this.leftTab!=='options') this.leftTab='build';  // Elements + Layers always combined into Build
     const tab=(id,label,badge)=>{ const on=this.leftTab===id; const go=()=>{this.leftTab=id;this.forceUpdate();}; return h('div',Object.assign({onClick:go},this.a11y(go,{role:'tab',selected:on,label:label+' tab'}),{style:{flex:1,height:36,display:'flex',alignItems:'center',justifyContent:'center',gap:6,cursor:'pointer',fontSize:12,fontWeight:on?700:600,color:on?t.accent:t.muted,borderBottom:'2px solid '+(on?t.accent:'transparent'),userSelect:'none'}}), label, badge?h('span',{style:{fontSize:10,fontWeight:700,color:on?'#fff':t.muted,background:on?t.accentFill:t.segBg,borderRadius:9,minWidth:15,height:15,display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'0 4px'}},badge):null); };
-    const body = this.leftTab==='variables' ? this.renderVariablesPanel(t) : this.leftTab==='options' ? this.renderOptionsPanel(t) : h('div',{style:{flex:1,minHeight:0,display:'flex',flexDirection:'column'}}, this.renderPalette(t), this.renderTree(t));
+    const body = this.leftTab==='variables' ? this.renderVariablesPanel(t) : this.leftTab==='options' ? this.renderOptionsPanel(t) : h('div',{style:{flex:1,minHeight:0,display:'flex',flexDirection:'column'}}, this.renderPalette(t), this.paletteSeam(t), this.renderTree(t));
     return h('div',{style:{width:this.effPanelWidths().left,flexShrink:0,display:'flex',flexDirection:'column',background:t.panel2,minHeight:0}},
       h('div',{role:'tablist','aria-label':'Left panel',style:{display:'flex',borderBottom:'1px solid '+t.border,background:t.panel,flexShrink:0}}, tab('build','Build'), tab('variables','Variables'), tab('options','Options')),
       body);
@@ -2084,19 +2090,40 @@ class Component extends DCLogic {
         const els=cfg.validChildren.filter(it=>it.type==='el'), comps=cfg.validChildren.filter(it=>it.type!=='el');
         const chipRow=items=>h('div',{style:{display:'flex',flexWrap:'wrap',gap:6,padding:'0 14px'}}, items.map(chip));
         const catHeader=txt=>h('div',{style:{padding:'12px 14px 6px',fontSize:11,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:t.faint}},txt);
-        return h('div',{style:{flex:'1 1 55%',minHeight:0,overflowY:'auto',scrollbarGutter:'stable',display:'flex',flexDirection:'column',paddingBottom:16,paddingTop:6}},
+        return h('div',{style:{flex:this.paletteSplit+' 1 0%',minHeight:0,overflowY:'auto',scrollbarGutter:'stable',display:'flex',flexDirection:'column',paddingBottom:16,paddingTop:6}},
           catHeader('Add to '+cfg.label),
           els.length?h(React.Fragment,{key:'els'}, catHeader('Elements'), chipRow(els)):null,
           comps.length?h(React.Fragment,{key:'comps'}, catHeader('Components'), chipRow(comps)):null,
           h('div',{style:{padding:'12px 14px',fontSize:11,color:t.faint,lineHeight:1.5}},'Drag an element into the ',cfg.label,'. Double-click a nested component to edit it too.'));
       }
     }
-    return h('div',{style:{flex:'1 1 55%',minHeight:0,overflowY:'auto',scrollbarGutter:'stable',display:'flex',flexDirection:'column',paddingBottom:16,paddingTop:6}},
-      this.PALETTE.map(g=>h('div',{key:g.cat},
-        h('div',{style:{padding:'12px 14px 6px',fontSize:11,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:t.faint}},g.cat),
-        h('div',{style:{display:'flex',flexWrap:'wrap',gap:6,padding:'0 14px'}}, g.items.map(chip))
-      ))
+    // Categories collapse (chevron headers, persisted). Defaults keep the everyday Layout/Text open
+    // and the rest closed, so the palette's resting height stays small and Layers gets the room.
+    if(!this.paletteCollapsed){ this.paletteCollapsed={}; this.PALETTE.forEach(g=>{ if(g.cat!=='Layout'&&g.cat!=='Text'){ this.paletteCollapsed[g.cat]=true; } }); }
+    const toggleCat=cat=>{ this.paletteCollapsed[cat]=!this.paletteCollapsed[cat]; this.saveUiPrefs(); this.forceUpdate(); };
+    return h('div',{style:{flex:this.paletteSplit+' 1 0%',minHeight:0,overflowY:'auto',scrollbarGutter:'stable',display:'flex',flexDirection:'column',paddingBottom:16,paddingTop:6}},
+      this.PALETTE.map(g=>{ const open=!this.paletteCollapsed[g.cat];
+        return h('div',{key:g.cat},
+          h('div',{onClick:()=>toggleCat(g.cat),...this.a11y(()=>toggleCat(g.cat),{label:g.cat+' elements',pressed:open}),
+            style:{padding:'12px 14px 6px',fontSize:11,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:t.faint,cursor:'pointer',userSelect:'none',display:'flex',alignItems:'center',gap:6}},
+            h('span',{style:{display:'inline-flex',transition:'transform .15s',transform:open?'rotate(90deg)':'none'}},this.chev('right',9)), g.cat),
+          this.animatedBox(open, h('div',{style:{display:'flex',flexWrap:'wrap',gap:6,padding:'2px 14px 4px'}}, g.items.map(chip)))
+        ); })
     );
+  }
+  // Draggable seam between the palette and Layers — same look/feel as the vertical panel resizers,
+  // horizontal. Ratio (paletteSplit) persists in uiPrefs.
+  paletteSeam(t){ const h=React.createElement; const active=this._seamDrag||this._seamHover;
+    return h('div',{
+      onMouseDown:e=>this.startPaletteSeam(e),
+      onMouseEnter:()=>{this._seamHover=true;this.forceUpdate();}, onMouseLeave:()=>{this._seamHover=false;this.forceUpdate();},
+      style:{height:5,flexShrink:0,cursor:'row-resize',background:active?t.accent:t.border,zIndex:5,transition:'background .12s'}});
+  }
+  startPaletteSeam(e){ e.preventDefault(); this._seamDrag=true; const parent=e.currentTarget.parentElement; const rect=parent.getBoundingClientRect(); const seamH=5;
+    document.body.style.cursor='row-resize'; document.body.style.userSelect='none';
+    const mv=ev=>{ const frac=(ev.clientY-rect.top)/Math.max(1,rect.height-seamH); this.paletteSplit=Math.max(0.15,Math.min(0.85,frac)); this.forceUpdate(); };
+    const up=()=>{ this._seamDrag=false; document.body.style.cursor=''; document.body.style.userSelect=''; window.removeEventListener('mousemove',mv,true); window.removeEventListener('mouseup',up,true); this.saveUiPrefs(); this.forceUpdate(); };
+    window.addEventListener('mousemove',mv,true); window.addEventListener('mouseup',up,true);
   }
   renderTree(t){
     const h=React.createElement;
@@ -2106,7 +2133,7 @@ class Component extends DCLogic {
       const kids = hasKids ? h('div',null, node.children.map(c=>renderSubtree(c,depth+1))) : null;
       return h('div',{key:node.id}, this.treeRow(node,depth,t), hasKids?this.animatedBox(!collapsed,kids):null);
     };
-    return h('div',{style:{flex:'1 1 45%',minHeight:0,display:'flex',flexDirection:'column',borderTop:'1px solid '+t.border}},
+    return h('div',{style:{flex:(1-this.paletteSplit)+' 1 0%',minHeight:0,display:'flex',flexDirection:'column'}},
       h('div',{style:{padding:'9px 14px 6px',fontSize:11,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:t.faint,flexShrink:0}},'Layers'),
       h('div',{style:{flex:1,overflowY:'auto',scrollbarGutter:'stable',paddingBottom:8}}, renderSubtree(this.tree,0))
     );
@@ -2618,9 +2645,15 @@ class Component extends DCLogic {
         onMouseLeave:()=>{ if(this.hoverId){this.hoverId=null;this.forceUpdate();} }},
         h('div',{style:{width:widths[this.device],margin:'0 auto',flex:'1 0 auto',display:'flex',flexDirection:'column',transition:'width .2s'}},
           (()=>{ const _sd=this.dark; this.dark=false; try{
-            // An empty widget shows the same Add-element prompt as an empty container — the blank
-            // white stage alone gave a first-run user nothing to click and no hint to drag.
-            const kids=(this.tree.children&&this.tree.children.length)?this.tree.children.map(c=>this.nwNode(c,this.tree,lightT)):this.renderEmptyState(lightT,'root',false);
+            // An empty widget shows a first-run Add-element prompt — the blank white stage alone
+            // gives nothing to click and no hint to drag. Rendered as an ABSOLUTE centered overlay,
+            // never as a stage child: a root set to display:flex/grid would otherwise lay the
+            // prompt out as a flex/grid ITEM (squeezed into column 1 instead of centered). The
+            // overlay ignores the root's layout entirely, so it stays centered under any display.
+            const isEmpty=!(this.tree.children&&this.tree.children.length);
+            const kids=isEmpty?null:this.tree.children.map(c=>this.nwNode(c,this.tree,lightT));
+            const emptyPrompt=isEmpty?h('div',{key:'__rootprompt',style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',zIndex:1}},
+              h('div',{style:{pointerEvents:'auto'}}, this.renderEmptyState(lightT,'root',false))):null;
             return h('div',{className:'ws-stage',
               onMouseOver:e=>{e.stopPropagation(); if(this.focusLocked('root')){ if(this.hoverId!=null){this.hoverId=null;this.forceUpdate();} return; } if(this.hoverId!=='root'){this.hoverId='root';this.forceUpdate();}},
               onClick:e=>this.select('root',e),
@@ -2634,6 +2667,7 @@ class Component extends DCLogic {
                 boxShadow:this.dark?'0 1px 2px rgba(0,0,0,.45), 0 22px 60px rgba(0,0,0,.5)':'0 1px 2px rgba(16,24,40,.06), 0 20px 52px rgba(16,24,40,.12)',
                 outline:rootOutline, outlineOffset:'0', position:'relative'}},
               rootShowLabel?this.nwLabel(this.tree,lightT,this.selectedId==='root'):null,
+              emptyPrompt,
               rootOverflow?h('div',{style:{overflow:rootOverflow,height:'100%'}},kids):kids
             );
           } finally { this.dark=_sd; } })()
@@ -2735,9 +2769,10 @@ class Component extends DCLogic {
       hint?h('div',{style:{fontSize:11.5,color:t.muted,marginBottom:-1,textAlign:'center',maxWidth:220}}, 'Click or drag an element from the palette, or'):null,
       pill, chipRow);
   }
-  renderEmptyState(t,targetId,compact,col,gridColumn){
-    if(col!=null) return this.columnAddPrompt(t,targetId,col,!compact,gridColumn);
-    return this.columnAddPrompt(t,targetId,null,!compact,gridColumn);
+  // Sole remaining prompt entry point: the ROOT first-run overlay (renderApp's canvas). Container/
+  // column-level prompts were removed deliberately — do not reintroduce them here.
+  renderEmptyState(t,targetId,compact){
+    return this.columnAddPrompt(t,targetId,null,!compact);
   }
   quickAdd(spec,targetId,col,index){ const c=this.find(targetId);
     // Role-tagged chips (a composable's own children) build the styled sub-element; everything else is a plain make().
@@ -3064,9 +3099,9 @@ class Component extends DCLogic {
     // identical to the per-column wash a grid gets. Skipped for multi-column grids (their COLUMN carries the
     // wash via gridChrome, so filling the whole grid too would double it) and inline hosts.
     const fillBox = (targeted && !inline && !(est.display==='grid' && this.dropCol)) ? h('div',{key:'__dropfill','aria-hidden':'true',style:{position:'absolute',inset:0,borderRadius:'inherit',background:this.layoutOrDropFill(est.display),pointerEvents:'none',zIndex:0}}) : null;
-    // Empty containers keep their normal centered prompt during a drag now — the drop feedback is the
-    // thin insertion line / container ring overlay, not an in-flow make-room ghost, so nothing shifts.
-    const emptyCenter = empty && !inline && est.display!=='grid';
+    // Empty composable bodies render NO prompt — same as plain containers (nwChildrenBox): an
+    // invisible droppable area with a minimum size. Adding happens via palette click/drag, the
+    // Layers +, focus mode's own guidance, and the context menu — one consistent rule everywhere.
     const pg=node.data&&node.data.pagination;
     // A row-carousel with Arrows/Below controls slides ONE page into view via JS (scrollLeft) — the track must
     // clip its own overflow, or the flex row just grows to fit every item and pushes the arrow/footer chrome
@@ -3074,13 +3109,13 @@ class Component extends DCLogic {
     // via `est` (a real scrollbar, set in wrapPagination/setCS for that control); this is its JS-driven sibling
     // — hidden instead of auto, since the arrows (not native scroll) drive it.
     const pgClip=(pg&&pg.enabled&&!inline&&(pg.controls==='arrows'||pg.controls==='below'))?{overflow:'hidden',flexWrap:'nowrap'}:null;
-    const style={...(extra||{}),...padInset,...est,position:'relative',minHeight:(empty&&!inline)?'110px':(est.minHeight||'auto'),...(emptyCenter?{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}:{}),...(this.dragFlexPreview(node.id)||{}),...(pgClip||{}),boxShadow:est.boxShadow||'none'};
+    const style={...(extra||{}),...padInset,...est,position:'relative',minHeight:(empty&&!inline)?'110px':(est.minHeight||'auto'),...((empty&&!inline)?{minWidth:'40px'}:{}),...(this.dragFlexPreview(node.id)||{}),...(pgClip||{}),boxShadow:est.boxShadow||'none'};
     // Canvas-only default: give the ghost container guide a soft corner even when no border-radius
     // is set, so unstyled structure doesn't look harsher than styled structure. Editor affordance
     // only — never written to est/exported CSS.
     if(style.borderRadius==null) style.borderRadius='4px';
     let content;
-    if(empty){ content = inline?(label()||h('span',{key:'__h',style:{opacity:.45,fontFamily:'ui-monospace,monospace',fontSize:11,color:t.muted}},'drop here')):this.emptyFill(node,t,est); }
+    if(empty){ content = inline?(label()||h('span',{key:'__h',style:{opacity:.45,fontFamily:'ui-monospace,monospace',fontSize:11,color:t.muted}},'drop here')):null; }
     else { const filled=this.filledChildren(node,t,est); content = hasText?[label()].concat(filled):filled; }
     const trackEl=h(Tag,Object.assign({'data-drop':node.id,style:style},padAfford?{'data-pad-affordance':'1'}:{}), guideBox, fillBox, content, this.gridChrome(node.id,t,est,style.borderRadius));
     // Pagination is a generic capability any container can turn on — not gated to a node type. The track
@@ -3106,18 +3141,6 @@ class Component extends DCLogic {
     return trackEl;
   }
   gridColCount(tpl){ if(!tpl) return 1; const rep=tpl.match(/repeat\(\s*(\d+)/); if(rep) return parseInt(rep[1],10); return tpl.trim().split(/\s+/).filter(Boolean).length; }
-  // Empty grid: a compact "Add element" prompt in EACH column, pinned to its column, so you can add
-  // straight into any one (the column dividers from gridChrome show the structure around them). Single
-  // column / non-grid → one prompt spanning the container.
-  gridPrompt(targetId,t,cols,compact){ const h=React.createElement;
-    // A 1-column grid's single slot IS column 1 — pass col:1 (not null) so columnAddPrompt renders it in
-    // the grid's rose color (its `gcol` check is col!=null), same as any other grid column, instead of
-    // falling back to the plain blue non-grid styling just because there's nothing to loop over.
-    if(cols<2) return this.renderEmptyState(t,targetId,compact,1,'1 / -1');
-    const out=[];
-    for(let i=1;i<=cols;i++) out.push(h('div',{key:'gcp'+i,style:{minWidth:0,gridColumnStart:String(i),gridRowStart:'1',alignSelf:'start'}}, this.renderEmptyState(t,targetId,true,i)));
-    return out;
-  }
   // The ONE bounding-box treatment for every drop target on the canvas — nested containers (childrenBox's
   // `ol`) and the root/base div all call this, so "empty" vs "has content"
   // is the only thing that ever varies the look, never which display type or nesting level it's at.
@@ -3191,33 +3214,11 @@ class Component extends DCLogic {
     }
     return h('div',{key:'gridChrome',style:{position:'absolute',inset:0,padding,display:'grid',gridTemplateColumns:est.gridTemplateColumns,columnGap:(gapPx>0?gapPx+'px':'0px'),zIndex:0,pointerEvents:'none'}}, cells);
   }
-  emptyFill(node,t,est){
-    if(est.display==='grid'){ return this.gridPrompt(node.id,t,Math.max(1,this.gridColCount(est.gridTemplateColumns)),true); }
-    return this.renderEmptyState(t,node.id,true);
-  }
-  rootEmpty(t){
-    const est=this.previewEst(this.tree);
-    if(est.display==='grid'){ return this.gridPrompt('root',t,Math.max(1,this.gridColCount(est.gridTemplateColumns)),false); }
-    return this.renderEmptyState(t,'root',false);
-  }
-  // Filled container: render its children. For a multi-column grid, ALSO drop a compact "Add element"
-  // prompt into each still-EMPTY column (pinned to row 1), so every empty column stays quick-addable while
-  // filled columns just show their element. Skipped for a repeater (its rows auto-flow into every cell).
-  // An occupied column shows its element; each still-EMPTY column keeps its full "Add element" + chips in
-  // the grid (rose) color, so you can quick-add into any of them. The rose vs the occupied element's blue
-  // is what distinguishes empty slots from a filled column — no dimming (a faded button reads as disabled).
-  filledChildren(node,t,est){ const h=React.createElement;
-    const out=node.children.map(c=>this.renderNode(c,node,t,false));
-    if(est.display==='grid'){
-      const cols=Math.max(1,this.gridColCount(est.gridTemplateColumns));
-      const hasRepeater=node.children.some(c=>c.attrs&&c.attrs['ng-repeat']);
-      if(cols>1 && !hasRepeater){
-        const occupied=new Set(); let cursor=1;
-        node.children.forEach(c=>{ const cs=this.effectiveStyle(c).gridColumnStart; let col=(cs&&/^\d+$/.test(String(cs)))?parseInt(cs,10):null; if(col==null){ while(occupied.has(cursor))cursor++; col=cursor; } occupied.add(col); });
-        for(let i=1;i<=cols;i++){ if(!occupied.has(i)) out.push(h('div',{key:'gep'+i,style:{minWidth:0,gridColumnStart:String(i),gridRowStart:'1',alignSelf:'start'}}, this.renderEmptyState(t,node.id,true,i))); }
-      }
-    }
-    return out;
+  // Filled container: render its children. No per-column "Add element" prompts in still-empty grid
+  // columns — the user removed those repeatedly; empty slots are just droppable space (gridChrome
+  // still outlines the column structure), and adding targets a column via drag or the palette.
+  filledChildren(node,t,est){
+    return node.children.map(c=>this.renderNode(c,node,t,false));
   }
   nodeLabel(node){ if(node.id==='root') return this.rootTag()+' .'+this.baseClass(); if(node.type==='el') return node.data.tag+(this.primaryClass(node)?(' .'+this.primaryClass(node)):''); return node.type; }
 
@@ -3506,7 +3507,7 @@ class Component extends DCLogic {
           h('span',{style:{color:t.muted}}, '\u2264'+this.BREAKPOINTS[bp].max+'px'),
           h('span',{style:{flex:1}}),
           hasAny?h('span',{onClick:reset,...this.tt('Clear this element\u2019s '+lbl+' overrides'),style:{cursor:'pointer',fontSize:10.5,fontWeight:600,color:this.dark?'#e0a05f':'#b4541f',border:'1px solid '+(this.dark?'#5c3a28':'#e6c3a8'),borderRadius:5,padding:'2px 7px'}},'Reset'):null),
-        h('div',{style:{marginTop:6,fontSize:10.5,color:t.faint,lineHeight:1.5}}, 'Editing only what changes at \u2264'+this.BREAKPOINTS[bp].max+'px. ', h('b',{style:{color:t.muted,fontWeight:700}},'Blank fields cascade down'), ' \u2014 a property you don\u2019t set here inherits from the next larger tier ('+({md:'lg',sm:'md',xs:'sm'}[bp])+'\u2192\u2026\u2192lg base).'));
+        h('div',{style:{marginTop:6,fontSize:10.5,color:t.faint,lineHeight:1.5}}, 'Editing only what changes at \u2264'+this.BREAKPOINTS[bp].max+'px. ', h('b',{style:{color:t.muted,fontWeight:700}},'Blank fields cascade down'), ' \u2014 a property you don\u2019t set here inherits from the next larger tier ('+({md:'lg',sm:'md',xs:'sm'}[bp])+'\u2192\u2026\u2192lg base). State styles (Hover, Focus, \u2026) are edited on the Desktop layer and apply at every width.'));
     }
     const has=s=>{ const b=c&&this.stateStyles[c]; return !!(b&&b[s]&&Object.keys(b[s]).length); };
     const opts=[['base','Default'],['hover','Hover'],['focus','Focus'],['active','Active'],['disabled','Disabled'],['checked','Checked'],['::before','::before'],['::after','::after']];
@@ -4180,17 +4181,6 @@ class Component extends DCLogic {
     return h('div',{style:{display:'grid',gridTemplateRows:open?'1fr':'0fr',transition:'grid-template-rows .18s cubic-bezier(.4,0,.2,1)'}},
       h('div',{style:{overflow:'hidden',minHeight:0}}, body));
   }
-  inspSection(t,key,label,body,defOpen){ const h=React.createElement;
-    const empty = body==null || (Array.isArray(body)&&!body.length);
-    if(empty) return null;
-    const open = this._inspOpen[key]!=null ? this._inspOpen[key] : (defOpen!==false);
-    const toggle=()=>{ this._inspOpen[key]=!open; this.forceUpdate(); };
-    return h('div',{style:{borderBottom:'1px solid '+t.border}},
-      h('div',Object.assign({onClick:toggle},this.a11y(toggle,{label:label+(open?' section, expanded':' section, collapsed'),pressed:open}),{style:{display:'flex',alignItems:'center',gap:7,padding:'10px 14px',cursor:'pointer',userSelect:'none'}}),
-        h('span',{style:{color:t.faint,display:'inline-flex',alignItems:'center',transform:open?'rotate(90deg)':'none',transition:'transform .12s'}},this.chev('right',10)),
-        h('span',{style:{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'.04em',color:open?t.text:t.muted}},label)),
-      this.animatedBox(open, h('div',{style:{padding:'2px 14px 14px'}}, body)));
-  }
   // Factory default content text for a node — used to decide whether inserting a binding should REPLACE
   // the text (still the placeholder) or append to it (author-edited). null = no known default.
   factoryText(node){ if(!node) return null;
@@ -4222,12 +4212,26 @@ class Component extends DCLogic {
         node.id==='root'?h('div',{style:{fontSize:11,color:t.faint,marginTop:6,lineHeight:1.5}},'Most widgets: ',h('code',{style:{color:t.muted}},'div'),' or ',h('code',{style:{color:t.muted}},'article'),'. The page provides the header/nav/main landmarks.'):null,
         node.type==='html'?null:this.classManager(node,t)
       ),
-      node.type==='html'?this.htmlInspector(node,t):h('div',{style:{overflowY:'auto',flex:1,scrollbarGutter:'stable'}},
-        node.id!=='root'?this.inspSection(t,'data','Data', this.renderData(node,t), true):null,
-        this.inspSection(t,'style','Style', this.designTab(node,t), true),
-        this.inspSection(t,'angular','Angular', this.angularTab(node,t), false),
-        this.inspSection(t,'attributes','Attributes', this.attrTab(node,t), false)
-      )
+      node.type==='html'?this.htmlInspector(node,t):(()=>{
+        // Tabs (was stacked collapsible sections): Data first when the node has it, Style the
+        // default. The active tab is remembered across selections; a tab with no content for the
+        // current node (or Data on root) simply isn't offered, falling back to Style.
+        const isEmptyBody=b=>b==null||(Array.isArray(b)&&!b.length);
+        const defs=[
+          node.id!=='root'?['data','Data',this.renderData(node,t)]:null,
+          ['style','Style',this.designTab(node,t)],
+          ['angular','Angular',this.angularTab(node,t)],
+          ['attributes','Attributes',this.attrTab(node,t)]
+        ].filter(d=>d&&!isEmptyBody(d[2]));
+        let act=this.inspTab||'style';
+        if(!defs.some(d=>d[0]===act)) act=defs.some(d=>d[0]==='style')?'style':(defs.length?defs[0][0]:null);
+        const active=defs.find(d=>d[0]===act);
+        const tabBtn=d=>{ const on=d[0]===act; const go=()=>{this.inspTab=d[0];this.forceUpdate();};
+          return h('div',Object.assign({key:d[0],onClick:go},this.a11y(go,{role:'tab',selected:on,label:d[1]+' tab'}),{style:{flex:1,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:12,fontWeight:on?700:600,color:on?t.accent:t.muted,borderBottom:'2px solid '+(on?t.accent:'transparent'),userSelect:'none'}}),d[1]); };
+        return h('div',{style:{flex:1,minHeight:0,display:'flex',flexDirection:'column'}},
+          h('div',{role:'tablist','aria-label':'Inspector',style:{display:'flex',borderBottom:'1px solid '+t.border,flexShrink:0}}, defs.map(tabBtn)),
+          h('div',{style:{overflowY:'auto',flex:1,scrollbarGutter:'stable'}}, h('div',{style:{padding:'12px 14px 14px'}}, active?active[2]:null)));
+      })()
     );
   }
   // Shown when nothing is selected — a quiet prompt instead of the base element's styles.
