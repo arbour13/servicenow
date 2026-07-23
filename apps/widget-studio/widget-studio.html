@@ -1994,7 +1994,8 @@ class Component extends DCLogic {
         const label=err?'Save failed':(saved?'Saved':'Save');
         return h('div',Object.assign({onClick:()=>this.saveWidget(false)},this.a11y(()=>this.saveWidget(false),{label:'Save widget'}),this.tt('Save widget (⌘S)'),{style:{height:30,boxSizing:'border-box',padding:'0 12px',display:'flex',alignItems:'center',gap:6,fontSize:12.5,fontWeight:600,border:'1px solid '+(err?'#cf222e':(saved?'#1f883d':t.border)),background:t.panel,color:err?'#cf222e':(saved?'#1f883d':t.text),borderRadius:6,cursor:'pointer',whiteSpace:'nowrap'}}), svg, label, (this._dirty&&!saved&&!err)?h('span',{style:{width:6,height:6,borderRadius:'50%',background:t.accent,marginLeft:-1}}):null); })(),
       h('div',Object.assign({onClick:()=>{this.libOpen=true;this._delArm=null;this.forceUpdate();}},this.a11y(()=>{this.libOpen=true;this.forceUpdate();},{label:'Open a saved widget'}),this.tt('Open a saved widget'),{style:{height:30,boxSizing:'border-box',padding:'0 12px',display:'flex',alignItems:'center',gap:6,fontSize:12.5,fontWeight:600,border:'1px solid '+t.border,background:t.panel,color:t.text,borderRadius:6,cursor:'pointer',whiteSpace:'nowrap'}}), h('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}}, h('path',{d:'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'})), 'Open'),
-      h('div',Object.assign({onClick:()=>{this.exportOpen=true;this.forceUpdate();}},this.a11y(()=>{this.exportOpen=true;this.forceUpdate();},{label:'Export'}),{style:{padding:'6px 16px',fontSize:13,fontWeight:600,color:'#fff',background:'#1f883d',border:'1px solid transparent',borderRadius:6,cursor:'pointer'}}),'Export')
+      (()=>{ const openExport=()=>{ this.exportOpen=true; this._pfCache=null; this.exTab=0; this.forceUpdate(); };
+        return h('div',Object.assign({onClick:openExport},this.a11y(openExport,{label:'Export'}),{style:{padding:'6px 16px',fontSize:13,fontWeight:600,color:'#fff',background:'#1f883d',border:'1px solid transparent',borderRadius:6,cursor:'pointer'}}),'Export'); })()
     );
   }
   // Explains WHERE just-appeared content came from — without this, a silently-restored unsaved
@@ -4410,7 +4411,7 @@ class Component extends DCLogic {
   // ng-* attributes take a raw expression; everything else (text, href, src, title…) takes {{ }} interpolation.
   isExprAttr(name){ return /^(ng-if|ng-show|ng-hide|ng-model|ng-click|ng-repeat|ng-disabled|ng-class|ng-bind|ng-style|ng-change|ng-submit)$/.test(name); }
   bindOpen(tkey){ return this._bindPick===tkey; }
-  bindToggleBtn(t,node,tkey){ const h=React.createElement; const open=this.bindOpen(tkey); return h('div',{onClick:e=>{e.stopPropagation(); this._bindPick=open?null:tkey; this.forceUpdate();},...this.tt('Insert data binding'),...this.a11y(e=>{e.stopPropagation(); this._bindPick=open?null:tkey; this.forceUpdate();},{label:'Insert data binding',pressed:open}),style:{width:30,flexShrink:0,height:30,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid '+(open?t.accent:t.border),borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:'ui-monospace,monospace',color:open?'#fff':t.muted,background:open?t.accent:'#fff'}},'{ }'); }
+  bindToggleBtn(t,node,tkey){ const h=React.createElement; const open=this.bindOpen(tkey); return h('div',{onClick:e=>{e.stopPropagation(); this._bindPick=open?null:tkey; this.forceUpdate();},...this.tt('Insert data binding'),...this.a11y(e=>{e.stopPropagation(); this._bindPick=open?null:tkey; this.forceUpdate();},{label:'Insert data binding',pressed:open}),style:{width:30,flexShrink:0,height:30,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid '+(open?t.accent:t.border),borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:'ui-monospace,monospace',color:open?'#fff':t.muted,background:open?t.accent:'#fff'}},'{{}}'); }
   bindMenuBox(t,node,tkey,insert){ if(!this.bindOpen(tkey)) return null; const h=React.createElement; const groups=this.bindingGroups(node);
     return h('div',{style:{marginTop:6,border:'1px solid '+t.border,borderRadius:8,background:t.segBg||'#f6f8fa',padding:8,maxHeight:220,overflowY:'auto'}},
       groups.length? groups.map((g,gi)=>h('div',{key:gi,style:{marginBottom:gi<groups.length-1?8:0}},
@@ -6114,8 +6115,188 @@ class Component extends DCLogic {
       {name:'Link',code:this.code.link}
     ].concat((this.optionSchema&&this.optionSchema.length)?[{name:'Option schema',code:this.optionSchemaJson()}]:[]);
   }
+  // ================= PRE-FLIGHT =================
+  // Per PREFLIGHT-SPEC.md. Guiding principle: a false ⚠ is worse than a missed one — every rule
+  // below stays quiet rather than guess when it can't be sure. Never blocks export.
+  // Shared with the (separate, queued) live token-nudge feature — build the detector once.
+  tokenMatch(value){ if(value==null) return null; const v=String(value).trim(); if(!v||v.indexOf('var(')===0) return null;
+    return (this.tokens||[]).find(tk=>String(tk.value).trim()===v)||null; }
+  relLuminance(hex){ const {r,g,b}=this.hexToRgb(hex); const lin=c=>{ c/=255; return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4); }; return 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b); }
+  contrastRatio(hex1,hex2){ const l1=this.relLuminance(hex1), l2=this.relLuminance(hex2); const lo=Math.min(l1,l2), hi=Math.max(l1,l2); return (hi+0.05)/(lo+0.05); }
+  // A color value resolved down to a concrete opaque hex, or null if it isn't one (gradient, unresolved
+  // var(), semi-transparent — anything we'd otherwise have to GUESS at gets a null here, not a guess).
+  resolveSolidColor(v){ if(!v) return null; const tk=this.tokenByVar(v); const raw=tk?tk.value:v; if(!this.isColor(raw)||/^var\(/.test(raw)) return null;
+    const c=this.parseColor(raw); if(c.a!=null&&c.a<0.999) return null; return this.rgbToHex(c.r,c.g,c.b); }
+  preflightResult(){ if(!this._pfCache) this._pfCache=this.preflight(); return this._pfCache; }
+  preflight(){
+    const CATS=[['semantics','Semantics'],['a11y','Accessibility'],['tokens','Tokens'],['classes','Class hygiene'],['data','Data & options'],['responsive','Responsive']];
+    const cats={}; CATS.forEach(([k])=>cats[k]=[]);
+    const add=(cat,ruleId,severity,message,why,opts)=>cats[cat].push(Object.assign({ruleId,severity,message,why},opts||{}));
+    const passOnce=(cat,ruleId,message)=>{ if(!cats[cat].some(f=>f.ruleId===ruleId)) add(cat,ruleId,'pass',message,null); };
+
+    // ---- single pass: collect every node with its ancestor chain + class/heading aggregates ----
+    const nodes=[]; const headings=[]; const classUsage={};
+    const walk=(n,parent,ancestors)=>{
+      nodes.push({node:n,parent,ancestors});
+      (this.allClasses(n)||[]).forEach(c=>{ classUsage[c]=(classUsage[c]||0)+1; });
+      if(n.type==='el'&&/^h[1-6]$/.test((n.data&&n.data.tag)||'')) headings.push({level:+n.data.tag[1],nodeId:n.id});
+      (n.children||[]).forEach(c=>walk(c,n,ancestors.concat(n)));
+    };
+    walk(this.tree,null,[]);
+    classUsage[this.baseClass()]=(classUsage[this.baseClass()]||0)+1;
+    const styleOf=n=>{ const cls=n.id==='root'?[this.baseClass()]:(n.classes||[]); const out={}; cls.forEach(c=>{ if(this.classStyles[c]) Object.assign(out,this.classStyles[c]); }); if(n.style) Object.assign(out,n.style); return out; };
+
+    // ===== 1. Semantics =====
+    const h1s=headings.filter(h=>h.level===1);
+    if(h1s.length) h1s.forEach(h=>add('semantics','no-h1','warn','This widget has an <h1>','The portal page owns the h1 — widgets should start at h2.',{nodeId:h.nodeId}));
+    else passOnce('semantics','no-h1','No stray <h1> — widget starts at h2 or below');
+
+    if(headings.length>=2){ let maxSoFar=1,skip=false;
+      headings.forEach(h=>{ if(h.level>maxSoFar+1){ add('semantics','heading-skip','warn','Heading level jumps from h'+maxSoFar+' to h'+h.level,'Screen reader users navigate by heading level — skipping levels breaks that outline.',{nodeId:h.nodeId}); skip=true; } maxSoFar=Math.max(maxSoFar,h.level); });
+      if(!skip) passOnce('semantics','heading-skip','Heading levels are in order');
+    } else passOnce('semantics','heading-skip','Heading levels are in order');
+
+    let imgAlt=0;
+    nodes.forEach(({node:n})=>{ if(n.type==='el'&&n.data&&n.data.tag==='img'&&(!n.attrs||n.attrs.alt==null)){ add('semantics','img-alt','warn','<img> has no alt attribute','Missing alt (vs. alt="") means screen readers announce the filename or nothing useful.',{nodeId:n.id}); imgAlt++; } });
+    if(!imgAlt) passOnce('semantics','img-alt','Every image has an alt attribute');
+
+    let labelIssues=0;
+    nodes.forEach(({node:n,parent})=>{ const tag=n.type==='el'&&n.data&&n.data.tag; if(!['input','select','textarea'].includes(tag)) return;
+      const hasAria=n.attrs&&(n.attrs['aria-label']||n.attrs['aria-labelledby']);
+      const hasDataLabel=n.data&&n.data.label;
+      const parentIsLabel=!!(parent&&parent.type==='el'&&parent.data&&parent.data.tag==='label');
+      let prevIsLabel=false; if(parent&&parent.children){ const i=parent.children.indexOf(n); const prev=i>0?parent.children[i-1]:null; prevIsLabel=!!(prev&&prev.type==='el'&&prev.data&&prev.data.tag==='label'); }
+      if(!hasAria&&!hasDataLabel&&!parentIsLabel&&!prevIsLabel){ add('semantics','input-label','warn','<'+tag+'> has no associated label','Screen readers announce unlabeled fields as just their type. Wrap it in a Form group once that’s available, or add aria-label.',{nodeId:n.id}); labelIssues++; }
+    });
+    if(!labelIssues) passOnce('semantics','input-label','Every form field has a label');
+
+    // ===== 2. Accessibility =====
+    const resolveColor=e=>{ const chain=[e.node].concat(e.ancestors.slice().reverse()); for(const n of chain){ const c=styleOf(n).color; if(c) return this.resolveSolidColor(c); } return '#000000'; };
+    const resolveBg=e=>{ const chain=[e.node].concat(e.ancestors.slice().reverse()); for(const n of chain){ const s=styleOf(n); const bg=s.background||s.backgroundColor; if(bg) return this.resolveSolidColor(bg); } return '#ffffff'; };
+    let contrastIssues=0;
+    nodes.filter(({node:n})=>n.type==='el'&&this.TEXT_TAGS.includes(n.data&&n.data.tag)&&(n.text||'').trim()).forEach(e=>{
+      const fg=resolveColor(e), bg=resolveBg(e); if(!fg||!bg) return;
+      const est=styleOf(e.node); const fontSize=parseFloat(est.fontSize)||14; const bold=/^(bold|[6-9]00)$/.test(String(est.fontWeight||''));
+      const large=fontSize>=24||(fontSize>=18.66&&bold); const ratio=this.contrastRatio(fg,bg); const min=large?3:4.5;
+      if(ratio<min){ add('a11y','contrast','warn','Text/background contrast is '+ratio.toFixed(2)+':1 (needs '+min+':1)','Low contrast text is hard to read, especially for low-vision users.',{nodeId:e.node.id}); contrastIssues++; }
+    });
+    if(!contrastIssues) passOnce('a11y','contrast','Text meets WCAG AA contrast where checkable');
+
+    let focusSuppressed=0;
+    Object.keys(this.classStyles).forEach(c=>{ const outline=String((this.classStyles[c]||{}).outline||'').trim().toLowerCase();
+      if(outline==='none'||outline==='0'||outline==='0px'){ const fs=this.stateStyles[c]&&this.stateStyles[c].focus; const has=fs&&(fs.outline||fs.boxShadow);
+        if(!has){ add('a11y','focus-suppressed','warn','.'+c+' removes the focus outline with no replacement','Keyboard users lose all visual feedback for where focus is.',{classKey:c}); focusSuppressed++; } } });
+    if(!focusSuppressed) passOnce('a11y','focus-suppressed','No class removes focus without a replacement');
+
+    const focusSigs=new Set();
+    nodes.forEach(({node:n})=>{ const tag=(n.type==='el'&&n.data&&n.data.tag)||(n.type==='button'?'button':null); if(!['a','button','input','select','textarea'].includes(tag)) return;
+      const cls=n.id==='root'?this.baseClass():(n.classes&&n.classes[0]); if(!cls) return;
+      const fs=this.stateStyles[cls]&&this.stateStyles[cls].focus;
+      focusSigs.add(fs?('outline:'+(fs.outline||'')+'|shadow:'+(fs.boxShadow||'')):'default'); });
+    if(focusSigs.size>=2) add('a11y','focus-consistency','warn','Interactive elements use '+focusSigs.size+' different focus treatments','Inconsistent focus styling makes keyboard navigation feel broken even when each individual style is fine.',{});
+    else passOnce('a11y','focus-consistency','Focus styling is consistent across interactive elements');
+
+    let hoverOnly=0;
+    Object.keys(this.stateStyles).forEach(c=>{ const b=this.stateStyles[c]; if(b&&b.hover&&Object.keys(b.hover).length&&!(b.focus&&Object.keys(b.focus).length)){ add('a11y','hover-only','note','.'+c+' styles :hover but not :focus','Keyboard users never trigger hover — they need the same feedback on focus.',{classKey:c}); hoverOnly++; } });
+    if(!hoverOnly) passOnce('a11y','hover-only','Hover states have matching focus states');
+
+    let iconBtn=0;
+    nodes.forEach(({node:n})=>{ const isButton=(n.type==='el'&&n.data&&n.data.tag==='button')||n.type==='button'; if(!isButton) return;
+      const text=(n.text||'').trim(); const hasAria=n.attrs&&(n.attrs['aria-label']||n.attrs['aria-labelledby']);
+      if(!text&&!hasAria){ add('a11y','icon-button-name','warn','Button has no visible text or aria-label','Screen reader users hear just “button” with no name.',{nodeId:n.id}); iconBtn++; } });
+    if(!iconBtn) passOnce('a11y','icon-button-name','Every button has an accessible name');
+
+    // ===== 3. Tokens (detector shared with the live token-nudge feature) =====
+    let rawValues=0, matched=0;
+    const scanBucket=(bucket,label,setter)=>{ Object.entries(bucket).forEach(([prop,val])=>{ if(val==null||val===''||String(val).indexOf('var(')===0) return;
+      rawValues++; const tk=this.tokenMatch(val); if(tk){ matched++; add('tokens','token-match','warn',label+' → '+prop+': '+val+' matches $'+tk.name,'Using the token keeps this in sync with the design system instead of drifting as a one-off value.',{classKey:label,fix:()=>{ setter(prop,'var(--'+tk.name+')'); this.save(); this._pfCache=null; this.forceUpdate(); }}); } }); };
+    Object.keys(this.classStyles).forEach(c=>scanBucket(this.classStyles[c]||{},'.'+c,(prop,v)=>{ this.classStyles[c][prop]=v; }));
+    Object.keys(this.stateStyles).forEach(c=>{ const b=this.stateStyles[c]; Object.keys(b).forEach(s=>scanBucket(b[s]||{},'.'+c+':'+s,(prop,v)=>{ b[s][prop]=v; })); });
+    ['md','sm','xs'].forEach(bp=>{ const r=this.responsive[bp]||{}; Object.keys(r).forEach(c=>scanBucket(r[c]||{},'.'+c+' ('+bp+')',(prop,v)=>{ r[c][prop]=v; })); });
+    if(!matched) passOnce('tokens','token-match','No raw values match an existing token');
+    add('tokens','raw-value-summary','note',rawValues+' raw value'+(rawValues===1?'':'s')+', '+matched+' token match'+(matched===1?'':'es'),'Values with no token match are fine as-is — just a count, not a per-item list.',{});
+
+    // ===== 4. Class hygiene =====
+    let inlineStyle=0;
+    nodes.forEach(({node:n})=>{ const attrs=n.attrs||{}; const styleKey=Object.keys(attrs).find(k=>k.toLowerCase()==='style');
+      if(styleKey&&attrs[styleKey]){ add('classes','inline-style','warn','Has a raw style="…" attribute','Inline styles bypass the token system and the exported stylesheet — style through the Style tab instead.',{nodeId:n.id}); inlineStyle++; }
+      if(n.type==='html'&&n.data&&/\bstyle\s*=/.test(n.data.html||'')){ add('classes','inline-style','warn','Pasted HTML block contains a style="…" attribute','Same issue in pasted markup — it bypasses the token system too.',{nodeId:n.id}); inlineStyle++; } });
+    if(!inlineStyle) passOnce('classes','inline-style','No inline style="…" attributes');
+
+    const BS3_RX=/^(panel|btn|alert|badge|label|table|thead|tbody|tr|td|th|nav|navbar|breadcrumb|progress(-bar)?|list-group|input-group|form-group|form-control|control-label|col-(xs|sm|md|lg)-\d+|row|container(-fluid)?|well|jumbotron|modal|dropdown|caret|glyphicon|fa|pull-(left|right)|text-(left|right|center|muted|primary|success|info|warning|danger)|bg-(primary|success|info|warning|danger)|sr-only|clearfix|hidden|visible|active|disabled|open)([-_].*)?$/;
+    const BEM_RX=/^[a-z][a-z0-9]*(-[a-z0-9]+)*(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$/;
+    let convention=0;
+    Object.keys(classUsage).forEach(c=>{ if(BS3_RX.test(c)||BEM_RX.test(c)) return;
+      add('classes','class-convention','note','.'+c+' doesn’t look like Bootstrap or BEM','Not blocking — free class names are supported — but consistent naming helps future maintainers scan the stylesheet.',{classKey:c}); convention++; });
+    if(!convention) passOnce('classes','class-convention','Class names follow Bootstrap or BEM conventions');
+
+    let orphan=0;
+    Object.keys(this.classStyles).forEach(c=>{ if(!classUsage[c]&&Object.keys(this.classStyles[c]||{}).length){ add('classes','orphan-styles','note','.'+c+' has styles but no element uses it','Dead CSS in the exported stylesheet — safe to remove.',{classKey:c,fix:()=>{ delete this.classStyles[c]; this.save(); this._pfCache=null; this.forceUpdate(); }}); orphan++; } });
+    if(!orphan) passOnce('classes','orphan-styles','No orphaned class styles');
+
+    let emptyC=0;
+    nodes.forEach(({node:n})=>{ if(n.type!=='el'||!this.CONTAINER_TAGS.includes(n.data&&n.data.tag)) return; if(n.children&&n.children.length) return; if((n.text||'').trim()) return;
+      const cls=n.classes&&n.classes[0]; const st=cls&&this.classStyles[cls]; if(st&&Object.keys(st).length) return;
+      add('classes','empty-container','note','Empty <'+n.data.tag+'> with no styling','Exports as empty markup — likely unfinished or safe to delete.',{nodeId:n.id}); emptyC++; });
+    if(!emptyC) passOnce('classes','empty-container','No unstyled empty containers');
+
+    // ===== 5. Data & options =====
+    const scope=this.canvasScope(); const evalScope={c:scope.c,data:scope.data,options:scope.options};
+    let unresolved=0;
+    const checkExpr=(expr,nodeId,ctx)=>{ if(this.evalIn(expr.trim(),evalScope)===undefined){ add('data','unresolved-binding','warn','{{'+expr.trim()+'}} in '+ctx+' never resolves','The server script never assigns this, and it’s not in the option schema or instance fields — it will render blank in ServiceNow too.',{nodeId}); unresolved++; } };
+    nodes.forEach(({node:n})=>{
+      const texts=[]; if(n.text) texts.push([n.text,'text']);
+      if(n.data) Object.entries(n.data).forEach(([k,v])=>{ if(typeof v==='string'&&v.indexOf('{{')>=0) texts.push([v,'data.'+k]); });
+      if(n.attrs) Object.entries(n.attrs).forEach(([k,v])=>{ if(typeof v==='string'&&v.indexOf('{{')>=0) texts.push([v,'attribute '+k]); });
+      texts.forEach(([str,ctx])=>{ (str.match(/\{\{([\s\S]+?)\}\}/g)||[]).forEach(full=>checkExpr(full.slice(2,-2),n.id,ctx)); });
+      if(n.attrs&&n.attrs['ng-repeat']){ const mm=n.attrs['ng-repeat'].match(/^\s*[\w$]+\s+in\s+([^|]+?)(\s*\|[\s\S]*)?$/);
+        if(mm&&this.evalIn(mm[1].trim(),evalScope)===undefined){ add('data','unresolved-binding','warn','ng-repeat source "'+mm[1].trim()+'" never resolves','The server script never assigns this array.',{nodeId:n.id}); unresolved++; } }
+      if(n.data&&n.data.bindSource&&this.evalIn(n.data.bindSource,evalScope)===undefined){ add('data','unresolved-binding','warn','Data source "'+n.data.bindSource+'" never resolves','The server script never assigns this.',{nodeId:n.id}); unresolved++; }
+    });
+    if(!unresolved) passOnce('data','unresolved-binding','Every data binding resolves');
+
+    const usedOptions=new Set(); const scanOpt=s=>{ if(typeof s!=='string') return; (s.match(/options\.(\w+)/g)||[]).forEach(m=>usedOptions.add(m.slice(8))); };
+    nodes.forEach(({node:n})=>{ if(n.text) scanOpt(n.text); if(n.data) Object.values(n.data).forEach(scanOpt); if(n.attrs) Object.values(n.attrs).forEach(scanOpt); });
+    scanOpt(this.code.client); scanOpt(this.code.server); scanOpt(this.code.link);
+    let unusedOpt=0;
+    (this.optionSchema||[]).forEach(o=>{ if(o.name&&!usedOptions.has(o.name)){ add('data','unused-option','warn','Option "'+o.name+'" is defined but never referenced','Reference it with {{options.'+o.name+'}} or remove it — unused options add configuration noise for no benefit.',{}); unusedOpt++; } });
+    if(!unusedOpt) passOnce('data','unused-option','Every defined option is used');
+
+    // ===== 6. Responsive =====
+    let overflow=0;
+    Object.keys(this.classStyles).forEach(c=>{ ['width','minWidth'].forEach(prop=>{ const v=(this.classStyles[c]||{})[prop]; if(!v) return; const m=String(v).match(/^(\d+(?:\.\d+)?)px$/); if(!m) return;
+      const px=parseFloat(m[1]); const xsMax=this.BREAKPOINTS.xs.max; if(px<=xsMax) return;
+      const hasOverride=this.responsive.xs&&this.responsive.xs[c]&&this.responsive.xs[c][prop];
+      if(!hasOverride){ add('responsive','fixed-width-overflow','warn','.'+c+' '+prop+': '+v+' is wider than the xs breakpoint ('+xsMax+'px)','With no xs override this forces horizontal scroll/overflow on phone-width screens.',{classKey:c}); overflow++; } }); });
+    if(!overflow) passOnce('responsive','fixed-width-overflow','No fixed widths overflow the xs breakpoint');
+
+    let warnCount=0,noteCount=0; CATS.forEach(([k])=>cats[k].forEach(i=>{ if(i.severity==='warn')warnCount++; else if(i.severity==='note')noteCount++; }));
+    return {categories:CATS.map(([k,label])=>({key:k,label,items:cats[k]})), warnCount, noteCount};
+  }
+  renderPreflightReport(t){ const h=React.createElement; const pf=this.preflightResult();
+    const jump=item=>{ if(!item.nodeId) return; this.selectedId=item.nodeId; this.exportOpen=false; this.inspTab='style'; this.forceUpdate(); };
+    const sevGlyph=sev=>sev==='warn'?h('span',{style:{color:'#d9822b',flexShrink:0}},'⚠'):sev==='note'?h('span',{style:{color:'#9a6700',flexShrink:0}},'○'):h('span',{style:{color:'#1a7f37',flexShrink:0}},'✓');
+    const row=item=>h('div',{key:item.ruleId+'_'+(item.nodeId||item.classKey||item.message),onClick:item.nodeId?()=>jump(item):undefined,
+        style:{display:'flex',gap:9,alignItems:'flex-start',padding:'6px 6px',cursor:item.nodeId?'pointer':'default',borderRadius:6}},
+      sevGlyph(item.severity),
+      h('div',{style:{flex:1,minWidth:0}},
+        h('div',{style:{fontSize:12.5,color:'#e6edf3'}},item.message),
+        item.why?h('div',{style:{fontSize:11,color:'#8b949e',marginTop:1}},item.why):null),
+      item.fix?h('div',{onClick:e=>{e.stopPropagation();item.fix();},style:{fontSize:11,fontWeight:600,color:'#58a6ff',cursor:'pointer',whiteSpace:'nowrap',padding:'2px 9px',border:'1px solid #58a6ff',borderRadius:5,flexShrink:0}},'Fix'):null
+    );
+    return h('div',{style:{padding:'18px 22px',overflowY:'auto',height:'100%',background:'#0d1117',color:'#e6edf3',fontFamily:'-apple-system,sans-serif'}},
+      h('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:16}},
+        h('div',{style:{fontSize:12.5,color:'#8b949e'}}, pf.warnCount?(pf.warnCount+' warning'+(pf.warnCount===1?'':'s')):'No warnings', pf.noteCount?(', '+pf.noteCount+' note'+(pf.noteCount===1?'':'s')):''),
+        h('div',{style:{flex:1}}),
+        h('div',Object.assign({onClick:()=>{this._pfCache=null;this.forceUpdate();}},this.a11y(()=>{this._pfCache=null;this.forceUpdate();},{label:'Re-check'}),{style:{fontSize:11.5,fontWeight:600,color:'#58a6ff',cursor:'pointer',padding:'4px 11px',border:'1px solid #58a6ff',borderRadius:6}}),'Re-check')),
+      pf.categories.map(cat=>h('div',{key:cat.key,style:{marginBottom:18}},
+        h('div',{style:{fontSize:10.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'#6e7681',marginBottom:6}},cat.label),
+        cat.items.map(row)))
+    );
+  }
   renderExport(t){
-    const h=React.createElement; const files=this.files(); if(this.exTab>=files.length)this.exTab=0; const f=files[this.exTab];
+    // Pre-flight is tab 0 — a synthetic entry ahead of the real code files, same tab bar.
+    const h=React.createElement; const tabs=[{name:'Pre-flight',preflight:true}].concat(this.files()); if(this.exTab>=tabs.length)this.exTab=0; const f=tabs[this.exTab];
     return h('div',{onClick:()=>{this.exportOpen=false;this.forceUpdate();},style:{position:'fixed',inset:0,background:'rgba(1,4,9,.55)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:30}},
       h('div',{onClick:e=>e.stopPropagation(),style:{width:760,maxWidth:'100%',maxHeight:'100%',background:t.panel,border:'1px solid '+t.border,borderRadius:10,display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 24px 64px rgba(0,0,0,.4)'}},
         h('div',{style:{padding:'16px 20px',borderBottom:'1px solid '+t.border,display:'flex',alignItems:'center',gap:12}},
@@ -6123,7 +6304,7 @@ class Component extends DCLogic {
           h('div',{style:{flex:1}}),
           h('div',{onClick:()=>{this.exportOpen=false;this.forceUpdate();},style:{cursor:'pointer',fontSize:20,color:t.muted,padding:'0 4px'}},'×')
         ),
-        h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 20px',borderBottom:'1px solid '+t.border,background:t.panel2||t.segBg}},
+        f.preflight?null:h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 20px',borderBottom:'1px solid '+t.border,background:t.panel2||t.segBg}},
           h('span',{style:{fontSize:12,fontWeight:600,color:t.text}},'Units'),
           this.seg(t,[{v:'px',l:'px'},{v:'rem',l:'rem'}],this.exportUnit,v=>{this.exportUnit=v;this.forceUpdate();}),
           this.exportUnit!=='px'?h('span',{style:{display:'flex',alignItems:'center',gap:6,fontSize:12,color:t.muted}},
@@ -6133,7 +6314,11 @@ class Component extends DCLogic {
           h('span',{style:{flex:1}}),
           h('span',{style:{fontSize:11,color:t.faint}}, this.exportUnit==='px'?'Lengths exported as written':'px lengths ÷ '+this.exportBase+' → '+this.exportUnit)
         ),
-        h('div',{style:{display:'flex',gap:4,padding:'10px 16px 0',borderBottom:'1px solid '+t.border,flexWrap:'wrap'}}, files.map((file,i)=>{ const on=i===this.exTab; return h('div',{key:i,onClick:()=>{this.exTab=i;this.forceUpdate();},style:{padding:'7px 12px',fontSize:12,cursor:'pointer',borderRadius:'6px 6px 0 0',marginBottom:-1,color:on?t.text:t.muted,fontWeight:on?600:400,background:on?t.segBg:'transparent',border:'1px solid '+(on?t.border:'transparent'),borderBottom:on?'1px solid '+t.segBg:'1px solid transparent'}},file.name); })),
+        h('div',{style:{display:'flex',gap:4,padding:'10px 16px 0',borderBottom:'1px solid '+t.border,flexWrap:'wrap'}}, tabs.map((tab,i)=>{ const on=i===this.exTab;
+          const pf=tab.preflight&&this.preflightResult(); const badgeN=pf?pf.warnCount:0;
+          return h('div',{key:i,onClick:()=>{this.exTab=i;this.forceUpdate();},style:{padding:'7px 12px',fontSize:12,cursor:'pointer',borderRadius:'6px 6px 0 0',marginBottom:-1,display:'flex',alignItems:'center',gap:6,color:on?t.text:t.muted,fontWeight:on?600:400,background:on?t.segBg:'transparent',border:'1px solid '+(on?t.border:'transparent'),borderBottom:on?'1px solid '+t.segBg:'1px solid transparent'}},
+            tab.name, badgeN?h('span',{style:{fontSize:10,fontWeight:700,color:'#fff',background:'#d9822b',borderRadius:8,minWidth:15,height:15,display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'0 4px'}},badgeN):null); })),
+        f.preflight ? h('div',{style:{position:'relative',flex:1,overflow:'hidden'}}, this.renderPreflightReport(t)) :
         h('div',{style:{position:'relative',flex:1,overflow:'auto',background:this.dark?'#0d1117':'#1f2328'}},
           h('div',{onClick:()=>{ if(navigator.clipboard)navigator.clipboard.writeText(f.code); this._exCopied=true;this.forceUpdate();setTimeout(()=>{this._exCopied=false;this.forceUpdate();},1200); },style:{position:'absolute',top:12,right:16,zIndex:2,padding:'5px 12px',fontSize:12,fontWeight:600,color:'#fff',background:this._exCopied?'#1f883d':'rgba(255,255,255,.12)',border:'1px solid rgba(255,255,255,.18)',borderRadius:6,cursor:'pointer'}}, this._exCopied?'Copied ✓':'Copy'),
           h('pre',{style:{margin:0,padding:'18px 20px',fontSize:12.5,lineHeight:1.6,color:'#e6edf3',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace',whiteSpace:'pre',minHeight:'100%'}},f.code)
