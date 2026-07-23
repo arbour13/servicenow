@@ -120,6 +120,8 @@ class Component extends DCLogic {
     this.optionSchema = [];   // Service Portal widget option schema (in-memory, like this.code)
     this.instanceClass = 'base';  // sp_instance subclass → which inherited fields the instance provides
     this.instanceFields = [];     // which inherited field NAMES the author chose to surface (opt-in)
+    this._draftAt = null;             // when the draft was last persisted (header "Draft saved" label)
+    this._draftRestoredNotice = null; // {at} while a just-restored UNSAVED draft's banner is showing
     this._previewValues = {};     // preview-only option/instance-field values (never exported)
     this._optExpanded = null; this._optJson = false; this._optCommonOpen = false; this._optSeq = 0;
     this.LABELC = {default:'#777',primary:'#337ab7',success:'#5cb85c',info:'#5bc0de',warning:'#f0ad4e',danger:'#d9534f'};
@@ -218,7 +220,7 @@ class Component extends DCLogic {
   // the pending write so the last edits aren't lost. Undo/redo history stays in-memory.
   DRAFT_KEY(){ return 'widgetStudio_draft'; }
   rawSave(){ clearTimeout(this._draftT); this._draftT=setTimeout(()=>this.writeDraft(),400); }
-  writeDraft(){ try{ localStorage.setItem(this.DRAFT_KEY(), JSON.stringify({data:this.serializeWidget(),savedId:this._savedId||null,dirty:!!this._dirty,at:Date.now()})); }catch(e){} }
+  writeDraft(){ try{ const at=Date.now(); localStorage.setItem(this.DRAFT_KEY(), JSON.stringify({data:this.serializeWidget(),savedId:this._savedId||null,dirty:!!this._dirty,at})); this._draftAt=at; }catch(e){} }
   readDraft(){ try{ const d=JSON.parse(localStorage.getItem(this.DRAFT_KEY())||'null'); return (d&&d.data)?d:null; }catch(e){ return null; } }
   // UI preferences (drawer height, split layout) ARE persisted — they're editor chrome, not widget
   // content, so they should survive a refresh.
@@ -254,7 +256,12 @@ class Component extends DCLogic {
     // Restore the auto-persisted draft if one exists (loadWidgetData resets _dirty/_savedId, so
     // re-apply the draft's after it); otherwise start from a clean default widget.
     const draft=this.readDraft();
-    if(draft){ this.loadWidgetData(draft.data); this._savedId=draft.savedId||null; this._dirty=!!draft.dirty; return; }
+    if(draft){ this.loadWidgetData(draft.data); this._savedId=draft.savedId||null; this._dirty=!!draft.dirty; this._draftAt=draft.at||null;
+      // Only surface the restore banner for genuinely unsaved work with real content — a clean
+      // reload (already saved) or an empty draft has nothing surprising to explain.
+      const hasContent=draft.data&&draft.data.tree&&draft.data.tree.children&&draft.data.tree.children.length>0;
+      if(draft.dirty && hasContent) this._draftRestoredNotice={at:draft.at||Date.now()};
+      return; }
     this.tree={id:'root',type:'root',classes:[],data:{tag:'div'},children:[]};
     this.focusStack=[];
     this.history=[this.snapshot()]; this.histIdx=0; this._lastPush=0;
@@ -290,16 +297,16 @@ class Component extends DCLogic {
     this._tokCss=null; this._dirty=false; this.exportOpen=false;
     this.history=[this.snapshot()]; this.histIdx=0; this._lastPush=0;
   }
-  resetWidget(){ this.loadWidgetData({}); this._savedId=null; }
+  resetWidget(){ this.loadWidgetData({}); this._savedId=null; this._draftRestoredNotice=null; }
   saveWidget(asNew){ const list=this.listWidgets(); const name=(this.wname||'Untitled').trim()||'Untitled'; const data=this.serializeWidget(); const now=Date.now();
     let rec=(!asNew&&this._savedId)?list.find(w=>w.id===this._savedId):null;
     if(rec){ rec.name=name; rec.wid=this.wid; rec.updatedAt=now; rec.data=data; }
     else { rec={id:'w_'+now.toString(36)+'_'+((this._recSeq=(this._recSeq||0)+1)),name,wid:this.wid,createdAt:now,updatedAt:now,data}; list.push(rec); }
     const ok=this.writeWidgets(list);
-    if(ok){ this._savedId=rec.id; this._dirty=false; this.writeDraft(); this._saveFlash=Date.now(); clearTimeout(this._saveFlashT); this._saveFlashT=setTimeout(()=>{this._saveFlash=0;this.forceUpdate();},1600); }
+    if(ok){ this._savedId=rec.id; this._dirty=false; this._draftRestoredNotice=null; this.writeDraft(); this._saveFlash=Date.now(); clearTimeout(this._saveFlashT); this._saveFlashT=setTimeout(()=>{this._saveFlash=0;this.forceUpdate();},1600); }
     else { this._saveErr=1; clearTimeout(this._saveErrT); this._saveErrT=setTimeout(()=>{this._saveErr=0;this.forceUpdate();},2800); }
     this.forceUpdate(); return ok; }
-  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
+  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this._draftRestoredNotice=null; this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
   deleteWidget(id){ const list=this.listWidgets().filter(w=>w.id!==id); this.writeWidgets(list); if(this._savedId===id) this._savedId=null; if(this._delArm===id) this._delArm=null; clearTimeout(this._delArmT); this.forceUpdate(); }
   // Two-step delete: first click arms the button (fills red, "click again to delete"); second click
   // (while still armed) actually deletes. Arming auto-clears after a few seconds so a stray click
@@ -1691,6 +1698,7 @@ class Component extends DCLogic {
     const shellMinW = pw.left + 10 + this.PANEL_MIN.canvas + pw.right;  // + the two 5px resize handles
     return h('div',{className:'ws-chrome'+(this._themeFade?' ws-theme-fade':''),style:{display:'flex',flexDirection:'column',height:'100vh',background:t.appBg,color:t.text,overflowX:'auto'}},
       h('div',{style:{minWidth:shellMinW,flexShrink:0}}, this.renderHeader(t)),
+      this._draftRestoredNotice?this.renderDraftRestoredBanner(t,shellMinW):null,
       h('div',{style:{flex:1,display:'flex',minHeight:0,minWidth:shellMinW}}, this.renderLeft(t), this.resizer(t,'left'), this.renderCanvas(t), this.resizer(t,'right'), this.renderInspector(t)),
       this.exportOpen?this.renderExport(t):null,
       this._genOpen?this.renderDataGen(t):null,
@@ -1977,6 +1985,7 @@ class Component extends DCLogic {
       narrow?null:h('span',{style:{fontSize:11,color:t.faint,marginLeft:4}},'ID'),
       h('input',{value:this.wid,...(narrow?{title:'Widget ID'}:{}),onChange:e=>this.setWid(e.target.value),style:{height:30,fontSize:12,color:t.text,background:t.panel,border:'1px solid '+t.border,padding:'0 8px',borderRadius:6,width:narrow?100:150,minWidth:0,outline:'none'}}),
       narrow?null:h('span',{style:{fontSize:11,color:t.faint,fontFamily:'ui-monospace,monospace'}},'.'+this.baseClass()),
+      (!narrow&&this._draftAt)?h('span',{...this.tt('Auto-saved to this browser \u2014 Save still makes the durable library copy'),style:{fontSize:11,color:t.faint,whiteSpace:'nowrap'}}, 'Draft saved \u00b7 '+this.relTime(this._draftAt)):null,
       h('div',{style:{flex:1}}),
       h('div',{style:{display:'flex',gap:2,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:2}}, dib('lg','Desktop \u00b7 lg \u2265\u202f1200px'), dib('md','md \u00b7 \u2264\u202f1199px'), dib('sm','sm \u00b7 \u2264\u202f991px'), dib('xs','xs \u00b7 \u2264\u202f767px')),
       this.previewToggle(t),
@@ -1986,6 +1995,20 @@ class Component extends DCLogic {
         return h('div',Object.assign({onClick:()=>this.saveWidget(false)},this.a11y(()=>this.saveWidget(false),{label:'Save widget'}),this.tt('Save widget (⌘S)'),{style:{height:30,boxSizing:'border-box',padding:'0 12px',display:'flex',alignItems:'center',gap:6,fontSize:12.5,fontWeight:600,border:'1px solid '+(err?'#cf222e':(saved?'#1f883d':t.border)),background:t.panel,color:err?'#cf222e':(saved?'#1f883d':t.text),borderRadius:6,cursor:'pointer',whiteSpace:'nowrap'}}), svg, label, (this._dirty&&!saved&&!err)?h('span',{style:{width:6,height:6,borderRadius:'50%',background:t.accent,marginLeft:-1}}):null); })(),
       h('div',Object.assign({onClick:()=>{this.libOpen=true;this._delArm=null;this.forceUpdate();}},this.a11y(()=>{this.libOpen=true;this.forceUpdate();},{label:'Open a saved widget'}),this.tt('Open a saved widget'),{style:{height:30,boxSizing:'border-box',padding:'0 12px',display:'flex',alignItems:'center',gap:6,fontSize:12.5,fontWeight:600,border:'1px solid '+t.border,background:t.panel,color:t.text,borderRadius:6,cursor:'pointer',whiteSpace:'nowrap'}}), h('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}}, h('path',{d:'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'})), 'Open'),
       h('div',Object.assign({onClick:()=>{this.exportOpen=true;this.forceUpdate();}},this.a11y(()=>{this.exportOpen=true;this.forceUpdate();},{label:'Export'}),{style:{padding:'6px 16px',fontSize:13,fontWeight:600,color:'#fff',background:'#1f883d',border:'1px solid transparent',borderRadius:6,cursor:'pointer'}}),'Export')
+    );
+  }
+  // Explains WHERE just-appeared content came from — without this, a silently-restored unsaved
+  // draft (e.g. after a crash, or just a forgotten tab) reads as a bug, not a recovery. Only shown
+  // once per load (see the load() gate: unsaved + non-empty); dismiss or Start fresh clear it.
+  renderDraftRestoredBanner(t,shellMinW){ const h=React.createElement;
+    const dismiss=()=>{ this._draftRestoredNotice=null; this.forceUpdate(); };
+    const startFresh=()=>this.requestDiscard(()=>this.newBlankWidget());
+    return h('div',{style:{minWidth:shellMinW,flexShrink:0,display:'flex',alignItems:'center',gap:10,padding:'7px 16px',fontSize:12,color:t.text,background:t.accentSoft,borderBottom:'1px solid '+(this.dark?t.border:'#bcd6f5')}},
+      h('span',{style:{flexShrink:0,color:t.accent}},'↺'),
+      h('span',null,'Restored your unsaved draft from ',h('b',null,this.relTime(this._draftRestoredNotice.at)),'.'),
+      h('div',{style:{flex:1}}),
+      h('div',Object.assign({onClick:startFresh},this.a11y(startFresh,{label:'Start fresh'}),{style:{fontSize:11.5,fontWeight:600,color:t.accent,cursor:'pointer',padding:'3px 10px',borderRadius:5,border:'1px solid '+t.accent,whiteSpace:'nowrap'}}),'Start fresh'),
+      h('div',Object.assign({onClick:dismiss},this.a11y(dismiss,{label:'Dismiss'}),{style:{cursor:'pointer',color:t.faint,fontSize:15,padding:'0 4px',lineHeight:1}}),'×')
     );
   }
   renderLeft(t){ const h=React.createElement;
