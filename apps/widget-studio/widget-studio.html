@@ -300,7 +300,7 @@ class Component extends DCLogic {
     this._tokCss=null; this._dirty=false; this.exportOpen=false;
     this.history=[this.snapshot()]; this.histIdx=0; this._lastPush=0;
   }
-  resetWidget(){ this.loadWidgetData({}); this._savedId=null; this._draftRestoredNotice=null; }
+  resetWidget(){ this.loadWidgetData({}); this._savedId=null; this._draftRestoredNotice=null; this._previewValues={}; this._dataVariants={}; }
   saveWidget(asNew){ const list=this.listWidgets(); const name=(this.wname||'Untitled').trim()||'Untitled'; const data=this.serializeWidget(); const now=Date.now();
     let rec=(!asNew&&this._savedId)?list.find(w=>w.id===this._savedId):null;
     if(rec){ rec.name=name; rec.wid=this.wid; rec.updatedAt=now; rec.data=data; }
@@ -309,7 +309,7 @@ class Component extends DCLogic {
     if(ok){ this._savedId=rec.id; this._dirty=false; this._draftRestoredNotice=null; this.writeDraft(); this._saveFlash=Date.now(); clearTimeout(this._saveFlashT); this._saveFlashT=setTimeout(()=>{this._saveFlash=0;this.forceUpdate();},1600); }
     else { this._saveErr=1; clearTimeout(this._saveErrT); this._saveErrT=setTimeout(()=>{this._saveErr=0;this.forceUpdate();},2800); }
     this.forceUpdate(); return ok; }
-  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this._draftRestoredNotice=null; this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
+  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this._draftRestoredNotice=null; this._previewValues={}; this._dataVariants={}; this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
   deleteWidget(id){ const list=this.listWidgets().filter(w=>w.id!==id); this.writeWidgets(list); if(this._savedId===id) this._savedId=null; if(this._delArm===id) this._delArm=null; clearTimeout(this._delArmT); this.forceUpdate(); }
   // Two-step delete: first click arms the button (fills red, "click again to delete"); second click
   // (while still armed) actually deletes. Arming auto-clears after a few seconds so a stray click
@@ -3203,7 +3203,11 @@ class Component extends DCLogic {
     // only — never written to est/exported CSS.
     if(style.borderRadius==null) style.borderRadius='4px';
     let content;
-    if(empty){ content = inline?(label()||h('span',{key:'__h',style:{opacity:.45,fontFamily:'ui-monospace,monospace',fontSize:11,color:t.muted}},'drop here')):null; }
+    // A non-inline "empty" (no children) container still shows its OWN text via label() when it has
+    // any (opts.text) — "empty" here means no children, not no content. Previously this branch nulled
+    // content unconditionally for non-inline nodes, so passing opts.text (the fix above) alone wasn't
+    // enough — a childless <li> with text still rendered as the bare drop-target placeholder.
+    if(empty){ content = inline?(label()||h('span',{key:'__h',style:{opacity:.45,fontFamily:'ui-monospace,monospace',fontSize:11,color:t.muted}},'drop here')):(hasText?label():null); }
     else { const filled=this.filledChildren(node,t,est); content = hasText?[label()].concat(filled):filled; }
     const trackEl=h(Tag,Object.assign({'data-drop':node.id,style:style},padAfford?{'data-pad-affordance':'1'}:{}), guideBox, fillBox, content, this.gridChrome(node.id,t,est,style.borderRadius));
     // Pagination is a generic capability any container can turn on — not gated to a node type. The track
@@ -3409,8 +3413,12 @@ class Component extends DCLogic {
     if(tg==='input') return h('input',{readOnly:true,placeholder:this.dispText(node)||'',style:{...fieldBase,...est}});
     if(tg==='textarea') return h('textarea',{readOnly:true,placeholder:this.dispText(node)||'',style:{...fieldBase,height:'auto',minHeight:60,fontFamily:'inherit',...est}});
     if(tg==='select') return h('select',{disabled:true,style:{...fieldBase,...est}}, h('option',null,'Option'));
-    // container element
-    return this.childrenBox(node,t,clean,{});
+    // container element — own text shows when there are no children (matches nwIsFreshContainer's
+    // identical rule in the live pipeline: hasKids?null:dispText(node)). Previously dropped here,
+    // so e.g. a starter <li>'s text rendered fine at the canvas root but went blank the moment the
+    // same list was nested inside a composable (panel/card) — the far more common real case.
+    const hasKids=node.children&&node.children.length;
+    return this.childrenBox(node,t,clean,{},{text:hasKids?null:(this.dispText(node)||null)});
   }
   dropBar(t){
     const h=React.createElement; const s=this.dropSlot; const horiz=s.axis!=='x';
