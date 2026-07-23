@@ -2664,7 +2664,10 @@ class Component extends DCLogic {
             // height varies by instance type (some have none, some wrap to more lines) — centering
             // the whole box would shift the title/chip row every time that height changes. A fixed
             // offset reads as roughly centered for the common case without ever moving on its own.
-            const emptyPrompt=showPicker?h('div',{key:'__rootprompt',style:{position:'absolute',inset:0,display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:170,pointerEvents:'none',zIndex:1}},
+            // 138px centers the picker's typical rendered height (~243px, base type/2 cards) exactly
+            // within the stage's 520px floor — the smallest the stage ever gets, so this reads as
+            // centered at minimum size and only sits a bit higher than center as the stage grows.
+            const emptyPrompt=showPicker?h('div',{key:'__rootprompt',style:{position:'absolute',inset:0,display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:138,pointerEvents:'none',zIndex:1}},
               h('div',{style:{pointerEvents:'auto'}}, this.renderStarterPicker(lightT))):null;
             return h('div',{className:'ws-stage',
               onMouseOver:e=>{e.stopPropagation(); if(this.focusLocked('root')){ if(this.hoverId!=null){this.hoverId=null;this.forceUpdate();} return; } if(this.hoverId!=='root'){this.hoverId='root';this.forceUpdate();}},
