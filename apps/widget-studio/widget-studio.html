@@ -2490,11 +2490,15 @@ class Component extends DCLogic {
     const hasHeight = est.height!=null && est.height!=='' && est.height!=='auto';
     ['width','height','minWidth','maxWidth','minHeight','maxHeight','flex','flexGrow','flexShrink','flexBasis','order','gridColumn','gridColumnStart','gridColumnEnd','gridRow','gridRowStart','gridRowEnd','justifySelf','alignSelf'].forEach(k=>{ delete est[k]; });
     const hasText=text!=null&&text!=='';
+    const hasKids=!!(node.children&&node.children.length);
     // Text counts as content: an <li> holding only its text must size to it, not to the 110px
-    // empty-droppable floor below.
-    const empty=!(node.children&&node.children.length)&&!hasText;
+    // empty-droppable floor below. NOTE: hasKids and hasText are independent — a text-only leaf
+    // (a plain button/span/label with no children array at all, e.g. straight from make()) is
+    // non-empty via hasText alone, so `kids` must only ever map when hasKids is actually true,
+    // never inferred from `empty` (a bare `!empty` check crashes .map on an undefined children).
+    const empty=!hasKids&&!hasText;
     const labelEl=hasText?h('span',Object.assign({key:'__lbl'},this.txtEd(node,false)),text):null;
-    const kids=empty?null:node.children.map(c=>this.nwNode(c,node,t));
+    const kids=hasKids?node.children.map(c=>this.nwNode(c,node,t)):null;
     // An empty container is invisible at rest (no border/fill), but it still needs SOME rendered area to
     // stay clickable/droppable — minHeight alone isn't enough inside a row-direction flex/grid parent, where
     // a childless box with no minWidth shrinks to 0 width and becomes a practically unhittable sliver.
