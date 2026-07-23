@@ -123,6 +123,9 @@ class Component extends DCLogic {
     this._draftAt = null;             // when the draft was last persisted (header "Draft saved" label)
     this._draftRestoredNotice = null; // {at} while a just-restored UNSAVED draft's banner is showing
     this._previewValues = {};     // preview-only option/instance-field values (never exported)
+    this._dataVariants = {};      // preview-only c.data.* array size overrides, keyed by array name — same
+                                   // "never exported, never touches real code" contract as _previewValues,
+                                   // so switching Empty/Few/Many is instant and fully reversible
     this._optExpanded = null; this._optJson = false; this._optCommonOpen = false; this._optSeq = 0;
     this.LABELC = {default:'#777',primary:'#337ab7',success:'#5cb85c',info:'#5bc0de',warning:'#f0ad4e',danger:'#d9534f'};
     this.CONTAINER_TAGS = ['div','section','header','footer','main','nav','article','aside','form','figure','blockquote','ul','ol','li'];
@@ -1510,7 +1513,24 @@ class Component extends DCLogic {
   // re-renders don't re-run the scripts). Exposes { c, data } exactly like the Preview tab.
   canvasScope(){ const sig=(this.code.server||'')+''+(this.code.client||'')+''+this.optionSchemaJson()+''+this.instanceClass+''+(this.wname||'')+''+JSON.stringify(this._previewValues||{})+''+JSON.stringify(this.instanceFields||[]);
     if(this._cScopeSig!==sig){ this._cScopeSig=sig; try{ this._cScope=this.buildPreviewScope(); }catch(e){ this._cScope={data:{}}; } }
-    const c=this._cScope||{data:{}}; return {c, data:c.data||{}, options:c.options||{}}; }
+    const c=this._cScope||{data:{}};
+    // Sample-data variants (Empty/Few/Many) apply HERE, outside the cache above — a pure, cheap
+    // post-process on whatever the real server script produced, never re-running the scripts and
+    // never touching this.code.server itself. Reversible and export-invisible, same contract as
+    // _previewValues for options.
+    let data=c.data||{};
+    if(this._dataVariants){ const keys=Object.keys(this._dataVariants); if(keys.length){ data=Object.assign({},data);
+      keys.forEach(k=>{ if(Array.isArray(data[k])) data[k]=this.applyDataVariant(data[k],this._dataVariants[k]); }); } }
+    return {c:(data===c.data?c:Object.assign({},c,{data})), data, options:c.options||{}}; }
+  // Empty: []. Few: exactly 2 (repeating the sole item if the real data only has one — still shows
+  // the "more than one" layout). Many: 25 (cycling the real items if there are fewer), for overflow/
+  // scroll testing. 'normal'/unset: the real array, untouched.
+  applyDataVariant(arr,variant){ if(!Array.isArray(arr)||!variant||variant==='normal') return arr;
+    if(variant==='empty') return [];
+    if(variant==='few') return arr.length>=2?arr.slice(0,2):(arr.length?[arr[0],arr[0]]:arr);
+    if(variant==='many'){ if(!arr.length) return arr; const out=[]; for(let i=0;i<25;i++) out.push(arr[i%arr.length]); return out; }
+    return arr; }
+  setDataVariant(key,variant){ this._dataVariants=this._dataVariants||{}; if(!variant||variant==='normal') delete this._dataVariants[key]; else this._dataVariants[key]=variant; this.forceUpdate(); }
   curScope(){ const st=this._scopeStack; return (st&&st.length)?st[st.length-1]:this.canvasScope(); }
   // Text as shown on the canvas: raw while editing THIS node (so you edit the {{binding}} itself),
   // otherwise interpolated against the current (possibly per-repeat-item) scope.
@@ -5303,6 +5323,17 @@ class Component extends DCLogic {
   defaultRepeatSource(){ const a=this.dataArrays(); return a.length?a[0].path:'c.data.items'; }
   toggleRepeat(node){ const on=this.isRepeating(node); this.patch(node.id,nd=>{ nd.attrs=nd.attrs||{}; if(on){ delete nd.attrs['ng-repeat']; } else { nd.attrs['ng-repeat']=this.parseRepeat(nd).v+' in '+this.defaultRepeatSource(); } }); }
   setRepeatParts(node,v,src){ this.patch(node.id,nd=>{ nd.attrs=nd.attrs||{}; nd.attrs['ng-repeat']=((v||'item').trim()||'item')+' in '+(src||''); }); }
+  // Preview-only Empty/Few/Many toggle for a bound array — design empty and overflow states without
+  // touching the real server script. Same row styling idiom as the app's other small pill groups.
+  dataVariantRow(t,key){ const h=React.createElement; const cur=(this._dataVariants&&this._dataVariants[key])||'normal';
+    const opts=[['normal','Normal'],['empty','Empty'],['few','Few'],['many','Many']];
+    const pick=(v,label)=>{ const on=cur===v; const go=()=>this.setDataVariant(key,v);
+      return h('div',Object.assign({key:v,onClick:go},this.a11y(go,{pressed:on,label:'Preview as '+label}),this.tt('Preview as '+label),
+        {style:{flex:1,textAlign:'center',padding:'4px 0',fontSize:11,fontWeight:on?600:500,borderRadius:5,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),label); };
+    return h('div',{style:{marginTop:8}},
+      h('div',{style:{fontSize:10,fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',color:t.faint,marginBottom:5}},'Preview as'),
+      h('div',{role:'group','aria-label':'Preview data size',style:{display:'flex',gap:4}}, opts.map(([v,l])=>pick(v,l))));
+  }
   renderRepeat(node,t){
     const h=React.createElement; const on=this.isRepeating(node);
     const {v,src}=this.parseRepeat(node); const arrays=this.dataArrays();
@@ -5315,7 +5346,8 @@ class Component extends DCLogic {
       on?h('div',null,
         arrays.length? h('div',null,
           this.lbl(t,'Data source'),
-          this.xselect('rep-src:'+node.id,t,custom?'__custom__':src,arrays.map(a=>[a.path,a.path+'  ('+a.len+')']).concat([['__custom__','Custom expression…']]),val=>{ if(val==='__custom__'){ if(known) this.setRepeatParts(node,v,''); } else this.setRepeatParts(node,v,val); },{mono:true})
+          this.xselect('rep-src:'+node.id,t,custom?'__custom__':src,arrays.map(a=>[a.path,a.path+'  ('+a.len+')']).concat([['__custom__','Custom expression…']]),val=>{ if(val==='__custom__'){ if(known) this.setRepeatParts(node,v,''); } else this.setRepeatParts(node,v,val); },{mono:true}),
+          known?this.dataVariantRow(t,arrays.find(a=>a.path===src).key):null
         ) : h('div',{style:{fontSize:11,color:t.faint,lineHeight:1.5,marginBottom:8}},'No arrays found on ',h('code',{style:{color:t.muted}},'c.data'),'. Add sample data in the ',h('b',{style:{color:t.text}},'Server'),' script (e.g. ',h('code',{style:{color:t.accent}},'data.items = [ ... ]'),'), then pick it here — or type an expression below.'),
         custom? h('div',{style:{marginTop:arrays.length?10:0}}, this.lbl(t,'Expression'), h('input',{value:src,placeholder:'c.data.items',spellCheck:false,onChange:e=>this.setRepeatParts(node,v,e.target.value),style:fld})):null,
         h('div',{style:{marginTop:10}}, this.lbl(t,'Item variable'), h('input',{value:v,spellCheck:false,onChange:e=>this.setRepeatParts(node,e.target.value,src),style:fld})),
