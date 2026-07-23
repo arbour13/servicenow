@@ -120,6 +120,7 @@ class Component extends DCLogic {
     this.optionSchema = [];   // Service Portal widget option schema (in-memory, like this.code)
     this.instanceClass = 'base';  // sp_instance subclass → which inherited fields the instance provides
     this.instanceFields = [];     // which inherited field NAMES the author chose to surface (opt-in)
+    this._firstRunDone = false;   // has this browser session already been through the starter picker for THIS widget?
     this._previewValues = {};     // preview-only option/instance-field values (never exported)
     this._optExpanded = null; this._optJson = false; this._optCommonOpen = false; this._optSeq = 0;
     this.LABELC = {default:'#777',primary:'#337ab7',success:'#5cb85c',info:'#5bc0de',warning:'#f0ad4e',danger:'#d9534f'};
@@ -254,7 +255,7 @@ class Component extends DCLogic {
     // Restore the auto-persisted draft if one exists (loadWidgetData resets _dirty/_savedId, so
     // re-apply the draft's after it); otherwise start from a clean default widget.
     const draft=this.readDraft();
-    if(draft){ this.loadWidgetData(draft.data); this._savedId=draft.savedId||null; this._dirty=!!draft.dirty; return; }
+    if(draft){ this.loadWidgetData(draft.data); this._savedId=draft.savedId||null; this._dirty=!!draft.dirty; this._firstRunDone=true; return; }
     this.tree={id:'root',type:'root',classes:[],data:{tag:'div'},children:[]};
     this.focusStack=[];
     this.history=[this.snapshot()]; this.histIdx=0; this._lastPush=0;
@@ -274,7 +275,7 @@ class Component extends DCLogic {
   // Everything needed to reconstruct a widget: identity, tree, all styling layers, tokens, the Options
   // schema, and the user-authored Client/Server/Link buffers (uidc so re-opening never reuses an id).
   DEFAULT_CODE(){ return {client:"api.controller = function () {\n  var c = this;\n\n  \n};",server:"(function () {\n  \n})();",link:"function link(scope, element, attrs, controller) {\n  \n}"}; }
-  serializeWidget(){ return {wname:this.wname,wid:this.wid,tree:this.tree,classStyles:this.classStyles,stateStyles:this.stateStyles,responsive:this.responsive,tokens:this.tokens,optionSchema:this.optionSchema,code:{client:this.code.client,server:this.code.server,link:this.code.link},uidc:this.uidc}; }
+  serializeWidget(){ return {wname:this.wname,wid:this.wid,tree:this.tree,classStyles:this.classStyles,stateStyles:this.stateStyles,responsive:this.responsive,tokens:this.tokens,optionSchema:this.optionSchema,code:{client:this.code.client,server:this.code.server,link:this.code.link},uidc:this.uidc,instanceClass:this.instanceClass,instanceFields:this.instanceFields}; }
   maxUid(){ let mx=0; const walk=n=>{ if(n&&typeof n.id==='string'){ const m=n.id.match(/_(\d+)$/); if(m) mx=Math.max(mx,+m[1]); } (n&&n.children||[]).forEach(walk); }; walk(this.tree); return mx; }
   loadWidgetData(d){ d=d||{};
     this.wname=d.wname||'Untitled'; this.wid=d.wid||'untitled';
@@ -285,11 +286,12 @@ class Component extends DCLogic {
     this.optionSchema=d.optionSchema||[];
     this.code=Object.assign(this.DEFAULT_CODE(), d.code||{});
     this.uidc=d.uidc||(this.maxUid()+1);
+    this.instanceClass=d.instanceClass||'base'; this.instanceFields=d.instanceFields||[];
     this.focusStack=[]; this.multiSel=[]; this.selectedId='root'; this._editing=null; this.device='lg'; this._estate='base';
     this._tokCss=null; this._dirty=false; this.exportOpen=false;
     this.history=[this.snapshot()]; this.histIdx=0; this._lastPush=0;
   }
-  resetWidget(){ this.loadWidgetData({}); this._savedId=null; }
+  resetWidget(){ this.loadWidgetData({}); this._savedId=null; this._firstRunDone=false; }
   saveWidget(asNew){ const list=this.listWidgets(); const name=(this.wname||'Untitled').trim()||'Untitled'; const data=this.serializeWidget(); const now=Date.now();
     let rec=(!asNew&&this._savedId)?list.find(w=>w.id===this._savedId):null;
     if(rec){ rec.name=name; rec.wid=this.wid; rec.updatedAt=now; rec.data=data; }
@@ -298,7 +300,7 @@ class Component extends DCLogic {
     if(ok){ this._savedId=rec.id; this._dirty=false; this.writeDraft(); this._saveFlash=Date.now(); clearTimeout(this._saveFlashT); this._saveFlashT=setTimeout(()=>{this._saveFlash=0;this.forceUpdate();},1600); }
     else { this._saveErr=1; clearTimeout(this._saveErrT); this._saveErrT=setTimeout(()=>{this._saveErr=0;this.forceUpdate();},2800); }
     this.forceUpdate(); return ok; }
-  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
+  openWidget(id){ const rec=this.listWidgets().find(w=>w.id===id); if(!rec) return; this.loadWidgetData(rec.data); this._savedId=rec.id; this._firstRunDone=true; this.writeDraft(); this.libOpen=false; this._discard=null; this.forceUpdate(); }
   deleteWidget(id){ const list=this.listWidgets().filter(w=>w.id!==id); this.writeWidgets(list); if(this._savedId===id) this._savedId=null; if(this._delArm===id) this._delArm=null; clearTimeout(this._delArmT); this.forceUpdate(); }
   // Two-step delete: first click arms the button (fills red, "click again to delete"); second click
   // (while still armed) actually deletes. Arming auto-clears after a few seconds so a stray click
@@ -2652,8 +2654,10 @@ class Component extends DCLogic {
             // overlay ignores the root's layout entirely, so it stays centered under any display.
             const isEmpty=!(this.tree.children&&this.tree.children.length);
             const kids=isEmpty?null:this.tree.children.map(c=>this.nwNode(c,this.tree,lightT));
+            // A brand-new widget shows the starter picker (instance type + shape) instead of the
+            // plain add-element prompt — see showStarterPicker() for exactly which loads qualify.
             const emptyPrompt=isEmpty?h('div',{key:'__rootprompt',style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',zIndex:1}},
-              h('div',{style:{pointerEvents:'auto'}}, this.renderEmptyState(lightT,'root',false))):null;
+              h('div',{style:{pointerEvents:'auto'}}, this.showStarterPicker()?this.renderStarterPicker(lightT):this.renderEmptyState(lightT,'root',false))):null;
             return h('div',{className:'ws-stage',
               onMouseOver:e=>{e.stopPropagation(); if(this.focusLocked('root')){ if(this.hoverId!=null){this.hoverId=null;this.forceUpdate();} return; } if(this.hoverId!=='root'){this.hoverId='root';this.forceUpdate();}},
               onClick:e=>this.select('root',e),
@@ -2773,6 +2777,64 @@ class Component extends DCLogic {
   // column-level prompts were removed deliberately — do not reintroduce them here.
   renderEmptyState(t,targetId,compact){
     return this.columnAddPrompt(t,targetId,null,!compact);
+  }
+  // ---- Starters: instance-type-driven first-run scaffolds ----
+  // Primary goal is faster/easier CORRECT widgets, not a tutorial — starters exist because most
+  // widgets begin from one of a few common shapes, not because an empty canvas needs a lesson.
+  // Only base/table/ais have drafted shapes so far; the rest just set instanceClass and start
+  // blank (see project memory: no confirmed defaults for menu/link/carousel/vlist yet).
+  STARTER_DEFS(){
+    return {
+      base: [
+        {id:'panel', label:'Panel', hint:'Heading + body — the shape most widgets start from', build:()=>{
+          const p=this.make('panel'); const txt=this.make('el','p'); txt.text='Panel content goes here.'; p.children=[txt]; return [p]; }},
+        {id:'panel-list', label:'Panel with list', hint:'Panel body holds a list', build:()=>{
+          const p=this.make('panel'); p.children=[this.make('el','ul')]; return [p]; }}
+      ],
+      table: [
+        {id:'panel-table', label:'Panel with table', hint:'The typical table-instance shape', build:()=>{
+          const p=this.make('panel'); p.children=[this.make('table')]; return [p]; }},
+        {id:'table', label:'Table only', hint:'Just the table, no panel chrome', build:()=>[this.make('table')]}
+      ],
+      ais: [
+        {id:'search-box', label:'Search box', hint:'A simple input + button', build:()=>{
+          const wrap=this.make('el','div'); const inp=this.make('el','input'); inp.text='Search…'; inp.attrs=Object.assign({},inp.attrs,{type:'search'});
+          const btn=this.make('el','button'); btn.text='Search'; wrap.children=[inp,btn];
+          this.setCS(wrap,'display','flex'); this.setCS(wrap,'gap','8px'); return [wrap]; }},
+        {id:'search-hero', label:'Search hero', hint:'Landing-style banner with a centered search box', build:()=>{
+          const section=this.make('el','section'); const heading=this.make('el','h2'); heading.text='Search';
+          const wrap=this.make('el','div'); const inp=this.make('el','input'); inp.text='Search…'; inp.attrs=Object.assign({},inp.attrs,{type:'search'});
+          const btn=this.make('el','button'); btn.text='Search'; wrap.children=[inp,btn]; section.children=[heading,wrap];
+          this.setCS(section,'textAlign','center'); this.setCS(section,'padding','48px 24px');
+          this.setCS(wrap,'display','flex'); this.setCS(wrap,'gap','8px'); this.setCS(wrap,'justifyContent','center');
+          return [section]; }}
+      ]
+    };
+  }
+  // True only for a widget this browser session hasn't started building yet — a fresh "+ New", not
+  // a reopened saved widget or a resumed draft (see the _firstRunDone set-sites: resetWidget,
+  // openWidget, load()'s draft-restore branch).
+  showStarterPicker(){ return !this._savedId && !this._firstRunDone; }
+  applyStarter(def){ this.tree.children=(def.build?def.build():[]); this.migrateToBem(); this._firstRunDone=true; this.selectedId='root'; this.save(); this.forceUpdate(); }
+  renderStarterPicker(t){ const h=React.createElement; const cls=this.instanceClass||'base';
+    const defs=(this.STARTER_DEFS()[cls])||[];
+    const typeChip=(v,label)=>{ const on=cls===v; const go=()=>{ this.instanceClass=v; this.forceUpdate(); };
+      return h('div',Object.assign({key:v,onClick:go},this.a11y(go,{pressed:on,label}),this.tt(label),
+        {style:{padding:'5px 12px',fontSize:11.5,fontWeight:on?600:500,borderRadius:14,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:'#fff',color:on?t.accent:t.muted,whiteSpace:'nowrap'}}), label); };
+    const card=def=>h('div',Object.assign({key:def.id,onClick:()=>this.applyStarter(def)},this.a11y(()=>this.applyStarter(def),{label:'Start from '+def.label}),
+      {style:{width:154,textAlign:'left',padding:'10px 12px',borderRadius:9,cursor:'pointer',border:'1px solid '+t.border,background:'#fff'}}),
+      h('div',{style:{fontSize:12.5,fontWeight:700,color:t.text,marginBottom:3}},def.label),
+      h('div',{style:{fontSize:10.5,color:t.muted,lineHeight:1.4}},def.hint));
+    const blankDef={id:'blank',label:'Blank',build:()=>[]};
+    return h('div',{style:{width:540,textAlign:'center'}},
+      h('div',{style:{fontSize:15,fontWeight:700,color:t.text,marginBottom:4}},'What kind of widget instance is this?'),
+      h('div',{style:{fontSize:11.5,color:t.muted,marginBottom:14,lineHeight:1.5}},'Sets up the right Options fields for you — pick a starting shape below, or start blank.'),
+      h('div',{role:'group','aria-label':'Widget instance type',style:{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:16}}, this.INSTANCE_CLASSES().map(([v,label])=>typeChip(v,label))),
+      defs.length?h('div',{style:{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:12}}, defs.map(card))
+        :h('div',{style:{fontSize:11,color:t.faint,marginBottom:12}},'No starter shapes yet for this type.'),
+      h('div',Object.assign({onClick:()=>this.applyStarter(blankDef)},this.a11y(()=>this.applyStarter(blankDef),{label:'Start blank'}),
+        {style:{display:'inline-block',fontSize:12,fontWeight:600,color:t.accent,cursor:'pointer',padding:'4px 10px'}}),'Start blank →')
+    );
   }
   quickAdd(spec,targetId,col,index){ const c=this.find(targetId);
     // Role-tagged chips (a composable's own children) build the styled sub-element; everything else is a plain make().
@@ -5646,11 +5708,18 @@ class Component extends DCLogic {
   OPT_TYPES(){ return ['string','boolean','integer','reference','choice','field_name','field_list','glide_list','glyphicon']; }
   OPT_SECTIONS(){ return [['data','Data'],['behavior','Behavior'],['documentation','Documentation'],['presentation','Presentation'],['other','Other']]; }
   // ---- instance classes: fields the sp_instance (and its subclasses) hand the widget as options.* ----
-  INSTANCE_CLASSES(){ return [['base','Instance'],['menu','Instance with menu'],['link','Instance with link'],['table','Instance with table']]; }
+  // Full out-of-box sp_instance hierarchy. vlist EXTENDS sp_instance_table (not base) — see
+  // INSTANCE_FIELDS. Admins can add further custom tables extending sp_instance; this list is a
+  // fallback modeled from the platform's stock set, not a closed one — pulling the real tables +
+  // fields from a connected dev instance is a possible future upgrade.
+  INSTANCE_CLASSES(){ return [['base','Instance'],['ais','Instance with search'],['carousel','Instance of carousel'],['link','Instance with link'],['menu','Instance with menu'],['table','Instance with table'],['vlist','Instance of simple list']]; }
   // The sp_instance* table each class maps to (shown as a caption; the source of truth once we go live).
-  INSTANCE_TABLE(cls){ return {base:'sp_instance',menu:'sp_instance_menu',link:'sp_instance_link',table:'sp_instance_table'}[cls]||'sp_instance'; }
+  INSTANCE_TABLE(cls){ return {base:'sp_instance',ais:'sp_instance_ais',carousel:'sp_instance_carousel',link:'sp_instance_link',menu:'sp_instance_menu',table:'sp_instance_table',vlist:'sp_instance_vlist'}[cls]||'sp_instance'; }
   // Inherited fields for a class. `name` is the options.* key; `sample` seeds the preview scope so a
   // binding like {{options.title}} resolves without anyone having to define a custom option.
+  // ais/carousel field names are MODELED (approximated), not yet confirmed against a live instance —
+  // same caveat applies less so to menu/link/table, which were modeled earlier and are due the same
+  // eventual confirmation. Replace once the app can read a real sp_instance* table's fields.
   INSTANCE_FIELDS(cls){ const base=[
       {name:'title', label:'Title', type:'string', sample:this.wname||'Widget title'},
       {name:'class_name', label:'CSS class', type:'string', sample:''},
@@ -5658,11 +5727,14 @@ class Component extends DCLogic {
       {name:'glyph', label:'Glyph', type:'string', sample:''}];
     if(cls==='menu') return base.concat([{name:'sp_menu', label:'Menu', type:'reference', sample:''}]);
     if(cls==='link') return base.concat([{name:'sp_page', label:'Page', type:'reference', sample:'index'},{name:'url', label:'Link URL', type:'string', sample:'/sp?id=index'}]);
-    if(cls==='table') return base.concat([
+    if(cls==='ais') return base.concat([{name:'placeholder', label:'Search placeholder', type:'string', sample:'Search…'},{name:'search_source', label:'Search source', type:'string', sample:''}]);
+    if(cls==='carousel') return base.concat([{name:'interval', label:'Interval (ms)', type:'integer', sample:5000},{name:'indicators', label:'Show indicators', type:'boolean', sample:true}]);
+    const tableFields=base.concat([
       {name:'table', label:'Table', type:'string', sample:'incident'},
       {name:'filter', label:'Filter', type:'string', sample:'active=true'},
       {name:'o', label:'Order by', type:'string', sample:'sys_created_on'},
       {name:'max_entries', label:'Max entries', type:'integer', sample:10}]);
+    if(cls==='table'||cls==='vlist') return tableFields;  // vlist extends sp_instance_table
     return base; }
   // The inherited fields the author opted into (subset of the current class's available fields).
   activeInstanceFields(){ return this.INSTANCE_FIELDS(this.instanceClass).filter(f=>(this.instanceFields||[]).indexOf(f.name)>=0); }
