@@ -55,6 +55,9 @@
   ::-webkit-scrollbar-thumb { background:#b8c0c9; border-radius:5px; border:2px solid transparent; background-clip:content-box; }
   ::-webkit-scrollbar-thumb:hover { background:#9aa3ad; background-clip:content-box; }
   .monaco-host { height:100%; width:100%; }
+  /* Code-drawer tab pill: stays one row and pans horizontally when the canvas is narrow — a
+     visible scrollbar would collide with the fixed 40px bar height. */
+  .ws-tabscroll::-webkit-scrollbar { display:none; }
 </style>
 <link rel="stylesheet" crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
@@ -1062,7 +1065,9 @@ class Component extends DCLogic {
     if((e.metaKey||e.ctrlKey)&&(e.key==='g'||e.key==='G')){ e.preventDefault(); if(this.canWrap()) this.wrapSelection(); }
   }; document.addEventListener('keydown',this._key);
   // Reposition the floating selection toolbar when the window resizes (its rect is measured from the DOM).
-  this._winResize=()=>{ if(this.selectedId&&this.selectedId!=='root') this.forceUpdate(); };
+  // Always re-render on resize: effPanelWidths() clamps panel widths to the viewport, and the
+  // floating selection toolbar re-measures its rect from the DOM.
+  this._winResize=()=>{ this.forceUpdate(); };
   window.addEventListener('resize',this._winResize);
   // Browser-level exits (refresh/close) can't go through requestDiscard, so warn there too when
   // there's unsaved work — otherwise F5 silently destroys the widget being built.
@@ -1649,11 +1654,24 @@ class Component extends DCLogic {
   renderVals(){ return { app:this.renderApp() }; }
 
   // ================= RENDER =================
+  PANEL_MIN={left:292,right:340,canvas:330};
+  // Effective panel widths: the stored prefs (leftW/rightW), clamped so both panels plus a usable
+  // canvas fit the viewport. Panels shrink proportionally toward their minimums before the shell
+  // ever falls back to horizontal scrolling; the stored prefs stay untouched, so widening the
+  // window restores the user's chosen sizes.
+  effPanelWidths(){ const m=this.PANEL_MIN; let L=this.leftW, R=this.rightW;
+    const over=(L+R)-(window.innerWidth-10-m.canvas);
+    if(over>0){ const shrL=L-m.left, shrR=R-m.right, shr=shrL+shrR;
+      if(shr>0){ const k=Math.min(1,over/shr); L-=shrL*k; R-=shrR*k; }
+      L=Math.max(m.left,Math.round(L)); R=Math.max(m.right,Math.round(R)); }
+    return {left:L,right:R}; }
   renderApp(){
     const h=React.createElement, t=this.theme();
-    // Below this width the panels can't all fit at a usable size — scroll the shell horizontally
-    // instead of letting the canvas get crushed to a sliver or the header clip off Export.
-    const shellMinW = this.leftW + 10 + 380 + this.rightW;  // + the two 5px resize handles
+    // Below this width the panels can't all fit even at their minimums — scroll the shell
+    // horizontally instead of letting the canvas get crushed to a sliver or the header clip off
+    // Export. With effPanelWidths() shrinking panels first, this floor is ~972px, not leftW+rightW.
+    const pw=this.effPanelWidths();
+    const shellMinW = pw.left + 10 + this.PANEL_MIN.canvas + pw.right;  // + the two 5px resize handles
     return h('div',{className:'ws-chrome'+(this._themeFade?' ws-theme-fade':''),style:{display:'flex',flexDirection:'column',height:'100vh',background:t.appBg,color:t.text,overflowX:'auto'}},
       h('div',{style:{minWidth:shellMinW,flexShrink:0}}, this.renderHeader(t)),
       h('div',{style:{flex:1,display:'flex',minHeight:0,minWidth:shellMinW}}, this.renderLeft(t), this.resizer(t,'left'), this.renderCanvas(t), this.resizer(t,'right'), this.renderInspector(t)),
@@ -1931,14 +1949,17 @@ class Component extends DCLogic {
   renderHeader(t){
     const h=React.createElement;
     const dib=(name,title)=>{ const on=this.device===name; const hasBp=name!=='lg'&&this.responsive[name]&&Object.keys(this.responsive[name]).length; const go=()=>{this.device=name; if(name!=='lg') this._estate='base'; this._box=null; this.forceUpdate();}; return h('div',{onClick:go,...this.tt(name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'}),...this.a11y(go,{pressed:on,label:title+' breakpoint'}),style:{position:'relative',padding:'4px 11px',borderRadius:4,cursor:'pointer',color:on?'#fff':t.muted,background:on?t.accentFill:'transparent',display:'flex',alignItems:'center'}},this.devIcon(name), hasBp?h('span',{style:{position:'absolute',top:3,right:4,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null); };
-    return h('div',{style:{height:52,flexShrink:0,background:t.header,borderBottom:'1px solid '+t.border,display:'flex',alignItems:'center',padding:'0 16px',gap:12}},
-      h('div',{style:{width:26,height:26,borderRadius:6,background:this.dark?'#3d92d9':'#054b80',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700,fontSize:13}},'W'),
-      h('span',{style:{fontSize:14,fontWeight:600,color:t.text}},'Widget Studio'),
-      h('span',{style:{fontSize:11,color:t.faint}},'Name'),
-      h('input',{value:this.wname,placeholder:'Friendly name',onChange:e=>this.setWname(e.target.value),style:{height:30,fontSize:12,color:t.text,background:t.panel,border:'1px solid '+t.border,padding:'0 8px',borderRadius:6,width:180,outline:'none'}}),
-      h('span',{style:{fontSize:11,color:t.faint,marginLeft:4}},'ID'),
-      h('input',{value:this.wid,onChange:e=>this.setWid(e.target.value),style:{height:30,fontSize:12,color:t.text,background:t.panel,border:'1px solid '+t.border,padding:'0 8px',borderRadius:6,width:150,outline:'none'}}),
-      h('span',{style:{fontSize:11,color:t.faint,fontFamily:'ui-monospace,monospace'}},'.'+this.baseClass()),
+    // Narrow viewports: drop the field labels and the base-class hint, and shrink the Name/ID
+    // inputs, so the device switcher and Save/Open/Export stay on screen instead of scrolling off.
+    const narrow=window.innerWidth<1150;
+    return h('div',{style:{height:52,flexShrink:0,background:t.header,borderBottom:'1px solid '+t.border,display:'flex',alignItems:'center',padding:'0 16px',gap:narrow?8:12}},
+      h('div',{style:{width:26,height:26,borderRadius:6,background:this.dark?'#3d92d9':'#054b80',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700,fontSize:13,flexShrink:0}},'W'),
+      h('span',{style:{fontSize:14,fontWeight:600,color:t.text,whiteSpace:'nowrap'}},'Widget Studio'),
+      narrow?null:h('span',{style:{fontSize:11,color:t.faint}},'Name'),
+      h('input',{value:this.wname,placeholder:'Friendly name',...(narrow?{title:'Widget name'}:{}),onChange:e=>this.setWname(e.target.value),style:{height:30,fontSize:12,color:t.text,background:t.panel,border:'1px solid '+t.border,padding:'0 8px',borderRadius:6,width:narrow?110:180,minWidth:0,outline:'none'}}),
+      narrow?null:h('span',{style:{fontSize:11,color:t.faint,marginLeft:4}},'ID'),
+      h('input',{value:this.wid,...(narrow?{title:'Widget ID'}:{}),onChange:e=>this.setWid(e.target.value),style:{height:30,fontSize:12,color:t.text,background:t.panel,border:'1px solid '+t.border,padding:'0 8px',borderRadius:6,width:narrow?100:150,minWidth:0,outline:'none'}}),
+      narrow?null:h('span',{style:{fontSize:11,color:t.faint,fontFamily:'ui-monospace,monospace'}},'.'+this.baseClass()),
       h('div',{style:{flex:1}}),
       h('div',{style:{display:'flex',gap:2,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:2}}, dib('lg','Desktop \u00b7 lg \u2265\u202f1200px'), dib('md','md \u00b7 \u2264\u202f1199px'), dib('sm','sm \u00b7 \u2264\u202f991px'), dib('xs','xs \u00b7 \u2264\u202f767px')),
       this.previewToggle(t),
@@ -1954,7 +1975,7 @@ class Component extends DCLogic {
     if(this.leftTab!=='variables'&&this.leftTab!=='options') this.leftTab='build';  // Elements + Layers always combined into Build
     const tab=(id,label,badge)=>{ const on=this.leftTab===id; const go=()=>{this.leftTab=id;this.forceUpdate();}; return h('div',Object.assign({onClick:go},this.a11y(go,{role:'tab',selected:on,label:label+' tab'}),{style:{flex:1,height:36,display:'flex',alignItems:'center',justifyContent:'center',gap:6,cursor:'pointer',fontSize:12,fontWeight:on?700:600,color:on?t.accent:t.muted,borderBottom:'2px solid '+(on?t.accent:'transparent'),userSelect:'none'}}), label, badge?h('span',{style:{fontSize:10,fontWeight:700,color:on?'#fff':t.muted,background:on?t.accentFill:t.segBg,borderRadius:9,minWidth:15,height:15,display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'0 4px'}},badge):null); };
     const body = this.leftTab==='variables' ? this.renderVariablesPanel(t) : this.leftTab==='options' ? this.renderOptionsPanel(t) : h('div',{style:{flex:1,minHeight:0,display:'flex',flexDirection:'column'}}, this.renderPalette(t), this.renderTree(t));
-    return h('div',{style:{width:this.leftW,flexShrink:0,display:'flex',flexDirection:'column',background:t.panel2,minHeight:0}},
+    return h('div',{style:{width:this.effPanelWidths().left,flexShrink:0,display:'flex',flexDirection:'column',background:t.panel2,minHeight:0}},
       h('div',{role:'tablist','aria-label':'Left panel',style:{display:'flex',borderBottom:'1px solid '+t.border,background:t.panel,flexShrink:0}}, tab('build','Build'), tab('variables','Variables'), tab('options','Options')),
       body);
   }
@@ -4182,7 +4203,7 @@ class Component extends DCLogic {
     const csel=(opts,val,on)=>h('div',{style:{width:132,flexShrink:0}}, this.xselect('tagsel',t,val,opts.map(tg=>[tg,tg,this.TAG_DESC()[tg]||'']),on,{mono:true,fontWeight:600,color:t.accent,label:'Element tag'}));
     const elTags=['div','section','header','footer','main','nav','article','aside','ul','ol','li','form','figure','img','span','p','a','button','label','input','textarea','select','h1','h2','h3','h4','h5','h6'];
     const rootTags=['div','section','article','aside','nav','header','footer','form','ul','ol','figure'];
-    return h('div',{style:{width:this.rightW,flexShrink:0,background:panelBg,display:'flex',flexDirection:'column',overflow:'hidden'}},
+    return h('div',{style:{width:this.effPanelWidths().right,flexShrink:0,background:panelBg,display:'flex',flexDirection:'column',overflow:'hidden'}},
       h('div',{style:{padding:'11px 12px 13px 14px',borderBottom:'1px solid '+t.border}},
         h('div',{style:{fontSize:10,fontWeight:600,letterSpacing:'.08em',textTransform:'uppercase',color:t.faint,marginBottom:8}}, node.id==='root'?'Widget root':'Selected element'),
         h('div',{style:{display:'flex',alignItems:'center',gap:7}},
@@ -4203,7 +4224,7 @@ class Component extends DCLogic {
   renderInspectorEmpty(t,panelBg){ const h=React.createElement;
     // No eyebrow header here (unlike the selected-element panel's "WIDGET ROOT" / "SELECTED ELEMENT") —
     // it would just repeat "Nothing selected" a second time, right above the headline that already says it.
-    return h('div',{style:{width:this.rightW,flexShrink:0,background:panelBg,display:'flex',flexDirection:'column',overflow:'hidden'}},
+    return h('div',{style:{width:this.effPanelWidths().right,flexShrink:0,background:panelBg,display:'flex',flexDirection:'column',overflow:'hidden'}},
       h('div',{style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',padding:'24px 22px'}},
         h('div',{style:{width:46,height:46,borderRadius:11,border:'1.5px dashed '+t.border,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:15}},
           h('div',{style:{width:17,height:17,border:'1.5px solid '+t.faint,borderRadius:3}})),
@@ -5869,16 +5890,16 @@ class Component extends DCLogic {
     let count=0; const w=k=>{ if(!k)return; if(k.id!=='root')count++; (k.children||[]).forEach(w); }; (this.tree.children||[]).forEach(w);
     const barH=40; const ds={flexShrink:0,height:open?this.previewH:barH,background:cp.bg,borderTop:'1px solid '+cp.border,display:'flex',flexDirection:'column',overflow:'hidden',transition:this._resizing?'none':'height .22s cubic-bezier(.4,0,.2,1)'};
     const tabs=[['html','Template'],['scss','CSS'],['client','Client'],['server','Server'],['link','Link']];
-    const tb=(id,label)=>{ const on=this.codeTab===id; const go=()=>{this.codeTab=id;this.drawerOpen=true;this.saveUiPrefs();this.forceUpdate();if(this._mon)setTimeout(()=>this._mon.layout(),40);}; return h('div',Object.assign({onClick:e=>{e.stopPropagation();go();}},this.a11y(go,{role:'tab',selected:on,label:label+' tab'}),{style:{padding:'3px 11px',fontSize:11.5,fontWeight:600,borderRadius:6,cursor:'pointer',color:on?cp.tabOnText:cp.muted,background:on?cp.tabOnBg:'transparent'}}),label); };
+    const tb=(id,label)=>{ const on=this.codeTab===id; const go=()=>{this.codeTab=id;this.drawerOpen=true;this.saveUiPrefs();this.forceUpdate();if(this._mon)setTimeout(()=>this._mon.layout(),40);}; return h('div',Object.assign({onClick:e=>{e.stopPropagation();go();}},this.a11y(go,{role:'tab',selected:on,label:label+' tab'}),{style:{padding:'3px 11px',fontSize:11.5,fontWeight:600,borderRadius:6,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,color:on?cp.tabOnText:cp.muted,background:on?cp.tabOnBg:'transparent'}}),label); };
     const bar=h('div',{onClick:()=>{this.drawerOpen=!this.drawerOpen;this.saveUiPrefs();this.forceUpdate();if(this._mon)setTimeout(()=>this._mon.layout(),60);},
       ...this.a11y(()=>{this.drawerOpen=!this.drawerOpen;this.saveUiPrefs();this.forceUpdate();if(this._mon)setTimeout(()=>this._mon.layout(),60);},{label:this.drawerOpen?'Collapse the widget code drawer':'Expand the widget code drawer',pressed:this.drawerOpen}),
       style:{height:barH,flexShrink:0,display:'flex',alignItems:'center',gap:10,padding:'0 12px 0 14px',cursor:'pointer',userSelect:'none',background:cp.barBg,borderBottom:open?'1px solid '+cp.border:'1px solid transparent',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace'}},
       h('span',{style:{color:cp.muted,transition:'transform .2s',transform:open?'rotate(180deg)':'none',display:'inline-flex',alignItems:'center'}},this.chev('up',11)),
-      h('span',{style:{fontSize:12,fontWeight:600,color:cp.text}},'Widget code'),
+      h('span',{style:{fontSize:12,fontWeight:600,color:cp.text,whiteSpace:'nowrap'}},'Widget code'),
       h('span',{style:{width:7,height:7,borderRadius:'50%',background:cp.green}}),
-      h('span',{style:{fontSize:11,color:cp.faint}},count+' el'),
+      h('span',{style:{fontSize:11,color:cp.faint,whiteSpace:'nowrap'}},count+' el'),
       h('div',{style:{flex:1}}),
-      h('div',{onClick:e=>e.stopPropagation(),style:{display:'flex',gap:2,background:cp.bg,border:'1px solid '+cp.border,borderRadius:8,padding:3,flexWrap:'wrap'}}, tabs.map(x=>tb(x[0],x[1]))),
+      h('div',{onClick:e=>e.stopPropagation(),className:'ws-tabscroll',style:{display:'flex',gap:2,background:cp.bg,border:'1px solid '+cp.border,borderRadius:8,padding:3,flexWrap:'nowrap',minWidth:0,overflowX:'auto',scrollbarWidth:'none'}}, tabs.map(x=>tb(x[0],x[1]))),
       this.codeThemeToggle(cp,t),
       (()=>{ const ok=this._copied;
         const icon = ok
@@ -5905,7 +5926,7 @@ class Component extends DCLogic {
             h('span',{style:{width:18,flexShrink:0,fontSize:11,fontFamily:'ui-monospace,monospace',color:cp.faint,opacity:.5,textAlign:'right'}}, i+1),
             h('span',{style:{height:10,borderRadius:2,background:cp.border,opacity:.4,animation:'dropPulse 1.6s ease-in-out infinite',animationDelay:(i*0.07)+'s',width:(28+((i*37)%50))+'%'}}))));
     return h('div',{style:ds},grip,bar,
-      h('div',{style:{display:'flex',alignItems:'center',gap:8,padding:'6px 14px',fontSize:11,color:cp.faint,background:cp.bg,borderBottom:'1px solid '+cp.borderSoft,fontFamily:'ui-monospace,monospace'}}, h('span',null,this.panelHint()), h('span',{style:{flex:1}}), this.codeTab==='server'?h('span',{onClick:e=>{e.stopPropagation();this.openDataGen();},style:{display:'flex',alignItems:'center',gap:5,whiteSpace:'nowrap',cursor:'pointer',color:cp.green,fontWeight:600,padding:'2px 8px',borderRadius:5,border:'1px solid #238636',background:'rgba(35,134,54,.12)'}}, h('span',null,'⚡'), 'Generate data'):null, (this.codeTab==='html')?h('span',{style:{whiteSpace:'nowrap',color:cp.muted}}, '● read-only · generated from canvas'):((this.codeTab==='scss')?h('span',{onClick:()=>{ this.code.scss=null; this.save(); this.forceUpdate(); },style:{cursor:'pointer',whiteSpace:'nowrap',color:this.code.scss!=null?cp.blue:cp.green}}, this.code.scss!=null?'● manual · regenerate from canvas ↻':'● synced with canvas'):null)),
+      h('div',{style:{display:'flex',alignItems:'center',gap:8,padding:'6px 14px',fontSize:11,color:cp.faint,background:cp.bg,borderBottom:'1px solid '+cp.borderSoft,fontFamily:'ui-monospace,monospace'}}, h('span',{style:{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',minWidth:0},title:this.panelHint()},this.panelHint()), h('span',{style:{flex:1}}), this.codeTab==='server'?h('span',{onClick:e=>{e.stopPropagation();this.openDataGen();},style:{display:'flex',alignItems:'center',gap:5,whiteSpace:'nowrap',cursor:'pointer',color:cp.green,fontWeight:600,padding:'2px 8px',borderRadius:5,border:'1px solid #238636',background:'rgba(35,134,54,.12)'}}, h('span',null,'⚡'), 'Generate data'):null, (this.codeTab==='html')?h('span',{style:{whiteSpace:'nowrap',color:cp.muted}}, '● read-only · generated from canvas'):((this.codeTab==='scss')?h('span',{onClick:()=>{ this.code.scss=null; this.save(); this.forceUpdate(); },style:{cursor:'pointer',whiteSpace:'nowrap',color:this.code.scss!=null?cp.blue:cp.green}}, this.code.scss!=null?'● manual · regenerate from canvas ↻':'● synced with canvas'):null)),
       codeEl);
   }
   panelHint(){ const m={html:'HTML template (read-only) — generated from the canvas; paste into the widget Body field',scss:'Generated from your classes → paste into the widget CSS / SCSS field',client:'Client script (api.controller) — editable',server:'Server script — editable',link:'Link function — editable',options:'Widget option schema — add options here, then paste the JSON into the widget’s Option schema field'}; return m[this.codeTab]||''; }
