@@ -2824,7 +2824,7 @@ class Component extends DCLogic {
     const defs=(this.STARTER_DEFS()[cls])||[];
     const typeChip=(v,label)=>{ const on=cls===v; const go=()=>{ this.instanceClass=v; this.forceUpdate(); };
       return h('div',Object.assign({key:v,onClick:go},this.a11y(go,{pressed:on,label}),this.tt(label),
-        {style:{padding:'5px 12px',fontSize:11.5,fontWeight:on?600:500,borderRadius:14,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:'#fff',color:on?t.accent:t.muted,whiteSpace:'nowrap'}}), label); };
+        {style:{padding:'5px 12px',fontSize:11.5,fontWeight:600,borderRadius:14,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:'#fff',color:on?t.accent:t.muted,whiteSpace:'nowrap'}}), label); };
     const card=def=>h('div',Object.assign({key:def.id,onClick:()=>this.applyStarter(def)},this.a11y(()=>this.applyStarter(def),{label:'Start from '+def.label}),
       {style:{width:154,textAlign:'left',padding:'10px 12px',borderRadius:9,cursor:'pointer',border:'1px solid '+t.border,background:'#fff'}}),
       h('div',{style:{fontSize:12.5,fontWeight:700,color:t.text,marginBottom:3}},def.label),
