@@ -160,6 +160,7 @@ class Component extends DCLogic {
       // "Bootstrap": these chips emit Bootstrap 3 markup/classes (panel panel-default, alert, …) that
       // any Service Portal theme already styles — distinct from the plain semantic elements above.
       {cat:'Bootstrap', items:[
+        {type:'formgroup',label:'form group'},
         {type:'panel',label:'panel'},
         {type:'alert',label:'alert'},
         {type:'badge',label:'badge'},
@@ -348,6 +349,19 @@ class Component extends DCLogic {
       return base;
     }
     switch(type){
+      case 'formgroup': {
+        // A composed PRESET, not a new node type — returns a real div>label+input subtree, so it
+        // reuses every existing render/serialize/style code path with zero new cases anywhere
+        // (exactly how a hand-built form-group would look). Pure Bootstrap 3 classes
+        // (form-group/form-control), matching how panel/alert/card stay classed rather than
+        // BEM-wrapped. label<->input linked via for/id for a real accessible label — the
+        // correct semantic pattern, and what makes the pre-flight input-label rule pass.
+        const label=this.make('el','label'); label.text='Field label';
+        const inp=this.make('el','input'); inp.text='Enter value'; inp.classes.push('form-control');
+        label.attrs=Object.assign({},label.attrs,{for:inp.id});
+        inp.attrs=Object.assign({},inp.attrs,{id:inp.id});
+        return {...base, type:'el', data:{tag:'div'}, classes:['form-group'], children:[label,inp]};
+      }
       case 'panel':
         // Single hybrid component node: a bindable heading + a real body slot that still accepts
         // dropped children. "Break apart" expands it into the editable div.panel subtree.
@@ -3059,7 +3073,7 @@ class Component extends DCLogic {
     // Component types (type !== 'el') — each maps to its own glyph; unmapped/unknown types fall back to 'box'.
     const TYPE_G={panel:'container',card:'container',alert:'alert',badge:'badge',table:'table',navtabs:'navtabs',
       listgroup:'listgroup',progress:'progress',breadcrumb:'breadcrumb',buttongroup:'buttongroup',html:'code',
-      icon:'star',button:'button',checkbox:'checkbox',radio:'radio'};
+      icon:'star',button:'button',checkbox:'checkbox',radio:'radio',formgroup:'form'};
     // el tags — every tag offered in the palette (plus a few CONTAINER_TAGS not in it) gets its own glyph.
     const TAG_G={h1:'heading',h2:'heading',h3:'heading',h4:'heading',h5:'heading',h6:'heading',
       p:'text',span:'span',label:'labelf',a:'link',button:'button',
@@ -4307,7 +4321,7 @@ class Component extends DCLogic {
   // Short, in-context semantic guidance shown per option in the element/base-element picker.
   TAG_DESC(){ return {div:'generic block (default)',section:'titled region, needs a heading',article:'self-contained item / record',aside:'sidebar / complementary',nav:'navigation landmark',header:'page-band header',footer:'page-band footer',main:'avoid, one per page',form:'submits data',figure:'image with a caption',blockquote:'quote / callout',hr:'divider between content',ul:'unordered list',ol:'ordered (numbered) list',li:'list item',img:'image',video:'video file player',iframe:'embed a page / URL (iframe)',span:'inline text',p:'paragraph',a:'anchor · link',button:'button',label:'form label',input:'form field',textarea:'multi-line field',select:'dropdown',h1:'top-level heading',h2:'heading',h3:'heading',h4:'heading',h5:'heading',h6:'heading'}; }
   // Palette-chip descriptions for non-<el> component chips (elements use TAG_DESC above). Keyed by node type.
-  COMP_DESC(){ return {icon:'icon glyph (Font Awesome / Glyphicon / SVG)',panel:'boxed section with a heading',alert:'colored message banner',badge:'small status label',table:'data table (static or bound)',navtabs:'tabbed navigation',listgroup:'list of rows / links',card:'configurable content card',html:'raw HTML, paste anything',progress:'progress / SLA bar',breadcrumb:'navigation trail',buttongroup:'segmented buttons'}; }
+  COMP_DESC(){ return {formgroup:'label + input, wired together (for/id)',icon:'icon glyph (Font Awesome / Glyphicon / SVG)',panel:'boxed section with a heading',alert:'colored message banner',badge:'small status label',table:'data table (static or bound)',navtabs:'tabbed navigation',listgroup:'list of rows / links',card:'configurable content card',html:'raw HTML, paste anything',progress:'progress / SLA bar',breadcrumb:'navigation trail',buttongroup:'segmented buttons'}; }
   chipTitle(it){ return it.type==='el' ? (this.TAG_DESC()[it.tag]||it.tag) : ((this.COMP_DESC()[it.type])||it.label); }
   renderInspector(t){
     const h=React.createElement;
@@ -6241,7 +6255,7 @@ class Component extends DCLogic {
       const hasDataLabel=n.data&&n.data.label;
       const parentIsLabel=!!(parent&&parent.type==='el'&&parent.data&&parent.data.tag==='label');
       let prevIsLabel=false; if(parent&&parent.children){ const i=parent.children.indexOf(n); const prev=i>0?parent.children[i-1]:null; prevIsLabel=!!(prev&&prev.type==='el'&&prev.data&&prev.data.tag==='label'); }
-      if(!hasAria&&!hasDataLabel&&!parentIsLabel&&!prevIsLabel){ add('semantics','input-label','warn','<'+tag+'> has no associated label','Screen readers announce unlabeled fields as just their type. Wrap it in a Form group once that’s available, or add aria-label.',{nodeId:n.id}); labelIssues++; }
+      if(!hasAria&&!hasDataLabel&&!parentIsLabel&&!prevIsLabel){ add('semantics','input-label','warn','<'+tag+'> has no associated label','Screen readers announce unlabeled fields as just their type. Use the Bootstrap "form group" palette chip for a properly labeled field, or add aria-label.',{nodeId:n.id}); labelIssues++; }
     });
     if(!labelIssues) { passOnce('semantics','input-label','Every form field has a label'); }
 
