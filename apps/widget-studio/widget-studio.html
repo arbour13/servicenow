@@ -5695,9 +5695,9 @@ class Component extends DCLogic {
     const known=arrays.some(a=>a.path===src); const custom=!arrays.length || !known;
     const fld={height:30,width:'100%',border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace',boxSizing:'border-box'};
     return h('div',null,
-      h('div',{style:{display:'flex',alignItems:'center',gap:9,marginBottom:on?12:0}},
-        h('div',Object.assign({onClick:()=>this.toggleRepeat(node)},this.a11y(()=>this.toggleRepeat(node),{role:'switch',checked:on,label:'Repeat this element'}),{style:{width:38,height:22,borderRadius:11,background:on?'#8957e5':t.border,position:'relative',cursor:'pointer',flexShrink:0,transition:'background .15s'}}), h('div',{style:{position:'absolute',top:2,left:on?18:2,width:18,height:18,borderRadius:'50%',background:'#fff',transition:'left .15s',boxShadow:'0 1px 2px rgba(0,0,0,.3)'}})),
-        h('span',{style:{fontSize:12,fontWeight:on?600:400,color:on?t.text:t.muted}}, 'Repeat element')),
+      h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:on?12:0}},
+        this.switchCtrl(t,on,()=>this.toggleRepeat(node),'Repeat this element'),
+        h('span',{style:{fontSize:12,color:t.text}}, 'Repeat element')),
       on?h('div',null,
         arrays.length? h('div',null,
           this.lbl(t,'Data source'),
@@ -5777,113 +5777,84 @@ class Component extends DCLogic {
     while((mm=re.exec(m[1]))){ any=true; rows.push({name:mm[1],expr:mm[2].trim()}); }
     return any||!m[1].trim() ? rows : null; }
   buildNgClass(rows){ const parts=(rows||[]).filter(r=>r.name).map(r=>"'"+r.name+"': "+(r.expr||'true')); return parts.length?('{'+parts.join(', ')+'}'):''; }
-  // Friendly, directive-aware editors for the common Angular attrs (ng-if/show/hide, ng-class, ng-style,
-  // click/change/submit, disabled/readonly, ng-model). All write into the same node.attrs map the plain
-  // Attributes editor (attrTab) uses, so the two stay in sync — Attributes remains the raw escape hatch.
-  angularTab(node,t){
-    const h=React.createElement; const attrs=node.attrs||{};
-    const setAttr=(name,val)=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; if(val==null||val==='') { delete n.attrs[name]; } else { n.attrs[name]=val; } });
-    const tg=node.type==='el'?node.data.tag:node.type;
-    const smallInput=(val,ph,on,opt)=>React.createElement('input',{value:val,placeholder:ph||'',spellCheck:false,onChange:e=>on(e.target.value),style:{flex:(opt||{}).flex||1,minWidth:0,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:(opt||{}).mono?'ui-monospace,monospace':'inherit'}});
-
-    // ---- Visibility: ng-if / ng-show / ng-hide are mutually exclusive ----
-    const VIS=['ng-if','ng-show','ng-hide'];
-    const curVis=VIS.find(k=>k in attrs)||'none';
-    const visSection=h('div',null,
-      this.section(t,'Visibility'),
-      this.seg(t,[{v:'none',l:'Always'},{v:'ng-if',l:'ng-if'},{v:'ng-show',l:'ng-show'},{v:'ng-hide',l:'ng-hide'}],curVis,v=>{
-        // Write the new key directly (not via setAttr) — an empty starting condition ('') must still leave the
-        // attribute present so the seg stays on the picked mode; setAttr's empty-string-deletes rule would
-        // otherwise silently no-op the very first pick, before the user has typed a condition.
-        const prev=attrs[curVis]||''; this.patch(node.id,n=>{ n.attrs=n.attrs||{}; VIS.forEach(k=>delete n.attrs[k]); if(v!=='none') { n.attrs[v]=prev; } });
-      },{fill:true}),
-      curVis!=='none'?h('div',{style:{marginTop:8}}, this.lbl(t,'Condition'), this.bindField(t,node,'ang:'+curVis,attrs[curVis]||'',v=>setAttr(curVis,v),{raw:true,ph:'e.g. options.showFooter'})):null
-    );
-
-    // ---- ng-class: rows builder (class name <-> condition), with a raw-expression fallback ----
-    const rawClass=attrs['ng-class']||''; const parsedRows=this.parseNgClass(rawClass);
-    this._ngClassRaw=this._ngClassRaw||{};
-    const useRaw=this._ngClassRaw[node.id]||parsedRows===null;
-    const rows=useRaw?[]:(parsedRows.length?parsedRows:[{name:'',expr:''}]);
-    const commitRows=rs=>setAttr('ng-class', this.buildNgClass(rs));
-    const classSection=h('div',null, this.section(t,'ng-class'),
-      useRaw
-        ? h('div',null,
-            this.bindField(t,node,'ang:ngclass-raw',rawClass,v=>setAttr('ng-class',v),{raw:true,ph:"{'active': item.selected}"}),
-            h('div',{onClick:()=>{ delete this._ngClassRaw[node.id]; this.forceUpdate(); },style:{marginTop:6,fontSize:11,color:t.accent,cursor:'pointer'}},'Switch to builder'))
-        : h('div',null,
-            rows.map((r,i)=>h('div',{key:i,style:{display:'flex',gap:6,marginBottom:6,alignItems:'center'}},
-              smallInput(r.name,'class-name',v=>{ const rs=rows.slice(); rs[i]={...rs[i],name:v}; commitRows(rs); },{flex:'0 0 40%',mono:true}),
-              smallInput(r.expr,'condition',v=>{ const rs=rows.slice(); rs[i]={...rs[i],expr:v}; commitRows(rs); }),
-              h('span',{onClick:()=>{ const rs=rows.slice(); rs.splice(i,1); commitRows(rs); },style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 4px'}},'×'))),
-            h('div',{style:{display:'flex',gap:12,alignItems:'center',marginTop:2}},
-              h('div',{onClick:()=>commitRows(rows.concat([{name:'',expr:''}])),...this.a11y(()=>commitRows(rows.concat([{name:'',expr:''}])),{label:'Add conditional class'}),style:{cursor:'pointer',fontSize:11.5,color:t.accent,fontWeight:600}},'+ Add class'),
-              h('div',{onClick:()=>{ this._ngClassRaw[node.id]=true; this.forceUpdate(); },...this.a11y(()=>{ this._ngClassRaw[node.id]=true; this.forceUpdate(); },{label:'Edit as raw expression'}),style:{cursor:'pointer',fontSize:11,color:t.faint}},'Raw expression'))));
-
-    // ---- ng-style: object-expression only, no builder (values are arbitrary CSS) ----
-    const styleSection=h('div',null, this.section(t,'ng-style'),
-      this.bindField(t,node,'ang:ngstyle',attrs['ng-style']||'',v=>setAttr('ng-style',v),{raw:true,ph:"{'color': item.color}"}),
-      h('div',{style:{fontSize:11,color:t.faint,marginTop:5,lineHeight:1.5}},'Expects an object expression, e.g. ',h('code',{style:{color:t.muted}},"{'font-weight': item.bold ? 'bold' : 'normal'}"),'.'));
-
-    // ---- Events: shown per-tag, same relevance logic as attrSuggest ----
-    const EVT_MAP={a:['ng-click'],button:['ng-click'],form:['ng-submit'],input:['ng-change'],select:['ng-change'],textarea:['ng-change']};
-    const evts=EVT_MAP[tg]||['ng-click'];
-    const eventsSection=h('div',null, this.section(t,'Events'),
-      evts.map((name,i)=>h('div',{key:name,style:{marginTop:i?8:0}}, this.lbl(t,name), this.bindField(t,node,'ang:'+name,attrs[name]||'',v=>setAttr(name,v),{raw:true,ph:'e.g. c.doThing(item)'}))));
-
-    // ---- State: ng-disabled / ng-readonly, tag-relevant ----
-    const STATE_TAGS=['button','input','select','textarea','a'];
-    const stateSection=STATE_TAGS.includes(tg)?h('div',null, this.section(t,'State'),
-      h('div',null, this.lbl(t,'ng-disabled'), this.bindField(t,node,'ang:ng-disabled',attrs['ng-disabled']||'',v=>setAttr('ng-disabled',v),{raw:true,ph:'e.g. !options.enabled'})),
-      ['input','textarea','select'].includes(tg)?h('div',{style:{marginTop:8}}, this.lbl(t,'ng-readonly'), this.bindField(t,node,'ang:ng-readonly',attrs['ng-readonly']||'',v=>setAttr('ng-readonly',v),{raw:true,ph:'e.g. options.locked'})):null
-    ):null;
-
-    // ---- ng-model: form controls only ----
-    const modelSection=['input','select','textarea'].includes(tg)?h('div',null, this.section(t,'ng-model'),
-      this.bindField(t,node,'ang:ng-model',attrs['ng-model']||'',v=>setAttr('ng-model',v),{raw:true,ph:'e.g. c.data.name'})
-    ):null;
-
-    // ---- Repeat: single source of truth stays the Data section's Repeat element toggle ----
-    const repeatHint=this.isRepeating(node)?h('div',{style:{fontSize:11,color:t.faint,lineHeight:1.5}},'ng-repeat is configured in the ',h('b',{style:{color:t.text}},'Data'),' section above.'):null;
-
-    return h('div',null,
-      visSection,
-      h('div',{style:{marginTop:14}},classSection),
-      h('div',{style:{marginTop:14}},styleSection),
-      h('div',{style:{marginTop:14}},eventsSection),
-      stateSection?h('div',{style:{marginTop:14}},stateSection):null,
-      modelSection?h('div',{style:{marginTop:14}},modelSection):null,
-      repeatHint?h('div',{style:{marginTop:14}},repeatHint):null
-    );
-  }
   // Element tab: everything that writes to THIS INSTANCE, not the shared class — repeat/bind
-  // (Data), Angular directives, and raw attributes, as labeled sections in one scroll. Kept as
-  // three sub-sections rather than flattened further so each one's own internal grouping
-  // (Repeat/Fields, Visibility/ng-class/ng-style/Events/State/ng-model, attribute rows) stays intact.
+  // (Data) and the unified attribute ledger below, as labeled sections in one scroll.
   elementTab(node,t){
     const h=React.createElement;
     const sections=[
       node.id!=='root'?['Data',this.renderData(node,t)]:null,
-      ['Angular',this.angularTab(node,t)],
-      ['Attributes',this.attrTab(node,t)]
+      ['Attributes',this.attributesLedger(node,t)]
     ].filter(Boolean);
     return h('div',null, sections.map(([label,body],i)=>h('div',{key:label,style:i?{marginTop:20,paddingTop:16,borderTop:'1px solid '+t.borderSoft}:null},
       this.section(t,label), body)));
   }
-  attrTab(node,t){
-    const h=React.createElement; const attrs=node.attrs||{}; const keys=Object.keys(attrs); const sug=this.attrSuggest(node).filter(s=>!(s in attrs));
-    const inp=(val,on,opt)=>React.createElement('input',{value:val,placeholder:(opt||{}).ph||'',onChange:e=>on(e.target.value),style:{flex:(opt||{}).flex||1,minWidth:0,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:(opt||{}).mono?'ui-monospace,monospace':'inherit'}});
+  // Plain-English hint shown as a tooltip on a directive's suggestion chip.
+  DIRECTIVE_HINT(key){ return {'ng-if':'show if','ng-show':'show if','ng-hide':'hide if','ng-class':'conditional classes','ng-style':'conditional styles','ng-click':'on click','ng-change':'on change','ng-submit':'on submit','ng-model':'bind field','ng-disabled':'disabled if','ng-readonly':'read-only if'}[key]||null; }
+  // Placeholder shown in a row's own value field once that key is a known directive.
+  ATTR_VALUE_HINT(key){ return {'ng-if':'e.g. options.showFooter','ng-show':'e.g. options.showFooter','ng-hide':'e.g. options.showFooter','ng-class':"{'active': item.selected}",'ng-style':"{'color': item.color}",'ng-click':'e.g. c.doThing(item)','ng-change':'e.g. c.onChange(item)','ng-submit':'e.g. c.onSubmit()','ng-model':'e.g. c.data.name','ng-disabled':'e.g. !options.enabled','ng-readonly':'e.g. options.locked'}[key]||'value'; }
+  // Directive suggestions relevant to this element's tag — same relevance logic the old
+  // per-tag Angular sections used (Events/State/ng-model), now just entries in one suggestion
+  // list alongside plain attrSuggest() instead of their own dedicated sections.
+  attrDirectiveSuggest(node){
+    const tg=node.type==='el'?node.data.tag:node.type;
+    const EVT_MAP={a:['ng-click'],button:['ng-click'],form:['ng-submit'],input:['ng-change'],select:['ng-change'],textarea:['ng-change']};
+    const out=['ng-if','ng-show','ng-hide','ng-class','ng-style'].concat(EVT_MAP[tg]||['ng-click']);
+    if(['button','input','select','textarea','a'].includes(tg)) { out.push('ng-disabled'); }
+    if(['input','textarea','select'].includes(tg)) { out.push('ng-readonly','ng-model'); }
+    return out;
+  }
+  // The unified attribute ledger — merges the old separate Angular-directives tab into plain
+  // Attributes, in the design doc's compact row language (mono name cell + value cell + binding
+  // chip + ×) the user singled out as already right. ng-repeat is excluded (Repeat element owns
+  // it, above). ng-if/ng-show/ng-hide stay mutually exclusive simply by virtue of the generic
+  // rename-a-row mechanic already here — retyping a different name over "ng-if" carries the same
+  // condition value to the new key, no dedicated seg control needed. ng-class gets a small "Edit
+  // as rows" expander under its own row for the guided name/condition builder.
+  attributesLedger(node,t){
+    const h=React.createElement; const attrs=node.attrs||{};
+    const keys=Object.keys(attrs).filter(k=>k!=='ng-repeat');
+    const smallInput=(val,ph,on,opt)=>React.createElement('input',{value:val,placeholder:ph||'',spellCheck:false,onChange:e=>on(e.target.value),style:{flex:(opt||{}).flex||1,minWidth:0,height:28,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:11.5,color:t.text,background:t.panel,outline:'none',fontFamily:(opt||{}).mono?'ui-monospace,monospace':'inherit'}});
+    const rename=(k,nk)=>this.patch(node.id,n=>{ const v=n.attrs[k]; delete n.attrs[k]; const kk=(nk||'').trim(); if(kk) { n.attrs[kk]=v; } });
+    const setVal=(k,v)=>this.patch(node.id,n=>n.attrs[k]=v);
+    const remove=k=>this.patch(node.id,n=>delete n.attrs[k]);
+
+    const ngClassExpander=k=>{
+      if(k!=='ng-class') { return null; }
+      this._ngClassOpen=this._ngClassOpen||{};
+      const open=!!this._ngClassOpen[node.id];
+      const toggle=()=>{ this._ngClassOpen[node.id]=!open; this.forceUpdate(); };
+      if(!open) { return h('div',Object.assign({onClick:toggle},this.a11y(toggle,{label:'Edit ng-class as rows'}),{style:{fontSize:11,color:t.accent,cursor:'pointer',marginTop:4,marginLeft:102}}),'Edit as rows ▾'); }
+      const parsed=this.parseNgClass(attrs['ng-class']||''); const rows=parsed&&parsed.length?parsed:[{name:'',expr:''}];
+      const commitRows=rs=>setVal('ng-class',this.buildNgClass(rs));
+      return h('div',{style:{marginTop:6,marginLeft:102,padding:8,background:t.segBg,border:'1px solid '+t.border,borderRadius:6}},
+        rows.map((r,i)=>h('div',{key:i,style:{display:'flex',gap:6,marginBottom:6,alignItems:'center'}},
+          smallInput(r.name,'class-name',v=>{ const rs=rows.slice(); rs[i]={...rs[i],name:v}; commitRows(rs); },{flex:'0 0 40%',mono:true}),
+          smallInput(r.expr,'condition',v=>{ const rs=rows.slice(); rs[i]={...rs[i],expr:v}; commitRows(rs); }),
+          h('span',{onClick:()=>{ const rs=rows.slice(); rs.splice(i,1); commitRows(rs); },style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 4px'}},'×'))),
+        h('div',{style:{display:'flex',gap:12,alignItems:'center',marginTop:2}},
+          h('div',Object.assign({onClick:()=>commitRows(rows.concat([{name:'',expr:''}]))},this.a11y(()=>commitRows(rows.concat([{name:'',expr:''}])),{label:'Add conditional class'}),{style:{cursor:'pointer',fontSize:11,color:t.accent,fontWeight:600}}),'+ Add class'),
+          h('div',Object.assign({onClick:toggle},this.a11y(toggle,{label:'Close row editor'}),{style:{cursor:'pointer',fontSize:11,color:t.faint}}),'Close')));
+    };
+
+    const rows=keys.map(k=>h('div',{key:k},
+      h('div',{style:{display:'flex',gap:6,alignItems:'center'}},
+        React.createElement('input',{value:k,placeholder:'name',spellCheck:false,onChange:e=>rename(k,e.target.value.trim()),style:{flex:'0 0 96px',minWidth:0,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}),
+        React.createElement('input',{value:attrs[k],placeholder:this.ATTR_VALUE_HINT(k),autoFocus:this._focusAttrVal===k,ref:this._focusAttrVal===k?(()=>{this._focusAttrVal=null;}):null,onChange:e=>setVal(k,e.target.value),style:{flex:1,minWidth:0,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none'}}),
+        this.bindToggleBtn(t,node,'attr:'+k),
+        h('span',{onClick:()=>remove(k),...this.a11y(()=>remove(k),{label:'Remove attribute '+k}),style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 2px'}},'×')),
+      this.bindMenuBox(t,node,'attr:'+k,p=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; const cur=n.attrs[k]||''; n.attrs[k]=this.isExprAttr(k)?p:(cur+((cur&&!/\s$/.test(cur))?' ':'')+'{{'+p+'}}'); })),
+      ngClassExpander(k)
+    ));
+
+    const suggestKeys=Array.from(new Set(this.attrSuggest(node).concat(this.attrDirectiveSuggest(node)))).filter(s=>!(s in attrs));
+
     return h('div',null,
-      keys.length?h('div',{style:{display:'flex',flexDirection:'column',gap:6,marginBottom:10}}, keys.map(k=>h('div',{key:k},
-        h('div',{style:{display:'flex',gap:6,alignItems:'center'}},
-          inp(k,nk=>this.patch(node.id,n=>{ const v=n.attrs[k]; delete n.attrs[k]; const kk=(nk||'').trim(); if(kk) { n.attrs[kk]=v; } }),{flex:'0 0 84px',mono:true}),
-          React.createElement('input',{value:attrs[k],placeholder:'value',autoFocus:this._focusAttrVal===k,ref:this._focusAttrVal===k?(()=>{this._focusAttrVal=null;}):null,onChange:v=>this.patch(node.id,n=>n.attrs[k]=v.target.value),style:{flex:1,minWidth:0,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none'}}),
-          this.bindToggleBtn(t,node,'attr:'+k),
-          h('span',{onClick:()=>this.patch(node.id,n=>delete n.attrs[k]),...this.a11y(()=>this.patch(node.id,n=>delete n.attrs[k]),{label:'Remove attribute '+k}),style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 2px'}},'×')),
-        this.bindMenuBox(t,node,'attr:'+k,p=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; const cur=n.attrs[k]||''; n.attrs[k]=this.isExprAttr(k)?p:(cur+((cur&&!/\s$/.test(cur))?' ':'')+'{{'+p+'}}'); }))
-      ))):h('div',{style:{fontSize:12,color:t.faint,marginBottom:10}},'No attributes yet.'),
-      React.createElement('input',{placeholder:'attribute name + Enter',onKeyDown:e=>{ if(e.key==='Enter'){ const k=e.target.value.trim(); if(k){ this._focusAttrVal=k; this.patch(node.id,n=>{ n.attrs=n.attrs||{}; if(!(k in n.attrs)) { n.attrs[k]=''; } }); } e.target.value=''; } },style:{width:'100%',height:32,border:'1px solid '+t.border,borderRadius:6,padding:'0 10px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}),
-      sug.length?h('div',{style:{marginTop:12}}, this.section(t,'Common'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:6}}, sug.map(s=>h('div',{key:s,onClick:()=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; n.attrs[s]=''; }),...this.a11y(()=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; n.attrs[s]=''; }),{label:'Add attribute '+s}),style:{cursor:'pointer',fontSize:11.5,fontFamily:'ui-monospace,monospace',color:t.accent,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:'5px 9px'}},s)))):null,
+      h('div',{style:{fontSize:11,color:t.faint,marginBottom:10,lineHeight:1.5}},'Writes to this instance — not the shared class.'),
+      keys.length?h('div',{style:{display:'flex',flexDirection:'column',gap:6,marginBottom:10}}, rows):h('div',{style:{fontSize:12,color:t.faint,marginBottom:10}},'No attributes yet.'),
+      React.createElement('input',{placeholder:'+ add attribute',onKeyDown:e=>{ if(e.key==='Enter'){ const k=e.target.value.trim(); if(k){ this._focusAttrVal=k; this.patch(node.id,n=>{ n.attrs=n.attrs||{}; if(!(k in n.attrs)) { n.attrs[k]=''; } }); } e.target.value=''; } },style:{width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 10px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}),
+      suggestKeys.length?h('div',{style:{marginTop:12}}, this.section(t,'Common'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:6}}, suggestKeys.map(s=>{ const hint=this.DIRECTIVE_HINT(s);
+        const add=()=>this.patch(node.id,n=>{ n.attrs=n.attrs||{}; n.attrs[s]=''; });
+        return h('div',Object.assign({key:s,onClick:add},this.a11y(add,{label:'Add attribute '+s+(hint?' — '+hint:'')}),hint?this.tt(hint):{},{style:{cursor:'pointer',fontSize:11.5,fontFamily:'ui-monospace,monospace',color:t.accent,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:'5px 9px'}}), s); }))):null,
       h('div',{style:{fontSize:11,color:t.faint,marginTop:12,lineHeight:1.5}},'Emitted on the element in the HTML. Use real ServiceNow / Angular attributes like ', h('code',{style:{color:t.muted}},'ng-click'),', ', h('code',{style:{color:t.muted}},'ng-repeat'),'.')
     );
   }
