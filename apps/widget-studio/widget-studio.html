@@ -3789,6 +3789,13 @@ class Component extends DCLogic {
   // Quiet sub-section label used INSIDE a bigCard (Layout/Spacing/Size, Background/Typography/…) — one
   // notch lighter than section()'s bold uppercase treatment, since the card header now carries that role.
   subHead(t,label,first){ return React.createElement('div',{style:{fontSize:11,fontWeight:600,color:t.muted,margin:first?'0 0 8px':'18px 0 8px'}},label); }
+  // The bold uppercase divider between the top-level blocks inside a bigCard (Layout, Flex/Grid
+  // child, Typography, Background, Border, Effects, Transforms & Transitions) — was 8 near-
+  // identical hand-rolled style objects (5 with a trailing stateEditDot, 3 without); now one helper
+  // so every block gets the dot and the same spacing/border-top treatment.
+  blockHead(t,label,opts){ opts=opts||{}; const h=React.createElement;
+    return h('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:opts.first?'0 0 12px':'20px 0 12px',paddingTop:opts.first?0:16,borderTop:opts.first?'none':'1px solid '+t.border}}, label, opts.dot||null);
+  }
   // Identity icon for a bigCard header — a small, separate icon set from gl()'s bars/dots (layout state)
   // and glyphSvg's per-tag glyphs (element identity): these two just label "which card is this."
   secIcon(name){ const h=React.createElement; const p={width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.7,strokeLinecap:'round',strokeLinejoin:'round'};
@@ -4906,16 +4913,15 @@ class Component extends DCLogic {
       h('input',{value:arr[i],spellCheck:false,onChange:e=>{ const nx=arr.slice(); nx[i]=e.target.value; setter(nx); },style:trackMini}),
       h('span',{onClick:()=>{ if(arr.length>min){ const nx=arr.slice(); nx.splice(i,1); setter(nx); } },style:{display:arr.length>min?'flex':'none',width:20,height:20,alignItems:'center',justifyContent:'center',borderRadius:4,cursor:'pointer',color:t.faint,fontSize:14,flex:'0 0 auto'}},'×'));
     const addBtn=(label,onClick)=>h('div',{onClick,style:{display:'flex',alignItems:'center',justifyContent:'center',marginTop:6,padding:'5px 0',border:'1px dashed '+t.border,borderRadius:6,cursor:'pointer',color:t.muted,fontSize:11.5,fontWeight:500}},label);
-    const segMini=on=>({padding:'3px 9px',borderRadius:4,fontSize:10.5,fontWeight:600,cursor:'pointer',color:on?'#fff':t.muted,background:on?t.accentFill:'transparent'});
     const previewCols=colMode==='auto'?['1fr','1fr','1fr']:cols;
     const prevRows=rows.length?rows:['auto'];
     const preview=h('div',{style:{display:'grid',gridTemplateColumns:previewCols.map(()=>'1fr').join(' '),gridTemplateRows:prevRows.map(()=>'22px').join(' '),gap:3,padding:6,background:t.segBg,border:'1px solid '+t.border,borderRadius:7,marginTop:8}},
       previewCols.flatMap((_,ci)=>prevRows.map((_,ri)=>h('div',{key:ci+'-'+ri,style:{background:t.accentSoft,border:'1px dashed '+(this.dark?t.accent:'#bcd6f5'),borderRadius:3,minHeight:18}}))));
     const els=[h('div',{key:'gp'}, this.subHead(t,'Grid template'), preview)];
-    els.push(h('div',{key:'colhdr',style:{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'12px 0 6px'}},
-      h('span',{style:{fontSize:10,color:t.faint,textTransform:'uppercase',letterSpacing:'.05em'}},'Columns'),
-      h('div',{style:{display:'flex',gap:2,background:t.segBg,border:'1px solid '+t.border,borderRadius:6,padding:2}},
-        [['fixed','Fixed'],['auto','Auto']].map(([v,l])=>h('div',{key:v,onClick:()=>{ if(v===colMode) { return; } if(v==='auto') { this.setCS(node,'gridTemplateColumns',autoTemplate); } else { this.setCS(node,'gridTemplateColumns',cols.join(' ')); } },style:segMini(colMode===v)},l)))));
+    const setColMode=v=>{ if(v===colMode) { return; } if(v==='auto') { this.setCS(node,'gridTemplateColumns',autoTemplate); } else { this.setCS(node,'gridTemplateColumns',cols.join(' ')); } };
+    els.push(h('div',{key:'colhdr',style:{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'18px 0 6px'}},
+      h('span',{style:{fontSize:11,fontWeight:600,color:t.muted}},'Columns'),
+      h('div',{style:{width:120}}, this.seg(t,[{v:'fixed',l:'Fixed'},{v:'auto',l:'Auto'}],colMode,setColMode,{fill:true,pad:'3px 0'}))));
     if(colMode==='fixed'){
       els.push(h('div',{key:'coltracks',style:{display:'flex',flexDirection:'column',gap:5}}, cols.map((c,i)=>trackRow(cols,i,setCols,1))));
       els.push(addBtn('+ Add column',()=>setCols(cols.concat('1fr'))));
@@ -4925,18 +4931,23 @@ class Component extends DCLogic {
       const mmField={width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,background:t.panel,color:t.text,fontSize:12,padding:'0 9px',outline:'none',boxSizing:'border-box',fontFamily:'ui-monospace,monospace'};
       els.push(h('div',{key:'automode'}, this.seg(t,[{v:'auto-fill',l:'Auto-fill'},{v:'auto-fit',l:'Auto-fit'}],autoMode,v=>this.setCS(node,'gridTemplateColumns','repeat('+v+', minmax('+(autoMin||'0')+', '+(autoMax||'1fr')+'))'),{fill:true,pad:'6px 0'})));
       els.push(h('div',{key:'autominmax',style:{display:'flex',gap:8,marginTop:8}},
-        h('div',{style:{flex:1,minWidth:0}}, h('div',{style:{fontSize:10.5,color:t.faint,marginBottom:4}},'Min width'), h('input',{value:autoMin.replace(/px$/,''),placeholder:'200',spellCheck:false,onChange:e=>rebuild(norm(e.target.value)||'0',autoMax),style:mmField})),
-        h('div',{style:{flex:1,minWidth:0}}, h('div',{style:{fontSize:10.5,color:t.faint,marginBottom:4}},'Max'), h('input',{value:autoMax==='1fr'?'':autoMax.replace(/px$/,''),placeholder:'1fr',spellCheck:false,onChange:e=>rebuild(autoMin,norm(e.target.value)||'1fr'),style:mmField}))));
+        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Min width'), h('input',{value:autoMin.replace(/px$/,''),placeholder:'200',spellCheck:false,onChange:e=>rebuild(norm(e.target.value)||'0',autoMax),style:mmField})),
+        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Max'), h('input',{value:autoMax==='1fr'?'':autoMax.replace(/px$/,''),placeholder:'1fr',spellCheck:false,onChange:e=>rebuild(autoMin,norm(e.target.value)||'1fr'),style:mmField}))));
       els.push(h('div',{key:'autotmpl',style:{fontSize:10.5,fontFamily:'ui-monospace,monospace',color:t.muted,background:t.segBg,border:'1px solid '+t.border,borderRadius:6,padding:'7px 9px',wordBreak:'break-all',marginTop:8}}, autoTemplate));
     }
-    els.push(h('div',{key:'rowhdr',style:{fontSize:10,color:t.faint,margin:'12px 0 6px',textTransform:'uppercase',letterSpacing:'.05em'}},'Rows'));
+    els.push(h('div',{key:'rowhdr'}, this.subHead(t,'Rows')));
     if(rows.length) { els.push(h('div',{key:'rowtracks',style:{display:'flex',flexDirection:'column',gap:5}}, rows.map((r,i)=>trackRow(rows,i,setRows,0)))); }
     els.push(addBtn('+ Add row',()=>setRows(rows.concat('auto'))));
     const jItems=this.csVal(node,'justifyItems')||'stretch';
     const aItems=this.csVal(node,'alignItems')||'stretch';
-    els.push(h('div',{key:'aligns',style:{display:'flex',gap:8,marginTop:12}},
-      h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Align X'), this.selectField(t,['stretch','start','center','end'],jItems,v=>this.setCS(node,'justifyItems',v==='stretch'?'':v))),
-      h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Align Y'), this.selectField(t,['stretch','start','center','end'],aItems,v=>this.setCS(node,'alignItems',v==='stretch'?'':v)))));
+    const gIc=n=>this.flexIcon(n,18);
+    // Icon rows, not dropdowns — matches every other justify/align choice in this panel (flex's
+    // own Justify/Align, and this same grid's Justify self/Align self just below); the reference
+    // mockup used dropdowns here, but that was its own inconsistency with its identical flex rows.
+    els.push(h('div',{key:'alignx',style:{marginTop:16}}, this.subHead(t,'Align X'),
+      this.iconRow(t,[{v:'stretch',title:'Stretch',icon:gIc('j-stretch')},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')}],jItems,v=>this.setCS(node,'justifyItems',v==='stretch'?'':v),'Align X')));
+    els.push(h('div',{key:'aligny',style:{marginTop:16}}, this.subHead(t,'Align Y'),
+      this.iconRow(t,[{v:'stretch',title:'Stretch',icon:gIc('a-stretch')},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')}],aItems,v=>this.setCS(node,'alignItems',v==='stretch'?'':v),'Align Y')));
     const flow=this.csVal(node,'gridAutoFlow')||'row';
     els.push(h('div',{key:'flow',style:{marginTop:12}}, this.lbl(t,'Auto flow'), this.seg(t,[{v:'row',l:'Row'},{v:'column',l:'Column'},{v:'dense',l:'Dense'}],flow.indexOf('dense')>=0?'dense':flow,v=>this.setCS(node,'gridAutoFlow',v==='row'?'':v),{fill:true,pad:'6px 0'})));
     return h('div',null,els); }
@@ -4992,7 +5003,7 @@ class Component extends DCLogic {
           h('div',null,this.lbl(t,'Shrink'),this.rawField(t,node,'flexShrink','1'))):null),
       h('div',{style:{marginTop:12}}, this.lbl(t,'Order'), this.rawField(t,node,'order','0')));
     return h('div',null,
-      h('div',{style:{fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}},'Flex child'),
+      this.blockHead(t,'Flex child',{dot:this.stateEditDot(node,['alignSelf','flexGrow','flexShrink','flexBasis','order'],t)}),
       parent?this.inParentBlock(parent,t,body):body); }
   // Box-model inset editor for position offsets — same trapezoid look as spacingDiagram, "Itself" center.
   insetBox(node,t){ const h=React.createElement;
@@ -5049,7 +5060,7 @@ class Component extends DCLogic {
       if(/grid$/.test(v)&&!this.effectiveStyle(node).gridTemplateColumns) { this.setCS(node,'gridTemplateColumns','1fr 1fr'); } };
     // Grid starts with no explicit gridTemplateColumns — gridColCount() already treats that as 1 column
     // (matching the "1" preset tile below reading as selected).
-    els.push(h('div',{key:'layout-hdr',style:{fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'0 0 12px'}},'Layout'));
+    els.push(h('div',{key:'layout-hdr'},this.blockHead(t,'Layout',{first:true})));
     els.push(h('div',{key:'d'}, this.subHead(t,'Display',true),
       this.iconRow(t,primaryDisp,isOther?null:disp,setDisp,'Display'),
       h('div',{style:{marginTop:6}}, this.xselect('disp-other',t, isOther?disp:'', [{v:'',label:'Other…'},...otherDisp], v=>{ if(v==='') { return; } setDisp(v); }))
@@ -5081,7 +5092,7 @@ class Component extends DCLogic {
           v=>this.flipLayout(node,()=>this.setCS(node,'flexWrap',v)),'Wrap')));
       if(wrap!=='nowrap'){
         const ac=this.csVal(node,'alignContent')||'stretch';
-        dyn.push(h('div',{key:'ac',style:{marginTop:12}}, this.lbl(t,'Align content'), this.xselect('ac:'+node.id,t,ac,this.ALIGN_CONTENT_VALUES().map(v=>[v.v,v.title]),v=>this.setCS(node,'alignContent',v==='stretch'?'':v),{fontSize:12,height:28})));
+        dyn.push(h('div',{key:'ac',style:{marginTop:12}}, this.lbl(t,'Align content'), this.selectField(t,this.ALIGN_CONTENT_VALUES().map(v=>[v.v,v.title]),ac,v=>this.setCS(node,'alignContent',v==='stretch'?'':v))));
       }
     }
     if(dispK==='grid'){
@@ -5114,7 +5125,7 @@ class Component extends DCLogic {
       gridBody.push(h('div',{key:'as',style:{marginTop:14}}, this.subHead(t,'Align self',true),
         this.iconRow(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('a-stretch')}],this.csVal(node,'alignSelf')||'auto',v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self')));
       els.push(h('div',{key:'gridwrap',style:{marginTop:20,paddingTop:16,borderTop:'1px solid '+t.border}},
-        h('div',{style:{fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'0 0 12px'}},'Grid child'),
+        this.blockHead(t,'Grid child',{first:true,dot:this.stateEditDot(node,['gridColumnStart','gridColumnEnd','gridRowStart','gridRowEnd','justifySelf','alignSelf'],t)}),
         this.inParentBlock(parent,t,h('div',null,gridBody))));
     }
     // ---- flex-item options (when this element sits inside a flex parent) — reference: Flex child ----
@@ -5323,7 +5334,7 @@ class Component extends DCLogic {
     const goManual=()=>this.setCS(node,'boxShadow',this.composeShadow(tk?this.parseShadow(tk.value):(cur?s:{x:'0',y:'4',blur:'16',spread:'0',color:'#000000',alpha:25,inset:false})));
     const setS=(k,v)=>this.setCS(node,'boxShadow',this.composeShadow(Object.assign({},s,{[k]:v})));
     return h('div',null,
-      h('div',{style:{fontSize:12,color:t.text,margin:'14px 0 6px'}},'Box shadow'),
+      this.lbl(t,'Box shadow'),
       h('div',{style:{display:'flex',gap:4}},
         shadowToks.map(tok=>{ const short=tok.name.replace(/^box-shadow-/,''); const on=!manual&&cur==='var(--'+tok.name+')';
           return h('button',Object.assign({key:tok.id,onClick:()=>setTok(tok.name)},this.tt(tok.value),{style:{flex:'1 1 0',minWidth:0,height:28,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:600,fontFamily:'ui-monospace,monospace',borderRadius:6,cursor:'pointer',boxSizing:'border-box',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.panel,color:on?t.accent:t.muted}}),short); }),
@@ -5356,7 +5367,7 @@ class Component extends DCLogic {
     const write=(nx,ny,nb,ncolor,nalpha)=>{ const colv=this.composeColorAlpha(ncolor,nalpha); this.setCS(node,'textShadow',(nx||'0')+'px '+(ny||'0')+'px '+(nb||'0')+'px '+colv); };
     const num=(label,v,on)=>this.prefixField(t,label,v,on);
     return h('div',null,
-      h('div',{style:{fontSize:12,color:t.text,margin:'12px 0 5px'}},'Text shadow'),
+      this.lbl(t,'Text shadow'),
       h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}},
         num('X',x,v=>write(v,y,blur,color,alpha)), num('Y',y,v=>write(x,v,blur,color,alpha)), num('Blur',blur,v=>write(x,y,v,color,alpha))),
       h('div',{style:{display:'flex',alignItems:'center',gap:7,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',background:t.panel,marginTop:6}},
@@ -5377,7 +5388,7 @@ class Component extends DCLogic {
     const alignTile=o=>{ const on=ta===o.v; const pick=()=>this.setCS(node,'textAlign',o.v==='left'?'':o.v); return h('div',Object.assign({key:o.v,onClick:pick},this.tt(o.title),this.a11y(pick,{pressed:on,label:o.title}),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),o.icon); };
     const caseTile=(g,v,title)=>styleTile(tform===v,g,title,()=>this.setCS(node,'textTransform',tform===v?'':v),{fontSize:12});
     return h('div',null,
-      h('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'0 0 12px'}}, 'Typography', this.stateEditDot(node,['fontFamily','fontWeight','fontSize','lineHeight','letterSpacing','color','textAlign','fontStyle','textDecoration','textTransform','textShadow','whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'],t)),
+      this.blockHead(t,'Typography',{first:true,dot:this.stateEditDot(node,['fontFamily','fontWeight','fontSize','lineHeight','letterSpacing','color','textAlign','fontStyle','textDecoration','textTransform','textShadow','whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'],t)}),
       h('div',{style:{marginBottom:8}}, this.selectField(t,famOpts,this.csVal(node,'fontFamily')||'',v=>this.setCS(node,'fontFamily',v))),
       h('div',{style:{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:8}},
         this.selectField(t,wOpts,w,v=>this.setCS(node,'fontWeight',v)),
@@ -5397,7 +5408,7 @@ class Component extends DCLogic {
       this.textShadowEditor(node,t),
       (()=>{ const tmode=this.truncMode(node); const clampN=(this.csVal(node,'WebkitLineClamp')||'2').toString();
         return h('div',null,
-          h('div',{style:{fontSize:12,color:t.text,margin:'12px 0 5px'}},'Truncate'),
+          this.lbl(t,'Truncate'),
           this.seg(t,[{v:'wrap',l:'Wrap'},{v:'ellipsis',l:'Ellipsis'},{v:'clamp',l:'Clamp'}],tmode,v=>this.setTrunc(node,v),{fill:true,pad:'6px 0'}),
           tmode==='clamp'?h('div',{style:{marginTop:8}}, this.lbl(t,'Max lines'), this.selectField(t,['1','2','3','4','5','6'],clampN,v=>this.setCS(node,'WebkitLineClamp',v))):null); })(),
       // Raw white-space control. Shares the whiteSpace property with the Truncate modes above
@@ -5433,7 +5444,7 @@ class Component extends DCLogic {
         h('input',{value:s.pos,spellCheck:false,onChange:e=>{ const ns=g.stops.slice(); ns[i]=Object.assign({},ns[i],{pos:e.target.value}); setG(g.angle,ns); },style:{width:44,flex:'0 0 auto',border:'none',background:'none',color:t.muted,fontSize:11,textAlign:'right',outline:'none'}}),
         h('span',{onClick:()=>{ if(g.stops.length>2){ const ns=g.stops.slice(); ns.splice(i,1); setG(g.angle,ns); } },...this.a11y(()=>{ if(g.stops.length>2){ const ns=g.stops.slice(); ns.splice(i,1); setG(g.angle,ns); } },{label:'Remove color stop '+(i+1)}),style:{display:g.stops.length>2?'flex':'none',cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint,flex:'0 0 auto'}},'×')))));
       body.push(h('div',{key:'add',onClick:()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),...this.a11y(()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),{label:'Add color stop'}),style:{display:'flex',alignItems:'center',justifyContent:'center',marginTop:6,padding:'6px 0',border:'1px dashed '+t.border,borderRadius:6,cursor:'pointer',color:t.muted,fontSize:11.5,fontWeight:500}},'+ Add color stop'));
-      body.push(h('div',{key:'angle',style:{display:'flex',alignItems:'center',gap:8,marginTop:8}}, h('span',{style:{fontSize:12,color:t.text,flex:'0 0 auto'}},'Angle'), h('div',{style:{flex:1}}, this.selectField(t,[['90deg','90°'],['0deg','0°'],['45deg','45°'],['135deg','135°'],['180deg','180°']],g.angle,v=>setG(v,g.stops))))); }
+      body.push(h('div',{key:'angle',style:{marginTop:8}}, this.lbl(t,'Angle'), this.selectField(t,[['90deg','90°'],['0deg','0°'],['45deg','45°'],['135deg','135°'],['180deg','180°']],g.angle,v=>setG(v,g.stops)))); }
     else { // image
       body.push(h('div',{key:'url',style:{marginTop:0}}, this.prefixField(t,'',this.csVal(node,'backgroundImage').replace(/^url\((['"]?)(.*)\1\)$/,'$2'),v=>{ const u=v.trim(); this.setCS(node,'backgroundImage',u?('url("'+u+'")'):''); },{placeholder:'https://…'})));
       body.push(h('div',{key:'sr',style:{display:'flex',gap:8,marginTop:8}},
@@ -5441,7 +5452,7 @@ class Component extends DCLogic {
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Repeat'), this.selectField(t,[['no-repeat','No repeat'],['repeat','Repeat'],['repeat-x','Repeat X'],['repeat-y','Repeat Y']],this.csVal(node,'backgroundRepeat')||'no-repeat',v=>this.setCS(node,'backgroundRepeat',v==='no-repeat'?'':v)))));
       body.push(h('div',{key:'fb',style:{marginTop:8}}, this.colorInlineField(t,node,'backgroundColor',{noAlpha:true,placeholder:'Fallback'}))); }
     return h('div',null,
-      h('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}}, 'Background', this.stateEditDot(node,['background','backgroundImage','backgroundColor'],t)),
+      this.blockHead(t,'Background',{dot:this.stateEditDot(node,['background','backgroundImage','backgroundColor'],t)}),
       h('div',{style:{marginBottom:10}}, this.seg(t,[{v:'solid',l:'Solid'},{v:'gradient',l:'Gradient'},{v:'image',l:'Image'}],type,v=>this.switchBgType(node,v),{fill:true,pad:'6px 0'})),
       body); }
   // ---- Border ----
@@ -5465,7 +5476,7 @@ class Component extends DCLogic {
       // so the bracket highlights the instant you tap it instead of lagging behind the click.
       return h('div',Object.assign({key:id,onClick:()=>setCorner(id)},this.tt(labels[id]),this.a11y(()=>setCorner(id),{pressed:corner===id,label:'Edit '+labels[id].toLowerCase()+' corner'}),{style:Object.assign({position:'absolute',width:16,height:16,cursor:'pointer',transition:'none'},pos,map[id])})); };
     return h('div',null,
-      h('div',{style:{fontSize:12,color:t.text,margin:'12px 0 6px'}},'Corner radius'),
+      this.lbl(t,'Corner radius'),
       h('div',{style:{position:'relative',width:'100%',height:74,margin:'0 auto'}},
         h('div',{style:{position:'absolute',left:14,top:12,right:14,bottom:12,border:'1px dashed '+t.accent,borderRadius:3,background:t.panel,display:'flex',alignItems:'center',justifyContent:'center',transition:'none'},onClick:()=>setCorner('all'),...this.tt('Select all corners'),...this.a11y(()=>setCorner('all'),{pressed:corner==='all',label:'Edit all corners'})}, h('span',{style:{fontSize:9,fontWeight:600,color:t.accent,pointerEvents:'none'}},'Element')),
         handle('tl',{left:0,top:0}), handle('tr',{right:0,top:0}), handle('br',{right:0,bottom:0}), handle('bl',{left:0,bottom:0})),
@@ -5480,7 +5491,7 @@ class Component extends DCLogic {
         h('div',{style:{width:'68%',height:0,borderTop:'3px '+v+' '+(on?t.accent:t.muted)}})); })); }
   borderBlock(node,t){ const h=React.createElement;
     return h('div',null,
-      h('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}}, 'Border', this.stateEditDot(node,['borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderColor'],t)),
+      this.blockHead(t,'Border',{dot:this.stateEditDot(node,['borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderColor'],t)}),
       this.borderWidthPicker(node,t),
       h('div',{style:{marginTop:10}}, this.lbl(t,'Style'), this.borderStyleSwatches(node,t)),
       this.cornerRadiusPicker(node,t),
@@ -5553,12 +5564,12 @@ class Component extends DCLogic {
     const setFilterValue=(type,v)=>{ const map=Object.assign({},activeMap,{[type]:v}); setFilterMap(composeFromMap(map)); };
     const toggleBackdrop=()=>{ const cur=this.csVal(node,fprop)||''; this.setCS(node,fprop,''); this.setCS(node, backdropOn?'filter':'backdropFilter', cur); };
     return h('div',null,
-      h('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}}, 'Effects', this.stateEditDot(node,['opacity','mixBlendMode','boxShadow','filter','backdropFilter','cursor'],t)),
-      h('div',{style:{fontSize:12,color:t.text,marginBottom:5}}, 'Opacity'),
+      this.blockHead(t,'Effects',{dot:this.stateEditDot(node,['opacity','mixBlendMode','boxShadow','filter','backdropFilter','cursor'],t)}),
+      this.lbl(t,'Opacity'),
       this.slider(t,opacity,0,1,0.05,v=>this.setCS(node,'opacity', v>=1?'':String(v))),
       h('div',{style:{marginTop:12}}, this.lbl(t,'Blending'), this.selectField(t,[['normal','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['difference','Difference'],['luminosity','Luminosity']],this.csVal(node,'mixBlendMode')||'normal',v=>this.setCS(node,'mixBlendMode',v==='normal'?'':v))),
       this.shadowControl(node,t),
-      h('div',{style:{fontSize:12,color:t.text,margin:'16px 0 8px'}},'Filters'),
+      this.subHead(t,'Filters'),
       h('div',{style:{display:'flex',flexDirection:'column',gap:11}},
         order.map(type=>{ const m=meta[type]; const on=activeMap[type]!=null; const val=on?activeMap[type]:defaults[type];
           return h('div',{key:type,style:{display:'flex',alignItems:'center',gap:10}},
@@ -5586,14 +5597,14 @@ class Component extends DCLogic {
     const easeOpts=[['ease','Ease'],['linear','Linear'],['ease-in','Ease in'],['ease-out','Ease out'],['ease-in-out','Ease in-out']];
     const msField=(v,on)=>h('div',{style:{display:'flex',alignItems:'center',gap:4,height:28,border:'1px solid '+t.border,borderRadius:6,padding:'0 6px',background:t.panel,minWidth:0}}, h('input',{value:v,spellCheck:false,onChange:e=>on(e.target.value),style:{flex:1,minWidth:0,border:'none',background:'none',color:t.text,fontSize:11,outline:'none'}}), h('span',{style:{fontSize:9,color:t.faint}},'ms'));
     return h('div',null,
-      h('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}}, 'Transforms & Transitions', this.stateEditDot(node,['transform','transformOrigin','perspective','transition'],t)),
+      this.blockHead(t,'Transforms & Transitions',{dot:this.stateEditDot(node,['transform','transformOrigin','perspective','transition'],t)}),
       h('div',{style:{marginBottom:10}}, seg),
       h('div',{style:{display:'grid',gridTemplateColumns:axes.map(()=>'1fr').join(' '),gap:8}}, axes.map(ax=>this.prefixField(t,axLabel[ax],xf[tab][ax],v=>setAxis(ax,v)))),
       h('div',{style:{display:'flex',gap:8,marginTop:8}},
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Origin'), this.selectField(t,[['','Center'],['top left','Top left'],['top','Top'],['bottom','Bottom'],['left','Left'],['right','Right']],this.csVal(node,'transformOrigin')||'',v=>this.setCS(node,'transformOrigin',v))),
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Perspective'), this.prefixField(t,'',(this.csVal(node,'perspective')||'').replace(/px$/,''),v=>{ const x=v.trim(); this.setCS(node,'perspective',x===''?'':(/^[0-9.]+$/.test(x)?x+'px':x)); },{placeholder:'none',unit:'px'}))),
       h('div',{style:{height:1,background:t.border,margin:'14px 0 12px'}}),
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}, h('span',{style:{fontSize:12,color:t.text}},'Transitions'),
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}, h('span',{style:{fontSize:11,fontWeight:600,color:t.muted}},'Transitions'),
         h('button',Object.assign({onClick:()=>setTrans(trans.concat({prop:'all',dur:'200',ease:'ease',delay:'0'}))},this.tt('Add transition'),{style:{width:22,height:20,display:'flex',alignItems:'center',justifyContent:'center',background:t.segBg,border:'1px solid '+t.border,borderRadius:5,color:t.muted,cursor:'pointer',fontSize:14,lineHeight:1}}),'+')),
       h('div',{style:{display:'flex',flexDirection:'column',gap:8}}, trans.map((x,i)=>{ const set=(k,v)=>{ const ns=trans.slice(); ns[i]=Object.assign({},ns[i],{[k]:v}); setTrans(ns); };
         return h('div',{key:i,style:{background:t.segBg,border:'1px solid '+t.border,borderRadius:7,padding:8,display:'flex',flexDirection:'column',gap:6}},
