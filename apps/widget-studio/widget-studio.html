@@ -4301,7 +4301,8 @@ class Component extends DCLogic {
     const customs = isRoot ? ((this.tree.classes)||[]) : ((node.classes)||[]);
     const remove=(name)=>{ if(isRoot){ this.tree.classes=(this.tree.classes||[]).filter(x=>x!==name); this.save(); this.forceUpdate(); } else { this.patch(node.id,n=>{ n.classes=(n.classes||[]).filter(x=>x!==name); }); } };
     const add=(raw)=>{ (raw||'').split(/\s+/).forEach(v=>{ v=v.replace(/^\./,'').replace(/[^a-z0-9-_]/gi,''); if(!v) { return; } if(isRoot){ this.tree.classes=this.tree.classes||[]; if(v!==this.baseClass()&&!this.tree.classes.includes(v)) { this.tree.classes.push(v); } } else { this.patch(node.id,n=>{ n.classes=n.classes||[]; if(!n.classes.includes(v)) { n.classes.push(v); } this.migrate(n); }); } }); if(isRoot){ this.save(); } this.forceUpdate(); };
-    const chip=(name,opts)=>{ opts=opts||{}; const pr=opts.primary, auto=opts.auto, editable=opts.editable;
+    const togglePopover=name=>{ const opening=this._clsPopover!==name; this._clsPopover=opening?name:null; this.forceUpdate(); if(opening) { this.pulseClassMembers(name); } };
+    const chip=(name,opts)=>{ opts=opts||{}; const pr=opts.primary, auto=opts.auto, editable=opts.editable; const shared=opts.shareCount>1;
       const renaming = editable && this._renCls && this._renCls.nodeId===node.id && this._renCls.from===name;
       const cur=this._renVal!=null?this._renVal:name;
       const nameEl = renaming
@@ -4314,13 +4315,14 @@ class Component extends DCLogic {
       return h('div',{key:(auto?'a':'c')+name,style:{display:'inline-flex',alignItems:'center',gap:7,height:32,boxSizing:'border-box',fontSize:13,fontFamily:'ui-monospace,monospace',background:pr?t.accentSoft:t.segBg,border:'1px solid '+(pr?(this.dark?t.border:'#bcd6f5'):t.border),color:pr?t.accent:t.muted,padding:(auto||!opts.removable)?'0 12px':'0 8px 0 12px',borderRadius:7,opacity:auto?0.85:1}},
         nameEl,
         pr?h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:'#fff',background:t.accentFill,borderRadius:4,padding:'2px 6px'}},'styled'):null,
+        shared?h('span',Object.assign({onClick:e=>{e.stopPropagation();togglePopover(name);}},this.a11y(()=>togglePopover(name),{label:'Styles '+opts.shareCount+' elements — show list',pressed:this._clsPopover===name}),this.tt('This class styles '+opts.shareCount+' elements'),{style:{cursor:'pointer',fontSize:9.5,fontWeight:700,color:this.dark?'#e0a05f':'#8a6420',background:this.dark?'rgba(217,119,87,.16)':'#f5e8cd',borderRadius:4,padding:'2px 6px'}}),'×'+opts.shareCount):null,
         auto?h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:t.faint,border:'1px solid '+t.border,borderRadius:4,padding:'1px 5px'}},'auto'):null,
         opts.removable?h('span',{onClick:()=>remove(name),...this.a11y(()=>remove(name),{label:'Remove class '+name}),onMouseEnter:e=>{this.showTip('Remove',e.currentTarget);e.currentTarget.style.color=this.dark?'#f85149':'#cf222e';},onMouseLeave:e=>{this.hideTip();e.currentTarget.style.color=t.faint;},onMouseDown:()=>this.hideTip(),onFocus:e=>this.showTip('Remove',e.currentTarget),onBlur:()=>this.hideTip(),style:{cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint,padding:'0 1px',transition:'color .1s'}},'×'):null); };
     const chips=[];
     if(isRoot) { chips.push(chip(this.baseClass(),{primary:true})); }
-    customs.forEach((c,i)=> chips.push(chip(c,{primary: !isRoot && i===0, removable:true, editable:true})) );
+    customs.forEach((c,i)=> chips.push(chip(c,{primary: !isRoot && i===0, removable:true, editable:true, shareCount: (!isRoot&&i===0)?this.cnameUsage(c):0})) );
     fw.forEach(c=>chips.push(chip(c,{auto:true})));
-    if(this._clsNode!==node.id){ this._clsNode=node.id; this._clsTyped=''; this._renCls=null; }
+    if(this._clsNode!==node.id){ this._clsNode=node.id; this._clsTyped=''; this._renCls=null; this._clsPopover=null; }
     const typed=(this._clsTyped||'').replace(/^\./,'');
     const applied=new Set([...(node.classes||[]), this.baseClass(), ...fw]);
     const cands=this.classCandidates().filter(x=>!applied.has(x.name) && (!typed || x.name.toLowerCase().includes(typed.toLowerCase()))).slice(0,7);
@@ -4340,7 +4342,48 @@ class Component extends DCLogic {
           h('span',{style:{flex:1,fontFamily:'ui-monospace,monospace',fontSize:12,color:t.accent,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},'.'+x.name),
           h('span',{style:{fontSize:10,color:t.faint,flexShrink:0}}, x.count?(x.count+' use'+(x.count>1?'s':'')):'styled')))):null,
       chips.length?h('div',{style:{display:'flex',flexWrap:'wrap',gap:5,marginTop:8}}, chips):null,
+      (!isRoot&&this._clsPopover&&customs[0]===this._clsPopover)?this.classSharePopover(node,t,this._clsPopover):null,
       h('div',{style:{fontSize:10.5,color:t.faint,marginTop:8,lineHeight:1.5}}, isRoot?'Base class comes from the widget ID. Style & Layout edits write to it; add extra classes above.':'The first class is the one Style & Layout edits write to. Reuse a name (pick from the list) to share another element\u2019s styling.')
+    );
+  }
+  // Every element whose PRIMARY class is `cls` (mirrors cnameUsage's own counting rule).
+  cnameMembers(cls){ const out=[]; const walk=k=>{ if(k.classes&&k.classes[0]===cls) { out.push(k); } (k.children||[]).forEach(walk); }; walk(this.tree); return out; }
+  // Briefly flashes every element sharing `cls` on the canvas \u2014 an ambient "you're about to affect
+  // these too" signal (design's blast-radius pulse) instead of a confirm dialog. Imperative DOM/CSS
+  // only (same style as measureBox's direct getBoundingClientRect reads elsewhere in this file); no
+  // render-tree plumbing needed since the flash is purely visual and self-clears.
+  pulseClassMembers(cls){ const stage=document.querySelector('.ws-stage'); if(!stage||!cls) { return; }
+    this.cnameMembers(cls).forEach(n=>{ const el=stage.querySelector('[data-node-id="'+n.id+'"]'); if(!el) { return; }
+      const vis=el.firstElementChild||el; vis.style.animation='wsClassChange 900ms ease';
+      setTimeout(()=>{ if(vis.style.animation.indexOf('wsClassChange')===0) { vis.style.animation=''; } },950); }); }
+  // The one-click fork for "this element diverges now": copies the shared class's rules (base +
+  // state + every breakpoint) into a fresh name and repoints just this element at it \u2014 the other
+  // members keep the original class untouched. Unlike splitIfShared (which only auto-forks an
+  // AUTO-generated BEM name the moment an edit diverges it), this is an explicit action the user
+  // reaches for on a class they named/shared on purpose.
+  detachClass(node){ const old=this.primaryClass(node); if(!old) { return; }
+    let n=2, nu=old+'-'+n; while(this.cnameUsage(nu)>0||this.classStyles[nu]) { n++; nu=old+'-'+n; }
+    if(this.classStyles[old]) { this.classStyles[nu]=Object.assign({},this.classStyles[old]); }
+    if(this.stateStyles[old]) { this.stateStyles[nu]=JSON.parse(JSON.stringify(this.stateStyles[old])); }
+    Object.keys(this.responsive||{}).forEach(bp=>{ const m=this.responsive[bp]; if(m&&m[old]) { m[nu]=Object.assign({},m[old]); } });
+    this.patch(node.id,nd=>{ nd.classes=nd.classes||[]; nd.classes[0]=nu; });
+    this._clsPopover=null; this.save(); this.forceUpdate(); }
+  // The \u00d7N chip's popover: every other element this class also styles, a hover-preview pulse, and the
+  // two actions the design calls for \u2014 Rename (existing flow) and Detach \u2192 new class (above).
+  classSharePopover(node,t,cls){ const h=React.createElement; const members=this.cnameMembers(cls);
+    const rename=()=>{ this._clsPopover=null; this.startRename(node,cls); };
+    const detach=()=>this.detachClass(node);
+    return h('div',{onMouseDown:e=>e.stopPropagation(),style:{marginTop:8,background:this.dark?'rgba(217,119,87,.08)':'#fffdf7',border:'1px solid '+(this.dark?'#5c3a28':'#e8d5ae'),borderRadius:8,padding:8}},
+      h('div',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:this.dark?'#e0a05f':'#8a6420',padding:'2px 4px 6px'}}, 'This class styles '+members.length+' elements'),
+      members.map(m=>{ const isSelf=m.id===node.id;
+        const go=()=>{ if(!isSelf) { this.select(m.id); } this._clsPopover=null; this.forceUpdate(); };
+        return h('div',Object.assign({key:m.id,onMouseEnter:()=>this.pulseClassMembers(cls),onClick:go},this.a11y(go,{label:(isSelf?'Currently selected: ':'Select ')+this.nodeLabel(m)}),
+          {style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,padding:'6px 8px',borderRadius:6,cursor:isSelf?'default':'pointer',background:isSelf?t.accentSoft:'transparent'}}),
+          h('span',{style:{fontSize:12,fontFamily:'ui-monospace,monospace',color:isSelf?t.accent:t.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, this.nodeLabel(m)),
+          isSelf?h('span',{style:{fontSize:9.5,color:t.faint,flexShrink:0}},'selected'):null); }),
+      h('div',{style:{display:'flex',gap:14,marginTop:6,paddingTop:8,borderTop:'1px solid '+(this.dark?'#5c3a28':'#e8d5ae')}},
+        h('div',Object.assign({onClick:rename},this.a11y(rename,{label:'Rename class'}),{style:{cursor:'pointer',fontSize:11.5,color:t.accent,fontWeight:600}}),'Rename\u2026'),
+        h('div',Object.assign({onClick:detach},this.a11y(detach,{label:'Detach into a new class'}),this.tt('Fork this element\u2019s styles into their own class'),{style:{cursor:'pointer',fontSize:11.5,color:t.accent,fontWeight:600}}),'Detach \u2192 new class'))
     );
   }
 
@@ -4897,7 +4940,23 @@ class Component extends DCLogic {
     return h('div',null,els); }
   // Flex child (reference): Align self, Sizing (auto/fill/grow/shrink/fixed/custom → grow+shrink+basis), Order.
   // Both rows are icon-tiles (this.iconRow), not word pills — matches Display/Direction/Justify/Align.
-  flexChild(node,t){ const h=React.createElement;
+  // Wraps flex/grid child-placement controls in a tinted block naming the parent — the fix for
+  // "actually I wanted to change the gap" is one click on the chip (selects the parent), not a trip
+  // back up the Layers tree. The one-line summary reads the parent's OWN layout, not this element's.
+  inParentBlock(parent,t,body){ const h=React.createElement;
+    const pc=this.primaryClass(parent); const disp=this.effectiveStyle(parent).display;
+    const go=()=>this.select(parent.id);
+    const summary=disp==='flex'
+      ? [this.csVal(parent,'flexDirection')||'row', (this.csVal(parent,'gap')||this.csVal(parent,'columnGap'))?('gap '+(this.csVal(parent,'gap')||this.csVal(parent,'columnGap'))):null].filter(Boolean).join(' · ')
+      : 'grid';
+    return h('div',{style:{marginTop:10,border:'1px solid '+(this.dark?'#1c3a52':'#bcd6f5'),borderRadius:7,background:t.accentSoft,padding:'8px 9px 9px'}},
+      h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:9}},
+        h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:t.accent,background:this.dark?'rgba(88,166,255,.18)':'#dbe7f7',borderRadius:4,padding:'2px 6px',flexShrink:0}},'In parent'),
+        h('span',Object.assign({onClick:go},this.a11y(go,{label:'Select parent '+this.nodeLabel(parent)}),this.tt('Select the parent'),{style:{cursor:'pointer',fontSize:12,fontFamily:'ui-monospace,monospace',color:t.accent,background:t.panel,border:'1px solid '+(this.dark?t.border:'#bcd6f5'),borderRadius:5,padding:'2px 7px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}), pc?('.'+pc):this.nodeLabel(parent)),
+        h('span',{style:{fontSize:10.5,color:t.muted,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, summary)),
+      body);
+  }
+  flexChild(node,t,parent){ const h=React.createElement;
     const gr=this.csVal(node,'flexGrow'), sh=this.csVal(node,'flexShrink'), fb=this.csVal(node,'flexBasis');
     const grV=gr||'', shV=sh||'';
     // 'fixed' (0/0/<basis>) and a manually-dialed-in 'custom' can land on the exact same grow/shrink
@@ -4920,8 +4979,7 @@ class Component extends DCLogic {
       else { this.setCS(node,'flexGrow',grV||'0'); this.setCS(node,'flexShrink',shV||'1'); } };
     const as=this.csVal(node,'alignSelf')||'auto';
     const A=this.autoGlyph(), fi=n=>this.flexIcon(n,18);
-    return h('div',null,
-      h('div',{style:{fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}},'Flex child'),
+    const body=h('div',null,
       this.subHead(t,'Align self',true),
       this.iconRow(t,[{v:'auto',title:'Auto',icon:A},{v:'flex-start',title:'Start',icon:fi('a-flex-start')},{v:'center',title:'Center',icon:fi('a-center')},{v:'flex-end',title:'End',icon:fi('a-flex-end')},{v:'stretch',title:'Stretch',icon:fi('a-stretch')}],as,v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self'),
       h('div',{style:{marginTop:14}}, this.subHead(t,'Sizing',true),
@@ -4930,7 +4988,10 @@ class Component extends DCLogic {
         sizeVal==='custom'?h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}},
           h('div',null,this.lbl(t,'Grow'),this.rawField(t,node,'flexGrow','0')),
           h('div',null,this.lbl(t,'Shrink'),this.rawField(t,node,'flexShrink','1'))):null),
-      h('div',{style:{marginTop:12}}, this.lbl(t,'Order'), this.rawField(t,node,'order','0'))); }
+      h('div',{style:{marginTop:12}}, this.lbl(t,'Order'), this.rawField(t,node,'order','0')));
+    return h('div',null,
+      h('div',{style:{fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}},'Flex child'),
+      parent?this.inParentBlock(parent,t,body):body); }
   // Box-model inset editor for position offsets — same trapezoid look as spacingDiagram, "Itself" center.
   insetBox(node,t){ const h=React.createElement;
     const inp=(prop,posStyle)=>{ const cur=(this.csVal(node,prop)||'').toString().replace(/px$/,''); return h('input',{value:cur,placeholder:'auto',spellCheck:false,onChange:e=>{ const v=e.target.value.trim(); this.setCS(node,prop,v===''?'':(/^[-0-9.]+$/.test(v)?v+'px':v)); },style:Object.assign({textAlign:'center',border:'none',background:'transparent',color:t.muted,fontSize:10.5,outline:'none'},posStyle)}); };
@@ -5037,8 +5098,8 @@ class Component extends DCLogic {
     const r=this.find(node.id); const parent=r&&r.parent;
     const pgrid = parent && this.effectiveStyle(parent).display==='grid';
     if(pgrid){
-      els.push(h('div',{style:{fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}},'Grid child'));
-      els.push(h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}},
+      const gridBody=[];
+      gridBody.push(h('div',{key:'cr',style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}},
         h('div',null,this.lbl(t,'Column start'),this.rawField(t,node,'gridColumnStart','auto')),
         h('div',null,this.lbl(t,'Span'),this.spanField(t,node,'gridColumnEnd')),
         h('div',{style:{marginTop:2}},this.lbl(t,'Row start'),this.rawField(t,node,'gridRowStart','auto')),
@@ -5046,14 +5107,17 @@ class Component extends DCLogic {
       // Same icon language as the Flex-child rows (rails + item bar) — these were text dropdowns,
       // which left Grid child visually inconsistent with its Flex-child sibling section.
       const gIc=n=>this.flexIcon(n,18); const gA=this.autoGlyph();
-      els.push(h('div',{style:{marginTop:10}}, this.subHead(t,'Justify self',true),
+      gridBody.push(h('div',{key:'js',style:{marginTop:10}}, this.subHead(t,'Justify self',true),
         this.iconRow(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('j-stretch')}],this.csVal(node,'justifySelf')||'auto',v=>this.setCS(node,'justifySelf',v==='auto'?'':v),'Justify self')));
-      els.push(h('div',{style:{marginTop:14}}, this.subHead(t,'Align self',true),
+      gridBody.push(h('div',{key:'as',style:{marginTop:14}}, this.subHead(t,'Align self',true),
         this.iconRow(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('a-stretch')}],this.csVal(node,'alignSelf')||'auto',v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self')));
+      els.push(h('div',{key:'gridwrap',style:{marginTop:20,paddingTop:16,borderTop:'1px solid '+t.border}},
+        h('div',{style:{fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'0 0 12px'}},'Grid child'),
+        this.inParentBlock(parent,t,h('div',null,gridBody))));
     }
     // ---- flex-item options (when this element sits inside a flex parent) — reference: Flex child ----
     const pflex=parent && this.effectiveStyle(parent).display==='flex';
-    if(pflex){ els.push(this.flexChild(node,t)); }
+    if(pflex){ els.push(this.flexChild(node,t,parent)); }
     // ---- spacing (padding & margin \u2014 the most-used box controls, so shown first & prominent) ----
     els.push(this.subHead(t,'Spacing'));
     els.push(this.spacingDiagram(node,t));
