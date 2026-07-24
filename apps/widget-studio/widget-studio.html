@@ -4254,36 +4254,61 @@ class Component extends DCLogic {
         return h('button',{key:g,onClick:()=>setGrain(g),...this.tt(tt[g]),
           style:{width:26,height:24,display:'inline-flex',alignItems:'center',justifyContent:'center',border:'none',borderLeft:i?'1px solid '+t.border:'none',borderRadius:(first?'5px 0 0 5px':last?'0 5px 5px 0':'0'),cursor:on?'default':'pointer',background:on?t.accentSoft:t.panel,color:on?t.accent:t.muted,padding:0}}, this.grainIcon(g)); }));
   }
-  // Gap, built on the spaceField/grainSwitch field system (searchable spacing-token dropdown + free-typed
-  // manual entry, small icon-only granularity switch) — Padding/Margin now live in the spacingDiagram
-  // instead, but Gap keeps this labeled-row form since it has no per-side concept to diagram.
-  // Space-token options formatted as the design's "md · 16" (token name · px), plus a leading None · 0.
-  gapTokenOptions(){ const opts=[['','None · 0']];
-    this.spaceTokens().forEach(tk=>{ const step=tk.step||tk.name.replace('sp-space--',''); opts.push(['var(--'+tk.name+')', step+' · '+(parseFloat(tk.value)||0), tk.value]); });
-    return opts; }
-  // Gap — a token dropdown ("md · 16") with a link/unlink padlock. Linked writes `gap`; separated splits into
-  // C (column-gap) and R (row-gap) rows, each its own dropdown (matches the approved design).
+  // Gap — the token combo-field (below), with a link/unlink padlock. Linked writes `gap`; separated splits
+  // into C (column-gap) and R (row-gap) rows, each its own combo-field. Previously its own bespoke "md · 16"
+  // dropdown + free-text pair — now the same field every other tokenized length in the panel uses.
   gapBlock(node,t){ const h=React.createElement;
     const rg=(this.csVal(node,'rowGap')||'').toString(), cg=(this.csVal(node,'columnGap')||'').toString();
     const linked = !(rg||cg);
-    const opts=this.gapTokenOptions();
-    const sel=(idKey,val,onPick)=>h('div',{style:{flex:1,minWidth:0}}, this.xselect('gap:'+idKey+':'+node.id,t,val,opts,onPick,{mono:true,height:30,onFreeText:onPick}));
+    const gapToks=this.spaceTokens();
+    const sel=(idKey,key)=>h('div',{style:{flex:1,minWidth:0}}, this.comboField('gap:'+idKey+':'+node.id,t,node,key,{tokens:gapToks,ghost:'normal',unsetLabel:'normal'}));
     const toggle=()=>{ if(linked){ const val=this.csVal(node,'gap')||''; this.setCS(node,'gap',''); this.setCS(node,'columnGap',val||'0px'); this.setCS(node,'rowGap',val||'0px'); }
       else { const val=cg||rg||(this.csVal(node,'gap')||''); this.setCS(node,'rowGap',''); this.setCS(node,'columnGap',''); this.setCS(node,'gap',val); } this.forceUpdate(); };
     const lockBtn=h('button',Object.assign({onClick:toggle},this.tt(linked?{h:'Row & column linked',b:'Click to set separately'}:{h:'Row & column separate',b:'Click to link'}),{style:{width:24,height:30,flex:'0 0 auto',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:6,cursor:'pointer',background:'none',border:'none',color:linked?t.accent:t.faint,padding:0}}), this.lockGlyph(linked));
     const cLbl=h('span',{style:{fontSize:9,color:t.faint,width:12,flex:'0 0 auto'}},'C');
     const rLbl=h('span',{style:{fontSize:9,color:t.faint,width:12,flex:'0 0 auto'}},'R');
     const body = linked
-      ? h('div',{style:{display:'flex',alignItems:'center',gap:6,minWidth:0}}, sel('all',this.csVal(node,'gap')||'',v=>this.setCS(node,'gap',v)), lockBtn)
+      ? h('div',{style:{display:'flex',alignItems:'center',gap:6,minWidth:0}}, sel('all','gap'), lockBtn)
       : h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
-          h('div',{style:{display:'flex',alignItems:'center',gap:6,minWidth:0}}, cLbl, sel('col',cg,v=>this.setCS(node,'columnGap',v)), lockBtn),
-          h('div',{style:{display:'flex',alignItems:'center',gap:6,minWidth:0}}, rLbl, sel('row',rg,v=>this.setCS(node,'rowGap',v)), h('span',{style:{width:24,flex:'0 0 auto'}})));
+          h('div',{style:{display:'flex',alignItems:'center',gap:6,minWidth:0}}, cLbl, sel('col','columnGap'), lockBtn),
+          h('div',{style:{display:'flex',alignItems:'center',gap:6,minWidth:0}}, rLbl, sel('row','rowGap'), h('span',{style:{width:24,flex:'0 0 auto'}})));
     return h('div',null, this.subHead(t,'Gap'), body);
   }
-  dimControl(t,node,key,presets){ const h=React.createElement; const cur=this.csVal(node,key);
-    return h('div',null,
-      this.numField(t,node,key,'auto'),
-      h('div',{role:'group','aria-label':key+' presets',style:{display:'flex',gap:4,marginTop:5}}, presets.map(p=>{ const on=cur===p.v; const pick=()=>this.setCS(node,key,on?'':p.v); return h('div',{key:p.v,onClick:pick,...this.a11y(pick,{pressed:on,label:p.l+' '+key}),style:{flex:1,textAlign:'center',padding:'3px 0',fontSize:10.5,fontWeight:on?600:500,borderRadius:5,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}},p.l); })));
+  // The token combo-field primitive — one field grammar for every tokenized length in the panel (Gap, Size,
+  // min/max — more to follow as the rest of the panel adopts it). Menu order is filtered tokens → a raw-parse
+  // row synthesized from whatever's typed → Unset, so a lazy Enter lands on a token whenever the typed text
+  // plausibly matches one (xselect's own substring filter already matches token step names AND resolved px
+  // values, so typing "16" surfaces the "md" token that resolves to 16px). A bare number gets the property's
+  // default unit in the raw row ("18" → offers "18px"); the typed unit always wins, and there's no separate
+  // unit dropdown, ever. A set token value renders as an atomic accent chip — Backspace on the closed field
+  // deletes the whole chip back to empty text, never edits mid-name (xselect's chipTokens/ghost opts). An
+  // unset field ghosts the real CSS default via opts.ghost. opts.keywords are CSS keywords (auto, 100%, …)
+  // offered above the token list — plain mono like any raw value, never chips (they're real CSS, not tokens).
+  comboField(ddKey,t,node,key,opts){ opts=opts||{};
+    const value=(this.csVal(node,key)||'').toString();
+    const toks=(opts.tokens||this.spaceTokens()).slice().sort((a,b)=>(parseFloat(a.value)||0)-(parseFloat(b.value)||0));
+    const kwOpts=(opts.keywords||[]).map(k=>[k.v,k.l]);
+    const tokOpts=toks.map(tk=>['var(--'+tk.name+')', tk.step||tk.name.replace(/^sp-space--/,''), tk.value]);
+    let options=kwOpts.concat(tokOpts);
+    // The committed value, when it isn't one of the keyword/token options above, gets its own matchable row —
+    // so the CLOSED trigger always finds it as `cur` and renders the literal text (e.g. "18px"). Without this,
+    // xselect falls through to its generic onFreeText display fallback, which strips a trailing "px" — a rule
+    // that made sense for the old unit-implied numeric fields but is wrong here: a raw combo-field value should
+    // read exactly as typed, same as a token reads as its exact chip.
+    if(value && !options.some(o=>String(o[0])===value)) { options=options.concat([[value,value]]); }
+    const open=this._ddOpen===ddKey; const q=open?(this._ddSearch||''):'';
+    const writeRaw=raw=>{ const trimmed=(raw||'').trim(); if(!trimmed) { return ''; }
+      const isBareNum=/^-?[0-9.]+$/.test(trimmed); return (isBareNum&&!this.UNITLESS_KEYS[key])?trimmed+'px':trimmed; };
+    if(q.trim() && q.trim().indexOf('var(--')!==0){
+      const rawVal=writeRaw(q);
+      if(rawVal && rawVal!==value && this.cssAccepts(key,rawVal) && !options.some(o=>String(o[1]).toLowerCase()===rawVal.toLowerCase())) {
+        options=options.concat([[rawVal,rawVal,'raw · Enter']]);
+      }
+    }
+    options=options.concat([['', opts.unsetLabel||'Unset']]);
+    const write=v=>this.setCS(node,key,v);
+    return this.xselect(ddKey,t,value,options,write,{mono:true,search:true,height:opts.height||30,fontSize:opts.fontSize,
+      onFreeText:raw=>write(writeRaw(raw)), chipTokens:true, ghost:true, placeholder:opts.ghost, menuMinWidth:opts.menuMinWidth});
   }
   swatchRow(t,node,key,colors){ const h=React.createElement; const cur=(this.csVal(node,key)||'').toLowerCase();
     return h('div',{style:{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}},
@@ -5143,12 +5168,20 @@ class Component extends DCLogic {
     els.push(this.subHead(t,'Spacing'));
     els.push(this.spacingDiagram(node,t));
     // ---- size (dense: width/height + min/max always visible, no disclosure) ----
+    // Keyword-grouped token-fields (Controls Spec §1.6): presets are menu rows, not a separate tile row —
+    // "auto"/"full"/"fit-content" render as plain mono keywords above the token list, so a $token width has
+    // a seat in the same field instead of losing to a fixed set of preset buttons.
+    const lenToks=(this.tokens||[]).filter(x=>x.type==='size'||x.type==='space');
     els.push(this.subHead(t,'Size'));
     els.push(this.row2(
-      h('div',null,this.lbl(t,'Width'),this.dimControl(t,node,'width',[{v:'auto',l:'Auto'},{v:'100%',l:'Full'},{v:'fit-content',l:'Fit'}])),
-      h('div',null,this.lbl(t,'Height'),this.dimControl(t,node,'height',[{v:'auto',l:'Auto'},{v:'100%',l:'Full'}]))));
-    els.push(h('div',{style:{marginTop:10}}, this.row2(h('div',null,this.lbl(t,'Min width'),this.numField(t,node,'minWidth','auto')),h('div',null,this.lbl(t,'Max width'),this.numField(t,node,'maxWidth','none')))));
-    els.push(h('div',{style:{marginTop:10}}, this.row2(h('div',null,this.lbl(t,'Min height'),this.numField(t,node,'minHeight','auto')),h('div',null,this.lbl(t,'Max height'),this.numField(t,node,'maxHeight','none')))));
+      h('div',null,this.lbl(t,'Width'),this.comboField('cf:width:'+node.id,t,node,'width',{tokens:lenToks,keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'},{v:'fit-content',l:'fit-content'}],ghost:'auto'})),
+      h('div',null,this.lbl(t,'Height'),this.comboField('cf:height:'+node.id,t,node,'height',{tokens:lenToks,keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'}],ghost:'auto'}))));
+    els.push(h('div',{style:{marginTop:10}}, this.row2(
+      h('div',null,this.lbl(t,'Min width'),this.comboField('cf:minWidth:'+node.id,t,node,'minWidth',{tokens:lenToks,ghost:'auto',unsetLabel:'auto'})),
+      h('div',null,this.lbl(t,'Max width'),this.comboField('cf:maxWidth:'+node.id,t,node,'maxWidth',{tokens:lenToks,ghost:'none',unsetLabel:'none'})))));
+    els.push(h('div',{style:{marginTop:10}}, this.row2(
+      h('div',null,this.lbl(t,'Min height'),this.comboField('cf:minHeight:'+node.id,t,node,'minHeight',{tokens:lenToks,ghost:'auto',unsetLabel:'auto'})),
+      h('div',null,this.lbl(t,'Max height'),this.comboField('cf:maxHeight:'+node.id,t,node,'maxHeight',{tokens:lenToks,ghost:'none',unsetLabel:'none'})))));
     // ---- children sizing (containers) — reference: Size → Children select ----
     if(this.canHaveChildren(node)){
       const ai=this.csVal(node,'alignItems')||'';
@@ -6177,15 +6210,29 @@ class Component extends DCLogic {
     // Typing a printable character while the (closed) trigger has focus — e.g. tabbed to, not clicked —
     // opens the dropdown AND seeds the search with that character, so the first keystroke isn't swallowed.
     // Every keystroke after that lands in the now-mounted, autofocused search <input> normally.
+    // opts.chipTokens: a var(--token) value renders as an accent pill (atomic — Backspace on the closed
+    // trigger deletes the whole chip back to empty text) instead of plain label text, so a token value is
+    // visually distinct from a typed raw one at a glance (the combo-field primitive's "chip vs plain" rule).
+    const isChipVal = opts.chipTokens && String(value||'').indexOf('var(--')===0;
     const triggerKeyDown=e=>{
+      if(e.key==='Backspace' && !open && isChipVal){ e.preventDefault(); onChange(''); return; }
       if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){ e.preventDefault(); openIt(e); return; }
       if(!open && searchable && e.key.length===1 && !e.ctrlKey && !e.metaKey && !e.altKey){
         e.preventDefault(); openIt(e); this._ddSearch=e.key; this._ddHi=0; this.forceUpdate(); }
     };
+    // opts.ghost: when unset, show opts.placeholder as an italic ghost (the real CSS default) rather than
+    // blank — the combo-field primitive's "unset state" rule.
+    const valueSpan = isChipVal
+      ? h('span',{style:{flex:1,minWidth:0,display:'flex'}}, h('span',{style:{padding:'2px 7px',borderRadius:10,background:t.accentSoft,color:t.accent,fontWeight:600,fontSize:opts.fontSize?opts.fontSize-0.5:12,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, cur?cur.label:''))
+      : h('span',{style:{flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontStyle:(opts.ghost&&!value)?'italic':'normal',color:(opts.ghost&&!value)?t.faint:fg}},
+          // opts.ghost wins over a matched item when the value is empty — a caller's own "Unset" menu row
+          // (a real, clickable option with v:'') would otherwise be found as `cur` and its label shown as if
+          // it were the set value, instead of ghosting the real CSS default via opts.placeholder.
+          // A value that doesn't match any listed option is invisible by default (blank trigger) — but for
+          // onFreeText callers that's a legitimate manually-typed value, not a stale/invalid state, so show it.
+          (opts.ghost&&!value)?(opts.placeholder||''):(cur?cur.label:((opts.onFreeText&&value)?String(value).replace(/px$/,''):(opts.placeholder||''))));
     const trigger=h('div',Object.assign({onClick:openIt},this.a11y(e=>openIt(e),{role:'combobox',label:opts.label}),{onKeyDown:triggerKeyDown,'aria-expanded':String(open),'aria-haspopup':'listbox',style:{display:'flex',alignItems:'center',gap:cmp?3:6,height:opts.height||30,minWidth:0,border:'1px solid '+(open?t.accent:bd),borderRadius:6,padding:cmp?'0 4px':'0 8px',fontSize:opts.fontSize||12.5,color:fg,fontWeight:opts.fontWeight||400,background:bg,cursor:'pointer',boxSizing:'border-box',width:'100%',fontFamily:opts.mono?'ui-monospace,monospace':'inherit'}}),
-      // A value that doesn't match any listed option is invisible by default (blank trigger) — but for
-      // onFreeText callers that's a legitimate manually-typed value, not a stale/invalid state, so show it.
-      h('span',{style:{flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}, cur?cur.label:((opts.onFreeText&&value)?String(value).replace(/px$/,''):(opts.placeholder||''))),
+      valueSpan,
       h('span',{style:{flexShrink:0,marginLeft:cmp?-1:0,color:dark?'#7d8590':t.faint,display:'inline-flex'}}, this.chev('down',cmp?8:10)));
     let menu=null;
     if(open){ const r=this._ddRect||{left:0,top:0,bottom:0,width:200}; const flipUp=r.bottom>window.innerHeight-280;
