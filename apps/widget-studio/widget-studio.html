@@ -5007,7 +5007,15 @@ class Component extends DCLogic {
       parent?this.inParentBlock(parent,t,body):body); }
   // Box-model inset editor for position offsets — same trapezoid look as spacingDiagram, "Itself" center.
   insetBox(node,t){ const h=React.createElement;
-    const inp=(prop,posStyle)=>{ const cur=(this.csVal(node,prop)||'').toString().replace(/px$/,''); return h('input',{value:cur,placeholder:'auto',spellCheck:false,onChange:e=>{ const v=e.target.value.trim(); this.setCS(node,prop,v===''?'':(/^[-0-9.]+$/.test(v)?v+'px':v)); },style:Object.assign({textAlign:'center',border:'none',background:'transparent',color:t.muted,fontSize:10.5,outline:'none'},posStyle)}); };
+    // Same validate-before-write path as numField/rawField (cssAccepts + fieldErr) — these ARE real
+    // CSS properties (top/right/bottom/left), so nothing extra to invent; previously any typed text
+    // that wasn't a plain number was written straight through unchecked, junk and all.
+    const inp=(prop,posStyle)=>{ const err=this.fieldErr(node,prop); const cur=(this.csVal(node,prop)||'').toString().replace(/px$/,'');
+      return h('input',{value:err!=null?err:cur,placeholder:'auto',spellCheck:false,
+        onChange:e=>{ const v=e.target.value.trim(); const stored=v===''?'':(/^[-0-9.]+$/.test(v)?v+'px':v);
+          if(this.cssAccepts(prop,stored)) { this.clearFieldErr(node,prop); this.setCS(node,prop,stored); } else { this.setFieldErr(node,prop,e.target.value); } },
+        onBlur:()=>this.clearFieldErr(node,prop),
+        style:Object.assign({textAlign:'center',border:'none',background:'transparent',color:err!=null?this.errClr():t.muted,fontSize:10.5,outline:'none'},posStyle)}); };
     const mgTop=this.dark?'#232a33':'#f6f7f9', mgSide=this.dark?'#1d232b':'#eef0f2', mgBot=this.dark?'#161b21':'#e7e9ec';
     const contentBg=this.dark?'#0d1117':'#fff';
     return h('div',{style:{borderRadius:9,overflow:'hidden',border:'1px solid '+t.border}},
@@ -5365,15 +5373,29 @@ class Component extends DCLogic {
     const m=cur.match(/^(-?[\d.]+)px\s+(-?[\d.]+)px\s+([\d.]+)px\s+(.+)$/);
     if(m){ x=m[1]; y=m[2]; blur=m[3]; const sp=this.splitColorAlpha(m[4].trim()); color=sp.hex; alpha=sp.alpha; }
     const write=(nx,ny,nb,ncolor,nalpha)=>{ const colv=this.composeColorAlpha(ncolor,nalpha); this.setCS(node,'textShadow',(nx||'0')+'px '+(ny||'0')+'px '+(nb||'0')+'px '+colv); };
-    const num=(label,v,on)=>this.prefixField(t,label,v,on);
+    // Same validate-before-write treatment as shadowControl's manual box-shadow editor — these were
+    // the one raw, unchecked set of fields left in Typography.
+    this._tsErr=this._tsErr||{}; const ek=f=>node.id+'|ts|'+f;
+    const num=(label,field,v,on,allowNeg)=>{ const key=ek(field); const err=this._tsErr[key]; const re=allowNeg?/^-?\d*\.?\d*$/:/^\d*\.?\d*$/;
+      const commit=raw=>{ if(re.test(raw.trim())) { delete this._tsErr[key]; on(raw.trim()); } else { this._tsErr[key]=raw; this.forceUpdate(); } };
+      return h('div',{style:{display:'flex',alignItems:'center',gap:5,height:30,border:'1px solid '+(err!=null?this.errClr():t.border),borderRadius:6,padding:'0 8px',background:t.panel,minWidth:0}},
+        h('span',{style:{fontSize:10,color:t.faint,flex:'0 0 auto'}},label),
+        h('input',{value:err!=null?err:v,spellCheck:false,onChange:e=>commit(e.target.value),onBlur:()=>{ if(err!=null) { delete this._tsErr[key]; this.forceUpdate(); } },style:{flex:1,minWidth:0,border:'none',background:'none',color:err!=null?this.errClr():t.text,fontSize:12,outline:'none'}})); };
+    const cErr=this._tsErr[ek('color')], aErr=this._tsErr[ek('alpha')];
     return h('div',null,
       this.lbl(t,'Text shadow'),
       h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}},
-        num('X',x,v=>write(v,y,blur,color,alpha)), num('Y',y,v=>write(x,v,blur,color,alpha)), num('Blur',blur,v=>write(x,y,v,color,alpha))),
-      h('div',{style:{display:'flex',alignItems:'center',gap:7,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',background:t.panel,marginTop:6}},
-        h('span',{style:{width:18,height:18,borderRadius:4,border:'1px solid '+t.border,flex:'0 0 auto',background:this.composeColorAlpha(color,alpha)}}),
-        h('input',{value:color,spellCheck:false,onChange:e=>write(x,y,blur,e.target.value.trim(),alpha),style:{flex:1,minWidth:0,border:'none',background:'none',color:t.text,fontSize:12,fontFamily:'ui-monospace,monospace',outline:'none',textTransform:'uppercase'}}),
-        h('input',{value:alpha+'%',spellCheck:false,onChange:e=>write(x,y,blur,color,e.target.value.replace('%','')),style:{width:36,flex:'0 0 auto',border:'none',background:'none',color:t.muted,fontSize:11,textAlign:'right',outline:'none'}}))); }
+        num('X','x',x,v=>write(v,y,blur,color,alpha),true), num('Y','y',y,v=>write(x,v,blur,color,alpha),true), num('Blur','blur',blur,v=>write(x,y,v,color,alpha),false)),
+      h('div',{style:{display:'flex',alignItems:'center',gap:7,height:30,border:'1px solid '+(cErr!=null?this.errClr():t.border),borderRadius:6,padding:'0 8px',background:t.panel,marginTop:6}},
+        h('span',{style:{width:18,height:18,borderRadius:4,border:'1px solid '+t.border,flex:'0 0 auto',background:this.isColor(color)?this.composeColorAlpha(color,alpha):'transparent'}}),
+        h('input',{value:cErr!=null?cErr:color,spellCheck:false,
+          onChange:e=>{ const v=e.target.value; if(this.cssAccepts('color',v.trim())) { delete this._tsErr[ek('color')]; write(x,y,blur,v.trim(),alpha); } else { this._tsErr[ek('color')]=v; this.forceUpdate(); } },
+          onBlur:()=>{ if(cErr!=null) { delete this._tsErr[ek('color')]; this.forceUpdate(); } },
+          style:{flex:1,minWidth:0,border:'none',background:'none',color:cErr!=null?this.errClr():t.text,fontSize:12,fontFamily:'ui-monospace,monospace',outline:'none',textTransform:'uppercase'}}),
+        h('input',{value:aErr!=null?aErr:alpha+'%',spellCheck:false,
+          onChange:e=>{ const raw=e.target.value; const v=raw.replace('%',''); if(v.trim()===''||/^\d{1,3}$/.test(v.trim())) { delete this._tsErr[ek('alpha')]; write(x,y,blur,color,v); } else { this._tsErr[ek('alpha')]=raw; this.forceUpdate(); } },
+          onBlur:()=>{ if(aErr!=null) { delete this._tsErr[ek('alpha')]; this.forceUpdate(); } },
+          style:{width:36,flex:'0 0 auto',border:'none',background:'none',color:aErr!=null?this.errClr():t.muted,fontSize:11,textAlign:'right',outline:'none'}}))); }
   typographyBlock(node,t){ const h=React.createElement;
     const famOpts=[['','System'],['Inter, system-ui, sans-serif','Inter'],['Georgia, serif','Georgia'],['ui-monospace, SFMono-Regular, monospace','Monospace']];
     const wRaw=this.csVal(node,'fontWeight')||''; const w=(wRaw==='normal'||wRaw==='400')?'':(wRaw==='bold'?'700':wRaw);
@@ -5436,13 +5458,28 @@ class Component extends DCLogic {
     if(type==='solid'){ body.push(h('div',{key:'solid'}, this.colorInlineField(t,node,'background',{placeholder:'#1F8FFF'}))); }
     else if(type==='gradient'){ const g=this.parseGradient(this.csVal(node,'background')||'');
       const setG=(angle,stops)=>this.setCS(node,'background',this.composeGradient(angle,stops));
-      const swatch=c=>({width:16,height:16,borderRadius:4,border:'1px solid '+t.border,flex:'0 0 auto',background:c});
+      const swatch=c=>({width:16,height:16,borderRadius:4,border:'1px solid '+t.border,flex:'0 0 auto',background:this.isColor(c)?c:'transparent'});
+      // Each stop's color/position validate before writing (same cssAccepts check as every other
+      // field in the panel) — previously these were the one raw, unchecked pair left in the whole
+      // Background block. No per-node key fits an array index, so errors are tracked in a small
+      // local map keyed by stop index instead of the shared fieldErr (which is keyed by node+prop).
+      this._gradErr=this._gradErr||{};
+      const gErrKey=(i,f)=>node.id+'|'+i+'|'+f;
       body.push(h('div',{key:'preview',style:{height:34,borderRadius:6,border:'1px solid '+t.border,background:this.composeGradient(g.angle,g.stops)}}));
-      body.push(h('div',{key:'stops',style:{display:'flex',flexDirection:'column',gap:6,marginTop:8}}, g.stops.map((s,i)=>h('div',{key:i,style:{display:'flex',alignItems:'center',gap:7,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',background:t.panel,minWidth:0}},
+      body.push(h('div',{key:'stops',style:{display:'flex',flexDirection:'column',gap:6,marginTop:8}}, g.stops.map((s,i)=>{
+        const cErr=this._gradErr[gErrKey(i,'c')], pErr=this._gradErr[gErrKey(i,'p')];
+        return h('div',{key:i,style:{display:'flex',alignItems:'center',gap:7,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',background:t.panel,minWidth:0}},
         h('span',{style:swatch(s.color)}),
-        h('input',{value:s.color,spellCheck:false,onChange:e=>{ const ns=g.stops.slice(); ns[i]=Object.assign({},ns[i],{color:e.target.value}); setG(g.angle,ns); },style:{flex:1,minWidth:0,border:'none',background:'none',color:t.text,fontSize:11,fontFamily:'ui-monospace,monospace',outline:'none'}}),
-        h('input',{value:s.pos,spellCheck:false,onChange:e=>{ const ns=g.stops.slice(); ns[i]=Object.assign({},ns[i],{pos:e.target.value}); setG(g.angle,ns); },style:{width:44,flex:'0 0 auto',border:'none',background:'none',color:t.muted,fontSize:11,textAlign:'right',outline:'none'}}),
-        h('span',{onClick:()=>{ if(g.stops.length>2){ const ns=g.stops.slice(); ns.splice(i,1); setG(g.angle,ns); } },...this.a11y(()=>{ if(g.stops.length>2){ const ns=g.stops.slice(); ns.splice(i,1); setG(g.angle,ns); } },{label:'Remove color stop '+(i+1)}),style:{display:g.stops.length>2?'flex':'none',cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint,flex:'0 0 auto'}},'×')))));
+        h('input',{value:cErr!=null?cErr:s.color,spellCheck:false,
+          onChange:e=>{ const v=e.target.value; if(this.cssAccepts('color',v.trim())) { delete this._gradErr[gErrKey(i,'c')]; const ns=g.stops.slice(); ns[i]=Object.assign({},ns[i],{color:v}); setG(g.angle,ns); } else { this._gradErr[gErrKey(i,'c')]=v; this.forceUpdate(); } },
+          onBlur:()=>{ if(cErr!=null) { delete this._gradErr[gErrKey(i,'c')]; this.forceUpdate(); } },
+          style:{flex:1,minWidth:0,border:'none',background:'none',color:cErr!=null?this.errClr():t.text,fontSize:11,fontFamily:'ui-monospace,monospace',outline:'none'}}),
+        h('input',{value:pErr!=null?pErr:s.pos,spellCheck:false,
+          onChange:e=>{ const v=e.target.value; if(v.trim()===''||this.cssAccepts('left',v.trim())) { delete this._gradErr[gErrKey(i,'p')]; const ns=g.stops.slice(); ns[i]=Object.assign({},ns[i],{pos:v}); setG(g.angle,ns); } else { this._gradErr[gErrKey(i,'p')]=v; this.forceUpdate(); } },
+          onBlur:()=>{ if(pErr!=null) { delete this._gradErr[gErrKey(i,'p')]; this.forceUpdate(); } },
+          style:{width:44,flex:'0 0 auto',border:'none',background:'none',color:pErr!=null?this.errClr():t.muted,fontSize:11,textAlign:'right',outline:'none'}}),
+        h('span',{onClick:()=>{ if(g.stops.length>2){ const ns=g.stops.slice(); ns.splice(i,1); setG(g.angle,ns); } },...this.a11y(()=>{ if(g.stops.length>2){ const ns=g.stops.slice(); ns.splice(i,1); setG(g.angle,ns); } },{label:'Remove color stop '+(i+1)}),style:{display:g.stops.length>2?'flex':'none',cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint,flex:'0 0 auto'}},'×'));
+      })));
       body.push(h('div',{key:'add',onClick:()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),...this.a11y(()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),{label:'Add color stop'}),style:{display:'flex',alignItems:'center',justifyContent:'center',marginTop:6,padding:'6px 0',border:'1px dashed '+t.border,borderRadius:6,cursor:'pointer',color:t.muted,fontSize:11.5,fontWeight:500}},'+ Add color stop'));
       body.push(h('div',{key:'angle',style:{marginTop:8}}, this.lbl(t,'Angle'), this.selectField(t,[['90deg','90°'],['0deg','0°'],['45deg','45°'],['135deg','135°'],['180deg','180°']],g.angle,v=>setG(v,g.stops)))); }
     else { // image
@@ -5595,7 +5632,14 @@ class Component extends DCLogic {
     const setTrans=list=>this.setCS(node,'transition', list.length?this.composeTransitions(list):'');
     const propOpts=[['all','All properties'],['opacity','Opacity'],['transform','Transform'],['background','Background'],['color','Color']];
     const easeOpts=[['ease','Ease'],['linear','Linear'],['ease-in','Ease in'],['ease-out','Ease out'],['ease-in-out','Ease in-out']];
-    const msField=(v,on)=>h('div',{style:{display:'flex',alignItems:'center',gap:4,height:28,border:'1px solid '+t.border,borderRadius:6,padding:'0 6px',background:t.panel,minWidth:0}}, h('input',{value:v,spellCheck:false,onChange:e=>on(e.target.value),style:{flex:1,minWidth:0,border:'none',background:'none',color:t.text,fontSize:11,outline:'none'}}), h('span',{style:{fontSize:9,color:t.faint}},'ms'));
+    // Plain non-negative number only (composeTransitions always appends the "ms" itself) — was
+    // free-text with no check at all, so anything typed reached the exported `transition` shorthand.
+    this._transErr=this._transErr||{};
+    const msField=(key,v,on)=>{ const err=this._transErr[key];
+      const commit=raw=>{ const x=raw.trim(); if(x===''||/^\d+(\.\d+)?$/.test(x)) { delete this._transErr[key]; on(x); } else { this._transErr[key]=raw; this.forceUpdate(); } };
+      return h('div',{style:{display:'flex',alignItems:'center',gap:4,height:30,border:'1px solid '+(err!=null?this.errClr():t.border),borderRadius:6,padding:'0 6px',background:t.panel,minWidth:0}},
+        h('input',{value:err!=null?err:v,spellCheck:false,onChange:e=>commit(e.target.value),onBlur:()=>{ if(err!=null) { delete this._transErr[key]; this.forceUpdate(); } },style:{flex:1,minWidth:0,border:'none',background:'none',color:err!=null?this.errClr():t.text,fontSize:11,outline:'none'}}),
+        h('span',{style:{fontSize:9,color:t.faint}},'ms')); };
     return h('div',null,
       this.blockHead(t,'Transforms & Transitions',{dot:this.stateEditDot(node,['transform','transformOrigin','perspective','transition'],t)}),
       h('div',{style:{marginBottom:10}}, seg),
@@ -5609,7 +5653,7 @@ class Component extends DCLogic {
       h('div',{style:{display:'flex',flexDirection:'column',gap:8}}, trans.map((x,i)=>{ const set=(k,v)=>{ const ns=trans.slice(); ns[i]=Object.assign({},ns[i],{[k]:v}); setTrans(ns); };
         return h('div',{key:i,style:{background:t.segBg,border:'1px solid '+t.border,borderRadius:7,padding:8,display:'flex',flexDirection:'column',gap:6}},
           h('div',{style:{display:'flex',alignItems:'center',gap:6}}, h('div',{style:{flex:1,minWidth:0}}, this.selectField(t,propOpts,x.prop,v=>set('prop',v))), h('span',{onClick:()=>{ const ns=trans.slice(); ns.splice(i,1); setTrans(ns); },style:{cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint}},'×')),
-          h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1.2fr 1fr',gap:6}}, msField(x.dur,v=>set('dur',v.replace('ms',''))), this.selectField(t,easeOpts,x.ease,v=>set('ease',v)), msField(x.delay,v=>set('delay',v.replace('ms','')))));
+          h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1.2fr 1fr',gap:6}}, msField(node.id+'|trans'+i+'|dur',x.dur,v=>set('dur',v.replace('ms',''))), this.selectField(t,easeOpts,x.ease,v=>set('ease',v)), msField(node.id+'|trans'+i+'|delay',x.delay,v=>set('delay',v.replace('ms','')))));
       }))
     );
   }
