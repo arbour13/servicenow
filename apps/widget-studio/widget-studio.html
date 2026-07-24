@@ -2747,8 +2747,11 @@ class Component extends DCLogic {
             // 164px centers the picker's typical rendered height (~192px, generic 3-card set) exactly
             // within the stage's 520px floor — the smallest the stage ever gets, so this reads as
             // centered at minimum size and only sits a bit higher than center as the stage grows.
+            // width/maxWidth/boxSizing here (not just on the picker's own root div) is what actually caps
+            // it: this wrapper is the flex item that resolves the picker's own width:100% against, and at
+            // the mobile (375px) stage width the un-capped 540px card row overflowed the stage sideways.
             const emptyPrompt=showPicker?h('div',{key:'__rootprompt',style:{position:'absolute',inset:0,display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:164,pointerEvents:'none',zIndex:1}},
-              h('div',{style:{pointerEvents:'auto'}}, this.renderStarterPicker(lightT))):null;
+              h('div',{style:{pointerEvents:'auto',width:'100%',maxWidth:540,boxSizing:'border-box',padding:'0 20px'}}, this.renderStarterPicker(lightT))):null;
             return h('div',{className:'ws-stage',
               onMouseOver:e=>{e.stopPropagation(); if(this.focusLocked('root')){ if(this.hoverId!=null){this.hoverId=null;this.forceUpdate();} return; } if(this.hoverId!=='root'){this.hoverId='root';this.forceUpdate();}},
               onClick:e=>this.select('root',e),
@@ -2869,7 +2872,7 @@ class Component extends DCLogic {
       h('div',{style:{fontSize:12.5,fontWeight:700,color:t.text,marginBottom:3}},def.label),
       h('div',{style:{fontSize:10.5,color:t.muted,lineHeight:1.4}},def.hint));
     const blankDef={id:'blank',label:'Blank',build:()=>[]};
-    return h('div',{style:{width:540,textAlign:'center'}},
+    return h('div',{style:{width:'100%',textAlign:'center'}},
       h('div',{style:{fontSize:15,fontWeight:700,color:t.text,marginBottom:4}},'Start from a common shape'),
       h('div',{style:{fontSize:11.5,color:t.muted,marginBottom:14,lineHeight:1.5}},'Pick a starting shape below, or start blank.'),
       tailored.length?h('div',{style:{fontSize:10.5,fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',color:t.accent,marginBottom:8}},'Suggested for '+clsLabel):null,
