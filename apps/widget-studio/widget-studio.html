@@ -4355,21 +4355,22 @@ class Component extends DCLogic {
         node.type==='html'?null:this.classManager(node,t)
       ),
       node.type==='html'?this.htmlInspector(node,t):(()=>{
-        // Tabs (was stacked collapsible sections): Data first when the node has it, Style the
-        // default. The active tab is remembered across selections; a tab with no content for the
-        // current node (or Data on root) simply isn't offered, falling back to Style.
+        // Two tabs = two write targets: Style writes to the shared class, Element writes to this
+        // instance (repeat/bind, Angular directives, raw attributes — merged as sections). The
+        // active tab is remembered across selections; a tab with no content simply isn't offered,
+        // falling back to Style (this also migrates stale tab keys from the old 4-tab layout).
         const isEmptyBody=b=>b==null||(Array.isArray(b)&&!b.length);
         const defs=[
-          node.id!=='root'?['data','Data',this.renderData(node,t)]:null,
           ['style','Style',this.designTab(node,t)],
-          ['angular','Angular',this.angularTab(node,t)],
-          ['attributes','Attributes',this.attrTab(node,t)]
+          ['element','Element',this.elementTab(node,t),this.nodeHasBindings(node)]
         ].filter(d=>d&&!isEmptyBody(d[2]));
         let act=this.inspTab||'style';
         if(!defs.some(d=>d[0]===act)) { act=defs.some(d=>d[0]==='style')?'style':(defs.length?defs[0][0]:null); }
         const active=defs.find(d=>d[0]===act);
         const tabBtn=d=>{ const on=d[0]===act; const go=()=>{this.inspTab=d[0];this.forceUpdate();};
-          return h('div',Object.assign({key:d[0],onClick:go},this.a11y(go,{role:'tab',selected:on,label:d[1]+' tab'}),{style:{flex:1,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:12,fontWeight:on?700:600,color:on?t.accent:t.muted,borderBottom:'2px solid '+(on?t.accent:'transparent'),userSelect:'none'}}),d[1]); };
+          return h('div',Object.assign({key:d[0],onClick:go},this.a11y(go,{role:'tab',selected:on,label:d[1]+' tab'+(d[3]?' — carries data bindings':'')}),{style:{flex:1,height:36,display:'flex',alignItems:'center',justifyContent:'center',gap:5,cursor:'pointer',fontSize:12,fontWeight:on?700:600,color:on?t.accent:t.muted,borderBottom:'2px solid '+(on?t.accent:'transparent'),userSelect:'none'}}),
+            d[1],
+            d[3]?h('span',{...this.tt('This element carries data bindings'),style:{width:5,height:5,borderRadius:'50%',background:'#0e9f6e',flexShrink:0}}):null); };
         return h('div',{style:{flex:1,minHeight:0,display:'flex',flexDirection:'column'}},
           h('div',{role:'tablist','aria-label':'Inspector',style:{display:'flex',borderBottom:'1px solid '+t.border,flexShrink:0}}, defs.map(tabBtn)),
           h('div',{style:{overflowY:'auto',flex:1,scrollbarGutter:'stable'}}, h('div',{style:{padding:'12px 14px 14px'}}, active?active[2]:null)));
@@ -5359,6 +5360,17 @@ class Component extends DCLogic {
   attrSuggest(node){ const base=['id','title','aria-label','ng-if','ng-show','data-attr']; const tg=node.type==='el'?node.data.tag:node.type; const m={a:['href','target','ng-click'],button:['type','ng-click','ng-disabled'],img:['src','alt','width'],input:['name','type','placeholder','ng-model'],select:['name','ng-model'],textarea:['name','ng-model'],form:['name','ng-submit'],label:['for']}; return (m[tg]||[]).concat(base); }
   // ---- Repeater (ng-repeat) helpers — shared by the canvas pill toggle and the inspector panel ----
   isRepeating(node){ return !!(node.attrs && ('ng-repeat' in node.attrs)); }
+  // Does this element carry any instance-level binding? Powers the Element tab's green dot — a
+  // quick "this element writes to itself, not just its class" signal visible from the Style tab too.
+  nodeHasBindings(node){
+    if(this.isRepeating(node)) { return true; }
+    if(node.text && node.text.indexOf('{{')>=0) { return true; }
+    const attrs=node.attrs||{};
+    if(Object.keys(attrs).some(k=>/^ng-/.test(k) || String(attrs[k]).indexOf('{{')>=0)) { return true; }
+    const data=node.data||{};
+    if(Object.values(data).some(v=>typeof v==='string' && v.indexOf('{{')>=0)) { return true; }
+    return false;
+  }
   // Split "item in c.data.items" → {v:'item', src:'c.data.items'} (tolerant of a bare source).
   parseRepeat(node){ const ex=(node.attrs&&node.attrs['ng-repeat'])||''; const m=ex.match(/^\s*([\w$]+)\s+in\s+([\s\S]+?)\s*$/); return m?{v:m[1],src:m[2].trim()}:{v:'item',src:ex.trim()}; }
   // Arrays sitting on the resolved sample c.data — these become the "data source" dropdown options.
@@ -5544,6 +5556,20 @@ class Component extends DCLogic {
       repeatHint?h('div',{style:{marginTop:14}},repeatHint):null
     );
   }
+  // Element tab: everything that writes to THIS INSTANCE, not the shared class — repeat/bind
+  // (Data), Angular directives, and raw attributes, as labeled sections in one scroll. Kept as
+  // three sub-sections rather than flattened further so each one's own internal grouping
+  // (Repeat/Fields, Visibility/ng-class/ng-style/Events/State/ng-model, attribute rows) stays intact.
+  elementTab(node,t){
+    const h=React.createElement;
+    const sections=[
+      node.id!=='root'?['Data',this.renderData(node,t)]:null,
+      ['Angular',this.angularTab(node,t)],
+      ['Attributes',this.attrTab(node,t)]
+    ].filter(Boolean);
+    return h('div',null, sections.map(([label,body],i)=>h('div',{key:label,style:i?{marginTop:20,paddingTop:16,borderTop:'1px solid '+t.borderSoft}:null},
+      this.section(t,label), body)));
+  }
   attrTab(node,t){
     const h=React.createElement; const attrs=node.attrs||{}; const keys=Object.keys(attrs); const sug=this.attrSuggest(node).filter(s=>!(s in attrs));
     const inp=(val,on,opt)=>React.createElement('input',{value:val,placeholder:(opt||{}).ph||'',onChange:e=>on(e.target.value),style:{flex:(opt||{}).flex||1,minWidth:0,height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:(opt||{}).mono?'ui-monospace,monospace':'inherit'}});
@@ -5561,35 +5587,8 @@ class Component extends DCLogic {
       h('div',{style:{fontSize:11,color:t.faint,marginTop:12,lineHeight:1.5}},'Emitted on the element in the HTML. Use real ServiceNow / Angular attributes like ', h('code',{style:{color:t.muted}},'ng-click'),', ', h('code',{style:{color:t.muted}},'ng-repeat'),'.')
     );
   }
-  liveRule(node,t){
-    const h=React.createElement; const cls=this.primaryClass(node);
-    if(!cls){ const s=node.style||{}; const ks=Object.keys(s); const txt=ks.length?('style="'+ks.map(k=>this.kebab(k)+': '+s[k]).join('; ')+'"'):''; return h('div',{style:{flexShrink:0,padding:'9px 13px',background:'#0d1117',borderTop:'1px solid #21262d',fontFamily:'ui-monospace,monospace',color:'#c9d1d9',lineHeight:1.6}}, h('div',{style:{fontSize:10,textTransform:'uppercase',letterSpacing:'.04em',color:'#7d8590',marginBottom:txt?5:0}},'Inline style · add a class to make a rule'), txt?h('div',{style:{fontSize:11.5,whiteSpace:'pre-wrap'}},txt):h('div',{style:{fontSize:11,color:'#6e7681'}},'/* set a style — applies inline */')); }
-    const st=this.classStyles[cls]||{}; const editing=this._ruleEdit&&this._ruleEdit.cls===cls;
-    const ruleText=editing?this._ruleEdit.text:('.'+cls+' {\n'+Object.entries(st).map(([k,v])=>'  '+this.kebab(k)+': '+v+';').join('\n')+(Object.keys(st).length?'\n':'')+'}');
-    return h('div',{style:{flexShrink:0,background:'#0d1117',borderTop:'1px solid #21262d',display:'flex',flexDirection:'column'}},
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 12px'}}, h('span',{style:{fontSize:10,letterSpacing:'.04em',textTransform:'uppercase',color:'#7d8590'}},'Live CSS · editable'), h('span',{style:{fontSize:10,color:'#3fb950',fontFamily:'ui-monospace,monospace'}},'● .'+cls)),
-      React.createElement('textarea',{value:ruleText,spellCheck:false,onChange:e=>{ this._ruleEdit={cls,text:e.target.value}; this.forceUpdate(); },onBlur:()=>{ if(this._ruleEdit&&this._ruleEdit.cls===cls){ this.parseRule(cls,this._ruleEdit.text); this._ruleEdit=null; this.forceUpdate(); } },style:{height:108,resize:'none',border:'none',outline:'none',background:'#0d1117',color:'#c9d1d9',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace',fontSize:12,lineHeight:1.6,padding:'0 13px 12px',whiteSpace:'pre'}})
-    );
-  }
-  parseRule(cls,text){ const m=text.match(/\{([\s\S]*)\}/); const body=m?m[1]:text; const obj={}; body.split(';').forEach(d=>{ const i=d.indexOf(':'); if(i>0){ const k=d.slice(0,i).trim(); const v=d.slice(i+1).trim(); if(k&&v) { obj[k.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=v; } } }); this.classStyles[cls]=obj; this.save(); }
   attrStr(node,exclude){ const ex=exclude||[]; return Object.entries(node.attrs||{}).filter(([k])=>ex.indexOf(k)<0).map(([k,v])=>' '+k+(v!==''?('="'+this.esc(v)+'"'):'')).join(''); }
   styleStr(node){ const s=node.style||{}; const css=Object.entries(s).map(([k,v])=>this.kebab(k)+': '+v).join('; '); return css?(' style="'+this.convUnit(css)+'"'):''; }
-  classTab(node,t){
-    const h=React.createElement; const base=this.baseClasses(node); const custom=node.classes||[];
-    if(node.id==='root') { return h('div',null, this.section(t,'Widget class'), h('div',{style:{fontFamily:'ui-monospace,monospace',fontSize:13,color:t.accent,background:t.accentSoft,border:'1px solid '+(this.dark?t.border:'#bcd6f5'),padding:'7px 10px',borderRadius:6}},'.'+this.baseClass()), h('div',{style:{fontSize:11,color:t.faint,marginTop:6,lineHeight:1.5}},'The root wrapper class, derived from the widget ID — change it in the header.')); }
-    return h('div',null,
-      this.section(t,'CSS class'),
-      h('div',{style:{display:'flex',gap:6,alignItems:'center'}},
-        h('span',{style:{color:t.accent,fontFamily:'ui-monospace,monospace',fontSize:14}},'.'),
-        React.createElement('input',{value:custom[0]||'',placeholder:'class-name',spellCheck:false,onChange:e=>{ const nv=e.target.value.replace(/[^a-z0-9-_]/gi,''); this.patch(node.id,n=>{ n.classes=n.classes||[]; const old=n.classes[0]; if(!nv){ if(n.classes.length) { n.classes.shift(); } } else { if(!n.classes.length) { n.classes.push(nv); } else { n.classes[0]=nv; } if(old&&this.classStyles[old]&&!this.classStyles[nv]){this.classStyles[nv]=this.classStyles[old];} if(old&&this.stateStyles[old]&&!this.stateStyles[nv]){this.stateStyles[nv]=this.stateStyles[old];} this.adoptRules(old,nv); } this.migrate(n); }); },style:{flex:1,height:32,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}})),
-      h('div',{style:{fontSize:11,color:t.faint,marginTop:6,lineHeight:1.5}},'Layout & Style settings are written to this class. Reuse the same name on another element to share the styling.'),
-      this.section(t,'Additional classes'),
-      custom.length>1?h('div',{style:{display:'flex',flexWrap:'wrap',gap:5,marginBottom:8}}, custom.slice(1).map((c)=>h('span',{key:c,style:{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,fontFamily:'ui-monospace,monospace',background:t.panel,border:'1px solid '+t.border,color:t.muted,padding:'3px 7px',borderRadius:5}}, '.'+c, h('span',{onClick:()=>this.patch(node.id,n=>n.classes=n.classes.filter(x=>x!==c)),style:{cursor:'pointer',fontWeight:700,color:t.faint}},'×')))):h('div',{style:{fontSize:11.5,color:t.faint,marginBottom:8}},'None — add utility or framework classes here.'),
-      React.createElement('input',{placeholder:'Add class, press Enter',spellCheck:false,onKeyDown:e=>{ if(e.key==='Enter'){ const v=e.target.value.trim().replace(/^\./,''); if(v) { this.patch(node.id,n=>{ n.classes=n.classes||[]; v.split(/\s+/).forEach(x=>{ if(x&&!n.classes.includes(x)){ n.classes.push(x); } }); this.migrate(n); }); } e.target.value=''; } },style:{width:'100%',height:32,border:'1px solid '+t.border,borderRadius:6,padding:'0 10px',fontSize:12,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,monospace'}}),
-      base.length?h('div',{style:{marginTop:14}}, this.section(t,'Framework classes (auto)'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:5}}, base.map(c=>h('span',{key:c,style:{fontSize:11,fontFamily:'ui-monospace,monospace',background:t.panel,border:'1px solid '+t.border,color:t.muted,padding:'3px 7px',borderRadius:5}},c)))):null
-    );
-  }
-
   // ---------- drawer (Preview + code panels) ----------
   usedClasses(){ const set={}; const w=n=>{ (n.classes||[]).forEach(c=>set[c]=1); (n.children||[]).forEach(w); }; (this.tree.children||[]).forEach(w); return set; }
   kebab(k){ return k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase()); }
