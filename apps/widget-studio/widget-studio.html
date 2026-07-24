@@ -3637,13 +3637,14 @@ class Component extends DCLogic {
     if(this._estate!=='base') { return this.dark?{bg:'rgba(217,119,87,.12)',bd:'#5c3a28',fg:'#e0a05f'}:{bg:'rgba(180,84,31,.08)',bd:'#e6c3a8',fg:'#b4541f'}; }
     return null;
   }
+  stateLabelOf(v){ const m={base:'Base',hover:'Hover',focus:'Focus',active:'Active',disabled:'Disabled',checked:'Checked','::before':'::before','::after':'::after'}; return m[v]||v; }
   layerZone(node,t){
     const h=React.createElement; const c=this.primaryClass(node);
     const atBp=this.device!=='lg'; const bp=this.device;
     const has=s=>{ const b=c&&this.stateStyles[c]; return !!(b&&b[s]&&Object.keys(b[s]).length); };
     const STATE_MAIN=[['base','Base'],['hover','Hover'],['focus','Focus']];
     const STATE_MORE=[['active','Active'],['disabled','Disabled'],['checked','Checked'],['::before','::before'],['::after','::after']];
-    const labelOf=v=>(STATE_MAIN.concat(STATE_MORE).find(o=>o[0]===v)||[v,v])[1];
+    const labelOf=v=>this.stateLabelOf(v);
     const curInMore=STATE_MORE.some(([v])=>v===this._estate);
     const setState=v=>{ this._estate=v; this.forceUpdate(); };
     const moreOpts=STATE_MORE.map(([v,l])=>[v,l+(has(v)?' •':'')]);
@@ -5089,7 +5090,53 @@ class Component extends DCLogic {
   designTab(node,t){ const h=React.createElement; return h('div',null,
     this.layerZone(node,t),
     this.bigCard(t,'card:structure','structure','Structure', this.layoutTab(node,t)),
-    this.bigCard(t,'card:appearance','palette','Appearance', this.styleTab(node,t,true)));
+    this.bigCard(t,'card:appearance','palette','Appearance', this.styleTab(node,t,true)),
+    this.ledger(node,t));
+  }
+  // The ledger: every declaration actually SET on this class, grouped by layer — the layer you're
+  // editing (if off-base) plus Base beneath it. A Base value the active layer also sets is struck
+  // through (overridden here); the active layer's own values are never struck. Scoped to just these
+  // two tiers rather than the full N-way breakpoint/state chain, so cross-layer interaction stays
+  // legible — clicking the Base header jumps the layer strip there instead of editing it in place.
+  ledger(node,t){
+    const h=React.createElement; const c=this.primaryClass(node);
+    if(!c) { return null; }
+    const atBp=this.device!=='lg'; const bp=this.device;
+    const baseSt=this.classStyles[c]||{};
+    const activeSt=atBp?((this.responsive[bp]&&this.responsive[bp][c])||null):(this._estate!=='base'?((this.stateStyles[c]&&this.stateStyles[c][this._estate])||null):null);
+    const activeLabel=atBp?('@ ≤'+this.BREAKPOINTS[bp].max+'PX'):(this._estate!=='base'?this.stateLabelOf(this._estate).toUpperCase():null);
+    const activeKeys=activeSt?Object.keys(activeSt):[];
+    const baseKeys=Object.keys(baseSt);
+    if(!baseKeys.length && !activeKeys.length) { return null; }
+
+    const tint=this.layerTint();
+    const jumpToBase=()=>{ this.device='lg'; this._estate='base'; this._box=null; this.forceUpdate(); };
+
+    const row=(key,val,struck,onDelete)=>h('div',{key,style:{display:'flex',alignItems:'center',gap:6,padding:'3px 0'}},
+      h('span',{style:{color:struck?t.faint:t.muted,fontSize:11.5,fontFamily:'ui-monospace,monospace',flexShrink:0}}, this.kebab(key)),
+      h('span',{style:{flex:1}}),
+      h('span',{style:{fontSize:11.5,fontFamily:'ui-monospace,monospace',color:struck?t.faint:t.text,textDecoration:struck?'line-through':'none',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:130}}, String(val)),
+      onDelete?h('span',Object.assign({onClick:onDelete},this.a11y(onDelete,{label:'Remove '+this.kebab(key)}),{style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 2px',flexShrink:0}}),'×'):null);
+
+    const groupHeader=(label,onClick)=>h('div',Object.assign({},onClick?Object.assign({onClick},this.a11y(onClick,{label:'Jump to '+label})):{},{style:{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:onClick?'pointer':'default',padding:'2px 0'}}),
+      h('span',{style:{fontSize:10,fontWeight:700,letterSpacing:'.05em',textTransform:'uppercase',color:(tint&&!onClick)?tint.fg:t.faint}}, label),
+      onClick?h('span',{style:{fontSize:10,color:t.accent}},'Edit here →'):h('span',{style:{fontSize:9.5,fontWeight:700,color:tint?tint.fg:t.accent,letterSpacing:'.04em'}},'YOU ARE HERE'));
+
+    const groups=[];
+    if(activeSt&&activeKeys.length) {
+      groups.push(h('div',{key:'active',style:{marginBottom:10,padding:'6px 8px',borderRadius:6,background:tint?tint.bg:undefined,border:tint?('1px solid '+tint.bd):undefined}},
+        groupHeader(activeLabel,null),
+        activeKeys.map(k=>row(k,activeSt[k],false,()=>this.setCS(node,k,'')))));
+    }
+    if(baseKeys.length) {
+      groups.push(h('div',{key:'base',style:{marginBottom:2}},
+        groupHeader('Base',activeSt?jumpToBase:null),
+        baseKeys.map(k=>row(k,baseSt[k],!!(activeSt&&activeSt[k]!=null),activeSt?null:(()=>this.setCS(node,k,''))))));
+    }
+
+    return h('div',{style:{marginTop:18,paddingTop:14,borderTop:'1px solid '+t.borderSoft}},
+      h('div',{style:{fontSize:10,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.faint,marginBottom:8}}, 'Set on .'+c),
+      groups);
   }
   // A tiny two-line "fader" glyph for the box-shadow manual-editor toggle — circles are punched out in
   // the button's own current background so they read as blank slider handles rather than solid dots.
@@ -5278,9 +5325,15 @@ class Component extends DCLogic {
       h('div',{style:{marginTop:10}}, this.lbl(t,'Style'), this.borderStyleSwatches(node,t)),
       this.cornerRadiusPicker(node,t),
       h('div',{style:{marginTop:10}}, this.colorInlineField(t,node,'borderColor',{placeholder:'#D0D7DE',noAlpha:true}))); }
-  // Small accent dot next to a section label when the active (non-base) state layer holds any of `keys`;
-  // clicking it clears those props from the state layer.
-  stateEditDot(node,keys,t){ const h=React.createElement; if(this._estate==='base'||this.isPseudoState(this._estate)) { return null; } const c=this.primaryClass(node); const b=c&&this.stateStyles[c]&&this.stateStyles[c][this._estate]; const hit=b&&keys.some(k=>b[k]!=null); if(!hit) { return null; }
+  // Small accent dot next to a section label when the active off-base layer (a state, or a
+  // breakpoint) holds any of `keys` — provenance at the section level ("● set here", clickable to
+  // reset) until the deck itself gets per-field provenance in a later pass. Excludes pseudo-elements
+  // (::before/::after), whose small property surface doesn't warrant the same section-wide signal.
+  stateEditDot(node,keys,t){ const h=React.createElement; const c=this.primaryClass(node);
+    if(this.device!=='lg'){ const r=c&&this.responsive[this.device]&&this.responsive[this.device][c]; const hit=r&&keys.some(k=>r[k]!=null); if(!hit) { return null; }
+      return h('span',Object.assign({onClick:()=>{ keys.forEach(k=>{ if(r[k]!=null) { this.setCS(node,k,''); } }); }},this.tt('Edited at this width — click to reset'),{style:{width:7,height:7,borderRadius:'50%',background:t.accent,cursor:'pointer',flex:'0 0 auto'}})); }
+    if(this._estate==='base'||this.isPseudoState(this._estate)) { return null; }
+    const b=c&&this.stateStyles[c]&&this.stateStyles[c][this._estate]; const hit=b&&keys.some(k=>b[k]!=null); if(!hit) { return null; }
     return h('span',Object.assign({onClick:()=>{ keys.forEach(k=>{ if(b[k]!=null) { this.setCS(node,k,''); } }); }},this.tt('Edited in this state — click to reset'),{style:{width:7,height:7,borderRadius:'50%',background:t.accent,cursor:'pointer',flex:'0 0 auto'}})); }
   styleTab(node,t,noState){
     const h=React.createElement;
