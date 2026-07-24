@@ -3647,14 +3647,21 @@ class Component extends DCLogic {
     const has=s=>{ const b=c&&this.stateStyles[c]; return !!(b&&b[s]&&Object.keys(b[s]).length); };
     const STATE_MAIN=[['base','Base'],['hover','Hover'],['focus','Focus']];
     const STATE_MORE=[['active','Active'],['disabled','Disabled'],['checked','Checked'],['::before','::before'],['::after','::after']];
+    const ALL_STATES=STATE_MAIN.concat(STATE_MORE);
     const labelOf=v=>this.stateLabelOf(v);
-    const curInMore=STATE_MORE.some(([v])=>v===this._estate);
     const setState=v=>{ this._estate=v; this.forceUpdate(); };
-    const moreOpts=STATE_MORE.map(([v,l])=>[v,l+(has(v)?' •':'')]);
+    const stateOpts=ALL_STATES.map(([v,l])=>[v,l+((v!=='base'&&has(v))?' •':'')]);
 
-    const WIDTHS=[['lg','All'],['md','md'],['sm','sm'],['xs','xs']];
+    const WIDTHS=[['lg','Desktop'],['md','md · ≤'+this.BREAKPOINTS.md.max+'px'],['sm','sm · ≤'+this.BREAKPOINTS.sm.max+'px'],['xs','xs · ≤'+this.BREAKPOINTS.xs.max+'px']];
     const widthHas=w=>w!=='lg'&&c&&this.responsive[w]&&this.responsive[w][c]&&Object.keys(this.responsive[w][c]).length;
     const setWidth=v=>{ this.device=v; if(v!=='lg') { this._estate='base'; } this._box=null; this.forceUpdate(); };
+    // Same look as the header's device switcher (dib()) — one consistent "which width am I on"
+    // control language for the whole app, not a bespoke seg just for this panel.
+    const widthBtn=(name,title)=>{ const on=this.device===name; const dot=widthHas(name);
+      const go=()=>setWidth(name);
+      return h('div',Object.assign({key:name,onClick:go},this.tt(name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'}),this.a11y(go,{pressed:on,label:title+' breakpoint'}),
+        {style:{position:'relative',padding:'4px 9px',borderRadius:4,cursor:'pointer',color:on?'#fff':t.muted,background:on?t.accentFill:'transparent',display:'flex',alignItems:'center'}}),
+        this.devIcon(name), dot?h('span',{style:{position:'absolute',top:2,right:3,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null); };
 
     const isPseudo=this.isPseudoState(this._estate);
     const bucket=(!atBp&&this._estate!=='base'&&c&&this.stateStyles[c])?this.stateStyles[c][this._estate]:null;
@@ -3666,22 +3673,17 @@ class Component extends DCLogic {
     const resetState=()=>{ if(c&&this.stateStyles[c]){ delete this.stateStyles[c][this._estate]; if(!Object.keys(this.stateStyles[c]).length) { delete this.stateStyles[c]; } this.save(); this.forceUpdate(); } };
     const resetBp=()=>{ if(c&&this.responsive[bp]&&this.responsive[bp][c]){ delete this.responsive[bp][c]; this.save(); this.forceUpdate(); } };
 
-    const rowLabel=lbl=>h('span',{style:{fontSize:10,fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase',color:t.faint,width:40,flexShrink:0}},lbl);
+    // Labels sit ABOVE their control (the shared `lbl` helper every other field in the panel
+    // uses), not inline to its left — that inline treatment was this panel's own one-off.
+    const stateCol=h('div',Object.assign({style:{flex:1,minWidth:0,opacity:atBp?.45:1,pointerEvents:atBp?'none':'auto'}},atBp?this.tt('States are edited on the Desktop layer and apply at every width'):{}),
+      this.lbl(t,'State'),
+      this.xselect('estate:'+(c||''),t,this._estate,stateOpts,setState,{label:'Style state'}));
+    const widthCol=h('div',{style:{flexShrink:0}},
+      this.lbl(t,'Width'),
+      h('div',{style:{display:'flex',gap:2,background:t.segBg,border:'1px solid '+t.border,borderRadius:6,padding:2}}, WIDTHS.map(([v,title])=>widthBtn(v,title))));
+    const stateRow=h('div',{style:{display:'flex',gap:10,alignItems:'flex-start'}}, stateCol, widthCol);
 
-    const stateRow=h('div',{style:{display:'flex',alignItems:'center',gap:6}},
-      rowLabel('State'),
-      h('div',Object.assign({style:{flex:1,minWidth:0,opacity:atBp?.45:1,pointerEvents:atBp?'none':'auto'}},atBp?this.tt('States are edited on the Desktop layer and apply at every width'):{}),
-        this.seg(t,STATE_MAIN.map(([v,l])=>({v,l:l+((v!=='base'&&has(v))?' •':'')})),this._estate,setState,{fill:true,aria:'Style state'})),
-      h('div',{style:{width:56,flexShrink:0,opacity:atBp?.45:1,pointerEvents:atBp?'none':'auto'}},
-        this.xselect('estate-more:'+(c||''),t,curInMore?this._estate:'',moreOpts,setState,{label:'More states',placeholder:'⋯',compact:true,search:false})));
-
-    const widthRow=h('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:8}},
-      rowLabel('Width'),
-      h('div',{style:{flex:1,minWidth:0}}, this.seg(t,WIDTHS.map(([v,l])=>({v,l:l+(widthHas(v)?' •':'')})),this.device,setWidth,{fill:true,aria:'Editing width'})));
-
-    const contentRow=isPseudo?h('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:8}},
-      rowLabel('Content'),
-      h('input',{value:this.csVal(node,'content'),placeholder:'""',spellCheck:false,onChange:e=>this.setCS(node,'content',e.target.value),style:{height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',flex:1,fontFamily:'ui-monospace,monospace'}})):null;
+    const contentRow=isPseudo?h('div',{style:{marginTop:10}}, this.lbl(t,'Content'), this.rawField(t,node,'content','""')):null;
 
     const bannerInfo=atBp
       ? {label:'EDITING @ ≤'+this.BREAKPOINTS[bp].max+'PX',count:bpEditedProps.length,onReset:resetBp}
@@ -3694,7 +3696,7 @@ class Component extends DCLogic {
     ):null;
     const bpHint=atBp?h('div',{style:{marginTop:8,fontSize:10.5,color:t.faint,lineHeight:1.5}}, 'Editing only what changes at ≤'+this.BREAKPOINTS[bp].max+'px. ', h('b',{style:{color:t.muted,fontWeight:700}},'Blank fields cascade down'), ' — a property you don’t set here inherits from the next larger tier ('+({md:'lg',sm:'md',xs:'sm'}[bp])+'→…→lg base). State styles are edited on the Desktop layer and apply at every width.'):null;
 
-    return h('div',{style:{marginBottom:14}}, stateRow, widthRow, contentRow, banner, bpHint);
+    return h('div',{style:{marginBottom:14}}, stateRow, contentRow, banner, bpHint);
   }
   // ---- QW2/QW3/QW4 helpers ----
   slider(t,val,min,max,step,on){ const h=React.createElement;
