@@ -347,6 +347,23 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;
   --ed-com: #{$gs-ed-com-dark};
   --ed-fn: #{$gs-ed-fn-dark};
 }
+// The one shared focus-ring shape for every focusable element in the app - the soft-glow
+// treatment the text-input rule below originated (border-color + a soft box-shadow "halo"),
+// picked over a solid outset outline or an adaptive-per-surface outline after a live comparison
+// across this app's own components. Deliberately just the ring itself: callers compose it with
+// whatever grounding THEIR element already has (border-color for bordered controls, a background
+// tint for borderless rows, nothing extra for the checkbox toggle so it doesn't fight its own
+// on/off color) - see each call site's own comment for why. $inset exists for elements that sit
+// flush against a container edge (the sidenav, the appbar/topbar fallbacks) where an outset ring
+// would get clipped by that container's own edge.
+@mixin gs-focus-ring($glow: var(--accent-soft), $spread: 3px, $inset: false) {
+  outline: none;
+  @if $inset {
+    box-shadow: inset 0 0 0 $spread $glow;
+  } @else {
+    box-shadow: 0 0 0 $spread $glow;
+  }
+}
 * { box-sizing: border-box; }
 // Angular's built-in ngCloak directive strips the ng-cloak attribute once it compiles the element
 // that carries it, but the HIDING has to come from plain CSS (not JS) to do any good - this rule is
@@ -410,6 +427,12 @@ body {
   background: rgba(255,255,255,.12); color: #fff; font-size: 13px; font-weight: 600;
 }
 .appbar-select .gs-sel-trigger:hover { border-color: rgba(255,255,255,.4); }
+// Same inverse treatment as .sidenav-btn - this trigger stands in for the sidenav on narrow
+// viewports and sits on the same navy background, so it inherits the same contrast problem.
+.appbar-select .gs-sel-trigger:focus-visible {
+  @include gs-focus-ring($glow: rgba(255,255,255,.55), $spread: 2px, $inset: true);
+  border-color: rgba(255,255,255,.4);
+}
 .appbar-select .gs-sel-chevron { color: rgba(255,255,255,.7); }
 
 @media (max-width: 920px) {
@@ -468,7 +491,10 @@ body {
 .sidenav-btn > span:first-child { display: flex; }
 .sidenav-btn:hover { background: rgba(255,255,255,.12); color: rgba(255,255,255,.84); }
 .sidenav-btn.active { background: var(--sidenav-active-bg); color: var(--sidenav-active-text); }
-.sidenav-btn:focus-visible { outline: 2px solid rgba(255,255,255,.55); outline-offset: -2px; }
+// Inverse ring: var(--accent-soft) has poor contrast against this permanent navy background
+// regardless of app theme, so this uses a white glow instead - inset so it doesn't get clipped by
+// the sidenav's own edge (see the shared mixin's own comment for why $inset exists).
+.sidenav-btn:focus-visible { @include gs-focus-ring($glow: rgba(255,255,255,.55), $spread: 2px, $inset: true); }
 .sidenav-btn:disabled { cursor: not-allowed; }
 .sidenav-btn:disabled:hover { background: transparent; color: rgba(255,255,255,.3); }
 .sidenav-spacer {
@@ -556,6 +582,7 @@ body {
 // var(--panel-alt), not var(--panel) - this sits in a .card-head (background: var(--panel)), so a
 // var(--panel) hover would be invisible against its own container; -alt is the one that contrasts.
 .working-context-conn:hover { background: var(--panel-alt); color: var(--text); }
+.working-context-conn:focus-visible { @include gs-focus-ring; background: var(--panel-alt); }
 .working-context-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex-shrink: 0; }
 .working-context-dot.connected { background: #3ecf7e; }
 .working-context-dot.connecting { background: #f5b942; }
@@ -599,7 +626,7 @@ input[type=text], input[type=number], select, textarea {
   transition: border-color .12s, box-shadow .12s;
 }
 textarea { height: auto; padding: var(--sp-sm) var(--sp-md); resize: vertical; font-family: var(--mono); font-size: 12px; line-height: 1.5; }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { @include gs-focus-ring; border-color: var(--accent); }
 input::placeholder, textarea::placeholder { color: var(--faint); }
 select { cursor: pointer; appearance: none;
   /* var() can't be interpolated inside a data-URI string, so the dark-mode variant is a whole
@@ -627,6 +654,10 @@ select { cursor: pointer; appearance: none;
 }
 .builder input[type="checkbox"]:checked { background: var(--accent-fill); }
 .builder input[type="checkbox"]:checked::before { transform: translateX(14px); }
+// Ring only - no border-color/background grounding here (unlike every other call site) since
+// this pill's own background IS its on/off indicator; adding a background tint on focus would
+// read as a state change that isn't happening.
+.builder input[type="checkbox"]:focus-visible { @include gs-focus-ring; }
 
 .btn {
   height: var(--ctrl-h); display: inline-flex; align-items: center; gap: var(--sp-sm);
@@ -634,6 +665,8 @@ select { cursor: pointer; appearance: none;
   background: var(--panel); color: var(--text); font: inherit; font-size: 12.5px; font-weight: 600;
   cursor: pointer; white-space: nowrap; transition: background .12s, border-color .12s;
 }
+// On the base rule (not repeated per variant) so every .btn-* variant inherits it for free.
+.btn:focus-visible { @include gs-focus-ring; border-color: var(--accent); }
 .btn:hover { background: var(--btn-hover); border-color: var(--faint); }
 .btn-ghost { border-style: dashed; color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
 .btn-accent { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
@@ -650,6 +683,7 @@ input.masked-input { -webkit-text-security: disc; text-security: disc; }
   background: var(--panel); cursor: pointer; color: var(--muted); transition: all .12s;
 }
 .icon-btn:hover { background: var(--btn-hover-destroy); border-color: var(--danger-border); color: var(--danger); }
+.icon-btn:focus-visible { @include gs-focus-ring; border-color: var(--accent); }
 
 .order-row, .set-row, .group-row, .agg-row, .having-row, .si-field-row { display: grid; gap: var(--sp-sm); align-items: center; }
 .order-row + .order-row, .set-row + .set-row, .group-row + .group-row,
@@ -749,6 +783,9 @@ input.masked-input { -webkit-text-security: disc; text-security: disc; }
 .std-rail .std-search-wrap .std-search-input { width: 100%; }
 .std-rail-overview:hover { color: var(--text); }
 .std-rail-overview.active { color: var(--accent); border-left-color: var(--accent); }
+// Borderless full-width row - a bare ring reads weakly with nothing to sit against, so this pairs
+// it with the same background tint the row's own neighbors already use on hover elsewhere.
+.std-rail-overview:focus-visible { @include gs-focus-ring; background: var(--panel-alt); }
 // Chapter bands ("Principles" / "Build It Well" - see build-standards.js's group tag). A visual
 // grouping layer only - vm.standardsDoc.groups is a derived VIEW over the existing flat parts[],
 // not a schema change (see StandardsUiService).
@@ -767,6 +804,7 @@ input.masked-input { -webkit-text-security: disc; text-security: disc; }
   color: var(--text); margin-left: -1px; margin-bottom: var(--sp-sm);
 }
 .std-rail-band-title:hover { color: var(--accent); }
+.std-rail-band-title:focus-visible { @include gs-focus-ring; background: var(--panel-alt); }
 .std-rail-chapter { margin-bottom: 2px; }
 // Chapter link + its expand/collapse chevron, side by side - two separate buttons (not one nested
 // inside the other), so a click lands unambiguously on one or the other with no
@@ -787,6 +825,7 @@ input.masked-input { -webkit-text-security: disc; text-security: disc; }
 }
 .std-rail-part:hover { color: var(--text); }
 .std-rail-part.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; letter-spacing: -0.02em; }
+.std-rail-part:focus-visible { @include gs-focus-ring; background: var(--panel-alt); }
 // Chevron toggle for a chapter's section list (vm.toggleStdExpand) - deliberately tiny and quiet
 // (transparent until hovered) so it reads as a secondary affordance next to the chapter's own
 // name, not a competing control. Rotates 90deg open via the SVG's own transform, not a class swap
@@ -800,6 +839,7 @@ input.masked-input { -webkit-text-security: disc; text-security: disc; }
 .std-rail-expand svg { transition: transform .15s; }
 .std-rail-expand.expanded svg { transform: rotate(90deg); }
 .std-rail-expand:hover { color: var(--text); background: var(--panel-alt); }
+.std-rail-expand:focus-visible { @include gs-focus-ring; background: var(--panel-alt); }
 // Nested one level further than .std-rail-part (padding-left var(--sp-lg), not var(--sp-sm)) so
 // the section list visibly belongs to its chapter rather than reading as more chapters at the same
 // rank. Same active-indicator language as the rest of the rail (left border + accent color) -
@@ -814,6 +854,7 @@ input.masked-input { -webkit-text-security: disc; text-security: disc; }
 }
 .std-rail-section:hover { color: var(--text); }
 .std-rail-section.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+.std-rail-section:focus-visible { @include gs-focus-ring; background: var(--panel-alt); }
 // Below this, .std-doc-main alone (940px) plus padding doesn't leave enough room for a 240px
 // rail without cramping the reading column - the rail is the ONLY in-page nav, so below this
 // width the reader falls back to plain scrolling (see index.html's header comment on the doc).
@@ -830,8 +871,13 @@ input.masked-input { -webkit-text-security: disc; text-security: disc; }
   font: inherit; font-weight: 600; color: var(--accent); white-space: nowrap;
 }
 .std-link:hover { text-decoration: underline; }
+.std-link:focus-visible { @include gs-focus-ring; background: var(--panel-alt); }
 .std-link-ed { color: inherit; text-decoration: underline; text-underline-offset: 2px; opacity: .85; }
 .std-link-ed:hover { opacity: 1; }
+// Ring only, no background tint - this variant sits on the output pane's own fixed-color warn/
+// lint banners (see above), so a background change here would fight that banner's own color
+// instead of just indicating focus.
+.std-link-ed:focus-visible { @include gs-focus-ring; }
 
 // Chapter bands in the reading pane - the top-most structural level (bigger than a chapter card),
 // so this reads as a real section break as you scroll, not another small-caps card-head label.
@@ -861,6 +907,7 @@ input.masked-input { -webkit-text-security: disc; text-security: disc; }
   background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; line-height: 1;
 }
 .std-search-clear:hover { color: var(--text); background: var(--panel-alt); }
+.std-search-clear:focus-visible { @include gs-focus-ring; background: var(--panel-alt); }
 // The rail carries its own search box now (see index.html) so it sits where the approved mockup
 // put it - but the rail itself hides below std-rail-bp, so its copy would vanish exactly where
 // search matters most on a narrow viewport. The header keeps a second copy
@@ -955,7 +1002,7 @@ input.masked-input { -webkit-text-security: disc; text-security: disc; }
   padding: var(--sp-md); font: inherit; cursor: pointer; transition: border-color .12s, box-shadow .12s;
 }
 .std-hub-tile:hover { border-color: var(--accent-border); box-shadow: var(--shadow); }
-.std-hub-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.std-hub-tile:focus-visible { @include gs-focus-ring; border-color: var(--accent); }
 // One of exactly 2 reusable shapes per tile (check = Principles, layers = Build It Well - see
 // index.html) - not a unique icon per chapter, which would need upkeep every time a chapter is
 // added. Band-tinted (not the flat --muted the rest of the tile uses) so the two bands still read
@@ -1045,7 +1092,7 @@ gs-select { display: block; width: 100%; min-width: 0; }
   transition: border-color .12s, box-shadow .12s;
 }
 .gs-sel-trigger:hover { border-color: var(--faint); }
-.gs-sel-trigger.open, .gs-sel-trigger:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.gs-sel-trigger.open, .gs-sel-trigger:focus-visible { @include gs-focus-ring; border-color: var(--accent); }
 .gs-sel-val { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gs-sel-val.placeholder { color: var(--faint); }
 .gs-sel-chevron { flex: 0 0 auto; color: var(--muted); display: flex; align-items: center; transition: transform .15s; }
@@ -1066,6 +1113,9 @@ gs-select { display: block; width: 100%; min-width: 0; }
 .gs-sel-opt.selected .gs-sel-opt-label { font-weight: 600; color: var(--accent); }
 .gs-sel-search-wrap { padding: var(--sp-sm) var(--sp-sm) var(--sp-xs); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); }
 .gs-sel-search { width: 100%; background: transparent; border: none; outline: none; font: inherit; font-size: 12.5px; color: var(--text); }
+// Was outline: none above with nothing replacing it - no focus state at all. Borderless like the
+// rail rows, so it gets the same background-tint grounding.
+.gs-sel-search:focus-visible { @include gs-focus-ring; background: var(--panel-alt); }
 .gs-sel-search::placeholder { color: var(--muted); }
 .gs-sel-no-opts { padding: var(--sp-sm) var(--sp-md); font-size: 12.5px; color: var(--muted); }
 .gs-sel-custom-opt { color: var(--accent); }
@@ -1090,6 +1140,9 @@ gs-select { display: block; width: 100%; min-width: 0; }
 }
 .icon-x { background: transparent; border: 0; color: #9aa1ab; font-size: 15px; cursor: pointer; line-height: 1; }
 .icon-x:hover { color: #fff; }
+// Borderless, same always-dark modal chrome as .out-btn above - grounded with that palette's own
+// button-hover shade (#2a3040, same as .out-btn's resting background) rather than a border-color.
+.icon-x:focus-visible { @include gs-focus-ring($glow: #{$gs-accent-soft-dark}); background: #2a3040; }
 .modal-hint { margin: var(--sp-md) var(--sp-xl) 0; color: #8b93a4; font-size: 12px; line-height: 1.55; }
 .modal-sm .modal-hint { margin-bottom: var(--sp-lg); }
 .modal-actions { display: flex; gap: var(--sp-sm); justify-content: flex-end; padding: 0 var(--sp-xl) var(--sp-lg); }
@@ -1103,6 +1156,7 @@ gs-select { display: block; width: 100%; min-width: 0; }
   display: inline-flex; align-items: center; gap: var(--sp-sm); transition: background .12s;
 }
 .out-btn:hover { background: #343c4e; }
+.out-btn:focus-visible { @include gs-focus-ring($glow: #{$gs-accent-soft-dark}); border-color: #{$gs-accent-dark}; }
 .out-btn.copied { background: #15803d; border-color: #15803d; color: #fff; }
 .out-btn.danger-btn { background: #b42318; border-color: #b42318; color: #fff; }
 .out-btn.danger-btn:hover { background: #912018; border-color: #912018; }
@@ -1131,8 +1185,9 @@ gs-select { display: block; width: 100%; min-width: 0; }
   background: #12151d; border: 1px solid #39404f; color: #e6e9ef;
 }
 .deploy-form input[type="text"]::placeholder, .deploy-target input[type="text"]::placeholder { color: #6e7681; }
-.deploy-form input[type="text"]:focus, .deploy-target input[type="text"]:focus {
-  outline: none; border-color: #{$gs-accent-dark}; box-shadow: 0 0 0 3px #{$gs-accent-soft-dark};
+.deploy-form input[type="text"]:focus-visible, .deploy-target input[type="text"]:focus-visible {
+  @include gs-focus-ring($glow: #{$gs-accent-soft-dark});
+  border-color: #{$gs-accent-dark};
 }
 .deploy-target {
   border: 1px solid #39404f; border-radius: var(--radius-sm); padding: var(--sp-md); background: #12151d;
@@ -1147,6 +1202,9 @@ gs-select { display: block; width: 100%; min-width: 0; }
    to be in, the exact bug this replaces. */
 .btn-primary { background: #{$gs-accent-dark}; border-color: #{$gs-accent-dark}; color: #fff; }
 .btn-primary:hover { background: #{$gs-accent-hover-dark}; border-color: #{$gs-accent-hover-dark}; }
+// Overrides the theme-tied .btn base ring for the same reason background/hover above are fixed
+// rather than theme-tied - this modal is always dark regardless of the app's own theme.
+.btn-primary:focus-visible { @include gs-focus-ring($glow: #{$gs-accent-soft-dark}); border-color: #{$gs-accent-dark}; }
 .deploy-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: var(--sp-md) var(--sp-xl) 0; }
 .deploy-tab {
   font: inherit; font-size: 12px; padding: 4px 10px; border: 1px solid #39404f; border-radius: var(--radius-sm);
@@ -1154,13 +1212,14 @@ gs-select { display: block; width: 100%; min-width: 0; }
 }
 .deploy-tab:hover { color: #e6e9ef; }
 .deploy-tab.active { background: #{$gs-accent-dark}; border-color: #{$gs-accent-dark}; color: #fff; }
+.deploy-tab:focus-visible { @include gs-focus-ring($glow: #{$gs-accent-soft-dark}); border-color: #{$gs-accent-dark}; }
 .modal-code {
   margin: var(--sp-md) var(--sp-xl); flex: 1; min-height: 220px;
   background: #11141d; border: 1px solid #2c3242; border-radius: var(--sp-sm);
   color: #c3e88d; font-family: var(--mono); font-size: 12px; line-height: 1.5;
   padding: var(--sp-md); resize: none;
 }
-.modal-code:focus { outline: none; border-color: #{$gs-accent-dark}; }
+.modal-code:focus-visible { @include gs-focus-ring($glow: #{$gs-accent-soft-dark}); border-color: #{$gs-accent-dark}; }
 
 /* ---------- Output pane ---------- */
 /* Every color here reads from the --ed-* custom properties (see the .output-pane[data-editor-theme]
@@ -1186,6 +1245,7 @@ gs-select { display: block; width: 100%; min-width: 0; }
   color: var(--ed-icon-text); cursor: pointer; transition: background .12s, color .12s;
 }
 .editor-theme-toggle:hover { background: var(--ed-icon-hover-bg); color: var(--ed-icon-hover-text); }
+.editor-theme-toggle:focus-visible { @include gs-focus-ring; border-color: var(--accent); }
 .panels { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .panel { flex: 1 1 0; display: flex; flex-direction: column; min-height: 0; border-bottom: 1px solid var(--ed-border); }
 .panel:last-child { border-bottom: 0; }
@@ -1201,7 +1261,7 @@ gs-select { display: block; width: 100%; min-width: 0; }
   transition: background .12s, color .12s;
 }
 .panel-icon-btn:hover { background: var(--ed-icon-hover-bg); color: var(--ed-icon-hover-text); }
-.panel-icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.panel-icon-btn:focus-visible { @include gs-focus-ring; border-color: var(--accent); }
 .panel-icon-btn.copied { color: #4ade80; }
 .panel-icon-btn[data-tip]::after {
   content: attr(data-tip);

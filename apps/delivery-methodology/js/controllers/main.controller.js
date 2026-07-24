@@ -185,6 +185,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     vm.jobTitles = d.jobTitles;
     vm.methodologies = d.methodologies;
     backfillParticipants(vm.methodologies);
+    seedIdCounters();
     JARGON = d.jargon || {};
     vm.methodologyId = vm.methodologies[0].id;
     vm.subPhaseId = firstContentSubPhase(curMeth());
@@ -308,6 +309,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
 
   vm.view = 'journey';
   vm.setView = function (v) {
+    if (vm.editMode) { showToast('Finish editing first'); return; }
     vm.view = v;
     if (v === 'raci') { refreshRg(); }
     if (v !== 'search') { vm.searchQuery = ''; vm.searchResultsList = []; }
@@ -329,16 +331,19 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   };
 
   vm.switchMethodology = function (id) {
+    if (vm.editMode) { showToast('Finish editing first'); return; }
     vm.methodologyId = id;
     vm.openSubPhase(firstContentSubPhase(curMeth()));
     if (vm.view === 'raci') { refreshRg(); }
   };
   vm.selectPhase = function (phaseIndex) {
+    if (vm.editMode) { return; }
     var p = curMeth().phases[phaseIndex];
     var written = p.subPhases.find(hasContent);
     vm.openSubPhase((written || p.subPhases[0]).id);
   };
   vm.openSubPhase = function (id) {
+    if (vm.editMode) { return; }
     vm.subPhaseId = id;
     refreshLoc();
     vm.justRead = markRead(vm.loc.sp);
@@ -347,6 +352,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   // methodology - switches methodology first if needed, then opens + marks read, then returns to
   // the Journey view so the destination is actually visible.
   vm.jumpTo = function (subId, methId) {
+    if (vm.editMode) { return; }
     if (methId && methId !== vm.methodologyId) { vm.methodologyId = methId; }
     vm.view = 'journey';
     vm.searchQuery = '';
@@ -396,7 +402,28 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
      of the prototype's live-edit-plus-snapshot-revert approach: two-way ng-model binding makes
      editing a plain object trivial, so there's no need to mutate live data just to get that. */
   var TODAY = '2026-07-15';
-  var taskSeq = 1, jaSeq = 1, meetingSeq = 1, changelogSeq = 1000;
+  // Id counters for records created during editing (meetings, job aids, changelog entries). These
+  // MUST start above the highest id already present in seed + persisted data - otherwise a freshly
+  // minted 'mt1' collides with a seeded 'mt1', which Angular's ng-repeat rejects ("Duplicates in a
+  // repeater") and the edit panel throws. seedIdCounters() (called once data has loaded) scans all
+  // existing ids and bumps each counter past the max. Task ids use Date.now() so need no counter.
+  var jaSeq = 1, meetingSeq = 1, changelogSeq = 1000;
+  function idNum(prefix, id) {
+    if (typeof id !== 'string' || id.indexOf(prefix) !== 0) { return 0; }
+    var n = parseInt(id.slice(prefix.length), 10);
+    return isNaN(n) ? 0 : n;
+  }
+  function seedIdCounters() {
+    vm.methodologies.forEach(function (m) {
+      m.phases.forEach(function (p) {
+        p.subPhases.forEach(function (s) {
+          (s.meetings || []).forEach(function (x) { meetingSeq = Math.max(meetingSeq, idNum('mt', x.id) + 1); });
+          (s.changelog || []).forEach(function (x) { changelogSeq = Math.max(changelogSeq, idNum('c', x.id) + 1); });
+          (s.tasks || []).forEach(function (t) { (t.jobAids || []).forEach(function (j) { jaSeq = Math.max(jaSeq, idNum('ja', j.id) + 1); }); });
+        });
+      });
+    });
+  }
   function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
   vm.editMode = false;
@@ -818,6 +845,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   vm.runSearch = function () {
     var trimmed = (vm.searchQuery || '').trim();
     if (trimmed.length >= 1) {
+      if (vm.editMode) { showToast('Finish editing first'); return; }
       vm.view = 'search';
     } else if (vm.view === 'search') {
       vm.view = 'journey';
