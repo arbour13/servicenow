@@ -3625,44 +3625,72 @@ class Component extends DCLogic {
       ));
   }
   row2(a,b){ return React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},a,b); }
-  // State switcher (Default / Hover / Focus / Active). Picking a non-base state routes all subsequent
-  // style edits into that pseudo-state's rule bucket; the canvas previews it live for the selected node.
-  stateSwitcher(node,t){ const h=React.createElement; const c=this.primaryClass(node);
-    if(this.device!=='lg'){
-      const bp=this.device; const lbl=this.BREAKPOINTS[bp].label; const r=this.responsive[bp]||{}; const hasAny=c&&r[c]&&Object.keys(r[c]).length;
-      const reset=()=>{ if(c&&r[c]){ delete this.responsive[bp][c]; this.save(); this.forceUpdate(); } };
-      return h('div',{style:{marginBottom:14}},
-        h('div',{style:{display:'flex',alignItems:'center',gap:8,fontSize:11,color:t.text,background:this.dark?'rgba(217,119,87,.12)':'rgba(180,84,31,.08)',border:'1px solid '+(this.dark?'#5c3a28':'#e6c3a8'),borderRadius:7,padding:'8px 10px',lineHeight:1.5}},
-          h('span',{style:{fontWeight:700,color:this.dark?'#e0a05f':'#b4541f',whiteSpace:'nowrap'}}, lbl+' overrides'),
-          h('span',{style:{color:t.muted}}, '\u2264'+this.BREAKPOINTS[bp].max+'px'),
-          h('span',{style:{flex:1}}),
-          hasAny?h('span',{onClick:reset,...this.tt('Clear this element\u2019s '+lbl+' overrides'),style:{cursor:'pointer',fontSize:10.5,fontWeight:600,color:this.dark?'#e0a05f':'#b4541f',border:'1px solid '+(this.dark?'#5c3a28':'#e6c3a8'),borderRadius:5,padding:'2px 7px'}},'Reset'):null),
-        h('div',{style:{marginTop:6,fontSize:10.5,color:t.faint,lineHeight:1.5}}, 'Editing only what changes at \u2264'+this.BREAKPOINTS[bp].max+'px. ', h('b',{style:{color:t.muted,fontWeight:700}},'Blank fields cascade down'), ' \u2014 a property you don\u2019t set here inherits from the next larger tier ('+({md:'lg',sm:'md',xs:'sm'}[bp])+'\u2192\u2026\u2192lg base). State styles (Hover, Focus, \u2026) are edited on the Desktop layer and apply at every width.'));
-    }
+  // The layer-lock zone: State + Width segmented pickers replacing the old state dropdown and the
+  // separate breakpoint-only banner. Both segs are always visible — picking a non-base state routes
+  // subsequent style edits into that pseudo-state's rule bucket; picking a width routes them into
+  // that breakpoint's @media override bucket. Off-base, `banner` below names the active layer so the
+  // whole Style tab (see layerTint()/renderInspector) can re-chrome — you can't not-know where an
+  // edit lands. State stays disabled while a breakpoint is active: this app writes states on the
+  // Desktop layer only (they apply at every width), so combining the two isn't a real target.
+  layerTint(){
+    if(this.device!=='lg') { return this.dark?{bg:'rgba(124,58,237,.16)',bd:'#4c2f8a',fg:'#a78bfa'}:{bg:'#f3eeff',bd:'#ddd0f5',fg:'#6d28d9'}; }
+    if(this._estate!=='base') { return this.dark?{bg:'rgba(217,119,87,.12)',bd:'#5c3a28',fg:'#e0a05f'}:{bg:'rgba(180,84,31,.08)',bd:'#e6c3a8',fg:'#b4541f'}; }
+    return null;
+  }
+  layerZone(node,t){
+    const h=React.createElement; const c=this.primaryClass(node);
+    const atBp=this.device!=='lg'; const bp=this.device;
     const has=s=>{ const b=c&&this.stateStyles[c]; return !!(b&&b[s]&&Object.keys(b[s]).length); };
-    const opts=[['base','Default'],['hover','Hover'],['focus','Focus'],['active','Active'],['disabled','Disabled'],['checked','Checked'],['::before','::before'],['::after','::after']];
-    const labelOf=v=>(opts.find(o=>o[0]===v)||[v,v])[1];
-    // '•' marks a state/pseudo that already carries overrides (a dropdown option can't hold a real dot).
-    const stateOptions=opts.map(([v,l])=>[v, l+((v!=='base'&&has(v))?' •':'')]);
+    const STATE_MAIN=[['base','Base'],['hover','Hover'],['focus','Focus']];
+    const STATE_MORE=[['active','Active'],['disabled','Disabled'],['checked','Checked'],['::before','::before'],['::after','::after']];
+    const labelOf=v=>(STATE_MAIN.concat(STATE_MORE).find(o=>o[0]===v)||[v,v])[1];
+    const curInMore=STATE_MORE.some(([v])=>v===this._estate);
+    const setState=v=>{ this._estate=v; this.forceUpdate(); };
+    const moreOpts=STATE_MORE.map(([v,l])=>[v,l+(has(v)?' •':'')]);
+
+    const WIDTHS=[['lg','All'],['md','md'],['sm','sm'],['xs','xs']];
+    const widthHas=w=>w!=='lg'&&c&&this.responsive[w]&&this.responsive[w][c]&&Object.keys(this.responsive[w][c]).length;
+    const setWidth=v=>{ this.device=v; if(v!=='lg') { this._estate='base'; } this._box=null; this.forceUpdate(); };
+
     const isPseudo=this.isPseudoState(this._estate);
-    const bucket=(this._estate!=='base'&&c&&this.stateStyles[c])?this.stateStyles[c][this._estate]:null;
+    const bucket=(!atBp&&this._estate!=='base'&&c&&this.stateStyles[c])?this.stateStyles[c][this._estate]:null;
     const editedProps=bucket?Object.keys(bucket):[];
-    const stateHasEdits=editedProps.length>0;
-    const resetAll=()=>{ if(c&&this.stateStyles[c]){ delete this.stateStyles[c][this._estate]; if(!Object.keys(this.stateStyles[c]).length) { delete this.stateStyles[c]; } this.save(); this.forceUpdate(); } };
-    const fieldStyle={height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',width:'100%',boxSizing:'border-box',fontFamily:'ui-monospace,monospace'};
-    return h('div',{style:{marginBottom:14}},
-      h('div',{style:{display:'flex',alignItems:'center',gap:9}},
-        h('span',{style:{display:'flex',alignItems:'center',gap:6,flexShrink:0}},
-          h('span',{style:{fontSize:10,fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase',color:t.faint}},'State'),
-          stateHasEdits?h('span',{...this.tt('This state has changes'),style:{width:6,height:6,borderRadius:'50%',background:t.accent,flexShrink:0}}):null),
-        h('div',{style:{flex:1,minWidth:0}}, this.xselect('estate:'+(c||''),t,this._estate,stateOptions,v=>{this._estate=v;this.forceUpdate();},{label:'Style state'}))),
-      isPseudo?h('div',{style:{display:'flex',alignItems:'center',gap:10,marginTop:8}},
-        h('span',{style:{fontSize:10,fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase',color:t.faint,width:58,flexShrink:0}},'Content'),
-        h('input',{value:this.csVal(node,'content'),placeholder:'""',spellCheck:false,onChange:e=>this.setCS(node,'content',e.target.value),style:fieldStyle})):null,
-      (!isPseudo&&this._estate!=='base'&&stateHasEdits)?h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:8,padding:'6px 9px',background:t.accentSoft,border:'1px solid '+(this.dark?'#1c3a52':'#bcd6f5'),borderRadius:6}},
-        h('span',{style:{fontSize:10.5,color:t.accent,fontWeight:600}}, editedProps.length+' propert'+(editedProps.length===1?'y':'ies')+' edited in '+labelOf(this._estate)),
-        h('span',{onClick:resetAll,style:{fontSize:10.5,color:t.accent,fontWeight:700,cursor:'pointer',textDecoration:'underline'}},'Reset all')):null
-    );
+    const bpBucket=(atBp&&c&&this.responsive[bp])?this.responsive[bp][c]:null;
+    const bpEditedProps=bpBucket?Object.keys(bpBucket):[];
+
+    const tint=this.layerTint();
+    const resetState=()=>{ if(c&&this.stateStyles[c]){ delete this.stateStyles[c][this._estate]; if(!Object.keys(this.stateStyles[c]).length) { delete this.stateStyles[c]; } this.save(); this.forceUpdate(); } };
+    const resetBp=()=>{ if(c&&this.responsive[bp]&&this.responsive[bp][c]){ delete this.responsive[bp][c]; this.save(); this.forceUpdate(); } };
+
+    const rowLabel=lbl=>h('span',{style:{fontSize:10,fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase',color:t.faint,width:40,flexShrink:0}},lbl);
+
+    const stateRow=h('div',{style:{display:'flex',alignItems:'center',gap:6}},
+      rowLabel('State'),
+      h('div',Object.assign({style:{flex:1,minWidth:0,opacity:atBp?.45:1,pointerEvents:atBp?'none':'auto'}},atBp?this.tt('States are edited on the Desktop layer and apply at every width'):{}),
+        this.seg(t,STATE_MAIN.map(([v,l])=>({v,l:l+((v!=='base'&&has(v))?' •':'')})),this._estate,setState,{fill:true,aria:'Style state'})),
+      h('div',{style:{width:56,flexShrink:0,opacity:atBp?.45:1,pointerEvents:atBp?'none':'auto'}},
+        this.xselect('estate-more:'+(c||''),t,curInMore?this._estate:'',moreOpts,setState,{label:'More states',placeholder:'⋯',compact:true,search:false})));
+
+    const widthRow=h('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:8}},
+      rowLabel('Width'),
+      h('div',{style:{flex:1,minWidth:0}}, this.seg(t,WIDTHS.map(([v,l])=>({v,l:l+(widthHas(v)?' •':'')})),this.device,setWidth,{fill:true,aria:'Editing width'})));
+
+    const contentRow=isPseudo?h('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:8}},
+      rowLabel('Content'),
+      h('input',{value:this.csVal(node,'content'),placeholder:'""',spellCheck:false,onChange:e=>this.setCS(node,'content',e.target.value),style:{height:30,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none',flex:1,fontFamily:'ui-monospace,monospace'}})):null;
+
+    const bannerInfo=atBp
+      ? {label:'EDITING @ ≤'+this.BREAKPOINTS[bp].max+'PX',count:bpEditedProps.length,onReset:resetBp}
+      : (this._estate!=='base'?{label:'EDITING — '+labelOf(this._estate).toUpperCase(),count:editedProps.length,onReset:resetState}:null);
+    const banner=bannerInfo?h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:10,padding:'6px 9px',background:tint.bg,border:'1px solid '+tint.bd,borderRadius:6}},
+      h('span',{style:{fontSize:10.5,fontWeight:700,color:tint.fg}}, bannerInfo.label),
+      h('span',{style:{display:'flex',alignItems:'center',gap:8}},
+        h('span',{style:{fontSize:10.5,color:tint.fg}}, bannerInfo.count+' propert'+(bannerInfo.count===1?'y':'ies')),
+        bannerInfo.count>0?h('span',{onClick:bannerInfo.onReset,style:{fontSize:10.5,fontWeight:700,color:tint.fg,cursor:'pointer',textDecoration:'underline'}},'Reset'):null)
+    ):null;
+    const bpHint=atBp?h('div',{style:{marginTop:8,fontSize:10.5,color:t.faint,lineHeight:1.5}}, 'Editing only what changes at ≤'+this.BREAKPOINTS[bp].max+'px. ', h('b',{style:{color:t.muted,fontWeight:700}},'Blank fields cascade down'), ' — a property you don’t set here inherits from the next larger tier ('+({md:'lg',sm:'md',xs:'sm'}[bp])+'→…→lg base). State styles are edited on the Desktop layer and apply at every width.'):null;
+
+    return h('div',{style:{marginBottom:14}}, stateRow, widthRow, contentRow, banner, bpHint);
   }
   // ---- QW2/QW3/QW4 helpers ----
   slider(t,val,min,max,step,on){ const h=React.createElement;
@@ -4367,13 +4395,17 @@ class Component extends DCLogic {
         let act=this.inspTab||'style';
         if(!defs.some(d=>d[0]===act)) { act=defs.some(d=>d[0]==='style')?'style':(defs.length?defs[0][0]:null); }
         const active=defs.find(d=>d[0]===act);
+        // Off-base (a state or a breakpoint layer other than Base/All), the Style tab re-chromes —
+        // the whole panel tints so you can't not-know where an edit is about to land. Only the Style
+        // tab tints; Element writes to the instance regardless of layer, so it stays neutral.
+        const tint=act==='style'?this.layerTint():null;
         const tabBtn=d=>{ const on=d[0]===act; const go=()=>{this.inspTab=d[0];this.forceUpdate();};
           return h('div',Object.assign({key:d[0],onClick:go},this.a11y(go,{role:'tab',selected:on,label:d[1]+' tab'+(d[3]?' — carries data bindings':'')}),{style:{flex:1,height:36,display:'flex',alignItems:'center',justifyContent:'center',gap:5,cursor:'pointer',fontSize:12,fontWeight:on?700:600,color:on?t.accent:t.muted,borderBottom:'2px solid '+(on?t.accent:'transparent'),userSelect:'none'}}),
             d[1],
             d[3]?h('span',{...this.tt('This element carries data bindings'),style:{width:5,height:5,borderRadius:'50%',background:'#0e9f6e',flexShrink:0}}):null); };
         return h('div',{style:{flex:1,minHeight:0,display:'flex',flexDirection:'column'}},
-          h('div',{role:'tablist','aria-label':'Inspector',style:{display:'flex',borderBottom:'1px solid '+t.border,flexShrink:0}}, defs.map(tabBtn)),
-          h('div',{style:{overflowY:'auto',flex:1,scrollbarGutter:'stable'}}, h('div',{style:{padding:'12px 14px 14px'}}, active?active[2]:null)));
+          h('div',{role:'tablist','aria-label':'Inspector',style:{display:'flex',borderBottom:'1px solid '+(tint?tint.bd:t.border),flexShrink:0}}, defs.map(tabBtn)),
+          h('div',{style:{overflowY:'auto',flex:1,scrollbarGutter:'stable',background:tint?tint.bg:undefined,boxShadow:tint?('inset 3px 0 0 '+tint.bd):undefined}}, h('div',{style:{padding:'12px 14px 14px'}}, active?active[2]:null)));
       })()
     );
   }
@@ -5055,7 +5087,7 @@ class Component extends DCLogic {
   // Structure (display/flex-grid/spacing/size/overflow/position) and Appearance (typography/background/
   // border/effects/transforms). Position now lives inside Structure (per the reference), not below the cards.
   designTab(node,t){ const h=React.createElement; return h('div',null,
-    this.stateSwitcher(node,t),
+    this.layerZone(node,t),
     this.bigCard(t,'card:structure','structure','Structure', this.layoutTab(node,t)),
     this.bigCard(t,'card:appearance','palette','Appearance', this.styleTab(node,t,true)));
   }
@@ -5253,7 +5285,7 @@ class Component extends DCLogic {
   styleTab(node,t,noState){
     const h=React.createElement;
     return h('div',null,
-      noState?null:this.stateSwitcher(node,t),
+      noState?null:this.layerZone(node,t),
       this.typographyBlock(node,t),
       this.backgroundBlock(node,t),
       this.borderBlock(node,t),
