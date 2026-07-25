@@ -30,7 +30,11 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     toastTimer = $timeout(function () { vm.toast.show = false; }, 2200);
   }
 
-  var PHASE_COLORS = ['#00e0ac', '#21fbc8', '#8ef1ff', '#3ec2f8', '#b1f5ff'];
+  // CSS var references (not literal hexes) so every inline style="--nc/--pc: ..." binding and
+  // ng-style="{background: ...}" swatch that consumes these stays theme-aware - each var(--pN) is
+  // resolved live at the point of use, tracking whichever theme is active rather than freezing the
+  // dark-mode brights (same fix as jobTitleColor() above).
+  var PHASE_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--p5)'];
   var SUBPHASE_ICONS = {
     exchange: '<path d="M17 3l4 4-4 4"/><path d="M21 7H8"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h13"/>',
     flag: '<path d="M5 21V4"/><path d="M5 4h13l-2.5 4L18 12H5"/>',

@@ -10,7 +10,12 @@
   --hs-line: rgba(197, 220, 231, 0.35);
   --hs-line-soft: rgba(197, 220, 231, 0.18);
   --hs-teal: #00e0ac;
-  --hs-mint: #00e0ac;
+  /* True alias, not a second literal - this token predates the light rebase and its own naming
+     ("real theme uses one accent, not two") already says it should just track --hs-teal, which is
+     exactly what's needed now: --hs-teal darkens for light-mode contrast, and every existing
+     --hs-mint text/border usage (jargon underline, links, icons) needs to darken with it rather
+     than staying frozen at the bright dark-mode-only hex. */
+  --hs-mint: var(--hs-teal);
   --ink: #ffffff;
   --ink-soft: #c5dce7;
   --ink-2: var(--ink-soft);
@@ -74,35 +79,51 @@
   --on-accent-soft: #c5dce7;
   --on-accent-faint: #7d97a8;
   --on-accent-rgb: 255, 255, 255;
+  /* The two color-mix() stops .fcard.on blends the active phase color (--pc) into, and the digit
+     color on an active phase-color station fill - both were hardcoded hex before, which silently
+     froze them to dark-mode values once --p1..--p5 became theme-aware. */
+  --card-mix-1: #275b63;
+  --card-mix-2: #0d435f;
+  --on-phase-ink: #06121c;
 }
 
-/* Light theme - overrides just the tokens whose correct value actually depends on page brightness
-   (surfaces, ink, dividers, wash direction, RACI/teal text contrast, phase ramp). Accent elements
-   that keep a fixed dark or fixed bright treatment regardless of theme (gradient-pill, gradient-
-   card/-card-2, the RACI *background*-fill roles, --text-on-primary) are deliberately absent here -
-   see the --on-accent- and --r-*-text comments above for why. `data-theme` is set on <html> by
-   ThemeService.toggleApp() (Core's shared provider) - see js/app.module.js's `core` module
-   dependency and the inline pre-paint script in index.html. */
+/* Light theme - re-based on the REAL HomeSpace light-surface tokens (verbatim from
+   HomeSpace/Themes/CSS variables.scss), not invented greys. The portal's light sections are a
+   dark teal->blue band with light PANELS on it (panel-light / panel-heading-light /
+   panel-body-light: white header + $gradient-light-4 mint body + navy text) - this app's page
+   background takes the paler $brand-tertiary-lightest instead of the saturated band so it still
+   reads as an actual light mode, while --gradient-card adopts the real mint panel-body treatment
+   for card components. `data-theme` is set on <html> by ThemeService.toggleApp() (Core's shared
+   provider) - see js/app.module.js's `core` module dependency and the inline pre-paint script in
+   index.html. */
 :root[data-theme=light] {
-  --paper: #eef2f6;
-  --surface: linear-gradient(160deg, #ffffff 0%, #f4f7fa 100%);
-  --surface-flat: #ffffff;
-  --surface-2: #f4f7fa;
-  --navy: #eef2f6;
+  --paper: #e2fbff; /* $brand-tertiary-lightest - navy on it: 15.17:1 */
+  --surface: linear-gradient(160deg, #ffffff 0%, #f4fbfd 100%);
+  --surface-flat: #ffffff; /* $background-primary */
+  --surface-2: #f4fbfd;
+  --navy: #e2fbff;
   --navy-2: #ffffff;
-  --ink: #0a2136;
-  --ink-soft: #46607a;
+  --ink: #0a2136; /* $text-primary - the theme's canonical on-light text */
+  --ink-soft: #013c56; /* $text-secondary - 5.58:1 on the mint card body */
   --ink-2: var(--ink-soft);
-  --ink-faint: #55697c;
-  --hs-border-tertiary: #46607a;
-  --line: rgba(10, 33, 54, 0.16);
-  --line-soft: rgba(10, 33, 54, 0.08);
+  --ink-faint: #55697c; /* 5.27:1 on --paper, 5.68:1 on white */
+  /* $border-tertiary is a single theme constant used both as a hairline divider (panel-
+     heading-light's own border-bottom is 1px solid $border-tertiary on white - same low-contrast
+     hairline by the theme's own design, not a bug) AND as a hover-fill background paired with dark
+     navy text (11.5:1) - decoupled from --ink-soft on purpose, since in light mode ink-soft is now
+     dark navy and would be invisible paired with itself as a fill. */
+  --hs-border-tertiary: #c5dce7;
+  --line: #c5dce7; /* $border-tertiary */
+  --line-soft: rgba(10, 33, 54, 0.12);
   --wash-rgb: 10, 33, 54;
   --hs-teal: #017a5e;
   --teal: #017a5e;
   /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb) - each verified >=4.5:1
      against both --paper and --surface-flat (white). See the --r-*-text comment above for why only
-     the text role changes, not the background-fill role. */
+     the text role changes, not the background-fill role. These letters ALSO fail against the mint
+     --gradient-card body (2.5-2.9:1) - that's why RACI-bearing surfaces (the task table, RACI
+     grid) stay flat white rather than taking the two-tone card treatment; see scss comments on
+     those rules. */
   --r-r-text: #087a33;
   --r-a-text: #7a5f00;
   --r-c-text: #0b6fa4;
@@ -116,6 +137,20 @@
   --p3: #1f5a8f;
   --p4: #1f77a8;
   --p5: #2a4a78;
+  /* Text ON the mint --gradient-card body (--on-accent-* only ever appears on that fixed accent
+     surface, in EITHER theme - see the base :root comment). Verified against the worst stop of
+     $gradient-light-4 (#52c2cc): navy 7.75:1, text-secondary 5.58:1, mid-navy 4.51:1. */
+  --on-accent-ink: #0a2136;
+  --on-accent-soft: #013c56;
+  --on-accent-faint: #0e4b63;
+  --on-accent-rgb: 10, 33, 54;
+  /* The two color-mix() stops .fcard.on blends --pc into (see --card-mix-1/-2 below) and the
+     digit color on an active phase-color station fill (see --on-phase-ink below). */
+  --card-mix-1: #a9dbde; /* $gradient-light-1 stop 1 */
+  --card-mix-2: #71d5dc; /* $gradient-light-1 stop 2 */
+  --on-phase-ink: #ffffff;
+  --gradient-card: linear-gradient(120deg, #9bcacd 0%, #52c2cc 100%); /* $gradient-light-4 */
+  --gradient-card-2: linear-gradient(120deg, #a9dbde 0%, #71d5dc 100%); /* $gradient-light-1 */
   --shadow-md: 0 4px 10px 0 rgba(10, 33, 54, 0.12);
   --shadow-sm: 2px 2px 8px 0 rgba(10, 33, 54, 0.08);
 }
@@ -124,7 +159,44 @@
    CSS var), so its dark-mode stroke color (#c5dce7, matching --ink-soft) needs its own light-mode
    copy here instead of staying stuck light-on-light once the select's own background goes pale. */
 :root[data-theme=light] select.edit-in {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2346607a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23013c56' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+/* Real HomeSpace light panels are two-tone (panel-heading-light: white + a hairline
+   $border-tertiary bottom border, over panel-body-light: the mint gradient) - .fcard is the one
+   card here whose layout (icon+id identity row, then title/content) actually matches that shape,
+   so it gets a literal hard-stop split instead of a smooth single-color fill. Only the DEFAULT
+   (has-content, unselected) state - .fcard.on keeps its existing phase-color-blended glow instead
+   of also taking a header split, and .fcard.stub:not(.on) already overrides to transparent above. */
+:root[data-theme=light] .fcard:not(.stub, .on) {
+  background: linear-gradient(180deg, #ffffff 0, #ffffff 60px, var(--line) 60px, var(--line) 61px, #9bcacd 61px, #52c2cc 100%);
+}
+
+/* .fcard-sid's base color (#9db3c2) assumes it always sits on the dark gradient-card - true in
+   dark mode (no split there) and true for .fcard.on/.stub (which have their own overrides above),
+   but the split just introduced puts THIS state's sid inside the new white header zone instead. */
+:root[data-theme=light] .fcard:not(.stub, .on) .fcard-sid {
+  color: var(--ink-faint);
+}
+
+/* .whatsnew-item / .search-result / .metacard have no natural header/body split (a single-purpose
+   list row, not a widget card) but their layout is otherwise flat text on ink tokens, so they take
+   the mint body as a single-tone surface - the real panel-body-light fill - without forcing an
+   artificial divider. .ref-raci-card / .ref-aid stay on --surface-2 instead: both carry a --teal
+   link (job-aid link, crumb link) that fails contrast on mint (2.5:1), the same reason the RACI
+   table/LOE pills/meeting badges stay flat white - see the --r-*-text comment above. */
+:root[data-theme=light] .whatsnew-item,
+:root[data-theme=light] .search-result,
+:root[data-theme=light] .metacard {
+  background: var(--gradient-card);
+}
+
+/* --ink-faint fails on the mint fill (2.69:1) - these are the only --ink-faint text spots inside
+   the three components above, so they alone need the on-accent-safe faint token. */
+:root[data-theme=light] .whatsnew-item .wn-date,
+:root[data-theme=light] .search-result .sr-loc,
+:root[data-theme=light] .metacard .section-label {
+  color: var(--on-accent-faint);
 }
 
 * {
@@ -461,7 +533,7 @@ button {
 
 .station.on .station-num {
   background: var(--nc);
-  color: #06121c;
+  color: var(--on-phase-ink);
   transform: scale(1.12);
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--nc) 22%, transparent);
 }
@@ -553,7 +625,7 @@ button {
 }
 
 .fcard.on {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--pc) 32%, #275b63) 0%, color-mix(in srgb, var(--pc) 20%, #0d435f) 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--pc) 32%, var(--card-mix-1)) 0%, color-mix(in srgb, var(--pc) 20%, var(--card-mix-2)) 100%);
 }
 
 .fcard.on::before {
@@ -2434,7 +2506,11 @@ select.edit-in option {
 
 .rg-grouprow .gsid {
   font-family: var(--font-mono);
-  color: var(--text-on-primary);
+  /* Sits on a PHASE color fill (g.color), not the fixed gradient-pill accent - --text-on-primary
+     is invariant dark navy, but light-mode phase colors are themselves dark (a darkened ramp so
+     the road/progress-line stays >=3:1 on a pale page), so this needs --on-phase-ink instead,
+     matching .station.on .station-num's identical pairing. */
+  color: var(--on-phase-ink);
   padding: 2px 9px;
   border-radius: 10px;
   margin-right: 9px;
@@ -2637,7 +2713,8 @@ select.edit-in option {
 .jt-group-head .sid {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--text-on-primary);
+  /* Sits on a PHASE color fill (g.color) - see .rg-grouprow .gsid comment above. */
+  color: var(--on-phase-ink);
   padding: 2px 9px;
   border-radius: 12px;
   font-weight: 700;
@@ -2712,7 +2789,8 @@ select.edit-in option {
 .whatsnew-item .wn-loc {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-on-primary);
+  /* Sits on a PHASE color fill (it.color) - see .rg-grouprow .gsid comment above. */
+  color: var(--on-phase-ink);
   padding: 2px 9px;
   border-radius: 12px;
   font-weight: 700;
