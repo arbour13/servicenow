@@ -2,7 +2,7 @@
    from innerHTML-string building into controller state + declarative template bindings
    (index.html). All views (Journey read + edit, RACI grid/by-role, Reference, What's New, Search)
    are ported. */
-angular.module('deliveryMethodology').controller('MainController', ['DataService', '$sce', '$timeout', function (DataService, $sce, $timeout) {
+angular.module('deliveryMethodology').controller('MainController', ['DataService', '$sce', '$timeout', 'ThemeService', function (DataService, $sce, $timeout, ThemeService) {
   'use strict';
   var vm = this;
 
@@ -11,6 +11,15 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+
+  // ThemeService is the shared Core provider (see apps/core/js/services/theme.service.js) - init
+  // it with this app's own key prefix so its stored preference doesn't collide with any other
+  // app's. vm.theme is a thin display mirror the template reads; this app has no separate
+  // code-editor pane, so only the app-level theme half of the service is used.
+  ThemeService.init('deliveryMethodology');
+  function syncTheme() { vm.theme = ThemeService.readState().theme; }
+  syncTheme();
+  vm.toggleTheme = function () { ThemeService.toggleApp(); syncTheme(); };
 
   vm.toast = { show: false, msg: '' };
   var toastTimer = null;
@@ -223,9 +232,12 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   vm.jobTitleById = function (id) {
     return vm.jobTitles.find(function (r) { return r.id === id; });
   };
+  // A CSS var reference (not a literal hex) so the inline style="--c: ..." bindings that consume
+  // this stay theme-aware - var(--ink-soft) is itself resolved live wherever --c is actually used
+  // (color: var(--c)), tracking whichever theme is active rather than freezing the dark-mode hex.
   vm.jobTitleColor = function (id) {
     var jt = vm.jobTitleById(id);
-    return (jt && jt.external) ? '#c5dce7' : '#c5dce7';
+    return (jt && jt.external) ? 'var(--ink-soft)' : 'var(--ink-soft)';
   };
   // Fixed display order for job titles everywhere a set of them is shown - anything not listed
   // here (e.g. GRS-only titles) sorts after, in whatever order it was found. External

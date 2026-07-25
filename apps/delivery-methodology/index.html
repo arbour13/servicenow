@@ -5,13 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Delivery Methodology</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3ClinearGradient%20id%3D%22g%22%20x1%3D%222%22%20y1%3D%224%22%20x2%3D%2222%22%20y2%3D%2222%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%2317b8a6%22/%3E%0A%20%20%20%20%20%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%233fe0c5%22/%3E%0A%20%20%20%20%3C/linearGradient%3E%0A%20%20%3C/defs%3E%0A%20%20%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%2224%22%20height%3D%2224%22%20rx%3D%225.5%22%20fill%3D%22%230a1e33%22/%3E%0A%20%20%3Cpath%20d%3D%22M4.2%2012.6l15.6-6.2-6%2015.6-2.6-6.9-6.9-2.5z%22%20fill%3D%22none%22%20stroke%3D%22url%28%23g%29%22%20stroke-width%3D%221.7%22%20stroke-linejoin%3D%22round%22%20stroke-linecap%3D%22round%22/%3E%0A%3C/svg%3E%0A" />
+<script>
+// Blocking (deliberately not deferred/async) - runs before the stylesheet below paints anything,
+// so the app opens straight into the right theme instead of flashing dark mode first and then
+// switching. Mirrors ThemeService.init()'s own logic exactly (same localStorage key, same
+// prefers-color-scheme fallback); that code still runs the same logic on bootstrap (idempotent -
+// it just re-sets the same attribute), this is only here to beat first paint. See Glide Studio's
+// index.html for the same pattern.
+(function () {
+  try {
+    var t = localStorage.getItem('deliveryMethodologyTheme');
+    if (!t) { t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
 <!-- Dev-harness fonts only - matches the standalone prototype so the preview renders in Montserrat /
      IBM Plex Mono rather than a fallback. The deployed Service Portal widget inherits type from the
      portal theme (per ServiceNow/CLAUDE.md styling notes), so these CDN links do NOT ship. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=20260724a">
+<link rel="stylesheet" href="css/app.css?v=20260724b">
 </head>
 <body>
 
@@ -22,6 +37,8 @@
   the standalone packager app, not from inside this app.
 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
+<script src="../core/js/app.module.js"></script>
+<script src="../core/js/services/theme.service.js"></script>
 <script src="js/app.module.js"></script>
 <script src="js/services/data.service.js"></script>
 <script src="js/controllers/main.controller.js"></script>
@@ -50,6 +67,11 @@
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
           <input type="text" placeholder="Search…" autocomplete="off" ng-model="vm.searchQuery" ng-change="vm.runSearch()">
         </div>
+        <button type="button" class="theme-toggle" ng-click="vm.toggleTheme()"
+                aria-pressed="{{vm.theme === 'dark'}}" title="Toggle light/dark mode">
+          <svg ng-if="vm.theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+          <svg ng-if="vm.theme !== 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
       </div>
       <div class="pagehdr-title">
         <div class="pagehdr-title-row">

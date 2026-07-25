@@ -50,6 +50,81 @@
   --focus-ring: 2px solid var(--hs-teal);
   --focus-ring-offset: 2px;
   --hs-border-tertiary: #c5dce7;
+  /* RGB triple (no alpha) so rgba(var(--wash-rgb), X) calls elsewhere can override just the base
+     color per theme while each call site keeps its own already-tuned alpha. Used for subtle
+     hover/divider washes on the app's OWN theme-tracking surfaces (page/panel backgrounds) -
+     NOT for washes inside fixed always-dark accent components (see --on-accent-rgb below). */
+  --wash-rgb: 255, 255, 255;
+  /* RACI letters serve two different roles that must NOT move together: a BACKGROUND fill (the
+     RACI toggle buttons, paired with the fixed --text-on-primary dark-navy foreground - stays
+     legible against either page theme, so the fill itself never needs to change) vs. direct
+     foreground TEXT/icon color on the app's own surface (the read-view RACI letters, the orphan
+     badge - THIS needs a theme-appropriate contrast-safe value, since the bright dark-mode-tuned
+     hex fails AA on a light surface). --r-r/-a/-c/-i stay the fixed bright bg-fill values in both
+     themes; --r-*-text is the one that gets darkened for light mode. */
+  --r-r-text: var(--r-r);
+  --r-a-text: var(--r-a);
+  --r-c-text: var(--r-c);
+  --r-i-text: var(--r-i);
+  /* Invariant "always looks like dark mode" tokens for text/washes inside components that keep a
+     fixed dark background regardless of the app theme (.fcard's gradient-card, .pchange's
+     gradient-card-2) - deliberately NEVER redefined in the light block below, so these components
+     don't go illegible when the rest of the page switches to light. */
+  --on-accent-ink: #ffffff;
+  --on-accent-soft: #c5dce7;
+  --on-accent-faint: #7d97a8;
+  --on-accent-rgb: 255, 255, 255;
+}
+
+/* Light theme - overrides just the tokens whose correct value actually depends on page brightness
+   (surfaces, ink, dividers, wash direction, RACI/teal text contrast, phase ramp). Accent elements
+   that keep a fixed dark or fixed bright treatment regardless of theme (gradient-pill, gradient-
+   card/-card-2, the RACI *background*-fill roles, --text-on-primary) are deliberately absent here -
+   see the --on-accent- and --r-*-text comments above for why. `data-theme` is set on <html> by
+   ThemeService.toggleApp() (Core's shared provider) - see js/app.module.js's `core` module
+   dependency and the inline pre-paint script in index.html. */
+:root[data-theme=light] {
+  --paper: #eef2f6;
+  --surface: linear-gradient(160deg, #ffffff 0%, #f4f7fa 100%);
+  --surface-flat: #ffffff;
+  --surface-2: #f4f7fa;
+  --navy: #eef2f6;
+  --navy-2: #ffffff;
+  --ink: #0a2136;
+  --ink-soft: #46607a;
+  --ink-2: var(--ink-soft);
+  --ink-faint: #55697c;
+  --hs-border-tertiary: #46607a;
+  --line: rgba(10, 33, 54, 0.16);
+  --line-soft: rgba(10, 33, 54, 0.08);
+  --wash-rgb: 10, 33, 54;
+  --hs-teal: #017a5e;
+  --teal: #017a5e;
+  /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb) - each verified >=4.5:1
+     against both --paper and --surface-flat (white). See the --r-*-text comment above for why only
+     the text role changes, not the background-fill role. */
+  --r-r-text: #087a33;
+  --r-a-text: #7a5f00;
+  --r-c-text: #0b6fa4;
+  --r-i-text: #5b6472;
+  /* Darker steps of the same teal->blue family used for the dark-mode ramp, mirroring the dark-mode
+     rebase's own finding in reverse: light/lighter brand steps read well on a DARK surface, darker
+     steps read well on a LIGHT one. Verified >=3:1 (WCAG 1.4.11 non-text) against --paper; this is a
+     decorative progress-bar fill, not body text, so the lighter AA text bar doesn't apply. */
+  --p1: #017a5e;
+  --p2: #0c6a86;
+  --p3: #1f5a8f;
+  --p4: #1f77a8;
+  --p5: #2a4a78;
+  --shadow-md: 0 4px 10px 0 rgba(10, 33, 54, 0.12);
+  --shadow-sm: 2px 2px 8px 0 rgba(10, 33, 54, 0.08);
+}
+
+/* select.edit-in's dropdown-arrow stroke is baked into a data-URI background-image (can't take a
+   CSS var), so its dark-mode stroke color (#c5dce7, matching --ink-soft) needs its own light-mode
+   copy here instead of staying stuck light-on-light once the select's own background goes pale. */
+:root[data-theme=light] select.edit-in {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2346607a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
 
 * {
@@ -115,7 +190,7 @@ button {
   border-radius: 18px;
   border: 1px solid var(--line);
   background: var(--surface-flat);
-  color: #fff;
+  color: var(--ink);
   padding: 0 14px 0 34px;
   font-family: inherit;
   font-size: 13px;
@@ -142,6 +217,30 @@ button {
   stroke-width: 2;
 }
 
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-flat);
+  color: var(--ink-faint);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.theme-toggle:hover {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.theme-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
 .pagehdr-title {
   margin-bottom: 14px;
 }
@@ -152,7 +251,7 @@ button {
   font-size: 27px;
   letter-spacing: -0.015em;
   margin: 0 0 4px;
-  color: #fff;
+  color: var(--ink);
 }
 
 .pg-sub {
@@ -255,7 +354,7 @@ button {
 .meth-tab {
   border: none;
   background: transparent;
-  color: #a9c1d6;
+  color: var(--ink-soft);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 13px;
@@ -266,7 +365,7 @@ button {
 }
 
 .meth-tab:hover {
-  color: #fff;
+  color: var(--ink);
 }
 
 .meth-tab.active {
@@ -348,7 +447,7 @@ button {
   justify-content: center;
   font-size: 18px;
   font-weight: 800;
-  color: #fff;
+  color: var(--ink);
   background: var(--surface-2);
   border: 2px solid var(--nc);
   position: relative;
@@ -389,7 +488,7 @@ button {
 .station .station-name {
   font-size: 13.5px;
   font-weight: 700;
-  color: #fff;
+  color: var(--ink);
   margin-top: 11px;
   transition: color 0.15s;
 }
@@ -400,7 +499,7 @@ button {
 
 .station .station-count {
   font-size: 11px;
-  color: #9db3c2;
+  color: var(--ink-faint);
   margin-top: 2px;
 }
 
@@ -462,11 +561,11 @@ button {
 }
 
 .fcard.on .fcard-sid {
-  color: var(--ink-2);
+  color: var(--on-accent-soft);
 }
 
 .fcard.on .fcard-meta {
-  color: var(--ink-2);
+  color: var(--on-accent-soft);
 }
 
 .fcard.stub:not(.on) {
@@ -476,6 +575,17 @@ button {
 
 .fcard.stub:not(.on)::before {
   opacity: 0.3;
+}
+
+/* Unlike a has-content card, an unselected stub's background is transparent (shows the page's own
+   theme-tracking surface through it, not the fixed-dark gradient-card) - so its sid/name need to
+   track theme too, overriding the on-accent-* defaults below that assume the gradient is present. */
+.fcard.stub:not(.on) .fcard-sid {
+  color: var(--ink-faint);
+}
+
+.fcard.stub:not(.on) .fcard-name {
+  color: var(--ink);
 }
 
 .fcard .fcard-head {
@@ -519,9 +629,13 @@ button {
   font-weight: 700;
   margin-top: 2px;
   line-height: 1.25;
-  color: #fff;
+  color: var(--on-accent-ink);
 }
 
+/* Unlike fcard-name/fcard-sid, this text ONLY ever renders on a stub (no-content) card - see the
+   ng-if="!vm.hasContent(s)" gate in index.html - which never gets the fixed-dark gradient-card
+   background (only :not(.on) applies here; the .on+stub case is covered by
+   .fcard.on .fcard-meta above), so this one tracks theme rather than using --on-accent-faint. */
 .fcard .fcard-meta {
   font-size: 11px;
   color: var(--ink-faint);
@@ -571,7 +685,7 @@ h1.sp-title {
   font-size: 26px;
   font-weight: 700;
   margin: 0 0 14px;
-  color: #fff;
+  color: var(--ink);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -629,12 +743,12 @@ h1.sp-title {
   padding: 12px 16px;
   margin: 0 0 18px;
   font-size: 13.5px;
-  color: #fff;
+  color: var(--on-accent-ink);
   max-width: 72ch;
 }
 
 .pchange b {
-  color: #fff;
+  color: var(--on-accent-ink);
 }
 
 .pchange-list {
@@ -655,11 +769,11 @@ h1.sp-title {
   content: "•";
   position: absolute;
   left: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--on-accent-rgb), 0.6);
 }
 
 .pchange-ts {
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(var(--on-accent-rgb), 0.65);
   font-size: 12px;
 }
 
@@ -756,7 +870,7 @@ h4.sec {
 .lede {
   font-size: 16px;
   line-height: 1.7;
-  color: #f0f4f6;
+  color: var(--ink);
   max-width: 72ch;
   margin: 14px 0;
 }
@@ -764,7 +878,7 @@ h4.sec {
 .obj {
   font-size: 15px;
   line-height: 1.7;
-  color: #cfe0ee;
+  color: var(--ink-soft);
   max-width: 72ch;
   margin: 0;
 }
@@ -795,7 +909,7 @@ h4.sec {
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--wash-rgb), 0.03);
   border-left: 2px solid var(--line);
   border-radius: 0 8px 8px 0;
   padding: 10px 14px;
@@ -848,14 +962,14 @@ h4.sec {
   font-weight: 700;
   padding: 2px 9px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--wash-rgb), 0.07);
   color: var(--ink);
   border: 1px solid var(--line);
   white-space: nowrap;
 }
 
 .rolechip.ext {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--wash-rgb), 0.03);
   color: var(--ink-2);
   border: 1px dashed var(--line);
 }
@@ -876,7 +990,7 @@ h4.sec {
 
 .loe-pill.opt {
   background: rgba(240, 185, 90, 0.14);
-  color: #f0b95a;
+  color: var(--r-a-text);
   border: 1px dashed rgba(240, 185, 90, 0.5);
 }
 
@@ -896,7 +1010,7 @@ h4.sec {
 }
 
 .loe2 .row:nth-child(odd) {
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(var(--wash-rgb), 0.025);
 }
 
 .loe2 .loe-role {
@@ -926,7 +1040,7 @@ h4.sec {
   align-items: center;
   gap: 12px;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(var(--wash-rgb), 0.025);
   border-radius: 8px;
   font-size: 13px;
 }
@@ -993,7 +1107,7 @@ h4.sec {
   padding: 2px 8px;
   border-radius: 20px;
   background: rgba(240, 185, 90, 0.14);
-  color: #f0b95a;
+  color: var(--r-a-text);
   border: 1px dashed rgba(240, 185, 90, 0.5);
 }
 
@@ -1108,7 +1222,7 @@ h4.sec {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--wash-rgb), 0.08);
   color: var(--ink-faint);
   font-size: 10px;
   font-weight: 700;
@@ -1189,12 +1303,12 @@ table.ttbl td.cell {
 }
 
 table.ttbl td.cell.off {
-  color: rgba(255, 255, 255, 0.16);
+  color: rgba(var(--wash-rgb), 0.16);
   font-weight: 400;
 }
 
 table.ttbl tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--wash-rgb), 0.03);
 }
 
 table.ttbl .jobaid {
@@ -1227,19 +1341,19 @@ table.ttbl .jobaid {
 }
 
 .rl-R {
-  color: var(--r-r);
+  color: var(--r-r-text);
 }
 
 .rl-A {
-  color: var(--r-a);
+  color: var(--r-a-text);
 }
 
 .rl-C {
-  color: var(--r-c);
+  color: var(--r-c-text);
 }
 
 .rl-I {
-  color: var(--r-i);
+  color: var(--r-i-text);
 }
 
 .rlegend {
@@ -1287,7 +1401,7 @@ table.ttbl .jobaid {
   gap: 12px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-left: 3px solid #e5c20b;
+  border-left: 3px solid var(--r-a-text);
   border-radius: var(--radius);
   padding: 10px 16px;
   margin: 22px 0 24px;
@@ -1299,7 +1413,7 @@ table.ttbl .jobaid {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #e5c20b;
+  color: var(--r-a-text);
   font-weight: 600;
 }
 
@@ -1340,14 +1454,14 @@ table.ttbl .jobaid {
 .btn:hover {
   background: var(--hs-border-tertiary);
   color: var(--text-on-primary);
-  border-color: #fff;
+  border-color: var(--ink);
   box-shadow: var(--shadow-md);
 }
 
 .btn:active {
   background: transparent;
   color: var(--ink);
-  border-color: #fff;
+  border-color: var(--ink);
   box-shadow: var(--shadow-inset);
 }
 
@@ -1378,7 +1492,7 @@ table.ttbl .jobaid {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
-  background: #0e2740;
+  background: var(--surface-2);
   resize: vertical;
   outline: none;
 }
@@ -1401,7 +1515,10 @@ select.edit-in {
   -webkit-appearance: none;
   -moz-appearance: none;
   padding: 8px 34px 8px 12px;
-  background-color: #0e2740;
+  background-color: var(--surface-2);
+  /* Dropdown-arrow stroke color is baked into the data URI (can't reference a CSS var inside one),
+     so it's a literal matching --ink-soft's DARK-mode value here; the light theme below supplies
+     its own copy with a dark-mode-inverted stroke instead of leaving this stuck light-on-light. */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c5dce7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -1410,7 +1527,7 @@ select.edit-in {
 }
 
 select.edit-in option {
-  background: #0b2137;
+  background: var(--surface-2);
   color: var(--ink);
 }
 
@@ -1418,7 +1535,7 @@ select.edit-in option {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 28px;
-  color: #fff;
+  color: var(--ink);
 }
 
 .edit-hint {
@@ -1455,7 +1572,7 @@ select.edit-in option {
   font-size: 10.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #9db3c2;
+  color: var(--ink-faint);
   display: block;
   margin-bottom: 6px;
 }
@@ -1473,7 +1590,7 @@ select.edit-in option {
   font-weight: 500;
   padding: 5px 14px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--wash-rgb), 0.05);
   color: var(--ink-faint);
   border: 1px solid var(--line);
   cursor: pointer;
@@ -1552,7 +1669,7 @@ select.edit-in option {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--r-a);
+  color: var(--r-a-text);
   background: rgba(229, 194, 11, 0.12);
   border: 1px solid rgba(229, 194, 11, 0.4);
   border-radius: 4px;
@@ -1759,7 +1876,7 @@ select.edit-in option {
 }
 
 .raci-matrix {
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-top: 1px solid rgba(var(--wash-rgb), 0.22);
   border-radius: 0;
   overflow: visible;
   margin-top: 0;
@@ -1771,7 +1888,7 @@ select.edit-in option {
   align-items: center;
   gap: 8px;
   padding: 8px 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-top: 1px solid rgba(var(--wash-rgb), 0.16);
   background: none;
 }
 
@@ -1800,8 +1917,8 @@ select.edit-in option {
   width: 26px;
   height: 26px;
   border-radius: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(var(--wash-rgb), 0.28);
+  background: rgba(var(--wash-rgb), 0.05);
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-weight: 700;
@@ -1838,7 +1955,7 @@ select.edit-in option {
   gap: 8px;
   padding: 8px 2px 0;
   background: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-top: 1px solid rgba(var(--wash-rgb), 0.16);
 }
 
 .add-jt-row select {
@@ -1849,7 +1966,7 @@ select.edit-in option {
 .ja-edit-wrap {
   margin-top: 20px;
   padding-top: 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-top: 1px solid rgba(var(--wash-rgb), 0.22);
 }
 
 .ja-edit-lbl {
@@ -1872,8 +1989,8 @@ select.edit-in option {
 
 .ja-edit {
   position: relative;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(var(--wash-rgb), 0.05);
+  border: 1px solid rgba(var(--wash-rgb), 0.18);
   border-left: 3px solid var(--teal);
   border-radius: 8px;
   padding: 16px;
@@ -1920,7 +2037,7 @@ select.edit-in option {
   font-size: 10.5px;
   font-weight: 700;
   color: var(--ink-faint);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--wash-rgb), 0.05);
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 4px 11px;
@@ -2067,17 +2184,17 @@ select.edit-in option {
 }
 
 .loe-flag-btn.on.mandatory {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--wash-rgb), 0.1);
   color: var(--ink-2);
 }
 
 .loe-flag-btn.on.optional {
   background: rgba(240, 185, 90, 0.18);
-  color: #f0b95a;
+  color: var(--r-a-text);
 }
 
 .loe-flag-btn.on.nonbillable {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--wash-rgb), 0.1);
   color: var(--ink-2);
 }
 
@@ -2132,7 +2249,7 @@ select.edit-in option {
 }
 
 .vtab:hover {
-  color: #fff;
+  color: var(--ink);
 }
 
 .vtab svg {
@@ -2142,7 +2259,7 @@ select.edit-in option {
 
 .vtab.on {
   background: var(--surface-2);
-  color: #fff;
+  color: var(--ink);
 }
 
 .vtab.on svg {
@@ -2193,7 +2310,7 @@ select.edit-in option {
   align-items: center;
   gap: 6px;
   font-size: 11.5px;
-  color: #b9cdd6;
+  color: var(--ink-soft);
 }
 
 .rg-legend .sw {
@@ -2229,7 +2346,7 @@ select.edit-in option {
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: #9fd;
+  color: var(--teal);
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -2261,16 +2378,19 @@ select.edit-in option {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
-  color: #7fd8cb;
+  color: var(--teal);
   border-bottom: 2px solid var(--line);
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
 }
 
+/* Was a fixed dark navy literal - broke once the base th above (var(--surface-2)) started
+   tracking theme too, since a light-mode th would hover from near-white into a hardcoded dark
+   navy with no matching text-color change. Now tracks theme like the rest of the table. */
 .rg-table thead th:hover {
-  background: #123a52;
-  color: #fff;
+  background: var(--surface-flat);
+  color: var(--ink);
 }
 
 .rg-table thead th.taskcol {
@@ -2292,7 +2412,7 @@ select.edit-in option {
 .rg-table th .cnt {
   display: block;
   font-size: 9px;
-  color: #5f9;
+  color: var(--teal);
   font-weight: 400;
   margin-top: 2px;
 }
@@ -2326,12 +2446,12 @@ select.edit-in option {
 }
 
 .rg-table tr.taskrow:hover td {
-  background: #0e2947;
+  background: var(--surface-2);
 }
 
 .rg-table tbody td {
   padding: 10px 8px;
-  border-bottom: 1px solid #142c44;
+  border-bottom: 1px solid var(--line);
   text-align: center;
   font-family: var(--font-mono);
   font-weight: 700;
@@ -2358,7 +2478,7 @@ select.edit-in option {
 }
 
 .rg-table tr.taskrow:hover td.tname {
-  background: #0e2947;
+  background: var(--surface-2);
 }
 
 .rg-table td.dimmed {
@@ -2406,7 +2526,7 @@ select.edit-in option {
 
 .rg-exgrid p {
   margin: 0;
-  color: #c3d5dd;
+  color: var(--ink-soft);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -2430,7 +2550,7 @@ select.edit-in option {
   background: var(--surface-2);
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #7fd8cb;
+  color: var(--teal);
   border-top: 2px solid var(--line);
   padding: 9px 8px;
   text-align: center;
@@ -2446,7 +2566,7 @@ select.edit-in option {
 }
 
 .rg-table td.colhi, .rg-table th.colhi {
-  background: #10314e !important;
+  background: var(--teal-wash) !important;
 }
 
 .jt-picker {
@@ -2511,7 +2631,7 @@ select.edit-in option {
   padding-bottom: 8px;
   margin-bottom: 12px;
   border-bottom: 1px solid var(--line);
-  color: #fff;
+  color: var(--ink);
 }
 
 .jt-group-head .sid {
@@ -2602,7 +2722,7 @@ select.edit-in option {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 15.5px;
-  color: #fff;
+  color: var(--ink);
 }
 
 .whatsnew-item .wn-date {
@@ -2653,7 +2773,7 @@ select.edit-in option {
   font-weight: 600;
   font-size: 15px;
   margin-bottom: 3px;
-  color: #fff;
+  color: var(--ink);
 }
 
 .search-result .sr-snip {
@@ -2728,7 +2848,7 @@ select.edit-in option {
   font-family: var(--font-mono);
   font-weight: 800;
   font-size: 15px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(var(--wash-rgb), 0.07);
 }
 
 .ref-raci-name {
@@ -2781,7 +2901,7 @@ select.edit-in option {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--wash-rgb), 0.03);
   border: 1px dashed var(--line);
   border-radius: 12px;
   padding: 18px 20px;

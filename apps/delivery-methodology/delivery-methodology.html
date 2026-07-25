@@ -8,6 +8,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script>
+// Blocking (deliberately not deferred/async) - runs before the <style> block below paints anything,
+// so the app opens straight into the right theme instead of flashing dark mode first and then
+// switching. Same localStorage key + fallback logic as the bottom-of-file theme toggle wiring.
+(function () {
+  try {
+    var t = localStorage.getItem('gf_delivery_methodology_theme_v1');
+    if (!t) { t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
 <style>
   :root {
     /* Homespace design tokens - pulled directly from CSS variables.scss */
@@ -79,6 +91,82 @@
        theme's focus-visible mixin. Replaces the missing focus indicators (WCAG 2.4.7) app-wide. */
     --focus-ring: 2px solid var(--hs-teal);
     --focus-ring-offset: 2px;
+
+    /* RGB triple (no alpha) so rgba(var(--wash-rgb), X) calls elsewhere can override just the base
+       color per theme while each call site keeps its own already-tuned alpha. Used for subtle
+       hover/divider washes on the app's OWN theme-tracking surfaces (page/panel backgrounds) -
+       NOT for washes inside fixed always-dark accent components (see --on-accent-rgb below). */
+    --wash-rgb: 255, 255, 255;
+    /* RACI letters serve two different roles that must NOT move together: a BACKGROUND fill (the
+       RACI toggle buttons, paired with the fixed --text-on-primary dark-navy foreground - stays
+       legible against either page theme, so the fill itself never needs to change) vs. direct
+       foreground TEXT/icon color on the app's own surface (the read-view RACI letters) - THIS
+       needs a theme-appropriate contrast-safe value, since the bright dark-mode-tuned hex fails
+       AA on a light surface. --r-r/-a/-c/-i stay the fixed bright bg-fill values in both themes;
+       --r-*-text is the one that gets darkened for light mode. */
+    --r-r-text: var(--r-r);
+    --r-a-text: var(--r-a);
+    --r-c-text: var(--r-c);
+    --r-i-text: var(--r-i);
+    /* Invariant "always looks like dark mode" tokens for text/washes inside components that keep a
+       fixed dark background regardless of the app theme (.fcard's gradient-card, .pchange's
+       gradient-card-2) - deliberately NEVER redefined in the light block below, so these
+       components don't go illegible when the rest of the page switches to light. */
+    --on-accent-ink: #ffffff;
+    --on-accent-soft: #c5dce7;
+    --on-accent-faint: #7d97a8;
+    --on-accent-rgb: 255, 255, 255;
+  }
+
+  /* Light theme - overrides just the tokens whose correct value actually depends on page
+     brightness (surfaces, ink, dividers, wash direction, RACI/teal text contrast, phase ramp).
+     Accent elements that keep a fixed dark or fixed bright treatment regardless of theme
+     (gradient-pill, gradient-card/-card-2, the RACI *background*-fill roles, --text-on-primary)
+     are deliberately absent here - see the --on-accent- and --r-*-text comments above for why.
+     `data-theme` is set on <html> by toggleTheme() (self-contained here - the prototype has no
+     Angular injector to share Core's ThemeService with, unlike the deployed app). */
+  :root[data-theme="light"] {
+    --paper: #eef2f6;
+    --surface: linear-gradient(160deg, #ffffff 0%, #f4f7fa 100%);
+    --surface-flat: #ffffff;
+    --surface-2: #f4f7fa;
+    --navy: #eef2f6;
+    --navy-2: #ffffff;
+    --ink: #0a2136;
+    --ink-soft: #46607a;
+    --ink-2: var(--ink-soft);
+    --ink-faint: #55697c;
+    --hs-border-tertiary: #46607a;
+    --line: rgba(10, 33, 54, 0.16);
+    --line-soft: rgba(10, 33, 54, 0.08);
+    --wash-rgb: 10, 33, 54;
+    --hs-teal: #017a5e;
+    --teal: #017a5e;
+    /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb) - each verified
+       >=4.5:1 against both --paper and --surface-flat (white). See the --r-*-text comment above
+       for why only the text role changes, not the background-fill role. */
+    --r-r-text: #087a33;
+    --r-a-text: #7a5f00;
+    --r-c-text: #0b6fa4;
+    --r-i-text: #5b6472;
+    /* Darker steps of the same teal->blue family used for the dark-mode ramp, mirroring the
+       dark-mode rebase's own finding in reverse: light/lighter brand steps read well on a DARK
+       surface, darker steps read well on a LIGHT one. Verified >=3:1 (WCAG 1.4.11 non-text)
+       against --paper; this is a decorative progress-bar fill, not body text. */
+    --p1: #017a5e;
+    --p2: #0c6a86;
+    --p3: #1f5a8f;
+    --p4: #1f77a8;
+    --p5: #2a4a78;
+    --shadow-md: 0 4px 10px 0 rgba(10, 33, 54, 0.12);
+    --shadow-sm: 2px 2px 8px 0 rgba(10, 33, 54, 0.08);
+  }
+
+  /* select.edit-in's dropdown-arrow stroke is baked into a data-URI background-image (can't take a
+     CSS var), so its dark-mode stroke color (#c5dce7, matching --ink-soft) needs its own light-mode
+     copy here instead of staying stuck light-on-light once the select's own background goes pale. */
+  :root[data-theme="light"] select.edit-in {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2346607a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   }
   :focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 
@@ -116,18 +204,21 @@
   /* view tabs - segmented toggle */
   .views { display: inline-flex; gap: 2px; background: var(--surface-flat); border-radius: 10px; padding: 3px; }
   .vtab { display: inline-flex; align-items: center; gap: 7px; border: none; background: none; color: var(--ink-2); font-family: var(--font-body); font-weight: 600; font-size: 13px; padding: 7px 15px; border-radius: 7px; cursor: pointer; transition: background 0.12s, color 0.12s; }
-  .vtab:hover { color: #fff; }
+  .vtab:hover { color: var(--ink); }
   .vtab svg { width: 15px; height: 15px; }
-  .vtab.on { background: var(--surface-2); color: #fff; }
+  .vtab.on { background: var(--surface-2); color: var(--ink); }
   .vtab.on svg { stroke: var(--teal); }
 
   /* controls row below the title: methodology switch (Project/GRS) */
   .pagehdr-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
   .hsearch { position: relative; }
-  .hsearch input { height: 34px; width: 200px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface-flat); color: #fff; padding: 0 14px 0 34px; font-family: inherit; font-size: 13px; outline: none; }
+  .hsearch input { height: 34px; width: 200px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface-flat); color: var(--ink); padding: 0 14px 0 34px; font-family: inherit; font-size: 13px; outline: none; }
   .hsearch input::placeholder { color: var(--ink-faint); }
   .hsearch input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,224,172,0.2); }
   .hsearch svg { position: absolute; left: 12px; top: 10px; width: 15px; height: 15px; stroke: var(--ink-faint); fill: none; stroke-width: 2; }
+  .theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-flat); color: var(--ink-faint); transition: color 0.15s, border-color 0.15s; }
+  .theme-toggle:hover { color: var(--teal); border-color: var(--teal); }
+  .theme-toggle svg { width: 16px; height: 16px; }
   /* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
      color rule regardless of declaration order - the element carries both classes. */
   .loe-billable-toggle.jargon-toggle { color: var(--ink-2); }
@@ -135,7 +226,7 @@
   .pagehdr-title { margin-bottom: 14px; }
   .pagehdr-title-row { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; margin-bottom: 5px; }
   .pagehdr-title-row .pg-h1 { margin-bottom: 0; }
-  .pg-h1 { font-family: var(--font-display); font-weight: 800; font-size: 27px; letter-spacing: -0.015em; margin: 0 0 5px; color: #fff; }
+  .pg-h1 { font-family: var(--font-display); font-weight: 800; font-size: 27px; letter-spacing: -0.015em; margin: 0 0 5px; color: var(--ink); }
   .pg-sub { margin: 0; color: var(--ink-soft); font-size: 13.5px; max-width: 66ch; line-height: 1.5; }
 
   /* ---------- Main ---------- */
@@ -143,22 +234,22 @@
   /* Methodology switch (just below the title, on Journey / RACI) */
   .meth-switch { display: inline-flex; gap: 4px; background: var(--navy-2); padding: 4px; border-radius: 24px; border: 1px solid var(--line); flex-shrink: 0; }
   .meth-tab {
-    border: none; background: transparent; color: #a9c1d6;
+    border: none; background: transparent; color: var(--ink-soft);
     font-family: var(--font-display); font-weight: 700; font-size: 13px;
     padding: 8px 22px; border-radius: 20px; cursor: pointer;
     transition: background 0.12s, color 0.12s;
   }
-  .meth-tab:hover { color: #fff; }
+  .meth-tab:hover { color: var(--ink); }
   .meth-tab.active { background: var(--gradient-pill); color: var(--text-on-primary); box-shadow: var(--shadow-inset); }
 
   /* View intro (RACI / What's New / Search headers) */
   .view-intro { margin-bottom: 22px; }
-  .view-intro h1 { font-family: var(--font-display); font-weight: 800; font-size: 27px; letter-spacing: -0.015em; margin: 0 0 5px; color: #fff; }
+  .view-intro h1 { font-family: var(--font-display); font-weight: 800; font-size: 27px; letter-spacing: -0.015em; margin: 0 0 5px; color: var(--ink); }
   .view-intro p { margin: 0; color: var(--ink-soft); font-size: 13.5px; max-width: 66ch; line-height: 1.5; }
 
   /* ---------- Journey roadmap ---------- */
   .jrny-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
-  .jrny-head h1 { font-family: var(--font-display); font-weight: 800; font-size: 27px; letter-spacing: -0.015em; margin: 0 0 4px; color: #fff; }
+  .jrny-head h1 { font-family: var(--font-display); font-weight: 800; font-size: 27px; letter-spacing: -0.015em; margin: 0 0 4px; color: var(--ink); }
   .jrny-head p { margin: 0; color: var(--ink-soft); font-size: 13.5px; }
 
   /* Connected journey track - phases as nodes on a progressing line */
@@ -166,15 +257,15 @@
   .road::before { content: ''; position: absolute; left: calc(50% / var(--stations)); right: calc(50% / var(--stations)); top: 26px; height: 3px; border-radius: 3px; background: var(--surface-flat); }
   .road::after { content: ''; position: absolute; left: calc(50% / var(--stations)); top: 26px; height: 3px; border-radius: 3px; width: calc(100% * var(--active) / var(--stations)); background: linear-gradient(90deg, var(--p1), var(--p3)); transition: width .3s ease; }
   .station { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0 6px; }
-  .station .n { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; background: var(--surface-2); border: 2px solid var(--nc); position: relative; z-index: 1; transition: transform .18s, box-shadow .18s, background .18s; }
+  .station .n { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: var(--ink); background: var(--surface-2); border: 2px solid var(--nc); position: relative; z-index: 1; transition: transform .18s, box-shadow .18s, background .18s; }
   .station.done .n { background: color-mix(in srgb, var(--nc) 26%, var(--surface-2)); }
   .station.on .n { background: var(--nc); color: #06121c; transform: scale(1.12); box-shadow: 0 0 0 5px color-mix(in srgb, var(--nc) 22%, transparent); }
   .station:hover .n { transform: scale(1.07); }
   .station.on:hover .n { transform: scale(1.12); }
   .station .n .udot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: var(--hs-teal); border: 2px solid var(--navy); }
-  .station .nm { font-size: 13.5px; font-weight: 700; color: #fff; margin-top: 11px; transition: color .15s; }
+  .station .nm { font-size: 13.5px; font-weight: 700; color: var(--ink); margin-top: 11px; transition: color .15s; }
   .station.on .nm { color: var(--nc); }
-  .station .ct { font-size: 11px; color: #9db3c2; margin-top: 2px; }
+  .station .ct { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
 
   .strip-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 10px 2px; }
   .film { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 4px; }
@@ -186,15 +277,19 @@
   .fcard.on { background: linear-gradient(135deg, color-mix(in srgb, var(--pc) 32%, #275b63) 0%, color-mix(in srgb, var(--pc) 20%, #0d435f) 100%); }
   .fcard.on::before { width: 5px; }
   /* the brighter selected background washes out --ink-faint (#7d97a8) - lift the muted text */
-  .fcard.on .fsid { color: var(--ink-2); }
-  .fcard.on .fmeta { color: var(--ink-2); }
+  .fcard.on .fsid { color: var(--on-accent-soft); }
+  .fcard.on .fmeta { color: var(--on-accent-soft); }
   .fcard.stub:not(.on) { background: none; border: 1px dashed var(--line); }
   .fcard.stub:not(.on)::before { opacity: .3; }
+  /* unlike a has-content card, an unselected stub's background is transparent (theme-tracking
+     page surface, not the fixed-dark gradient-card) - so its name needs to track theme too. */
+  .fcard.stub:not(.on) .fnm { color: var(--ink); }
   .fcard .fhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
   .fcard .ficon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--pc) 22%, transparent); color: var(--pc); flex-shrink: 0; }
   .fcard .ficon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
   .fcard .fsid { font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; color: #9db3c2; text-transform: uppercase; }
-  .fcard .fnm { font-size: 14px; font-weight: 700; margin-top: 2px; line-height: 1.25; color: #fff; }
+  .fcard.stub:not(.on) .fsid { color: var(--ink-faint); }
+  .fcard .fnm { font-size: 14px; font-weight: 700; margin-top: 2px; line-height: 1.25; color: var(--on-accent-ink); }
   .fcard .fmeta { font-size: 11px; color: var(--ink-faint); font-style: italic; margin-top: auto; padding-top: 8px; }
   .fcard .rbadge, .badge-new { display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; background: var(--gradient-pill); color: var(--text-on-primary); padding: 3px 8px; border-radius: 20px; width: fit-content; flex-shrink: 0; white-space: nowrap; }
   .fcard .rbadge { margin-top: auto; }
@@ -209,28 +304,30 @@
   .rg-pfilters { display: flex; gap: 7px; flex-wrap: wrap; }
   .rg-pchip { font-family: inherit; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 15px; border: 1px solid transparent; cursor: pointer; }
   .rg-legend { display: flex; gap: 14px; margin-left: auto; align-items: center; flex-wrap: wrap; }
-  .rg-legend .lg { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #b9cdd6; }
+  .rg-legend .lg { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-soft); }
   .rg-legend .sw { width: 16px; height: 16px; border-radius: 4px; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 10px; color: var(--text-on-primary); }
   .rg-focusbar { display: none; align-items: center; gap: 10px; background: rgba(63,224,197,0.08); border: 1px solid rgba(63,224,197,0.3); border-radius: 8px; padding: 8px 14px; margin-bottom: 14px; font-size: 13px; }
   .rg-focusbar.show { display: flex; }
   .rg-focusbar b { color: var(--hs-mint); }
-  .rg-focusbar button { margin-left: auto; font-family: inherit; font-size: 12px; font-weight: 600; color: #9fd; background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 4px 12px; cursor: pointer; }
+  .rg-focusbar button { margin-left: auto; font-family: inherit; font-size: 12px; font-weight: 600; color: var(--teal); background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 4px 12px; cursor: pointer; }
   .rg-scroller { overflow: auto; max-height: calc(100vh - 220px); border: 1px solid var(--line-soft); border-radius: 12px; }
   .rg-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
-  .rg-table thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 3; padding: 11px 8px; text-align: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: #7fd8cb; border-bottom: 2px solid var(--line); cursor: pointer; white-space: nowrap; user-select: none; }
-  .rg-table thead th:hover { background: #123a52; color: #fff; }
+  .rg-table thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 3; padding: 11px 8px; text-align: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--teal); border-bottom: 2px solid var(--line); cursor: pointer; white-space: nowrap; user-select: none; }
+  /* Was a fixed dark navy literal - broke once the base th (var(--surface-2)) started tracking
+     theme too. Now tracks theme like the rest of the table. */
+  .rg-table thead th:hover { background: var(--surface-flat); color: var(--ink); }
   .rg-table thead th.taskcol { position: sticky; left: 0; z-index: 4; text-align: left; width: 300px; min-width: 300px; cursor: default; background: var(--surface-2); }
   .rg-table thead th.focused { background: var(--teal); color: var(--text-on-primary); }
-  .rg-table th .cnt { display: block; font-size: 9px; color: #5f9; font-weight: 400; margin-top: 2px; }
+  .rg-table th .cnt { display: block; font-size: 9px; color: var(--teal); font-weight: 400; margin-top: 2px; }
   .rg-table th.focused .cnt { color: var(--text-on-primary); }
   .rg-grouprow td { background: var(--surface-2); font-weight: 700; padding: 9px 12px; font-size: 12.5px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); position: sticky; left: 0; }
   .rg-grouprow .gsid { font-family: var(--font-mono); color: var(--text-on-primary); padding: 2px 9px; border-radius: 10px; margin-right: 9px; font-size: 11px; }
   .rg-table tr.taskrow { cursor: pointer; }
-  .rg-table tr.taskrow:hover td { background: #0e2947; }
-  .rg-table tbody td { padding: 10px 8px; border-bottom: 1px solid #142c44; text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: 12.5px; }
+  .rg-table tr.taskrow:hover td { background: var(--surface-2); }
+  .rg-table tbody td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: 12.5px; }
   .rg-table td.tname { position: sticky; left: 0; background: var(--paper); z-index: 1; text-align: left; font-family: var(--font-body); font-weight: 500; font-size: 13px; line-height: 1.4; width: 300px; min-width: 300px; }
-  .rg-table tr.taskrow:hover td.tname { background: #0e2947; }
-  .rg-table td.colhi, .rg-table th.colhi { background: #10314e !important; }
+  .rg-table tr.taskrow:hover td.tname { background: var(--surface-2); }
+  .rg-table td.colhi, .rg-table th.colhi { background: var(--teal-wash) !important; }
   .rg-table td.dimmed { opacity: 0.25; }
   .rg-lt { letter-spacing: 1px; }
   .rg-dash { color: #294863; }
@@ -240,10 +337,10 @@
   .rg-exgrid { display: flex; gap: 34px; flex-wrap: wrap; }
   .rg-exgrid > div { flex: 1; min-width: 220px; }
   .rg-exgrid h5 { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hs-mint); margin: 0 0 6px; }
-  .rg-exgrid p { margin: 0; color: #c3d5dd; font-size: 13px; line-height: 1.6; }
+  .rg-exgrid p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.6; }
   .rg-exraci { display: flex; gap: 6px; flex-wrap: wrap; }
   .rg-exraci span { font-family: var(--font-mono); font-size: 11px; background: var(--surface-flat); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; }
-  .rg-total td { background: var(--surface-2); font-family: var(--font-mono); font-size: 11px; color: #7fd8cb; border-top: 2px solid var(--line); padding: 9px 8px; text-align: center; }
+  .rg-total td { background: var(--surface-2); font-family: var(--font-mono); font-size: 11px; color: var(--teal); border-top: 2px solid var(--line); padding: 9px 8px; text-align: center; }
   .rg-total td.tname { text-align: left; font-weight: 600; position: sticky; left: 0; background: var(--surface-2); z-index: 1; }
 
   .pcrumb { font-size: 12px; color: var(--hs-teal); font-weight: 600; margin-bottom: 8px; }
@@ -258,7 +355,7 @@
     font-size: 26px;
     font-weight: 700;
     margin: 0 0 14px;
-    color: #fff;
+    color: var(--ink);
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
   .prec {
@@ -278,10 +375,10 @@
     padding: 12px 16px;
     margin: 0 0 18px;
     font-size: 13.5px;
-    color: #fff;
+    color: var(--on-accent-ink);
     max-width: 72ch;
   }
-  .pchange b { color: #fff; }
+  .pchange b { color: var(--on-accent-ink); }
   /* deep-link target highlight - a background pulse so a ?sub=&el= landing is obvious. A fill
      (not box-shadow) so it works on a <tr> too - box-shadow barely renders on table rows, and
      an outward ring gets clipped by .ttbl-wrap's overflow-x: auto anyway. */
@@ -289,8 +386,8 @@
   .jump-hl { animation: jumpPulse 2s ease-out 1; }
   .pchange-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
   .pchange-list li { padding-left: 14px; position: relative; }
-  .pchange-list li::before { content: '•'; position: absolute; left: 0; color: rgba(255,255,255,0.6); }
-  .pchange-ts { color: rgba(255,255,255,0.65); font-size: 12px; }
+  .pchange-list li::before { content: '•'; position: absolute; left: 0; color: rgba(var(--on-accent-rgb),0.6); }
+  .pchange-ts { color: rgba(var(--on-accent-rgb),0.65); font-size: 12px; }
 
   h4.sec {
     font-size: 11px;
@@ -300,14 +397,14 @@
     margin: 22px 0 8px;
     font-weight: 700;
   }
-  .lede { font-size: 16px; line-height: 1.7; color: #f0f4f6; max-width: 72ch; margin: 14px 0; }
-  .obj { font-size: 15px; line-height: 1.7; color: #cfe0ee; max-width: 72ch; margin: 0; }
+  .lede { font-size: 16px; line-height: 1.7; color: var(--ink); max-width: 72ch; margin: 14px 0; }
+  .obj { font-size: 15px; line-height: 1.7; color: var(--ink-soft); max-width: 72ch; margin: 0; }
 
   .metagrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 22px 0; }
   .metacard { background: var(--surface-2); border-radius: 10px; padding: 16px; }
-  .metacard .mk { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #9db3c2; display: block; margin-bottom: 6px; }
+  .metacard .mk { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 6px; }
   .metacard .who { display: flex; gap: 5px; flex-wrap: wrap; }
-  .metacard .who span { font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.12); color: var(--ink); padding: 3px 9px; border-radius: 20px; cursor: help; }
+  .metacard .who span { font-size: 11px; font-weight: 600; background: rgba(var(--wash-rgb),0.12); color: var(--ink); padding: 3px 9px; border-radius: 20px; cursor: help; }
   .loe-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; color: var(--ink); }
   .loe-list b { font-family: ui-monospace, monospace; font-size: 11px; color: var(--hs-teal); margin-right: 6px; }
   .loe-edit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
@@ -324,9 +421,9 @@
   .loe-flag.disabled { opacity: .4; pointer-events: none; }
   .loe-flag-btn { font-family: var(--font-body); font-size: 11.5px; font-weight: 600; color: var(--ink-faint); background: none; border: none; border-radius: 16px; padding: 4px 11px; cursor: pointer; white-space: nowrap; transition: background .12s, color .12s; }
   .loe-flag-btn:hover { color: var(--ink-2); }
-  .loe-flag-btn.on[data-loe-flag-val="mandatory"] { background: rgba(255,255,255,0.1); color: var(--ink-2); }
-  .loe-flag-btn.on[data-loe-flag-val="optional"] { background: rgba(240,185,90,0.18); color: #f0b95a; }
-  .loe-flag-btn.on[data-loe-flag-val="nonbillable"] { background: rgba(255,255,255,0.1); color: var(--ink-2); }
+  .loe-flag-btn.on[data-loe-flag-val="mandatory"] { background: rgba(var(--wash-rgb),0.1); color: var(--ink-2); }
+  .loe-flag-btn.on[data-loe-flag-val="optional"] { background: rgba(240,185,90,0.18); color: var(--r-a-text); }
+  .loe-flag-btn.on[data-loe-flag-val="nonbillable"] { background: rgba(var(--wash-rgb),0.1); color: var(--ink-2); }
   .loe-flag-btn.on[data-loe-flag-val="billable"] { background: rgba(63,224,197,0.18); color: var(--hs-mint); }
   .loe-edit-row .x-btn { flex-shrink: 0; }
   /* modeled on the theme's input-switch mixin: off-track = $color-disabled, on-track = $brand-primary,
@@ -342,15 +439,15 @@
   /* Level of Effort - Style 1 rows-with-tags */
   .loe2 { display: flex; flex-direction: column; gap: 2px; }
   .loe2 .row { display: grid; grid-template-columns: minmax(58px, max-content) 62px 1fr; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; }
-  .loe2 .row:nth-child(odd) { background: rgba(255,255,255,0.025); }
+  .loe2 .row:nth-child(odd) { background: rgba(var(--wash-rgb),0.025); }
   .loe2 .lr { font-weight: 800; color: var(--c); font-size: 12.5px; }
   .loe2 .eff { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
   .loe2 .eff.none { color: var(--ink-faint); }
   .loe2 .tags { display: flex; gap: 6px; flex-wrap: wrap; }
   .loe-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: .02em; }
   .loe-pill.bill { background: rgba(63,224,197,0.15); color: var(--hs-mint); border: 1px solid rgba(63,224,197,0.4); }
-  .loe-pill.opt { background: rgba(240,185,90,0.14); color: #f0b95a; border: 1px dashed rgba(240,185,90,0.5); }
-  .loe-all { display: flex; align-items: center; gap: 12px; padding: 8px; background: rgba(255,255,255,0.025); border-radius: 8px; font-size: 13px; }
+  .loe-pill.opt { background: rgba(240,185,90,0.14); color: var(--r-a-text); border: 1px dashed rgba(240,185,90,0.5); }
+  .loe-all { display: flex; align-items: center; gap: 12px; padding: 8px; background: rgba(var(--wash-rgb),0.025); border-radius: 8px; font-size: 13px; }
   .loe-all .lr { font-weight: 800; color: var(--hs-teal); }
   .loe-all .eff { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
   .loe-all .eff.none { color: var(--ink-faint); }
@@ -362,17 +459,17 @@
   /* job aids - read scope chips + editor */
   .ttbl .ja { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
   .ja-scope { font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 42%, transparent); border-radius: 4px; padding: 0 4px; letter-spacing: .02em; }
-  .ja-edit-wrap { margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.22); }
+  .ja-edit-wrap { margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(var(--wash-rgb),0.22); }
   .ja-edit-lbl { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; margin-bottom: 12px; }
   .ja-edit-lbl svg { width: 13px; height: 13px; color: var(--teal); }
-  .ja-edit { position: relative; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.18); border-left: 3px solid var(--teal); border-radius: 8px; padding: 16px; margin-bottom: 10px; }
+  .ja-edit { position: relative; background: rgba(var(--wash-rgb),0.05); border: 1px solid rgba(var(--wash-rgb),0.18); border-left: 3px solid var(--teal); border-radius: 8px; padding: 16px; margin-bottom: 10px; }
   .ja-edit-row { display: flex; gap: 8px; align-items: center; }
   .ja-edit-row .link-ic { color: var(--teal); display: flex; flex-shrink: 0; }
   .ja-edit-row .link-ic svg { width: 15px; height: 15px; }
   /* exciting add-job-aid CTA - teal-tinted pill with an icon, fills on hover */
   .ja-roles { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
   .ja-roles-lbl { font-size: 11px; color: var(--ink-2); margin-right: 2px; }
-  .ja-rolechip { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--ink-faint); background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 20px; padding: 4px 11px; cursor: pointer; display: inline-flex; align-items: center; transition: background .12s, color .12s, border-color .12s; }
+  .ja-rolechip { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--ink-faint); background: rgba(var(--wash-rgb),.05); border: 1px solid var(--line); border-radius: 20px; padding: 4px 11px; cursor: pointer; display: inline-flex; align-items: center; transition: background .12s, color .12s, border-color .12s; }
   .ja-rolechip:hover { border-color: var(--teal); color: var(--ink); }
   .ja-rolechip.on { color: var(--teal); background: rgba(0,224,172,.1); border-color: var(--teal); }
   .ja-rolechip.ext { border-style: dashed; }
@@ -383,7 +480,7 @@
   /* setup-zone blocks (LOE / participants / comments above the flow) */
   .setup-block { margin: 20px 0; }
   .setup-block > .mk { font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 10px; }
-  .notes { display: flex; gap: 10px; align-items: flex-start; background: rgba(255,255,255,0.03); border-left: 2px solid var(--line); border-radius: 0 8px 8px 0; padding: 10px 14px; }
+  .notes { display: flex; gap: 10px; align-items: flex-start; background: rgba(var(--wash-rgb),0.03); border-left: 2px solid var(--line); border-radius: 0 8px 8px 0; padding: 10px 14px; }
   .notes svg { width: 15px; height: 15px; stroke: var(--ink-faint); fill: none; stroke-width: 2; flex-shrink: 0; margin-top: 2px; }
   .notes ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
   .notes li { font-size: 13px; color: var(--ink-2, var(--ink)); line-height: 1.45; }
@@ -393,7 +490,7 @@
   .mtg-ic { display: inline-flex; color: var(--hs-mint); flex-shrink: 0; }
   .mtg-ic svg { width: 15px; height: 15px; }
   .mtg-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
-  .mtg-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(240,185,90,0.14); color: #f0b95a; border: 1px dashed rgba(240,185,90,0.5); }
+  .mtg-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(240,185,90,0.14); color: var(--r-a-text); border: 1px dashed rgba(240,185,90,0.5); }
   .mtg-meta { font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
   .mtg-edit-row { display: flex; gap: 8px; margin-top: 10px; }
   .mtg-edit-row select { flex: 1; }
@@ -439,14 +536,14 @@
   .rchips { display: block; }
   .rchip {
     font-family: ui-monospace, monospace; font-size: 10.5px;
-    background: rgba(255,255,255,0.15); border-radius: 6px;
+    background: rgba(var(--wash-rgb),0.15); border-radius: 6px;
     padding: 2px 7px; display: inline-block; margin-right: 5px; margin-bottom: 4px; cursor: help;
   }
-  .rchip.off { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); cursor: default; }
-  .rl-R { color: var(--r-r); }
-  .rl-A { color: var(--r-a); }
-  .rl-C { color: var(--r-c); }
-  .rl-I { color: var(--r-i); }
+  .rchip.off { background: rgba(var(--wash-rgb),0.05); color: rgba(var(--wash-rgb),0.4); cursor: default; }
+  .rl-R { color: var(--r-r-text); }
+  .rl-A { color: var(--r-a-text); }
+  .rl-C { color: var(--r-c-text); }
+  .rl-I { color: var(--r-i-text); }
 
   /* ---------- Reference view ---------- */
   .refdoc { max-width: 860px; }
@@ -457,7 +554,7 @@
   .ref-raci-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 18px; }
   @media (min-width: 760px) { .ref-raci-grid { grid-template-columns: repeat(2, 1fr); } }
   .ref-raci-card { display: flex; gap: 12px; background: var(--surface-2); border-radius: 12px; padding: 14px 16px; }
-  .ref-raci-badge { flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 800; font-size: 15px; background: rgba(255,255,255,0.07); }
+  .ref-raci-badge { flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 800; font-size: 15px; background: rgba(var(--wash-rgb),0.07); }
   .ref-raci-name { font-weight: 700; font-size: 14px; color: var(--ink); margin-bottom: 3px; }
   .ref-raci-desc { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
   .ref-rules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -465,7 +562,7 @@
   .ref-rules li::before { content: '•'; position: absolute; left: 4px; color: var(--teal); }
   .ref-rules b { color: var(--ink); }
   .ref-rules .rl-A, .ref-rules .rl-R { font-family: var(--font-mono); font-weight: 700; }
-  .ref-placeholder { display: flex; gap: 12px; align-items: flex-start; background: rgba(255,255,255,0.03); border: 1px dashed var(--line); border-radius: 12px; padding: 18px 20px; }
+  .ref-placeholder { display: flex; gap: 12px; align-items: flex-start; background: rgba(var(--wash-rgb),0.03); border: 1px dashed var(--line); border-radius: 12px; padding: 18px 20px; }
   .ref-placeholder svg { width: 19px; height: 19px; stroke: var(--ink-faint); fill: none; stroke-width: 2; flex-shrink: 0; margin-top: 2px; }
   .ref-placeholder b { color: var(--ink); font-size: 14px; }
   .ref-placeholder p { font-size: 13px; color: var(--ink-faint); line-height: 1.55; margin: 4px 0 0; }
@@ -489,8 +586,8 @@
   /* ---------- Redesign: participants, scheduling, connected flow, task table ---------- */
   .plegend { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin: 20px 0 4px; }
   .plegend .plabel { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-right: 4px; }
-  .rolechip { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px; background: rgba(255,255,255,.07); color: var(--ink); border: 1px solid var(--line); white-space: nowrap; cursor: help; }
-  .rolechip.ext { background: rgba(255,255,255,.03); color: var(--ink-2); border: 1px dashed var(--line); }
+  .rolechip { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px; background: rgba(var(--wash-rgb),.07); color: var(--ink); border: 1px solid var(--line); white-space: nowrap; cursor: help; }
+  .rolechip.ext { background: rgba(var(--wash-rgb),.03); color: var(--ink-2); border: 1px dashed var(--line); }
 
 
   .pipe { position: relative; padding-left: 32px; margin: 18px 0 8px; }
@@ -504,7 +601,7 @@
   .pstep .ordhint { font-size: 11px; color: var(--ink-faint); font-style: italic; margin: 0 0 9px; }
   .flowlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; counter-reset: io; }
   .flowlist li { background: var(--surface-2); border-radius: 9px; padding: 9px 12px 9px 34px; font-size: 13px; color: var(--ink-2); line-height: 1.4; position: relative; }
-  .flowlist li::before { counter-increment: io; content: counter(io); position: absolute; left: 11px; top: 9px; width: 15px; height: 15px; border-radius: 50%; background: rgba(255,255,255,.08); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); }
+  .flowlist li::before { counter-increment: io; content: counter(io); position: absolute; left: 11px; top: 9px; width: 15px; height: 15px; border-radius: 50%; background: rgba(var(--wash-rgb),.08); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); }
   .flowlist li.none { padding-left: 12px; color: var(--ink-faint); font-style: italic; }
   .flowlist li.none::before { display: none; }
 
@@ -517,8 +614,8 @@
   table.ttbl thead th.pcol { color: var(--c); cursor: help; white-space: nowrap; }
   table.ttbl thead th.pcol.ext { border-bottom-style: dashed; }
   table.ttbl td.cell { font-family: var(--font-mono); font-weight: 700; font-size: 12.5px; letter-spacing: 1px; }
-  table.ttbl td.cell.off { color: rgba(255,255,255,.16); font-weight: 400; }
-  table.ttbl tbody tr:hover { background: rgba(255,255,255,.03); }
+  table.ttbl td.cell.off { color: rgba(var(--wash-rgb),.16); font-weight: 400; }
+  table.ttbl tbody tr:hover { background: rgba(var(--wash-rgb),.03); }
   table.ttbl .jobaid { display: inline-block; font-size: 11px; color: var(--hs-mint); font-weight: 600; text-decoration: none; white-space: nowrap; margin-top: 3px; }
   .rlegend { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 0; font-size: 11px; color: var(--ink-faint); }
   .rlegend .lg { display: inline-flex; align-items: center; gap: 5px; }
@@ -560,7 +657,7 @@
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     padding: 8px 10px;
-    background: #0e2740;
+    background: var(--surface-2);
     resize: vertical;
     outline: none;
   }
@@ -571,7 +668,9 @@
   select.edit-in {
     appearance: none; -webkit-appearance: none; -moz-appearance: none;
     padding: 8px 34px 8px 12px;
-    background-color: #0e2740;
+    background-color: var(--surface-2);
+    /* Stroke color is baked into the data URI (can't reference a CSS var inside one) - matches
+       --ink-soft's DARK-mode value; the light theme block supplies its own copy below. */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c5dce7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
@@ -580,8 +679,8 @@
   }
   select.edit-in:hover { border-color: var(--ink-faint); }
   select.edit-in:hover { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
-  select.edit-in option { background: #0b2137; color: var(--ink); }
-  .edit-in.title-in { font-family: var(--font-display); font-weight: 700; font-size: 28px; color: #fff; }
+  select.edit-in option { background: var(--surface-2); color: var(--ink); }
+  .edit-in.title-in { font-family: var(--font-display); font-weight: 700; font-size: 28px; color: var(--ink); }
   .edit-hint { font-size: 11.5px; color: var(--ink-faint); margin: 4px 0 0; font-family: var(--font-mono); }
 
   /* dark theme surface (matches every other panel/card), with a warning-amber accent border and
@@ -595,14 +694,14 @@
     gap: 12px;
     background: var(--surface-2);
     border: 1px solid var(--line);
-    border-left: 3px solid #e5c20b;
+    border-left: 3px solid var(--r-a-text);
     border-radius: var(--radius);
     padding: 10px 16px;
     margin-top: 22px;
     margin-bottom: 24px;
     box-shadow: var(--shadow);
   }
-  .edit-bar .flag { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #e5c20b; font-weight: 600; }
+  .edit-bar .flag { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--r-a-text); font-weight: 600; }
   .edit-bar .spacer { flex: 1; }
   /* btn-dark mixin (secondary/Cancel default) - transparent, border-tertiary, brightens+lifts on hover, insets on press */
   .btn {
@@ -611,8 +710,8 @@
     font-size: 14px; font-weight: 600;
     transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
   }
-  .btn:hover { background: var(--hs-border-tertiary); color: var(--text-on-primary); border-color: #fff; box-shadow: var(--shadow-md); }
-  .btn:active { background: transparent; color: var(--ink); border-color: #fff; box-shadow: var(--shadow-inset); }
+  .btn:hover { background: var(--hs-border-tertiary); color: var(--text-on-primary); border-color: var(--ink); box-shadow: var(--shadow-md); }
+  .btn:active { background: transparent; color: var(--ink); border-color: var(--ink); box-shadow: var(--shadow-inset); }
   /* btn-dark mixin (primary/Save) - gradient-light-5, brightens to gradient-light-7 on hover, insets on press */
   .btn.primary { background: var(--gradient-pill); border-color: transparent; color: var(--text-on-primary); font-weight: 600; }
   .btn.primary:hover { background: var(--gradient-pill-hover); border-color: #fff; box-shadow: var(--shadow-md); }
@@ -620,14 +719,14 @@
   .btn.sm { height: 28px; padding: 0 12px; font-size: 12.5px; }
 
   /* transparent table - rows sit on the panel, separated by light divider lines */
-  .raci-matrix { border-top: 1px solid rgba(255,255,255,0.22); border-radius: 0; overflow: visible; margin-top: 0; background: none; }
-  .raci-matrix-row { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-top: 1px solid rgba(255,255,255,0.16); background: none; }
+  .raci-matrix { border-top: 1px solid rgba(var(--wash-rgb),0.22); border-radius: 0; overflow: visible; margin-top: 0; background: none; }
+  .raci-matrix-row { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-top: 1px solid rgba(var(--wash-rgb),0.16); background: none; }
   .raci-matrix-row:first-child { border-top: none; }
   .raci-matrix-row .rm-name { flex: 1; font-size: 13px; color: var(--ink); }
   .raci-matrix-row .rm-name .abbr { font-family: var(--font-mono); font-size: 11px; color: var(--hs-mint); margin-right: 6px; }
   .raci-toggle {
     width: 26px; height: 26px; border-radius: 5px;
-    border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.05); color: var(--ink-2);
+    border: 1px solid rgba(var(--wash-rgb),0.28); background: rgba(var(--wash-rgb),0.05); color: var(--ink-2);
     font-family: var(--font-mono); font-weight: 700; font-size: 12px;
   }
   .raci-toggle:hover { border-color: var(--ink-2); }
@@ -649,7 +748,7 @@
   .x-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: none; border-radius: 6px; background: none; color: var(--ink-faint); font-size: 18px; line-height: 1; cursor: pointer; flex-shrink: 0; transition: background .12s, color .12s; }
   .x-btn:hover { background: #c0392b; color: #fff; }
   .x-btn:focus-visible { outline: var(--focus-ring); outline-offset: 1px; }
-  .add-jt-row { display: flex; gap: 8px; padding: 8px 2px 0; background: none; border-top: 1px solid rgba(255,255,255,0.16); }
+  .add-jt-row { display: flex; gap: 8px; padding: 8px 2px 0; background: none; border-top: 1px solid rgba(var(--wash-rgb),0.16); }
   .add-jt-row select { flex: 1; font-size: 13px; }
 
   /* ---------- Job Title view / What's New / Search ---------- */
@@ -657,7 +756,7 @@
   .view-head h1 {
     font-family: var(--font-display);
     font-weight: 800; font-size: 27px; letter-spacing: -0.015em;
-    margin: 0 0 5px; color: #fff;
+    margin: 0 0 5px; color: var(--ink);
   }
   .view-head p { margin: 0; color: var(--ink-soft); font-size: 13.5px; line-height: 1.5; max-width: 66ch; }
 
@@ -679,7 +778,7 @@
     display: flex; align-items: baseline; gap: 12px;
     font-family: var(--font-display); font-weight: 600; font-size: 16px;
     padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--line);
-    color: #fff;
+    color: var(--ink);
   }
   .jt-group-head .sid { font-family: var(--font-mono); font-size: 12px; color: var(--text-on-primary); padding: 2px 9px; border-radius: 12px; font-weight: 700; }
   .jt-task {
@@ -711,7 +810,7 @@
   .whatsnew-item:hover { border-left-color: var(--hs-mint); filter: brightness(1.08); }
   .whatsnew-item .wn-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 5px; }
   .whatsnew-item .wn-loc { font-family: var(--font-mono); font-size: 11px; color: var(--text-on-primary); padding: 2px 9px; border-radius: 12px; font-weight: 700; }
-  .whatsnew-item .wn-title { font-family: var(--font-display); font-weight: 600; font-size: 15.5px; color: #fff; }
+  .whatsnew-item .wn-title { font-family: var(--font-display); font-weight: 600; font-size: 15.5px; color: var(--ink); }
   .whatsnew-item .wn-date { margin-left: auto; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-faint); }
   .whatsnew-item .wn-summary { font-size: 14px; color: var(--ink-soft); }
 
@@ -722,7 +821,7 @@
   }
   .search-result:hover { border-color: var(--teal); }
   .search-result .sr-loc { font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); margin-bottom: 4px; }
-  .search-result .sr-title { font-family: var(--font-display); font-weight: 600; font-size: 15px; margin-bottom: 3px; color: #fff; }
+  .search-result .sr-title { font-family: var(--font-display); font-weight: 600; font-size: 15px; margin-bottom: 3px; color: var(--ink); }
   .search-result .sr-snip { font-size: 13.5px; color: var(--ink-soft); }
   .search-result mark { background: #ffd23f; color: #241d02; padding: 0 1px; border-radius: 2px; }
 
@@ -793,6 +892,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
             <input id="searchInput" type="text" placeholder="Search…" autocomplete="off" />
           </div>
+          <button type="button" class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          </button>
         </div>
         <div class="pagehdr-title">
           <div class="pagehdr-title-row">
@@ -1027,8 +1129,11 @@ function sortJobTitleIds(ids) {
    room for ~12 distinct hues). RACI letters keep their own R/A/C/I colours as the one colour
    signal. External participants (the customer) keep a neutral-but-dashed treatment via .ext -
    a category signal (internal vs. external), not a per-person colour. */
-const NEUTRAL_ROLE_COLOR = '#c5dce7'; /* $border-tertiary - same as --ink-2 */
-const CUSTOMER_COLOR = '#c5dce7';
+/* CSS var references (not literal hex) so the inline style="--c: ..." bindings that consume these
+   stay theme-aware - var(--ink-soft) is itself resolved live wherever --c is actually used
+   (color: var(--c)), tracking whichever theme is active rather than freezing the dark-mode hex. */
+const NEUTRAL_ROLE_COLOR = 'var(--ink-soft)'; /* $border-tertiary - same as --ink-2 */
+const CUSTOMER_COLOR = 'var(--ink-soft)';
 function jobTitleColor(id) { return id === 'customer' ? CUSTOMER_COLOR : NEUTRAL_ROLE_COLOR; }
 function isExternalJobTitle(id) { const jt = jobTitleById(id); return !!(jt && jt.external); }
 const STORAGE_KEY = 'gf_delivery_methodology_v3';
@@ -2493,6 +2598,25 @@ document.getElementById('jargonToggle').onchange = (e) => {
   state.showJargon = e.target.checked;
   savePrefs();
   render();
+};
+
+/* Self-contained light/dark toggle - no shared Core injector here (unlike the deployed AngularJS
+   app), so state + persistence live entirely in this file. Own localStorage key so it doesn't
+   collide with the Angular app's ThemeService-namespaced key. */
+const THEME_KEY = 'gf_delivery_methodology_theme_v1';
+const SUN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+const MOON_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+const themeToggleBtn = document.getElementById('themeToggle');
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeToggleBtn.innerHTML = theme === 'dark' ? SUN_ICON : MOON_ICON;
+  themeToggleBtn.setAttribute('aria-pressed', theme === 'dark');
+}
+applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+themeToggleBtn.onclick = () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  applyTheme(next);
 };
 const searchInput = document.getElementById('searchInput');
 searchInput.oninput = () => {
