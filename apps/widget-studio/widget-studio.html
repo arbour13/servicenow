@@ -76,6 +76,7 @@ class Component extends DCLogic {
     this.REPEAT_PREVIEW_N = 6;  // fixed ghost-copy count for a repeating element with no real sample array to size from — no longer user-editable ("Preview copies" field removed, it just confused people)
     this._inspOpen = {};  // big-card (Structure/Appearance) open/closed state; inspector sections are tabs now
     this.dark = false; this.device = 'lg';
+    this._scrollFade = {left:false, right:false};  // canvas scroll-edge fade state, see measureScrollFade
     this.codeTheme = 'auto';  // Monaco theme: 'auto' follows the app theme, or pin 'light'/'dark' independently
     this.exportUnit = 'px'; this.exportBase = 16;
     this.tab = 'layout';            // inspector tab
@@ -1175,7 +1176,7 @@ class Component extends DCLogic {
     document.head.appendChild(s);
   }
   componentWillUnmount(){ document.removeEventListener('keydown',this._key); if(this._winResize) { window.removeEventListener('resize',this._winResize); } if(this._beforeUnload) { window.removeEventListener('beforeunload',this._beforeUnload); } this.removeDragListeners(); clearInterval(this._cmPoll); if(this._mon){ this._mon.dispose(); this._mon=null; } }
-  componentDidUpdate(){ this.playFlip(); this.syncEditor(); this.syncPreview(); this.syncTokenVars(); this.measureBox(); this.measureFlexGrid(); this.positionCtxMenu(); this.positionCrumbStack(); }
+  componentDidUpdate(){ this.playFlip(); this.syncEditor(); this.syncPreview(); this.syncTokenVars(); this.measureBox(); this.measureFlexGrid(); this.positionCtxMenu(); this.positionCrumbStack(); this.measureScrollFade(); }
   // Walk-up ancestor label stack: normally grows UPWARD from the clicked label (bottom:100%, see
   // crumbAnchor). Near the top of the canvas there's no room above for it, so measure it after render and
   // flip it to grow DOWNWARD instead — the same collision-flip idea as positionCtxMenu, just measured
@@ -1257,6 +1258,23 @@ class Component extends DCLogic {
   // Grid column-structure changes apply immediately, with no animation: the grid's own reflow is instant
   // and the flex/grid overlay redraws its column separator lines in place. setCS/setGridColumns already
   // forceUpdate, so the Columns controls apply the change directly — no fade/slide wrapper needed.
+  // Whether the canvas scroll container currently has more content to the left/right than what's
+  // visible — drives the edge fades in renderNewCanvas. Called both from componentDidUpdate (so a
+  // device switch or a content edit that changes the stage's overflow gets picked up even with no
+  // scroll event) and directly from the scroll container's own onScroll (a pure scroll has no
+  // React state change, so componentDidUpdate alone would never see it). rAF-deferred and only
+  // forceUpdates on an actual change, matching measureBox/positionCrumbStack's own pattern —
+  // calling forceUpdate synchronously from componentDidUpdate re-enters render mid-commit and trips
+  // React's max-update-depth guard (error #185).
+  measureScrollFade(){
+    if(this._fadeRaf) { cancelAnimationFrame(this._fadeRaf); }
+    this._fadeRaf=requestAnimationFrame(()=>{ this._fadeRaf=null;
+      const sc=this._canvasScroll; if(!sc) { return; }
+      const left=sc.scrollLeft>2, right=(sc.scrollWidth-sc.clientWidth-sc.scrollLeft)>2;
+      if(left===this._scrollFade.left && right===this._scrollFade.right) { return; }
+      this._scrollFade={left,right}; this.forceUpdate();
+    });
+  }
   // ---- box-model (spacing) overlay: devtools-style margin/padding/content visualization ----
   // Measure the selected element and expose its box (margin / padding / border) for the overlay.
   // Viewport position of the canvas scroll-content origin. The box + flex/grid overlays store their geometry
@@ -2024,7 +2042,7 @@ class Component extends DCLogic {
     return h('div',Object.assign({onClick:()=>{this._previewMode=!this._previewMode; this.forceUpdate();}},this.a11y(()=>{this._previewMode=!this._previewMode;this.forceUpdate();},{label:on?'Exit preview':'Preview',pressed:on}),this.tt(on?{h:'Exit preview',b:'Back to editing'}:{h:'Preview',b:'Live, interactive'}),{style:{width:30,height:30,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:6,border:'1px solid '+(on?t.accentFill:t.border),background:on?t.accentFill:t.panel,color:on?'#fff':t.muted,cursor:'pointer'}}), eye); }
   renderHeader(t){
     const h=React.createElement;
-    const dib=(name,title)=>{ const on=this.device===name; const hasBp=name!=='lg'&&this.responsive[name]&&Object.keys(this.responsive[name]).length; const go=()=>{this.device=name; if(name!=='lg') { this._estate='base'; } this._box=null; this.forceUpdate();}; return h('div',{onClick:go,...this.tt(name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'}),...this.a11y(go,{pressed:on,label:title+' breakpoint'}),style:{position:'relative',padding:'4px 11px',borderRadius:4,cursor:'pointer',color:on?'#fff':t.muted,background:on?t.accentFill:'transparent',display:'flex',alignItems:'center'}},this.devIcon(name), hasBp?h('span',{style:{position:'absolute',top:3,right:4,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null); };
+    const dib=(name,title)=>{ const on=this.device===name; const hasBp=name!=='lg'&&this.responsive[name]&&Object.keys(this.responsive[name]).length; const go=()=>this.setDevice(name); return h('div',{onClick:go,...this.tt(name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'}),...this.a11y(go,{pressed:on,label:title+' breakpoint'}),style:{position:'relative',padding:'4px 11px',borderRadius:4,cursor:'pointer',color:on?'#fff':t.muted,background:on?t.accentFill:'transparent',display:'flex',alignItems:'center'}},this.devIcon(name), hasBp?h('span',{style:{position:'absolute',top:3,right:4,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null); };
     // Narrow viewports: drop the field labels and the base-class hint, and shrink the Name/ID
     // inputs, so the device switcher and Save/Open/Export stay on screen instead of scrolling off.
     const narrow=window.innerWidth<1150;
@@ -2438,23 +2456,35 @@ class Component extends DCLogic {
       btn(this.hicon('undo'),()=>this.undo(),canU,'Undo (⌘Z)'),
       btn(this.hicon('redo'),()=>this.redo(),canR,'Redo (⌘⇧Z)'));
   }
-  // The device-preview widths (md/sm/xs) are fixed device pixels, so on an ordinary laptop window they
-  // often don't fit the canvas column even after the side panels shrink to their minimums — unlike lg's
-  // fluid 100% width, which always fits. Rather than force horizontal scrolling to see the whole preview
-  // (technically correct, but reads as "broken" sitting next to lg's smooth resize), the stage zooms out
-  // to fit — same as Chrome's device toolbar. CSS `zoom` (not transform:scale) specifically: it's
-  // LAYOUT-affecting, not just visual, so the stage's height still auto-sizes correctly for its zoomed-
-  // down content, and getBoundingClientRect()/clientX/Y — which all of drag/drop and box-model
-  // measurement already rely on — report real post-zoom viewport pixels, so nothing downstream needs to
-  // know zoom exists. Floored at 35% so the preview never shrinks past legibility.
+  // The device-preview widths are TRUE device pixels — md/sm/xs always render at their real
+  // 1024/768/375, never scaled. When that's wider than the canvas column, the column scrolls
+  // (edge fades in renderNewCanvas signal there's more); nothing about the widget's rendered size
+  // is ever a fiction of the panel's own width.
   DEVICE_PX={md:1024,sm:768,xs:375};
-  canvasZoom(){ const naturalPx=this.DEVICE_PX[this.device]; if(!naturalPx) { return 1; }
-    const pw=this.effPanelWidths();
-    const avail=window.innerWidth - pw.left - pw.right - 10 - 60; // 10 = two 5px resizers, 60 = canvas's own 30px+30px side padding
-    if(avail<=0 || naturalPx<=avail) { return 1; }
-    return Math.max(0.35, avail/naturalPx); }
-  widthLabel(){ const px=this.device==='md'?'1024px (md)':(this.device==='sm'?'768px (sm)':'375px (xs)'); const z=this.canvasZoom();
-    return z<1?(px+' · '+Math.round(z*100)+'%'):px; }
+  // Desktop (lg) is the one entry with no fixed width — it's genuinely fluid, because a real
+  // desktop is fluid and lg has no upper breakpoint. Fluid also means it can render narrower than
+  // its own breakpoint actually starts (at a cramped window the canvas column might be 700px,
+  // solidly md territory in a real browser) — so lg keeps filling the column exactly as always,
+  // but the label stops pretending: below LG_FLOOR (1200, the true bottom of the lg bucket — md
+  // tops out at 1199) it reports the actual rendered width instead of implying ≥1200px.
+  LG_FLOOR=1200;
+  availCanvasWidth(){ const pw=this.effPanelWidths(); return window.innerWidth - pw.left - pw.right - 10 - 60; } // 10 = two 5px resizers, 60 = canvas's own 30px+30px side padding
+  stageWidth(){ return this.device==='lg' ? '100%' : this.DEVICE_PX[this.device]+'px'; }
+  // A fixed device width wider than what's actually available means the column will scroll —
+  // used to decide whether the stage stays centered (ordinary case) or left-aligns (see the
+  // centering-trap comment at the stage wrapper). lg is never "too wide for itself" since it
+  // always renders at exactly the available width.
+  stageOverflows(){ return this.device!=='lg' && this.DEVICE_PX[this.device]>this.availCanvasWidth(); }
+  // Single setter for every "switch preview width" control (header device buttons, the layer
+  // strip's width icons, the ledger's jump-to-Base link) so they can't drift — in particular, the
+  // scroll reset: without it, switching from a scrolled-right md view to xs would land you looking
+  // at whatever happened to be at that same scroll offset instead of the widget's actual left edge.
+  setDevice(v){ this.device=v; if(v!=='lg') { this._estate='base'; } this._box=null;
+    if(this._canvasScroll) { this._canvasScroll.scrollLeft=0; }
+    this.forceUpdate(); }
+  widthLabel(){ if(this.device!=='lg') { return this.DEVICE_PX[this.device]+'px ('+this.device+')'; }
+    const w=this.availCanvasWidth();
+    return w<this.LG_FLOOR ? (Math.round(w)+'px (lg)') : null; }
   renderCanvas(t){
     const h=React.createElement;
     // The artboard is the WIDGET preview, not editor chrome — it stays LIGHT even when the editor is dark, so
@@ -2688,7 +2718,7 @@ class Component extends DCLogic {
   }
   // The artboard itself (root). Root has no data-node-id wrapper — it IS .ws-stage, matching the DOM
   // contract the shared engine/overlays expect (measureBox/measureFlexGrid special-case root === stage).
-  renderNewCanvas(t,lightT){ const h=React.createElement; const widths={lg:'100%',md:'1024px',sm:'768px',xs:'375px'};
+  renderNewCanvas(t,lightT){ const h=React.createElement;
     const rootEst=this.previewEst(this.tree);
     // overflow is pulled OFF .ws-stage's own style and applied instead to a plain inner wrapper around just
     // the children (below) — .ws-stage also directly hosts the identity label (root has no separate
@@ -2721,8 +2751,12 @@ class Component extends DCLogic {
       // consistent panel color around the canvas now, top and bottom.
       h('div',{style:{flexShrink:0,display:'flex',alignItems:'center',gap:10,padding:'12px 16px 8px',fontSize:11,color:t.muted,background:t.panel,borderBottom:'1px solid '+t.borderSoft}},
         this.undoRedoBtns(t),
-        this.device!=='lg'?h('span',{style:{color:t.border,flexShrink:0}},'·'):null,
-        this.device!=='lg'?h('span',{style:{flexShrink:0}},this.widthLabel()):null,
+        // widthLabel() itself returns null for lg while it's comfortably fluid (the common case,
+        // no label needed) — it only reports a number once lg has actually dropped under the floor.
+        (()=>{ const label=this.widthLabel();
+          return label?h(React.Fragment,null,
+            h('span',{style:{color:t.border,flexShrink:0}},'·'),
+            h('span',{style:{flexShrink:0}},label)):null; })(),
         h('div',{style:{flex:1,minWidth:8}}),
         (()=>{ const on=this.showBox; return h('div',{onClick:()=>{this.showBox=!this.showBox;this._boxSig=null;this.forceUpdate();},...this.tt({h:'Box model',b:'Shows sizes and content area. Margin and padding always show when selected.'}),...this.a11y(()=>{this.showBox=!this.showBox;this._boxSig=null;this.forceUpdate();},{pressed:on,label:'Box model overlay'}),style:{display:'flex',alignItems:'center',gap:6,flexShrink:0,cursor:'pointer',height:24,boxSizing:'border-box',padding:'0 9px',borderRadius:6,border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:(this.dark?t.panel:'#fff'),color:on?t.accent:t.muted,fontSize:11,fontWeight:600,whiteSpace:'nowrap'}}, h('span',{style:{display:'inline-block',width:11,height:11,border:'1px solid currentColor',borderRadius:2,position:'relative'}}, h('span',{style:{position:'absolute',inset:2,background:'currentColor',opacity:.45,borderRadius:1}})), 'Box model'); })()
       ),
@@ -2734,12 +2768,22 @@ class Component extends DCLogic {
       // height is what lets a child's `height:100%` (or a Fill/flex child) actually fill the base div —
       // exactly the `html,body{height:100%}` behavior. Clicking the canvas selects root; clicking OFF it
       // (the gray viewport around it) deselects — handled by the scroll container's own onClick below.
-      h('div',{style:{flex:1,minHeight:0,overflow:'auto',padding:'34px 30px 40px',background:this.dark?'#0b0f16':'#eef0f3',position:'relative',display:'flex',flexDirection:'column',boxShadow:this.focusStack.length?('inset 0 0 0 3px '+t.accent):'none'},
+      // Outer wrapper JUST for the scroll-edge fades below — they must sit OUTSIDE the scroll
+      // container (position:relative on THIS div, not the scroll container) so they stay pinned to
+      // the viewport edge instead of scrolling away with the content. The scroll container keeps its
+      // own position:relative for its existing overlay children (box/flex-grid/spacing-drag), which
+      // are positioned via _overlayOffset() and are SUPPOSED to scroll with the content they annotate.
+      h('div',{style:{flex:1,minHeight:0,position:'relative',display:'flex',flexDirection:'column'}},
+        h('div',{style:{flex:1,minHeight:0,overflow:'auto',padding:'34px 30px 40px',background:this.dark?'#0b0f16':'#eef0f3',position:'relative',display:'flex',flexDirection:'column',boxShadow:this.focusStack.length?('inset 0 0 0 3px '+t.accent):'none'},
         ref:el=>{this._canvasScroll=el;},
         onClick:e=>this.select(null,e),
+        onScroll:()=>this.measureScrollFade(),
         onMouseOver:e=>{ if(this.hoverId!=null){this.hoverId=null;this.forceUpdate();} },
         onMouseLeave:()=>{ if(this.hoverId){this.hoverId=null;this.forceUpdate();} }},
-        h('div',{style:{width:widths[this.device],margin:'0 auto',flex:'1 0 auto',display:'flex',flexDirection:'column',transition:'width .2s',zoom:this.canvasZoom()}},
+        // margin stays '0 auto' (centered) in the ordinary case, but a centered flex item that still
+        // overflows its container makes its own far side physically unreachable — no amount of
+        // scrolling gets you there.
+        h('div',{style:{width:this.stageWidth(),margin:this.stageOverflows()?0:'0 auto',flex:'1 0 auto',display:'flex',flexDirection:'column',transition:'width .2s'}},
           (()=>{ const _sd=this.dark; this.dark=false; try{
             // An empty widget shows a first-run Add-element prompt — the blank white stage alone
             // gives nothing to click and no hint to drag. Rendered as an ABSOLUTE centered overlay,
@@ -2788,6 +2832,14 @@ class Component extends DCLogic {
         this.renderBoxOverlay(t),
         this.renderFlexGridOverlay(),
         this.renderSpacingDragIndicator()
+        ),
+        // Scroll-edge fades: soft gradients that only appear when there's actually more canvas to
+        // scroll to, so a device wider than the column reads as "more this way" rather than a hard
+        // crop. pointerEvents:none so they never block clicks/drags on the canvas beneath them. Color
+        // matches the scroll container's own background exactly so the fade looks like the edge
+        // dissolving, not a colored bar sitting on top of it.
+        this._scrollFade.right?h('div',{style:{position:'absolute',top:0,right:0,bottom:0,width:36,pointerEvents:'none',background:'linear-gradient(to right, transparent, '+(this.dark?'#0b0f16':'#eef0f3')+')'}}):null,
+        this._scrollFade.left?h('div',{style:{position:'absolute',top:0,left:0,bottom:0,width:36,pointerEvents:'none',background:'linear-gradient(to left, transparent, '+(this.dark?'#0b0f16':'#eef0f3')+')'}}):null
       ),
       // Bottom breadcrumb bar — matches Webflow's own convention (the reference for this feature).
       // Fixed height (not padding-only) so the bar doesn't collapse when there's no selection and
@@ -3675,7 +3727,7 @@ class Component extends DCLogic {
 
     const WIDTHS=[['lg','Desktop'],['md','md · ≤'+this.BREAKPOINTS.md.max+'px'],['sm','sm · ≤'+this.BREAKPOINTS.sm.max+'px'],['xs','xs · ≤'+this.BREAKPOINTS.xs.max+'px']];
     const widthHas=w=>w!=='lg'&&c&&this.responsive[w]&&this.responsive[w][c]&&Object.keys(this.responsive[w][c]).length;
-    const setWidth=v=>{ this.device=v; if(v!=='lg') { this._estate='base'; } this._box=null; this.forceUpdate(); };
+    const setWidth=v=>this.setDevice(v);
     // Same look as the header's device switcher (dib()) — one consistent "which width am I on"
     // control language for the whole app, not a bespoke seg just for this panel.
     const widthBtn=(name,title)=>{ const on=this.device===name; const dot=widthHas(name);
@@ -5134,7 +5186,7 @@ class Component extends DCLogic {
     const baseKeys=Object.keys(baseSt);
 
     const tint=this.layerTint();
-    const jumpToBase=()=>{ this.device='lg'; this._estate='base'; this._box=null; this.forceUpdate(); };
+    const jumpToBase=()=>this.setDevice('lg');
 
     const row=(key,val,struck,onDelete)=>h('div',{key,style:{display:'flex',alignItems:'center',gap:6,padding:'3px 0'}},
       h('span',{style:{color:struck?t.faint:t.muted,fontSize:11.5,fontFamily:'ui-monospace,monospace',flexShrink:0}}, this.kebab(key)),
@@ -6312,7 +6364,10 @@ class Component extends DCLogic {
       codeEl);
   }
   panelHint(){ const m={html:'HTML template (read-only) — generated from the canvas; paste into the widget Body field',scss:'Generated from your classes → paste into the widget CSS / SCSS field',client:'Client script (api.controller) — editable',server:'Server script — editable',link:'Link function — editable',options:'Widget option schema — add options here, then paste the JSON into the widget’s Option schema field'}; return m[this.codeTab]||''; }
-  renderPreviewTree(t){ const h=React.createElement; const widths={lg:'100%',md:'1024px',sm:'768px',xs:'375px'}; return h('div',{style:{flex:1,minHeight:0,overflow:'auto',background:'#eef1f4',padding:'18px',display:'flex',flexDirection:'column',alignItems:'center',gap:10}},
+  // lg stays '100%' here (unlike the editor canvas, preview never pins it to the 1200px floor — this
+  // iframe's own maxWidth:'100%' below already lets a narrow window shrink it, same mechanism a real
+  // responsive page uses). md/sm/xs share DEVICE_PX with the editor canvas so the two can't drift apart.
+  renderPreviewTree(t){ const h=React.createElement; const widths={lg:'100%',md:this.DEVICE_PX.md+'px',sm:this.DEVICE_PX.sm+'px',xs:this.DEVICE_PX.xs+'px'}; return h('div',{style:{flex:1,minHeight:0,overflow:'auto',background:'#eef1f4',padding:'18px',display:'flex',flexDirection:'column',alignItems:'center',gap:10}},
     this._pvErr?h('div',{style:{flexShrink:0,alignSelf:'stretch',display:'flex',alignItems:'center',gap:8,padding:'7px 11px',background:'#3d1418',border:'1px solid #5c1a23',borderRadius:6,color:'#ff9aa6',fontSize:11.5,fontFamily:'ui-monospace,monospace'}}, h('span',{style:{fontWeight:700,flexShrink:0}},'⚠'), h('span',{style:{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},this._pvErr)):null,
     h('iframe',{key:'pvframe',ref:el=>{ this._pvIframe=el; if(!el){ this._pvInit=false; } },title:'preview',style:{width:widths[this.device],maxWidth:'100%',flex:1,minHeight:220,border:'none',background:'#fff',borderRadius:3,boxShadow:'0 1px 3px rgba(0,0,0,.12)'}})); }
   startPvResize(e){ e.preventDefault(); e.stopPropagation(); this._resizing=true; const sy=e.clientY,sh=this.previewH; const mv=ev=>{ this.previewH=Math.max(140,Math.min(660,sh-(ev.clientY-sy))); this.forceUpdate(); if(this._mon) { this._mon.layout(); } }; const up=()=>{ this._resizing=false; window.removeEventListener('mousemove',mv,true); window.removeEventListener('mouseup',up,true); this.saveUiPrefs(); this.forceUpdate(); }; window.addEventListener('mousemove',mv,true); window.addEventListener('mouseup',up,true); }
