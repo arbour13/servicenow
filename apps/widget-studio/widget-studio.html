@@ -2557,13 +2557,17 @@ class Component extends DCLogic {
     // No grid/flex identity color here — every container reads the same.
     const outlineStrong = t.accent;
     const outlineHover = this.dark?t.accent:'rgba(37,99,235,.5)';
+    // Guides (this.showGuides): same faint dashed at-rest outline as renderNode's guideOutline —
+    // this is the LIVE pipeline (renderNode only feeds composables' innards now), so the branch is
+    // needed in BOTH cascades or top-level elements never show a guide.
+    const guideOutline = this.showGuides ? ('1px dashed '+(this.dark?'rgba(139,148,158,.4)':'rgba(99,110,123,.3)')) : 'none';
     const ws={minWidth:0,...place,position:'relative',display:wrapDisp,
       cursor:(this._editing===node.id?'text':'default'),
       zIndex:sel?40:(hov?30:undefined),
       outline:(this.drag&&this.drag.started&&this.dropZone&&this.dropContainer===node.id)?('2px solid '+outlineStrong)
         :((sel&&!(this.drag&&this.drag.started))?('1.5px solid '+outlineStrong)
         :((hov&&!(this.drag&&this.drag.started))?('1px solid '+outlineHover)
-        :(hidden?('1px dashed '+(this.dark?'rgba(139,148,158,.75)':'rgba(99,110,123,.6)')):'none'))),
+        :(hidden?('1px dashed '+(this.dark?'rgba(139,148,158,.75)':'rgba(99,110,123,.6)')):guideOutline))),
       // offset 0, not -1: the wrapper and the inner visual (nwChildrenBox) share the exact same box edge, and
       // that edge is where the element's OWN border (border-box) is drawn. A negative offset pulls the ring
       // onto those same pixels, so a colored/thick border visually overwrites the selection/hover ring. 0 hugs
@@ -3877,27 +3881,8 @@ class Component extends DCLogic {
   blockHead(t,label,opts){ opts=opts||{}; const h=React.createElement;
     return h('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:opts.first?'0 0 12px':'20px 0 12px',paddingTop:opts.first?0:16,borderTop:opts.first?'none':'1px solid '+t.border}}, label, opts.dot||null);
   }
-  // Identity icon for a bigCard header — a small, separate icon set from gl()'s bars/dots (layout state)
-  // and glyphSvg's per-tag glyphs (element identity): these two just label "which card is this."
-  secIcon(name){ const h=React.createElement; const p={width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.7,strokeLinecap:'round',strokeLinejoin:'round'};
-    if(name==='structure') { return h('svg',p, h('rect',{x:3,y:3,width:18,height:18,rx:2}), h('path',{d:'M3 9h18M9 9v12'})); }
-    if(name==='palette') { return h('svg',p, h('circle',{cx:12,cy:12,r:9}), h('circle',{cx:8.5,cy:10.5,r:1.2,fill:'currentColor',stroke:'none'}), h('circle',{cx:12,cy:8,r:1.2,fill:'currentColor',stroke:'none'}), h('circle',{cx:15.5,cy:10.5,r:1.2,fill:'currentColor',stroke:'none'})); }
-    return null; }
-  // One of the two big top-level cards (Structure / Appearance) — collapsible via the same _inspOpen
-  // state inspSection uses, just with a bordered+shadowed shell instead of a plain divider.
-  bigCard(t,key,icon,label,body,defOpen){ const h=React.createElement;
-    const empty = body==null || (Array.isArray(body)&&!body.length);
-    if(empty) { return null; }
-    const open = this._inspOpen[key]!=null ? this._inspOpen[key] : (defOpen!==false);
-    const toggle=()=>{ this._inspOpen[key]=!open; this.forceUpdate(); };
-    return h('div',{style:{border:'1px solid '+t.border,borderRadius:12,marginBottom:14,overflow:'hidden',background:t.panel,boxShadow:this.dark?'0 1px 2px rgba(0,0,0,.35)':'0 1px 2px rgba(16,24,40,.05)'}},
-      h('div',Object.assign({onClick:toggle},this.a11y(toggle,{label:label+(open?' section, expanded':' section, collapsed'),pressed:open}),
-        {style:{display:'flex',alignItems:'center',gap:8,padding:'11px 13px',cursor:'pointer',userSelect:'none',borderBottom:open?'1px solid '+t.border:'none'}}),
-        h('span',{style:{color:t.accent,display:'flex',flexShrink:0}}, this.secIcon(icon)),
-        h('span',{style:{fontSize:11.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.04em',color:t.text,flex:1}},label),
-        h('span',{style:{color:t.faint,display:'inline-flex',alignItems:'center',transform:open?'rotate(90deg)':'none',transition:'transform .12s'}},this.chev('right',10))),
-      this.animatedBox(open, h('div',{style:{padding:13}}, body)));
-  }
+  // bigCard/secIcon (the two-nested-card Structure/Appearance shell, and its header icon set) were
+  // removed with deck flattening — designTab's flatSection is the flat-panel replacement.
   // Compact icon-only button row — Display / Direction. Same selected-state treatment as tiles() (accent
   // border + accentSoft fill) but flat/single-row instead of a tall icon+label tile, since these icons
   // (gl()'s bars/dots) are already unambiguous alone — the header's breakpoint switcher works the same way.
@@ -5033,7 +5018,7 @@ class Component extends DCLogic {
       h('div',{style:{flex:1.5,minWidth:0}}, h('div',Object.assign({},this.tt({h:'Relative to',b:'Determined by the Position value'}),{style:{height:30,display:'flex',alignItems:'center',border:'1px solid '+t.border,borderRadius:6,padding:'0 9px',fontSize:12,color:t.muted,background:t.segBg,boxSizing:'border-box'}}),relText), h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:5}},'Relative to')),
       h('div',{style:{flex:1,minWidth:0}}, this.numField(t,node,'zIndex','auto'), h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:5}},'Z-index'))));
     return h('div',null,els); }
-  layoutTab(node,t){
+  layoutTab(node,t,first){
     // Use the EFFECTIVE (cascaded) display so a base grid/flex still reads as selected at smaller
     // breakpoints — otherwise the layout controls hide and you can't tweak the grid per device.
     const h=React.createElement; const defD=this.defaultDisplay(node); const disp=this.effectiveStyle(node).display||defD; const els=[];
@@ -5056,7 +5041,7 @@ class Component extends DCLogic {
       if(/grid$/.test(v)&&!this.effectiveStyle(node).gridTemplateColumns) { this.setCS(node,'gridTemplateColumns','1fr 1fr'); } };
     // Grid starts with no explicit gridTemplateColumns — gridColCount() already treats that as 1 column
     // (matching the "1" preset tile below reading as selected).
-    els.push(h('div',{key:'layout-hdr'},this.blockHead(t,'Layout',{first:true})));
+    els.push(h('div',{key:'layout-hdr'},this.blockHead(t,'Layout',{first:!!first})));
     els.push(h('div',{key:'d'}, this.subHead(t,'Display',true),
       this.iconRow(t,primaryDisp,isOther?null:disp,setDisp,'Display'),
       h('div',{style:{marginTop:6}}, this.xselect('disp-other',t, isOther?disp:'', [{v:'',label:'Other…'},...otherDisp], v=>{ if(v==='') { return; } setDisp(v); }))
@@ -5130,33 +5115,12 @@ class Component extends DCLogic {
     // ---- spacing (padding & margin \u2014 the most-used box controls, so shown first & prominent) ----
     els.push(this.subHead(t,'Spacing'));
     els.push(this.spacingBands(node,t));
-    // ---- size (dense: width/height + min/max always visible, no disclosure) ----
-    // Keyword-grouped token-fields (Controls Spec §1.6): presets are menu rows, not a separate tile row —
-    // "auto"/"full"/"fit-content" render as plain mono keywords above the token list, so a $token width has
-    // a seat in the same field instead of losing to a fixed set of preset buttons.
-    const lenToks=(this.tokens||[]).filter(x=>x.type==='size'||x.type==='space');
-    els.push(this.subHead(t,'Size'));
-    els.push(this.row2(
-      h('div',null,this.lbl(t,'Width'),this.comboField('cf:width:'+node.id,t,node,'width',{tokens:lenToks,keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'},{v:'fit-content',l:'fit-content'}],ghost:'auto'})),
-      h('div',null,this.lbl(t,'Height'),this.comboField('cf:height:'+node.id,t,node,'height',{tokens:lenToks,keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'}],ghost:'auto'}))));
-    els.push(h('div',{style:{marginTop:10}}, this.row2(
-      h('div',null,this.lbl(t,'Min width'),this.comboField('cf:minWidth:'+node.id,t,node,'minWidth',{tokens:lenToks,ghost:'auto',unsetLabel:'auto'})),
-      h('div',null,this.lbl(t,'Max width'),this.comboField('cf:maxWidth:'+node.id,t,node,'maxWidth',{tokens:lenToks,ghost:'none',unsetLabel:'none'})))));
-    els.push(h('div',{style:{marginTop:10}}, this.row2(
-      h('div',null,this.lbl(t,'Min height'),this.comboField('cf:minHeight:'+node.id,t,node,'minHeight',{tokens:lenToks,ghost:'auto',unsetLabel:'auto'})),
-      h('div',null,this.lbl(t,'Max height'),this.comboField('cf:maxHeight:'+node.id,t,node,'maxHeight',{tokens:lenToks,ghost:'none',unsetLabel:'none'})))));
     // ---- children sizing (containers) — reference: Size → Children select ----
     if(this.canHaveChildren(node)){
       const ai=this.csVal(node,'alignItems')||'';
       const childMode = ai==='stretch'?'fill' : (ai==='flex-start'?'fit' : 'manual');
       els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Children'), this.selectField(t,[['fill','Fill space'],['fit','Fit content'],['manual','Manual']],childMode,
         v=>this.setCS(node,'alignItems', v==='fill'?'stretch':(v==='fit'?'flex-start':'')))));
-    }
-    // ---- object fit / position (img & video only) — reference: Object fit / Object position selects ----
-    if(node.type==='el'&&(node.data.tag==='img'||node.data.tag==='video')){
-      els.push(h('div',{style:{display:'flex',gap:8,marginTop:12}},
-        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object fit'), this.selectField(t,['fill','cover','contain','none','scale-down'],this.csVal(node,'objectFit')||'fill',v=>this.setCS(node,'objectFit',v==='fill'?'':v))),
-        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object position'), this.selectField(t,['center','top','right','bottom','left'],this.csVal(node,'objectPosition')||'center',v=>this.setCS(node,'objectPosition',v==='center'?'':v)))));
     }
     // ---- overflow (how this box's own content behaves once it doesn't fit — a Size question) ----
     if(this.canHaveChildren(node)){
@@ -5168,43 +5132,90 @@ class Component extends DCLogic {
     els.push(this.positionEditor(node,t));
     return h('div',null,els);
   }
-  // Deck flattening (Property Editor Exploration.dc.html, zone ③): Structure's own controls
-  // (display/flex-grid/spacing/size/overflow/position) stay flat and always visible — no card
-  // chrome, no collapse — since they're the ~80% path this deck exists for. Appearance shrinks to
-  // its two most-reached-for rows (Text, Fill+Radius) also flat; everything else it used to always
-  // show (line-height/letter-spacing/color/alignment, gradient/image modes, border style & full
-  // corner radii, effects, transforms & transitions) moves into ONE "More styling" card, collapsed
-  // by default — reachable, not gone, just no longer permanently in the scroll path. Zones ①②④⑤
-  // (classManager/layerZone/ledger/addPropertyLine) are unchanged.
-  textCoreRow(node,t){ const h=React.createElement;
-    const wRaw=this.csVal(node,'fontWeight')||''; const w=(wRaw==='normal'||wRaw==='400')?'':(wRaw==='bold'?'700':wRaw);
-    const wOpts=[['','Regular 400'],['300','Light 300'],['500','Medium 500'],['600','Semibold 600'],['700','Bold 700']];
-    const famOpts=[['','System'],['Inter, system-ui, sans-serif','Inter'],['Georgia, serif','Georgia'],['ui-monospace, SFMono-Regular, monospace','Monospace']];
-    const fs=(this.csVal(node,'fontSize')||'').toString().replace(/px$/,'');
-    return h('div',null,
-      this.blockHead(t,'Text',{dot:this.stateEditDot(node,['fontFamily','fontWeight','fontSize'],t)}),
-      h('div',{style:{marginBottom:8}}, this.selectField(t,famOpts,this.csVal(node,'fontFamily')||'',v=>this.setCS(node,'fontFamily',v))),
-      h('div',{style:{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:8}},
-        this.selectField(t,wOpts,w,v=>this.setCS(node,'fontWeight',v)),
-        this.prefixField(t,'',fs,v=>{ const x=v.trim(); this.setCS(node,'fontSize',x===''?'':(/^[0-9.]+$/.test(x)?x+'px':x)); },{unit:'px',placeholder:'16'})));
+  // Width/Height/min/max + img/video object-fit — demoted out of Structure's always-visible content
+  // into the collapsed tail: elements mostly fill their space (Fill/Fit/Manual in Structure already
+  // covers the common case), so Size is rarely the thing you reach for. No design tokens here (unlike
+  // Gap/Spacing/Radius, which keep theirs) - a $token WIDTH was token-system overreach; keywords
+  // (auto/full/fit-content) and raw values only. Tokens may come back for specific per-element cases
+  // (an input/button's height) later, deliberately - not as a blanket size-field default.
+  sizeExtras(node,t,first){ const h=React.createElement; const els=[];
+    els.push(h('div',{key:'size-hdr'},this.blockHead(t,'Size',{first:!!first,dot:this.stateEditDot(node,['width','height','minWidth','maxWidth','minHeight','maxHeight','objectFit','objectPosition'],t)})));
+    // tokens:[] (not omitted) — comboField falls back to this.spaceTokens() when opts.tokens is
+    // undefined, so leaving it out would have silently swapped one token set for another instead
+    // of actually removing tokens from these fields.
+    els.push(this.row2(
+      h('div',null,this.lbl(t,'Width'),this.comboField('cf:width:'+node.id,t,node,'width',{tokens:[],keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'},{v:'fit-content',l:'fit-content'}],ghost:'auto'})),
+      h('div',null,this.lbl(t,'Height'),this.comboField('cf:height:'+node.id,t,node,'height',{tokens:[],keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'}],ghost:'auto'}))));
+    els.push(h('div',{style:{marginTop:10}}, this.row2(
+      h('div',null,this.lbl(t,'Min width'),this.comboField('cf:minWidth:'+node.id,t,node,'minWidth',{tokens:[],ghost:'auto',unsetLabel:'auto'})),
+      h('div',null,this.lbl(t,'Max width'),this.comboField('cf:maxWidth:'+node.id,t,node,'maxWidth',{tokens:[],ghost:'none',unsetLabel:'none'})))));
+    els.push(h('div',{style:{marginTop:10}}, this.row2(
+      h('div',null,this.lbl(t,'Min height'),this.comboField('cf:minHeight:'+node.id,t,node,'minHeight',{tokens:[],ghost:'auto',unsetLabel:'auto'})),
+      h('div',null,this.lbl(t,'Max height'),this.comboField('cf:maxHeight:'+node.id,t,node,'maxHeight',{tokens:[],ghost:'none',unsetLabel:'none'})))));
+    if(node.type==='el'&&(node.data.tag==='img'||node.data.tag==='video')){
+      els.push(h('div',{style:{display:'flex',gap:8,marginTop:12}},
+        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object fit'), this.selectField(t,['fill','cover','contain','none','scale-down'],this.csVal(node,'objectFit')||'fill',v=>this.setCS(node,'objectFit',v==='fill'?'':v))),
+        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object position'), this.selectField(t,['center','top','right','bottom','left'],this.csVal(node,'objectPosition')||'center',v=>this.setCS(node,'objectPosition',v==='center'?'':v)))));
+    }
+    return h('div',null,els);
   }
-  // Reuses colorInlineField('background') and radiusBand exactly as backgroundBlock/borderBlock do
-  // below — same CSS prop, same control, so a value set here and a value set in "More styling"'s
-  // full Background/Border sections can never disagree; this is a second entry point, not a copy.
-  fillRadiusRow(node,t){ const h=React.createElement;
-    return h('div',null,
-      this.blockHead(t,'Fill + Radius',{dot:this.stateEditDot(node,['background','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius'],t)}),
-      this.row2(
-        h('div',null,this.lbl(t,'Fill'), this.colorInlineField(t,node,'background',{placeholder:'#1F8FFF'})),
-        h('div',null,this.lbl(t,'Radius'), this.radiusBand(node,t))));
+  // Deck flattening (Property Editor Exploration.dc.html, zone ③): every section renders flat, no
+  // card chrome. Which section LEADS depends on what the selection actually is — text (headings,
+  // p/span/a/label/li/blockquote, icon) leads with Typography; a surface (button/badge/alert/panel/
+  // card/input/select/hr) leads with Background+Border; anything else leads with Structure. This is
+  // NOT the reorder-on-select that was tried and reverted earlier — there, identical content swapped
+  // positions and fields were duplicated above their real sections (the Fill+Radius bug). Here each
+  // section is real and appears exactly once; only ITS POSITION depends on type, and within a type
+  // nothing ever moves, so each of the three layouts is its own stable, learnable panel. Classification
+  // stays coarse and tag-keyed on purpose — never usage-adaptive.
+  STYLE_LEAD_TEXT_TAGS=['h1','h2','h3','h4','h5','h6','p','span','a','label','li','blockquote'];
+  STYLE_LEAD_SURFACE_TAGS=['button','input','select','textarea','hr'];
+  STYLE_LEAD_SURFACE_TYPES={button:1,badge:1,alert:1,panel:1,card:1,input:1,select:1,checkbox:1,radio:1};
+  styleLead(node){
+    if(node.id==='root') { return 'structure'; }
+    if(node.type==='icon') { return 'text'; }
+    if(node.type==='el'){ const tg=node.data.tag;
+      if(this.STYLE_LEAD_SURFACE_TAGS.includes(tg)) { return 'surface'; }
+      if(this.STYLE_LEAD_TEXT_TAGS.includes(tg)) { return 'text'; }
+      return 'structure'; }
+    if(this.STYLE_LEAD_SURFACE_TYPES[node.type]) { return 'surface'; }
+    return 'structure'; // table, navtabs, listgroup, progress, breadcrumb, buttongroup, html
   }
-  designTab(node,t){ const h=React.createElement; return h('div',null,
-    this.layerZone(node,t),
-    this.layoutTab(node,t),
-    this.textCoreRow(node,t),
-    this.fillRadiusRow(node,t),
-    this.bigCard(t,'card:more','palette','More styling', this.styleTab(node,t,true), false),
-    this.ledger(node,t));
+  // Whichever of Typography/Background/Border wasn't hoisted to lead for this type, plus Effects,
+  // Transforms & Transitions, plus Size (demoted — see sizeExtras). Collapsed by default, behind a
+  // flat toggle header (flatSection) rather than a nested card — the tail should look like the rest
+  // of this panel, not like a narrower box sitting inside it.
+  tailBlocks(node,t,lead){ const h=React.createElement; const blocks=[]; let first=true;
+    if(lead!=='text') { blocks.push(this.typographyBlock(node,t,first)); first=false; }
+    if(lead!=='surface') { blocks.push(this.backgroundBlock(node,t,first)); first=false; blocks.push(this.borderBlock(node,t)); }
+    blocks.push(this.effectsBlock(node,t)); blocks.push(this.transformsBlock(node,t));
+    blocks.push(this.sizeExtras(node,t));
+    return h('div',null,blocks);
+  }
+  // Same header language as blockHead (bold uppercase, border-top divider) plus a chevron and
+  // click-to-toggle — deliberately NOT bigCard's card chrome (border/shadow/rounded corners/13px
+  // inset), which reads as a narrower, denser box sitting inside an otherwise-flat panel.
+  flatSection(t,key,label,body,defOpen){ const h=React.createElement;
+    const open = this._inspOpen[key]!=null ? this._inspOpen[key] : (defOpen!==false);
+    const toggle=()=>{ this._inspOpen[key]=!open; this.forceUpdate(); };
+    return h('div',null,
+      h('div',Object.assign({onClick:toggle},this.a11y(toggle,{label:label+(open?' section, expanded':' section, collapsed'),pressed:open}),
+        {style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer',userSelect:'none',fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}}),
+        h('span',{style:{display:'inline-flex',color:t.faint,transition:'transform .12s',transform:open?'rotate(90deg)':'none'}},this.chev('right',10)),
+        label),
+      this.animatedBox(open, body));
+  }
+  designTab(node,t){ const h=React.createElement;
+    const lead=this.styleLead(node);
+    const structure=this.layoutTab(node,t,lead==='structure');
+    const leadBlock = lead==='text' ? this.typographyBlock(node,t,true)
+      : lead==='surface' ? h(React.Fragment,null,this.backgroundBlock(node,t,true),this.borderBlock(node,t))
+      : null;
+    return h('div',null,
+      this.layerZone(node,t),
+      lead==='structure' ? structure : h(React.Fragment,null,leadBlock,structure),
+      this.flatSection(t,'card:more','More styling', this.tailBlocks(node,t,lead), false),
+      this.ledger(node,t));
   }
   // The ledger: every declaration actually SET on this class, grouped by layer — the layer you're
   // editing (if off-base) plus Base beneath it. A Base value the active layer also sets is struck
@@ -5421,7 +5432,7 @@ class Component extends DCLogic {
           onChange:e=>{ const raw=e.target.value; const v=raw.replace('%',''); if(v.trim()===''||/^\d{1,3}$/.test(v.trim())) { delete this._tsErr[ek('alpha')]; write(x,y,blur,color,v); } else { this._tsErr[ek('alpha')]=raw; this.forceUpdate(); } },
           onBlur:()=>{ if(aErr!=null) { delete this._tsErr[ek('alpha')]; this.forceUpdate(); } },
           style:{width:36,flex:'0 0 auto',border:'none',background:'none',color:aErr!=null?this.errClr():t.muted,fontSize:11,textAlign:'right',outline:'none'}}))); }
-  typographyBlock(node,t){ const h=React.createElement;
+  typographyBlock(node,t,first){ const h=React.createElement;
     const famOpts=[['','System'],['Inter, system-ui, sans-serif','Inter'],['Georgia, serif','Georgia'],['ui-monospace, SFMono-Regular, monospace','Monospace']];
     const wRaw=this.csVal(node,'fontWeight')||''; const w=(wRaw==='normal'||wRaw==='400')?'':(wRaw==='bold'?'700':wRaw);
     const wOpts=[['','Regular 400'],['300','Light 300'],['500','Medium 500'],['600','Semibold 600'],['700','Bold 700']];
@@ -5435,7 +5446,7 @@ class Component extends DCLogic {
     const alignTile=o=>{ const on=ta===o.v; const pick=()=>this.setCS(node,'textAlign',o.v==='left'?'':o.v); return h('div',Object.assign({key:o.v,onClick:pick},this.tt(o.title),this.a11y(pick,{pressed:on,label:o.title}),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),o.icon); };
     const caseTile=(g,v,title)=>styleTile(tform===v,g,title,()=>this.setCS(node,'textTransform',tform===v?'':v),{fontSize:12});
     return h('div',null,
-      this.blockHead(t,'Typography',{first:true,dot:this.stateEditDot(node,['fontFamily','fontWeight','fontSize','lineHeight','letterSpacing','color','textAlign','fontStyle','textDecoration','textTransform','textShadow','whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'],t)}),
+      this.blockHead(t,'Typography',{first:!!first,dot:this.stateEditDot(node,['fontFamily','fontWeight','fontSize','lineHeight','letterSpacing','color','textAlign','fontStyle','textDecoration','textTransform','textShadow','whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'],t)}),
       h('div',{style:{marginBottom:8}}, this.selectField(t,famOpts,this.csVal(node,'fontFamily')||'',v=>this.setCS(node,'fontFamily',v))),
       h('div',{style:{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:8}},
         this.selectField(t,wOpts,w,v=>this.setCS(node,'fontWeight',v)),
@@ -5478,7 +5489,7 @@ class Component extends DCLogic {
     const stops=parts.slice(start).map(p=>{ const mm=p.trim().match(/^(.*?)(\s+(-?[\d.]+%?))?$/); const col=(mm?mm[1]:p).trim(); const pos=(mm&&mm[3])?mm[3]:''; return {color:col,pos:pos}; });
     return {angle,stops:stops.length?stops:[{color:'#1F8FFF',pos:'0%'},{color:'#8250DF',pos:'100%'}]}; }
   composeGradient(angle,stops){ return 'linear-gradient('+angle+', '+stops.map(s=>s.color+(s.pos?(' '+s.pos):'')).join(', ')+')'; }
-  backgroundBlock(node,t){ const h=React.createElement; const type=this.bgTypeOf(node);
+  backgroundBlock(node,t,first){ const h=React.createElement; const type=this.bgTypeOf(node);
     const body=[];
     if(type==='solid'){ body.push(h('div',{key:'solid'}, this.colorInlineField(t,node,'background',{placeholder:'#1F8FFF'}))); }
     else if(type==='gradient'){ const g=this.parseGradient(this.csVal(node,'background')||'');
@@ -5514,7 +5525,7 @@ class Component extends DCLogic {
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Repeat'), this.selectField(t,[['no-repeat','No repeat'],['repeat','Repeat'],['repeat-x','Repeat X'],['repeat-y','Repeat Y']],this.csVal(node,'backgroundRepeat')||'no-repeat',v=>this.setCS(node,'backgroundRepeat',v==='no-repeat'?'':v)))));
       body.push(h('div',{key:'fb',style:{marginTop:8}}, this.colorInlineField(t,node,'backgroundColor',{noAlpha:true,placeholder:'Fallback'}))); }
     return h('div',null,
-      this.blockHead(t,'Background',{dot:this.stateEditDot(node,['background','backgroundImage','backgroundColor'],t)}),
+      this.blockHead(t,'Background',{first:!!first,dot:this.stateEditDot(node,['background','backgroundImage','backgroundColor'],t)}),
       h('div',{style:{marginBottom:10}}, this.seg(t,[{v:'solid',l:'Solid'},{v:'gradient',l:'Gradient'},{v:'image',l:'Image'}],type,v=>this.switchBgType(node,v),{fill:true,pad:'6px 0'})),
       body); }
   // ---- Border ----
@@ -5524,9 +5535,9 @@ class Component extends DCLogic {
     return h('div',{role:'group','aria-label':'Border style',style:{display:'flex',gap:5}}, ['solid','dashed','dotted','double'].map(v=>{ const on=cur===v;
       return h('div',Object.assign({key:v,onClick:()=>this.setCS(node,'borderStyle',v)},this.tt(this.bcap(v)),this.a11y(()=>this.setCS(node,'borderStyle',v),{pressed:on,label:this.bcap(v)}),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),borderRadius:6,background:on?t.accentSoft:t.segBg}}),
         h('div',{style:{width:'68%',height:0,borderTop:'3px '+v+' '+(on?t.accent:t.muted)}})); })); }
-  borderBlock(node,t){ const h=React.createElement;
+  borderBlock(node,t,first){ const h=React.createElement;
     return h('div',null,
-      this.blockHead(t,'Border',{dot:this.stateEditDot(node,['borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderColor'],t)}),
+      this.blockHead(t,'Border',{first:!!first,dot:this.stateEditDot(node,['borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderColor'],t)}),
       this.borderWidthBand(node,t),
       h('div',{style:{marginTop:10}}, this.lbl(t,'Style'), this.borderStyleSwatches(node,t)),
       h('div',{style:{marginTop:10}}, this.radiusBand(node,t)),
@@ -5541,17 +5552,6 @@ class Component extends DCLogic {
     if(this._estate==='base'||this.isPseudoState(this._estate)) { return null; }
     const b=c&&this.stateStyles[c]&&this.stateStyles[c][this._estate]; const hit=b&&keys.some(k=>b[k]!=null); if(!hit) { return null; }
     return h('span',Object.assign({onClick:()=>{ keys.forEach(k=>{ if(b[k]!=null) { this.setCS(node,k,''); } }); }},this.tt('Edited in this state — click to reset'),{style:{width:7,height:7,borderRadius:'50%',background:t.accent,cursor:'pointer',flex:'0 0 auto'}})); }
-  styleTab(node,t,noState){
-    const h=React.createElement;
-    return h('div',null,
-      noState?null:this.layerZone(node,t),
-      this.typographyBlock(node,t),
-      this.backgroundBlock(node,t),
-      this.borderBlock(node,t),
-      this.effectsBlock(node,t),
-      this.transformsBlock(node,t)
-    );
-  }
   // ---- box-shadow parse/compose (raw multi-shadow cards) ----
   parseShadow(str){ str=(str||'').trim(); const inset=/(^|\s)inset(\s|$)/.test(str); str=str.replace(/\binset\b/,'').trim();
     let color='#000000', alpha=25; const cm=str.match(/(#[0-9a-f]{3,8}|rgba?\([^)]*\))/i); if(cm){ const sp=this.splitColorAlpha(cm[1]); color=sp.hex; alpha=sp.alpha; str=str.replace(cm[1],'').trim(); }
@@ -5585,7 +5585,7 @@ class Component extends DCLogic {
   parseTransitions(str){ return this.splitCommaTop(str||'').map(x=>{ const p=x.trim().split(/\s+/); return {prop:p[0]||'all',dur:(p[1]||'200ms').replace('ms',''),ease:p[2]||'ease',delay:(p[3]||'0ms').replace('ms','')}; }); }
   composeTransitions(list){ return list.map(x=>x.prop+' '+x.dur+'ms '+x.ease+' '+x.delay+'ms').join(', '); }
   // ---- Effects: opacity, blending, box shadow (token row + manual), filters (fixed toggle rows) + backdrop, cursor ----
-  effectsBlock(node,t){ const h=React.createElement; const opacityRaw=this.csVal(node,'opacity'); const opacity=opacityRaw===''?1:parseFloat(opacityRaw);
+  effectsBlock(node,t,first){ const h=React.createElement; const opacityRaw=this.csVal(node,'opacity'); const opacity=opacityRaw===''?1:parseFloat(opacityRaw);
     // filters — a fixed row per filter function (not an add/remove list); each row's own switch decides
     // whether it contributes to the composed value, so "off" rows keep their last dialed-in number instead
     // of losing it, and the panel always shows the same six rows rather than only the ones currently active.
@@ -5599,7 +5599,7 @@ class Component extends DCLogic {
     const setFilterValue=(type,v)=>{ const map=Object.assign({},activeMap,{[type]:v}); setFilterMap(composeFromMap(map)); };
     const toggleBackdrop=()=>{ const cur=this.csVal(node,fprop)||''; this.setCS(node,fprop,''); this.setCS(node, backdropOn?'filter':'backdropFilter', cur); };
     return h('div',null,
-      this.blockHead(t,'Effects',{dot:this.stateEditDot(node,['opacity','mixBlendMode','boxShadow','filter','backdropFilter','cursor'],t)}),
+      this.blockHead(t,'Effects',{first:!!first,dot:this.stateEditDot(node,['opacity','mixBlendMode','boxShadow','filter','backdropFilter','cursor'],t)}),
       this.lbl(t,'Opacity'),
       this.slider(t,opacity,0,1,0.05,v=>this.setCS(node,'opacity', v>=1?'':String(v))),
       h('div',{style:{marginTop:12}}, this.lbl(t,'Blending'), this.selectField(t,[['normal','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['difference','Difference'],['luminosity','Luminosity']],this.csVal(node,'mixBlendMode')||'normal',v=>this.setCS(node,'mixBlendMode',v==='normal'?'':v))),
