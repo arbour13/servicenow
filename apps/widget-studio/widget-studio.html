@@ -77,6 +77,7 @@ class Component extends DCLogic {
     this._inspOpen = {};  // big-card (Structure/Appearance) open/closed state; inspector sections are tabs now
     this.dark = false; this.device = 'lg';
     this._scrollFade = {left:false, right:false};  // canvas scroll-edge fade state, see measureScrollFade
+    this.showGuides = false;  // faint dashed outline on every element at rest, see the guideOutline note in renderNode
     this.codeTheme = 'auto';  // Monaco theme: 'auto' follows the app theme, or pin 'light'/'dark' independently
     this.exportUnit = 'px'; this.exportBase = 16;
     this.tab = 'layout';            // inspector tab
@@ -2758,7 +2759,8 @@ class Component extends DCLogic {
             h('span',{style:{color:t.border,flexShrink:0}},'·'),
             h('span',{style:{flexShrink:0}},label)):null; })(),
         h('div',{style:{flex:1,minWidth:8}}),
-        (()=>{ const on=this.showBox; return h('div',{onClick:()=>{this.showBox=!this.showBox;this._boxSig=null;this.forceUpdate();},...this.tt({h:'Box model',b:'Shows sizes and content area. Margin and padding always show when selected.'}),...this.a11y(()=>{this.showBox=!this.showBox;this._boxSig=null;this.forceUpdate();},{pressed:on,label:'Box model overlay'}),style:{display:'flex',alignItems:'center',gap:6,flexShrink:0,cursor:'pointer',height:24,boxSizing:'border-box',padding:'0 9px',borderRadius:6,border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:(this.dark?t.panel:'#fff'),color:on?t.accent:t.muted,fontSize:11,fontWeight:600,whiteSpace:'nowrap'}}, h('span',{style:{display:'inline-block',width:11,height:11,border:'1px solid currentColor',borderRadius:2,position:'relative'}}, h('span',{style:{position:'absolute',inset:2,background:'currentColor',opacity:.45,borderRadius:1}})), 'Box model'); })()
+        (()=>{ const on=this.showBox; return h('div',{onClick:()=>{this.showBox=!this.showBox;this._boxSig=null;this.forceUpdate();},...this.tt({h:'Box model',b:'Shows sizes and content area. Margin and padding always show when selected.'}),...this.a11y(()=>{this.showBox=!this.showBox;this._boxSig=null;this.forceUpdate();},{pressed:on,label:'Box model overlay'}),style:{display:'flex',alignItems:'center',gap:6,flexShrink:0,cursor:'pointer',height:24,boxSizing:'border-box',padding:'0 9px',borderRadius:6,border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:(this.dark?t.panel:'#fff'),color:on?t.accent:t.muted,fontSize:11,fontWeight:600,whiteSpace:'nowrap'}}, h('span',{style:{display:'inline-block',width:11,height:11,border:'1px solid currentColor',borderRadius:2,position:'relative'}}, h('span',{style:{position:'absolute',inset:2,background:'currentColor',opacity:.45,borderRadius:1}})), 'Box model'); })(),
+        (()=>{ const on=this.showGuides; const go=()=>{this.showGuides=!this.showGuides;this.forceUpdate();}; return h('div',{onClick:go,...this.tt({h:'Guides',b:'Faint outline on every element, even at rest — see the layout structure without hovering.'}),...this.a11y(go,{pressed:on,label:'Guides'}),style:{display:'flex',alignItems:'center',gap:6,flexShrink:0,cursor:'pointer',height:24,boxSizing:'border-box',padding:'0 9px',borderRadius:6,border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:(this.dark?t.panel:'#fff'),color:on?t.accent:t.muted,fontSize:11,fontWeight:600,whiteSpace:'nowrap'}}, h('span',{style:{display:'inline-block',width:11,height:11,border:'1px dashed currentColor',borderRadius:2}}), 'Guides'); })()
       ),
       this.renderFocusBar(t),
       // The whole canvas IS the root element (.ws-stage — the same element the shared drag/measurement
@@ -3054,7 +3056,11 @@ class Component extends DCLogic {
     // No outward offset: with CANVAS_GAP=0 (elements can sit flush against each other), an outward-expanding
     // outline on one element crosses into its neighbor's box and the two outlines visually overlap/cross.
     // Hugging the element's own edge keeps adjacent outlines distinct even with zero space between them.
-    const ws={minWidth:0,...place,position:'relative',display:wrapDisp,background:holeBg,cursor:(this._editing===node.id?'text':'default'),zIndex:sel?40:(hov?30:undefined),outline:(this.drag&&this.drag.started&&this.dropZone&&this.dropContainer===node.id)?('2px solid '+outlineStrong):((sel&&!(this.drag&&this.drag.started))?('2px solid '+outlineStrong):((hov&&!(this.drag&&this.drag.started))?('1.5px solid '+outlineHover):(hidden?('1px dashed '+(this.dark?'rgba(139,148,158,.75)':'rgba(99,110,123,.6)')):'none'))),outlineOffset:'0',borderRadius:4,opacity:dragging?0.4:1,margin:sibMargin,...this.ownMargin(node),animation:(this._justAdded===node.id)?'wsIn .22s ease':undefined};
+    // Guides (this.showGuides): a faint dashed outline on every element at rest, so the layout structure
+    // reads without hovering each node individually. Deliberately lighter than the `hidden` dashed
+    // treatment above (.75/.6 alpha) so a display:none element still reads as visually distinct.
+    const guideOutline = this.showGuides ? ('1px dashed '+(this.dark?'rgba(139,148,158,.4)':'rgba(99,110,123,.3)')) : 'none';
+    const ws={minWidth:0,...place,position:'relative',display:wrapDisp,background:holeBg,cursor:(this._editing===node.id?'text':'default'),zIndex:sel?40:(hov?30:undefined),outline:(this.drag&&this.drag.started&&this.dropZone&&this.dropContainer===node.id)?('2px solid '+outlineStrong):((sel&&!(this.drag&&this.drag.started))?('2px solid '+outlineStrong):((hov&&!(this.drag&&this.drag.started))?('1.5px solid '+outlineHover):(hidden?('1px dashed '+(this.dark?'rgba(139,148,158,.75)':'rgba(99,110,123,.6)')):guideOutline))),outlineOffset:'0',borderRadius:4,opacity:dragging?0.4:1,margin:sibMargin,...this.ownMargin(node),animation:(this._justAdded===node.id)?'wsIn .22s ease':undefined};
     // Focus mode: no visual darkening on the canvas — just make out-of-scope nodes non-interactive so
     // clicks/hover/drag can't reach outside the focused subtree.
     if(this.focusStack&&this.focusStack.length&&this._focusScope&&!this._focusScope.has(node.id)) { ws.pointerEvents='none'; }
