@@ -3727,50 +3727,52 @@ class Component extends DCLogic {
   }
   // border-style must be present or per-side widths render invisibly; default it to solid on first width.
   ensureBorderStyle(node){ if(!this.csVal(node,'borderStyle')) { this.setCS(node,'borderStyle','solid'); } }
-  // Border width — tap-a-target picker: click an edge (or the middle, for all sides) to choose what
-  // the field below edits. The field is `numField`, so it gets the size-token bind diamond for free —
-  // that's the whole point of the picker: it's a target selector, not a 4-fields-at-once form, so
-  // there's always exactly one prop being edited and it can always be a token. Targeting a side just
-  // writes that side's longhand prop straight through — no splitting the shorthand into 4 first. A
-  // longhand value simply overrides the `border-width` shorthand for that one side in real CSS, so
-  // "all sides" + "override one side" can coexist; clearing that side's field falls back to the shorthand.
   bcap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
-  borderWidthPicker(node,t){ const h=React.createElement;
-    const sideProp={top:'borderTopWidth',right:'borderRightWidth',bottom:'borderBottomWidth',left:'borderLeftWidth'};
-    const side=this._bwSide||'all';
-    const setSide=id=>{ this._bwSide=id; this.forceUpdate(); };
-    // 'all' targets every edge at once, so all four bevels light up together — not just the literal id
-    // match — matching the reference (bOn: bSide==='all'||bSide===id).
-    const on=id=>side==='all'||side===id;
-    // Same bevel-fill trick as the Spacing diagram (gray, "off") but tinted accent-blue for the edge(s)
-    // currently being edited ("on") — a flat border-color swap read as a thin colored line, not a
-    // highlighted face, so it didn't match the reference's filled-trapezoid look.
-    const grayBevel=this.dark?{top:'#232a33',right:'#1d232b',bottom:'#161b21',left:'#1d232b'}:{top:'#f6f7f9',right:'#eef0f2',bottom:'#e7e9ec',left:'#eef0f2'};
-    const blueBevel=this.dark?{top:'#2f5f95',right:'#244d73',bottom:'#193a5a',left:'#244d73'}:{top:'#dbe7fc',right:'#b4ccf6',bottom:'#88aff0',left:'#b4ccf6'};
-    const edgeColor=id=>on(id)?blueBevel[id]:grayBevel[id];
-    const zone={position:'absolute',cursor:'pointer'};
-    const prop = side==='all'?'borderWidth':sideProp[side];
-    return h('div',null,
-      // The 5 click zones are siblings of the bordered trapezoid div, not its children — both live
-      // directly inside this outer position:relative wrapper. Nesting them inside the bordered div
-      // instead would position them against its PADDING box (i.e. already inset by the 20px border),
-      // silently offsetting every zone inward and making "top" land where "center" should be, "center"
-      // land past "bottom", and so on — which is exactly the misclick bug this fixes.
-      h('div',{style:{position:'relative',borderRadius:9,overflow:'hidden'}},
-        // transition:'none' overrides the app-wide ".ws-chrome *" border-color fade (see the <style> block) —
-        // that fade suits a hover ring or a focus outline, but here it read as the picker lagging a beat
-        // behind the click; the edge/corner should light up the instant you tap it.
-        h('div',{style:{borderStyle:'solid',borderWidth:20,borderTopColor:edgeColor('top'),borderRightColor:edgeColor('right'),borderBottomColor:edgeColor('bottom'),borderLeftColor:edgeColor('left'),background:t.panel,transition:'none'}},
-          h('div',{style:{minHeight:34,borderRadius:3,background:this.dark?'#0d1117':'#fff',border:'1px dashed '+t.accent,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:600,color:t.accent,transition:'none'}},'Element')),
-        h('div',Object.assign({onClick:()=>setSide('top')},this.tt('Top'),this.a11y(()=>setSide('top'),{pressed:side==='top',label:'Edit top border'}),{style:Object.assign({},zone,{top:0,left:0,right:0,height:20})})),
-        h('div',Object.assign({onClick:()=>setSide('right')},this.tt('Right'),this.a11y(()=>setSide('right'),{pressed:side==='right',label:'Edit right border'}),{style:Object.assign({},zone,{right:0,top:20,bottom:20,width:20})})),
-        h('div',Object.assign({onClick:()=>setSide('bottom')},this.tt('Bottom'),this.a11y(()=>setSide('bottom'),{pressed:side==='bottom',label:'Edit bottom border'}),{style:Object.assign({},zone,{bottom:0,left:0,right:0,height:20})})),
-        h('div',Object.assign({onClick:()=>setSide('left')},this.tt('Left'),this.a11y(()=>setSide('left'),{pressed:side==='left',label:'Edit left border'}),{style:Object.assign({},zone,{left:0,top:20,bottom:20,width:20})})),
-        h('div',Object.assign({onClick:()=>setSide('all')},this.tt('Select all sides'),this.a11y(()=>setSide('all'),{pressed:side==='all',label:'Edit all border sides'}),{style:Object.assign({},zone,{top:20,left:20,right:20,bottom:20})}))),
-      h('div',{style:{fontSize:11,color:t.faint,textAlign:'center',marginTop:8}}, 'Editing ', h('span',{style:{color:t.accent,fontWeight:600}}, side==='all'?'All sides':this.bcap(side))),
-      h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:3,opacity:.85}},'Tap an edge for one side · the middle for all'),
-      h('div',{style:{marginTop:10}}, this.lbl(t,'Width'), this.numField(t,node,prop,'0', side==='all'?{clearKeys:Object.values(sideProp)}:null)));
+  // ---- Border width / Radius: flat 2-level bands (Box Model Flattening Spec) ----
+  // Same nested-field-bands idea as Spacing, simplified to what these two ever needed: no axis level
+  // (rejected in the spec — border/radius axis-pairing is rare enough that all/individual suffice) and
+  // no drag-to-scrub (neither picker had it before — they were target-then-numField, no drag existed to
+  // preserve). `sides`: [{k,l,prop},...] — 4 edges (border) or 4 corners (radius), each a real longhand.
+  edgeBand(node,t,label,sides,ovKind,afterWrite){ const h=React.createElement;
+    const vals=sides.map(s=>(this.csVal(node,s.prop)||'').toString());
+    const derived=vals.every(v=>v===vals[0])?'all':'sides';
+    const ovKey=node.id+':'+ovKind;
+    this._granOv=this._granOv||{};
+    let grain=this._granOv[ovKey]||derived;
+    if(this._granOv[ovKey] && this._granOv[ovKey]===derived){ delete this._granOv[ovKey]; grain=derived; }
+    const setGrain=g=>{
+      if(g===derived){ if(this._granOv[ovKey]){ delete this._granOv[ovKey]; this.forceUpdate(); } return; }
+      if(g==='sides'){ sides.forEach(s=>this.setCS(node,s.prop,vals[0])); }
+      this._granOv[ovKey]=g; this.forceUpdate(); };
+    const grainSeg=this.grainSwitch(t,grain,setGrain,['all','sides'],{all:{h:'One value',b:'All the same'},sides:{h:'Each independent',b:'Four values'}});
+    const ghosting=grain==='all' && derived==='sides';
+    const repVal=()=>{ let best=vals[0],bestPx=-Infinity; vals.forEach(v=>{ const px=this._spaceScalePx(v); if(px>bestPx){bestPx=px;best=v;} }); return best; };
+    const sizeToks=(this.tokens||[]).filter(x=>x.type==='size');
+    const write1=(prop,v)=>{ this.setCS(node,prop,v); if(afterWrite) { afterWrite(); } };
+    const field=(s)=>{ const comboOpts={tokens:sizeToks, unsetLabel:'0', ghost:ghosting?this._spaceLabel(repVal()):'0'};
+      const control = grain==='sides'
+        ? this.comboField('ed:'+ovKind+':'+s.k+':'+node.id,t,node,s.prop,Object.assign({},comboOpts,{onWrite:v=>write1(s.prop,v)}))
+        : this.comboField('ed:'+ovKind+':all:'+node.id,t,node,sides[0].prop,Object.assign({},comboOpts,{
+            cssProp:sides[0].prop, value:ghosting?'':repVal(), onWrite:v=>{ sides.forEach(x=>this.setCS(node,x.prop,v)); if(afterWrite) { afterWrite(); } }
+          }));
+      return h('div',{key:s.k,style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:2}},
+        grain==='sides'?h('span',{style:{fontSize:8,fontWeight:600,letterSpacing:'.06em',color:t.faint,paddingLeft:1}},s.l):null,
+        control); };
+    const rows = grain==='all' ? [field(sides[0])] : sides.map(field);
+    return h('div',{style:{border:'1px solid '+t.border,borderRadius:8,background:t.panel,padding:8}},
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:6}}, this.stateEditDot(node,sides.map(s=>s.prop),t),
+          h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},label)),
+        grainSeg),
+      h('div',{style:{display:'flex',gap:6}}, rows));
   }
+  BORDER_SIDES(){ return [{k:'t',l:'T',prop:'borderTopWidth'},{k:'r',l:'R',prop:'borderRightWidth'},{k:'b',l:'B',prop:'borderBottomWidth'},{k:'l',l:'L',prop:'borderLeftWidth'}]; }
+  RADIUS_CORNERS(){ return [{k:'tl',l:'TL',prop:'borderTopLeftRadius'},{k:'tr',l:'TR',prop:'borderTopRightRadius'},{k:'br',l:'BR',prop:'borderBottomRightRadius'},{k:'bl',l:'BL',prop:'borderBottomLeftRadius'}]; }
+  // border-style must be present or per-side widths render invisibly — ensured on WRITE (not during
+  // render: ensureBorderStyle can itself call setCS, and setCS calls forceUpdate synchronously, so
+  // triggering it mid-render would be a nested update while React is still rendering this tree).
+  borderWidthBand(node,t){ return this.edgeBand(node,t,'Border width',this.BORDER_SIDES(),'bw',()=>this.ensureBorderStyle(node)); }
+  radiusBand(node,t){ return this.edgeBand(node,t,'Radius',this.RADIUS_CORNERS(),'rad'); }
   truncMode(node){ if(this.csVal(node,'WebkitLineClamp')) { return 'clamp'; } if((this.csVal(node,'textOverflow')||'')==='ellipsis') { return 'ellipsis'; } return 'wrap'; }
   setTrunc(node,mode){
     const clear=['whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'];
@@ -5406,33 +5408,6 @@ class Component extends DCLogic {
       h('div',{style:{marginBottom:10}}, this.seg(t,[{v:'solid',l:'Solid'},{v:'gradient',l:'Gradient'},{v:'image',l:'Image'}],type,v=>this.switchBgType(node,v),{fill:true,pad:'6px 0'})),
       body); }
   // ---- Border ----
-  // Corner radius — same tap-a-target idea as the width picker: click a corner (or the middle, for
-  // all corners) to choose what the field below edits. `numField` gives it the token-bind diamond
-  // for free. Targeting a corner writes that corner's longhand prop straight through, no splitting
-  // the shorthand first — a longhand value simply overrides `border-radius` for that one corner in
-  // real CSS, so clearing that corner's field falls back to the shared shorthand value.
-  cornerRadiusPicker(node,t){ const h=React.createElement;
-    const cornerProp={tl:'borderTopLeftRadius',tr:'borderTopRightRadius',br:'borderBottomRightRadius',bl:'borderBottomLeftRadius'};
-    const corner=this._radCorner||'all';
-    const setCorner=id=>{ this._radCorner=id; this.forceUpdate(); };
-    // 'all' targets every corner at once, so all four brackets light up together — not just a literal
-    // id match — matching the reference (rSel: radCorner==='all' || radCorner===id).
-    const on=id=>corner==='all'||corner===id;
-    const labels={tl:'Top-left',tr:'Top-right',br:'Bottom-right',bl:'Bottom-left'};
-    const prop = corner==='all'?'borderRadius':cornerProp[corner];
-    const handle=(id,pos)=>{ const w=(on(id)?4.5:3.5); const c=on(id)?t.accent:t.border; const bw=w+'px solid '+c;
-      const map={tl:{borderTop:bw,borderLeft:bw,borderTopLeftRadius:7},tr:{borderTop:bw,borderRight:bw,borderTopRightRadius:7},br:{borderBottom:bw,borderRight:bw,borderBottomRightRadius:7},bl:{borderBottom:bw,borderLeft:bw,borderBottomLeftRadius:7}};
-      // transition:'none' — same reasoning as the width picker: override the app-wide border-color fade
-      // so the bracket highlights the instant you tap it instead of lagging behind the click.
-      return h('div',Object.assign({key:id,onClick:()=>setCorner(id)},this.tt(labels[id]),this.a11y(()=>setCorner(id),{pressed:corner===id,label:'Edit '+labels[id].toLowerCase()+' corner'}),{style:Object.assign({position:'absolute',width:16,height:16,cursor:'pointer',transition:'none'},pos,map[id])})); };
-    return h('div',null,
-      this.lbl(t,'Corner radius'),
-      h('div',{style:{position:'relative',width:'100%',height:74,margin:'0 auto'}},
-        h('div',{style:{position:'absolute',left:14,top:12,right:14,bottom:12,border:'1px dashed '+t.accent,borderRadius:3,background:t.panel,display:'flex',alignItems:'center',justifyContent:'center',transition:'none'},onClick:()=>setCorner('all'),...this.tt('Select all corners'),...this.a11y(()=>setCorner('all'),{pressed:corner==='all',label:'Edit all corners'})}, h('span',{style:{fontSize:9,fontWeight:600,color:t.accent,pointerEvents:'none'}},'Element')),
-        handle('tl',{left:0,top:0}), handle('tr',{right:0,top:0}), handle('br',{right:0,bottom:0}), handle('bl',{left:0,bottom:0})),
-      h('div',{style:{fontSize:11,color:t.faint,textAlign:'center',marginTop:8}}, 'Editing ', h('span',{style:{color:t.accent,fontWeight:600}}, corner==='all'?'All corners':labels[corner])),
-      h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:3,opacity:.85}},'Tap a corner · the middle for all'),
-      h('div',{style:{marginTop:10}}, this.numField(t,node,prop,'0', corner==='all'?{clearKeys:Object.values(cornerProp)}:null))); }
   // Border style as 4 line-preview swatches (not a <select>) — each button renders the actual rule style
   // so you're picking by how the border will look, not reading a word.
   borderStyleSwatches(node,t){ const h=React.createElement; const cur=this.csVal(node,'borderStyle')||'solid';
@@ -5442,9 +5417,9 @@ class Component extends DCLogic {
   borderBlock(node,t){ const h=React.createElement;
     return h('div',null,
       this.blockHead(t,'Border',{dot:this.stateEditDot(node,['borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderColor'],t)}),
-      this.borderWidthPicker(node,t),
+      this.borderWidthBand(node,t),
       h('div',{style:{marginTop:10}}, this.lbl(t,'Style'), this.borderStyleSwatches(node,t)),
-      this.cornerRadiusPicker(node,t),
+      h('div',{style:{marginTop:10}}, this.radiusBand(node,t)),
       h('div',{style:{marginTop:10}}, this.colorInlineField(t,node,'borderColor',{placeholder:'#D0D7DE',noAlpha:true}))); }
   // Small accent dot next to a section label when the active off-base layer (a state, or a
   // breakpoint) holds any of `keys` — provenance at the section level ("● set here", clickable to
