@@ -2829,26 +2829,26 @@ class Component extends DCLogic {
   STARTER_DEFS(){
     // Shared between 'base' (the generic set) and 'table' (its tailored set) — one definition,
     // not duplicated.
-    const panelTable={id:'panel-table', label:'Panel with table', hint:'The typical table-instance shape', build:()=>{
+    const panelTable={id:'panel-table', label:'Panel with table', hint:'Table in a panel', build:()=>{
       const p=this.make('panel'); p.children=[this.make('table')]; return [p]; }};
     return {
       base: [
-        {id:'panel', label:'Panel', hint:'Heading + body — the shape most widgets start from', build:()=>{
+        {id:'panel', label:'Panel', hint:'Heading + body', build:()=>{
           const p=this.make('panel'); const txt=this.make('el','p'); txt.text='Panel content goes here.'; p.children=[txt]; return [p]; }},
         panelTable,
-        {id:'panel-list', label:'Panel with list', hint:'Panel body holds a list', build:()=>{
+        {id:'panel-list', label:'Panel with list', hint:'List in a panel', build:()=>{
           const p=this.make('panel'); p.children=[this.make('el','ul')]; return [p]; }}
       ],
       table: [
         panelTable,
-        {id:'table', label:'Table only', hint:'Just the table, no panel chrome', build:()=>[this.make('table')]}
+        {id:'table', label:'Table only', hint:'Table, no panel', build:()=>[this.make('table')]}
       ],
       ais: [
-        {id:'search-box', label:'Search box', hint:'A simple input + button', build:()=>{
+        {id:'search-box', label:'Search box', hint:'Input + button', build:()=>{
           const wrap=this.make('el','div'); const inp=this.make('el','input'); inp.text='Search…'; inp.attrs=Object.assign({},inp.attrs,{type:'search'});
           const btn=this.make('el','button'); btn.text='Search'; wrap.children=[inp,btn];
           this.setCS(wrap,'display','flex'); this.setCS(wrap,'gap','8px'); return [wrap]; }},
-        {id:'search-hero', label:'Search hero', hint:'Landing-style banner with a centered search box', build:()=>{
+        {id:'search-hero', label:'Search hero', hint:'Centered banner', build:()=>{
           const section=this.make('el','section'); const heading=this.make('el','h2'); heading.text='Search';
           const wrap=this.make('el','div'); const inp=this.make('el','input'); inp.text='Search…'; inp.attrs=Object.assign({},inp.attrs,{type:'search'});
           const btn=this.make('el','button'); btn.text='Search'; wrap.children=[inp,btn]; section.children=[heading,wrap];
@@ -2868,7 +2868,9 @@ class Component extends DCLogic {
     const defs=tailored.length?tailored:this.STARTER_DEFS().base;
     const clsLabel=(this.INSTANCE_CLASSES().find(c=>c[0]===cls)||[])[1]||cls;
     const card=def=>h('div',Object.assign({key:def.id,onClick:()=>this.applyStarter(def)},this.a11y(()=>this.applyStarter(def),{label:'Start from '+def.label}),
-      {style:{width:154,textAlign:'left',padding:'10px 12px',borderRadius:9,cursor:'pointer',border:'1px solid '+t.border,background:'#fff'}}),
+      // Centered, now that every hint is one short line — centering only works because nothing wraps
+      // (multi-line prose centered goes ragged on both edges). Keep hints one line if you add a starter.
+      {style:{width:154,textAlign:'center',padding:'10px 12px',borderRadius:9,cursor:'pointer',border:'1px solid '+t.border,background:'#fff'}}),
       h('div',{style:{fontSize:12.5,fontWeight:700,color:t.text,marginBottom:3}},def.label),
       h('div',{style:{fontSize:10.5,color:t.muted,lineHeight:1.4}},def.hint));
     const blankDef={id:'blank',label:'Blank',build:()=>[]};
