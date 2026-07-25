@@ -1037,8 +1037,11 @@ const TODAY = '2026-07-15';
 let changelogSeq = 1000;
 let jaSeq = 1;
 let meetingSeq = 1;
+let taskSeq = 1;
 // Bump each id counter past the highest id already present in seed + persisted data, so a newly
-// created 'mt1'/'ja1'/'c1000' can never collide with an existing record. Run once after load/normalize.
+// created 'mt1'/'ja1'/'c1000'/'t1' can never collide with an existing record. Run once after
+// load/normalize. Seed task ids are hand-authored strings like 'd2-1-1-t1' (never match the
+// 't'+digits shape addTask mints), so taskSeq only needs to out-run OTHER counter-minted ids.
 function idNum(prefix, id) {
   if (typeof id !== 'string' || id.indexOf(prefix) !== 0) { return 0; }
   const n = parseInt(id.slice(prefix.length), 10);
@@ -1048,7 +1051,7 @@ function seedIdCounters(d) {
   (d.methodologies || []).forEach(m => (m.phases || []).forEach(p => (p.subPhases || []).forEach(s => {
     (s.meetings || []).forEach(x => { meetingSeq = Math.max(meetingSeq, idNum('mt', x.id) + 1); });
     (s.changelog || []).forEach(x => { changelogSeq = Math.max(changelogSeq, idNum('c', x.id) + 1); });
-    (s.tasks || []).forEach(t => (t.jobAids || []).forEach(j => { jaSeq = Math.max(jaSeq, idNum('ja', j.id) + 1); }));
+    (s.tasks || []).forEach(t => { taskSeq = Math.max(taskSeq, idNum('t', t.id) + 1); (t.jobAids || []).forEach(j => { jaSeq = Math.max(jaSeq, idNum('ja', j.id) + 1); }); });
   })));
 }
 
@@ -1251,10 +1254,31 @@ function truncateText(s, n) {
   s = String(s);
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
+// True only for a PURE reorder: same items, same counts, different positions. Returns false (not
+// "unknown") whenever an add/remove is present, so callers can check this after their own add/remove
+// diff came up empty without double-reporting.
+function idSequenceChanged(beforeIds, afterIds) {
+  if (beforeIds.length !== afterIds.length) { return false; }
+  const sortedB = [...beforeIds].sort(), sortedA = [...afterIds].sort();
+  for (let i = 0; i < sortedB.length; i++) { if (sortedB[i] !== sortedA[i]) { return false; } }
+  for (let i = 0; i < beforeIds.length; i++) { if (beforeIds[i] !== afterIds[i]) { return true; } }
+  return false;
+}
+// Multiset-based (not includes-based) so a duplicate string added/removed is counted correctly -
+// e.g. before=['ROM','ROM'], after=['ROM'] correctly reports one removal instead of nothing. Falls
+// back to a reorder entry when every count matches but the position order doesn't.
 function diffListField(before, after, label) {
+  before = before || []; after = after || [];
   const out = [];
-  (after || []).filter(x => !(before || []).includes(x)).forEach(x => out.push(`${label} added: “${truncateText(x, 60)}”`));
-  (before || []).filter(x => !(after || []).includes(x)).forEach(x => out.push(`${label} removed: “${truncateText(x, 60)}”`));
+  const bCount = {}, aCount = {};
+  before.forEach(x => { bCount[x] = (bCount[x] || 0) + 1; });
+  after.forEach(x => { aCount[x] = (aCount[x] || 0) + 1; });
+  new Set([...Object.keys(bCount), ...Object.keys(aCount)]).forEach(x => {
+    const diff = (aCount[x] || 0) - (bCount[x] || 0);
+    for (let i = 0; i < diff; i++) { out.push(`${label} added: “${truncateText(x, 60)}”`); }
+    for (let i = 0; i < -diff; i++) { out.push(`${label} removed: “${truncateText(x, 60)}”`); }
+  });
+  if (!out.length && idSequenceChanged(before, after)) { out.push(`${label}s reordered`); }
   return out;
 }
 function diffRaci(before, after, taskLabel) {
@@ -1288,7 +1312,13 @@ function diffLoe(before, after) {
   } else {
     const ids = new Set([...Object.keys(before.roles), ...Object.keys(after.roles)]);
     ids.forEach(id => {
-      if (loeEntrySame(before.roles[id], after.roles[id])) { return; }
+      const b = before.roles[id], a = after.roles[id];
+      if (loeEntrySame(b, a)) { return; }
+      // Switching to "Per role" auto-seeds every participant with a default entry (empty text,
+      // role-default billable/optional flags) so the picker has rows to show - that seeding alone
+      // isn't a user-authored change. Only log it once real text exists on either side; a
+      // flag-only difference on an otherwise-empty row is noise, not content.
+      if (!(b && b.text) && !(a && a.text)) { return; }
       const jt = jobTitleById(id);
       out.push(`Level of effort updated for ${jt ? jt.abbr : id}`);
     });
@@ -1319,6 +1349,7 @@ function diffMeetings(before, after) {
   beforeMeetings.forEach((m, id) => {
     if (!afterMeetings.has(id)) { changes.push(`Meeting removed: “${meetingLabel(m)}”`); }
   });
+  if (!changes.length && idSequenceChanged((before || []).map(m => m.id), (after || []).map(m => m.id))) { changes.push('Meetings reordered'); }
   return changes;
 }
 function describeChanges(before, after) {
@@ -1345,6 +1376,7 @@ function describeChanges(before, after) {
   beforeTasks.forEach((t, id) => {
     if (!afterTasks.has(id)) { changes.push(`Task removed: “${truncateText(t.text, 50)}”`); }
   });
+  if (idSequenceChanged((before.tasks || []).map(t => t.id), (after.tasks || []).map(t => t.id))) { changes.push('Tasks reordered'); }
   return changes;
 }
 
@@ -1960,7 +1992,7 @@ function wireEditHandlers(sp) {
       if (b.dataset.add === 'input') { sp.inputs.push(''); }
       else if (b.dataset.add === 'deliverable') { sp.deliverables.push(''); }
       else if (b.dataset.add === 'comment') { sp.comments.push(''); }
-      else if (b.dataset.add === 'task') { sp.tasks.push({ id: 't' + Date.now(), order: sp.tasks.length + 1, text: '', jobAids: [], raci: {} }); }
+      else if (b.dataset.add === 'task') { sp.tasks.push({ id: 't' + (taskSeq++), order: sp.tasks.length + 1, text: '', jobAids: [], raci: {} }); }
       else if (b.dataset.add === 'meeting') { sp.meetings.push(normalizeMeeting({})); }
       save(); reRenderEdit();
     };

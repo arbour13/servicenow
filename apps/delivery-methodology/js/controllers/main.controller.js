@@ -155,7 +155,10 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   vm.loc = null;
   function refreshLoc() {
     vm.loc = vm.findSubPhase(vm.subPhaseId);
-    if (vm.loc) { vm.loc.loeRows = computeLoeRows(vm.loc.sp); }
+    if (vm.loc) {
+      vm.loc.loeRows = computeLoeRows(vm.loc.sp);
+      vm.loc.taskTableRoles = taskTableRoles(vm.loc.sp);
+    }
   }
 
   // One-time migration for seed content authored before participants existed as its own field:
@@ -253,6 +256,27 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   // displayed (read view legend/RACI table, edit mode's picker + downstream availability lists).
   vm.participantsOf = function (sp) {
     return vm.sortJobTitleIds(sp.participants || []).map(vm.jobTitleById).filter(Boolean);
+  };
+  // The read-view RACI task table's column set: participants PLUS any job title still holding a
+  // RACI letter on a task after being removed from the roster - same "leave it in place, flag it,
+  // never silently drop" contract idleParticipants/taskRoleOrphan already use in edit mode. Without
+  // this, de-selecting a participant that still has RACI here made their letters vanish from the
+  // read table (while the RACI grid view kept showing them) with no trace anything was hidden.
+  // Returns plain objects (never the shared vm.jobTitles record itself) so the .orphan flag can't
+  // leak into other call sites. Precomputed into vm.loc.taskTableRoles by refreshLoc(), NOT called
+  // as a function from the template - same fresh-array-every-call $rootScope:infdig risk as vm.loc
+  // and computeLoeRows above (verified independently by hitting the actual error).
+  function taskTableRoles(sp) {
+    var partIds = sp.participants || [];
+    var allIds = partIds.slice();
+    (sp.tasks || []).forEach(function (t) {
+      Object.keys(t.raci || {}).forEach(function (id) { if (allIds.indexOf(id) < 0) { allIds.push(id); } });
+    });
+    return vm.sortJobTitleIds(allIds).map(function (id) {
+      var jt = vm.jobTitleById(id);
+      if (!jt) { return null; }
+      return { id: jt.id, abbr: jt.abbr, name: jt.name, description: jt.description, external: jt.external, orphan: partIds.indexOf(id) < 0 };
+    }).filter(Boolean);
   };
   vm.participantOn = function (id) { return (vm.editSp.participants || []).indexOf(id) >= 0; };
   vm.toggleParticipant = function (id) {
@@ -402,12 +426,14 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
      of the prototype's live-edit-plus-snapshot-revert approach: two-way ng-model binding makes
      editing a plain object trivial, so there's no need to mutate live data just to get that. */
   var TODAY = '2026-07-15';
-  // Id counters for records created during editing (meetings, job aids, changelog entries). These
-  // MUST start above the highest id already present in seed + persisted data - otherwise a freshly
-  // minted 'mt1' collides with a seeded 'mt1', which Angular's ng-repeat rejects ("Duplicates in a
-  // repeater") and the edit panel throws. seedIdCounters() (called once data has loaded) scans all
-  // existing ids and bumps each counter past the max. Task ids use Date.now() so need no counter.
-  var jaSeq = 1, meetingSeq = 1, changelogSeq = 1000;
+  // Id counters for records created during editing (meetings, job aids, changelog entries, tasks).
+  // These MUST start above the highest id already present in seed + persisted data - otherwise a
+  // freshly minted 'mt1' collides with a seeded 'mt1', which Angular's ng-repeat rejects
+  // ("Duplicates in a repeater") and the edit panel throws. seedIdCounters() (called once data has
+  // loaded) scans all existing ids and bumps each counter past the max. Seed task ids are
+  // hand-authored strings like 'd2-1-1-t1' (never match the 't'+digits shape addTask mints), so
+  // taskSeq only ever needs to out-run OTHER counter-minted task ids from prior sessions.
+  var taskSeq = 1, jaSeq = 1, meetingSeq = 1, changelogSeq = 1000;
   function idNum(prefix, id) {
     if (typeof id !== 'string' || id.indexOf(prefix) !== 0) { return 0; }
     var n = parseInt(id.slice(prefix.length), 10);
@@ -419,7 +445,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
         p.subPhases.forEach(function (s) {
           (s.meetings || []).forEach(function (x) { meetingSeq = Math.max(meetingSeq, idNum('mt', x.id) + 1); });
           (s.changelog || []).forEach(function (x) { changelogSeq = Math.max(changelogSeq, idNum('c', x.id) + 1); });
-          (s.tasks || []).forEach(function (t) { (t.jobAids || []).forEach(function (j) { jaSeq = Math.max(jaSeq, idNum('ja', j.id) + 1); }); });
+          (s.tasks || []).forEach(function (t) { taskSeq = Math.max(taskSeq, idNum('t', t.id) + 1); (t.jobAids || []).forEach(function (j) { jaSeq = Math.max(jaSeq, idNum('ja', j.id) + 1); }); });
         });
       });
     });
@@ -483,10 +509,31 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
 
   // ---- change diffing (ported from the prototype's describeChanges/diffLoe/diffMeetings/diffRaci) ----
   function truncateText(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+  // True only for a PURE reorder: same items, same counts, different positions. Returns false (not
+  // "unknown") whenever an add/remove is present, so callers can safely check this after their own
+  // add/remove diff came up empty without double-reporting.
+  function idSequenceChanged(beforeIds, afterIds) {
+    if (beforeIds.length !== afterIds.length) { return false; }
+    var sortedB = beforeIds.slice().sort(), sortedA = afterIds.slice().sort();
+    for (var i = 0; i < sortedB.length; i++) { if (sortedB[i] !== sortedA[i]) { return false; } }
+    for (var i2 = 0; i2 < beforeIds.length; i2++) { if (beforeIds[i2] !== afterIds[i2]) { return true; } }
+    return false;
+  }
+  // Multiset-based (not indexOf-based) so a duplicate string added/removed is counted correctly -
+  // e.g. before=['ROM','ROM'], after=['ROM'] correctly reports one removal instead of nothing. Falls
+  // back to a reorder entry when every count matches but the position order doesn't.
   function diffListField(before, after, label) {
+    before = before || []; after = after || [];
     var out = [];
-    (after || []).filter(function (x) { return (before || []).indexOf(x) < 0; }).forEach(function (x) { out.push(label + ' added: “' + truncateText(x, 60) + '”'); });
-    (before || []).filter(function (x) { return (after || []).indexOf(x) < 0; }).forEach(function (x) { out.push(label + ' removed: “' + truncateText(x, 60) + '”'); });
+    var bCount = {}, aCount = {};
+    before.forEach(function (x) { bCount[x] = (bCount[x] || 0) + 1; });
+    after.forEach(function (x) { aCount[x] = (aCount[x] || 0) + 1; });
+    Object.keys(bCount).concat(Object.keys(aCount)).filter(function (v, i, a) { return a.indexOf(v) === i; }).forEach(function (x) {
+      var diff = (aCount[x] || 0) - (bCount[x] || 0);
+      for (var i = 0; i < diff; i++) { out.push(label + ' added: “' + truncateText(x, 60) + '”'); }
+      for (var i2 = 0; i2 < -diff; i2++) { out.push(label + ' removed: “' + truncateText(x, 60) + '”'); }
+    });
+    if (!out.length && idSequenceChanged(before, after)) { out.push(label + 's reordered'); }
     return out;
   }
   function diffRaci(before, after, taskLabel) {
@@ -517,7 +564,13 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     } else {
       var ids = Object.keys(before.roles || {}).concat(Object.keys(after.roles || {})).filter(function (v, i, a) { return a.indexOf(v) === i; });
       ids.forEach(function (id) {
-        if (loeEntrySame((before.roles || {})[id], (after.roles || {})[id])) { return; }
+        var b = (before.roles || {})[id], a = (after.roles || {})[id];
+        if (loeEntrySame(b, a)) { return; }
+        // Switching to "Per role" auto-seeds every participant with a default entry (empty text,
+        // role-default billable/optional flags) so the picker has rows to show - that seeding alone
+        // isn't a user-authored change. Only log it once real text exists on either side; a
+        // flag-only difference on an otherwise-empty row is noise, not content.
+        if (!(b && b.text) && !(a && a.text)) { return; }
         var jt = vm.jobTitleById(id);
         out.push('Level of effort updated for ' + (jt ? jt.abbr : id));
       });
@@ -542,6 +595,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
       if (!meetingSame(beforeById[m.id], m)) { out.push('Meeting edited: “' + meetingLabel(m) + '”'); }
     });
     (before || []).forEach(function (m) { if (!afterById[m.id]) { out.push('Meeting removed: “' + meetingLabel(m) + '”'); } });
+    if (!out.length && idSequenceChanged((before || []).map(function (m) { return m.id; }), (after || []).map(function (m) { return m.id; }))) { out.push('Meetings reordered'); }
     return out;
   }
   function diffParticipants(before, after) {
@@ -577,6 +631,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
       changes = changes.concat(diffRaci(bt.raci, t.raci, label));
     });
     (before.tasks || []).forEach(function (t) { if (!afterTasks[t.id]) { changes.push('Task removed: “' + truncateText(t.text, 50) + '”'); } });
+    if (idSequenceChanged((before.tasks || []).map(function (t) { return t.id; }), (after.tasks || []).map(function (t) { return t.id; }))) { changes.push('Tasks reordered'); }
     return changes;
   }
 
@@ -657,7 +712,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   };
 
   // ---- tasks ----
-  vm.addTask = function () { vm.editSp.tasks.push({ id: 't' + Date.now(), order: vm.editSp.tasks.length + 1, text: '', jobAids: [], raci: {} }); };
+  vm.addTask = function () { vm.editSp.tasks.push({ id: 't' + (taskSeq++), order: vm.editSp.tasks.length + 1, text: '', jobAids: [], raci: {} }); };
   vm.removeTask = function (i) { vm.editSp.tasks.splice(i, 1); };
   vm.moveTask = function (i, dir) {
     var arr = vm.editSp.tasks;

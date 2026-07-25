@@ -1176,6 +1176,11 @@ table.ttbl thead th.pcol.ext {
   border-bottom-style: dashed;
 }
 
+table.ttbl thead th.pcol.orphan {
+  border-bottom-style: dotted;
+  opacity: 0.7;
+}
+
 table.ttbl td.cell {
   font-family: var(--font-mono);
   font-weight: 700;

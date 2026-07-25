@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=20260722a">
+<link rel="stylesheet" href="css/app.css?v=20260724a">
 </head>
 <body>
 
@@ -131,7 +131,7 @@
           <span class="section-label">Comments</span>
           <div class="notes">
             <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <ul><li ng-repeat="c in vm.loc.sp.comments" ng-bind-html="vm.jargonHtml(c)"></li></ul>
+            <ul><li ng-repeat="c in vm.loc.sp.comments track by $index" ng-bind-html="vm.jargonHtml(c)"></li></ul>
           </div>
         </div>
 
@@ -182,7 +182,7 @@
             <div class="pshead"><h5>What you need <span class="muted">- Inputs</span></h5></div>
             <p class="ordhint" ng-if="vm.loc.sp.inputs.length">In the order they&rsquo;re used</p>
             <ul class="flowlist">
-              <li ng-repeat="x in vm.loc.sp.inputs" ng-bind-html="vm.jargonHtml(x)"></li>
+              <li ng-repeat="x in vm.loc.sp.inputs track by $index" ng-bind-html="vm.jargonHtml(x)"></li>
               <li class="none" ng-if="!vm.loc.sp.inputs.length">None yet</li>
             </ul>
           </div>
@@ -195,7 +195,7 @@
                 <thead>
                   <tr>
                     <th class="tname">Task</th>
-                    <th class="pcol" ng-class="{ext: r.external}" ng-repeat="r in vm.participantsOf(vm.loc.sp)" style="--c: {{vm.jobTitleColor(r.id)}}" data-tip-name="{{r.name}}" data-tip="{{r.description}}">{{r.external ? '&#9671; ' : ''}}{{r.abbr}}</th>
+                    <th class="pcol" ng-class="{ext: r.external, orphan: r.orphan}" ng-repeat="r in vm.loc.taskTableRoles" style="--c: {{vm.jobTitleColor(r.id)}}" data-tip-name="{{r.name}}" data-tip="{{r.orphan ? 'No longer a participant' : r.description}}">{{r.external ? '&#9671; ' : ''}}{{r.abbr}}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -207,7 +207,7 @@
                         <span class="ja-scope" ng-repeat="r in vm.jobAidScope(t, j)" style="--c: {{vm.jobTitleColor(r.id)}}" data-tip-name="{{r.name}}" data-tip="{{r.description}}">{{r.external ? '&#9671; ' : ''}}{{r.abbr}}</span>
                       </div>
                     </td>
-                    <td class="cell" ng-repeat="r in vm.participantsOf(vm.loc.sp)" ng-class="{off: !(t.raci[r.id] && t.raci[r.id].length)}" ng-attr-data-tip-name="{{t.raci[r.id] && t.raci[r.id].length ? r.abbr : undefined}}" ng-attr-data-tip="{{t.raci[r.id] && t.raci[r.id].length ? vm.raciTip(t.raci[r.id]) : undefined}}"><span ng-repeat="l in t.raci[r.id]" ng-class="'rl-' + l">{{l}}</span><span ng-if="!(t.raci[r.id] && t.raci[r.id].length)">&middot;</span></td>
+                    <td class="cell" ng-repeat="r in vm.loc.taskTableRoles" ng-class="{off: !(t.raci[r.id] && t.raci[r.id].length)}" ng-attr-data-tip-name="{{t.raci[r.id] && t.raci[r.id].length ? r.abbr : undefined}}" ng-attr-data-tip="{{t.raci[r.id] && t.raci[r.id].length ? vm.raciTip(t.raci[r.id]) : undefined}}"><span ng-repeat="l in t.raci[r.id]" ng-class="'rl-' + l">{{l}}</span><span ng-if="!(t.raci[r.id] && t.raci[r.id].length)">&middot;</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -223,7 +223,7 @@
             <div class="pshead"><h5>What you deliver <span class="muted">- Deliverables</span></h5></div>
             <p class="ordhint" ng-if="vm.loc.sp.deliverables.length">In the order they&rsquo;re delivered</p>
             <ul class="flowlist">
-              <li ng-repeat="x in vm.loc.sp.deliverables" ng-bind-html="vm.jargonHtml(x)"></li>
+              <li ng-repeat="x in vm.loc.sp.deliverables track by $index" ng-bind-html="vm.jargonHtml(x)"></li>
               <li class="none" ng-if="!vm.loc.sp.deliverables.length">None yet</li>
             </ul>
           </div>
