@@ -1087,7 +1087,7 @@ class Component extends DCLogic {
     this.multiSel=[];
     // Selecting a different element resets the per-element editing targets alongside the state layer —
     // the border-width side and corner-radius pickers shouldn't carry "Editing Left" over to a new element.
-    if(id!==this.selectedId){ this._estate='base'; this._bindPick=null; this._bwSide=null; this._radCorner=null; } this.selectedId=id; this.forceUpdate(); }
+    if(id!==this.selectedId){ this._estate='base'; this._bindPick=null; } this.selectedId=id; this.forceUpdate(); }
 
   componentDidMount(){ this._key=e=>{
     const inField = e.target && (e.target.isContentEditable || /input|textarea|select/i.test(e.target.tagName));
@@ -4912,26 +4912,49 @@ class Component extends DCLogic {
     return h('div',null,
       this.blockHead(t,'Flex child',{dot:this.stateEditDot(node,['alignSelf','flexGrow','flexShrink','flexBasis','order'],t)}),
       parent?this.inParentBlock(parent,t,body):body); }
-  // Box-model inset editor for position offsets — same trapezoid look as spacingDiagram, "Itself" center.
-  insetBox(node,t){ const h=React.createElement;
-    // Same validate-before-write path as numField/rawField (cssAccepts + fieldErr) — these ARE real
-    // CSS properties (top/right/bottom/left), so nothing extra to invent; previously any typed text
-    // that wasn't a plain number was written straight through unchecked, junk and all.
-    const inp=(prop,posStyle)=>{ const err=this.fieldErr(node,prop); const cur=(this.csVal(node,prop)||'').toString().replace(/px$/,'');
-      return h('input',{value:err!=null?err:cur,placeholder:'auto',spellCheck:false,
-        onChange:e=>{ const v=e.target.value.trim(); const stored=v===''?'':(/^[-0-9.]+$/.test(v)?v+'px':v);
-          if(this.cssAccepts(prop,stored)) { this.clearFieldErr(node,prop); this.setCS(node,prop,stored); } else { this.setFieldErr(node,prop,e.target.value); } },
-        onBlur:()=>this.clearFieldErr(node,prop),
-        style:Object.assign({textAlign:'center',border:'none',background:'transparent',color:err!=null?this.errClr():t.muted,fontSize:10.5,outline:'none'},posStyle)}); };
-    const mgTop=this.dark?'#232a33':'#f6f7f9', mgSide=this.dark?'#1d232b':'#eef0f2', mgBot=this.dark?'#161b21':'#e7e9ec';
-    const contentBg=this.dark?'#0d1117':'#fff';
-    return h('div',{style:{borderRadius:9,overflow:'hidden',border:'1px solid '+t.border}},
-      h('div',{style:{position:'relative',borderStyle:'solid',borderWidth:'21px 44px',borderTopColor:mgTop,borderRightColor:mgSide,borderBottomColor:mgBot,borderLeftColor:mgSide,background:mgSide}},
-        inp('top',{position:'absolute',top:-16,left:'50%',transform:'translateX(-50%)',width:52}),
-        inp('bottom',{position:'absolute',bottom:-16,left:'50%',transform:'translateX(-50%)',width:52}),
-        inp('left',{position:'absolute',top:'50%',left:-40,transform:'translateY(-50%)',width:40}),
-        inp('right',{position:'absolute',top:'50%',right:-40,transform:'translateY(-50%)',width:40}),
-        h('div',{style:{minHeight:22,borderRadius:5,background:contentBg,border:'1px dashed '+t.accent,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,color:t.accent,fontWeight:600}},'Element'))); }
+  // Inset band — the same nested-field-bands idea as Spacing (3-level: one value / two axes / four
+  // sides, via the same deriveGrain/GRAIN_RANK/_granOv machinery), sized down to one band since insets
+  // don't nest. Plain top/right/bottom/left (not margin-/padding-prefixed); always offers `auto` (the
+  // real CSS default for an unset inset, and the most common explicit value); no drag-to-scrub — the
+  // old inset editor never had one either.
+  INSET_SIDES(){ return [{k:'t',l:'T',prop:'top'},{k:'r',l:'R',prop:'right'},{k:'b',l:'B',prop:'bottom'},{k:'l',l:'L',prop:'left'}]; }
+  insetBand(node,t){ const h=React.createElement; const sides=this.INSET_SIDES();
+    const propOf=k=>sides.find(s=>s.k===k).prop;
+    const vals=sides.map(s=>(this.csVal(node,s.prop)||'').toString());
+    const derived=this.deriveGrain(vals);
+    const ovKey=node.id+':inset';
+    this._granOv=this._granOv||{};
+    let grain=this._granOv[ovKey]||derived;
+    if(this._granOv[ovKey] && this._granOv[ovKey]===derived){ delete this._granOv[ovKey]; grain=derived; }
+    const setGrain=g=>{
+      if(g===derived){ if(this._granOv[ovKey]){ delete this._granOv[ovKey]; this.forceUpdate(); } return; }
+      if(this.GRAIN_RANK[g]>this.GRAIN_RANK[derived] && derived==='all'){ sides.forEach(s=>this.setCS(node,s.prop,vals[0])); }
+      this._granOv[ovKey]=g; this.forceUpdate(); };
+    const grainSeg=this.grainSwitch(t,grain,setGrain,['all','axis','sides'],{all:{h:'One value',b:'All sides share a value'},axis:{h:'Two values',b:'Vertical / horizontal'},sides:{h:'Four values',b:'Each side independent'}});
+    const ghosting=this.GRAIN_RANK[grain]<this.GRAIN_RANK[derived];
+    const sizeToks=(this.tokens||[]).filter(x=>x.type==='size');
+    const repOf=group=>{ let best=vals[sides.findIndex(s=>s.k===group[0])],bestPx=-Infinity;
+      group.forEach(k=>{ const v=vals[sides.findIndex(s=>s.k===k)]; const px=this._spaceScalePx(v); if(px>bestPx){bestPx=px;best=v;} }); return best; };
+    const field=(ks,microLabel)=>{ const single=ks.length===1; const rep=single?vals[sides.findIndex(s=>s.k===ks[0])]:repOf(ks);
+      const comboOpts={tokens:sizeToks, keywords:[{v:'auto',l:'auto'}], unsetLabel:'auto', ghost:ghosting?this._spaceLabel(rep):'auto'};
+      const control = (single && !ghosting)
+        ? this.comboField('in:'+ks[0]+':'+node.id,t,node,propOf(ks[0]),comboOpts)
+        : this.comboField('in:'+ks.join('')+':'+node.id,t,node,propOf(ks[0]),Object.assign({},comboOpts,{
+            cssProp:propOf(ks[0]), value:ghosting?'':rep, onWrite:v=>ks.forEach(k=>this.setCS(node,propOf(k),v))
+          }));
+      return h('div',{key:ks.join(''),style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:2}},
+        microLabel?h('span',{style:{fontSize:8,fontWeight:600,letterSpacing:'.06em',color:t.faint,paddingLeft:1}},microLabel):null,
+        control); };
+    const rows = grain==='all' ? [field(['t','r','b','l'],null)]
+      : grain==='axis' ? [field(['t','b'],'T · B'),field(['l','r'],'L · R')]
+      : [field(['t'],'T'),field(['r'],'R'),field(['b'],'B'),field(['l'],'L')];
+    return h('div',{style:{border:'1px solid '+t.border,borderRadius:8,background:t.panel,padding:8}},
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:6}}, this.stateEditDot(node,sides.map(s=>s.prop),t),
+          h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},'Inset')),
+        grainSeg),
+      h('div',{style:{display:'flex',gap:6}}, rows));
+  }
   // Position (reference): select, 9 inset presets, box-model inset editor, relative-to indicator, z-index.
   // The preset row/inset diagram/relative-to/z-index always render below the select — even at Static —
   // matching the reference; Position is a foundational setting the user often sets before dialing in
@@ -4946,7 +4969,7 @@ class Component extends DCLogic {
     const applyPreset=combo=>{ ['top','right','bottom','left'].forEach(k=>this.setCS(node,k,combo[k]!=null?combo[k]:'')); };
     const pIcon=(x,y,w,hh)=>h('svg',{viewBox:'0 0 16 16',width:20,height:20},[h('rect',{key:'f',x:2,y:2,width:12,height:12,rx:2,fill:'none',stroke:'currentColor',strokeWidth:1,opacity:0.45}),h('rect',{key:'i',x,y,width:w,height:hh,rx:1,fill:'currentColor'})]);
     els.push(h('div',{key:'presets',role:'group','aria-label':'Position presets',style:{display:'flex',gap:3,marginTop:10}}, presetDefs.map(([id,title,combo,box])=>{ const on=matches(combo); return h('div',Object.assign({key:id},this.tt(title),this.a11y(()=>applyPreset(combo),{pressed:on,label:title}),{onClick:()=>applyPreset(combo),style:{flex:'1 1 0',minWidth:0,height:22,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:on?t.accent:t.faint}}), pIcon(box[0],box[1],box[2],box[3])); })));
-    els.push(h('div',{key:'inset',style:{marginTop:10}}, this.insetBox(node,t)));
+    els.push(h('div',{key:'inset',style:{marginTop:10}}, this.insetBand(node,t)));
     const relText=(pos==='absolute'||pos==='fixed')?'Nearest ancestor':'Itself';
     els.push(h('div',{key:'rel',style:{display:'flex',gap:8,marginTop:12}},
       h('div',{style:{flex:1.5,minWidth:0}}, h('div',Object.assign({},this.tt({h:'Relative to',b:'Determined by the Position value'}),{style:{height:30,display:'flex',alignItems:'center',border:'1px solid '+t.border,borderRadius:6,padding:'0 9px',fontSize:12,color:t.muted,background:t.segBg,boxSizing:'border-box'}}),relText), h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:5}},'Relative to')),
