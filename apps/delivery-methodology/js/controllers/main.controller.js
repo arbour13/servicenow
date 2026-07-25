@@ -154,6 +154,14 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
       vm.tip.show = false;
     }
   };
+  // Clicking a data-tip element (edit-pencil, a reorder/delete button, the theme toggle...) very
+  // often re-renders the DOM it's sitting in (ng-if swaps the whole panel to the edit view, a row
+  // gets removed, etc.) - the element mouseout was hovering never fires because it's gone, not
+  // moved away from, so the tooltip is otherwise left showing, stuck, over whatever's now there.
+  vm.dismissTip = function () {
+    if (tipDelay) { $timeout.cancel(tipDelay); tipDelay = null; }
+    vm.tip.show = false;
+  };
 
   vm.loading = true;
   vm.jobTitles = [];
@@ -411,7 +419,10 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
      Add/rename/delete/reorder, direct-mutation-then-save (no working-copy/snapshot pattern like
      vm.editSp above - there's no per-field changelog to diff here, just a tree shape edit). Every
      mutation below is followed by recomputeSids() (position IS the sid) and DataService.saveData()
-     (persists the whole tree - see the service's own comment on why that's fine to do every time). */
+     (persists the whole tree - see the service's own comment on why that's fine to do every time).
+     UI entry point (the "Edit structure" toggle button) is pulled for now - flip this back to true
+     to bring it back. Every function below stays fully wired and working either way. */
+  vm.structureEditUiEnabled = false;
   vm.structureEditMode = false;
   vm.toggleStructureEdit = function () {
     if (vm.editMode) { showToast('Finish editing first'); return; }

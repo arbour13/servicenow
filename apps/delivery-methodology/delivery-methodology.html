@@ -138,6 +138,13 @@
        froze them to dark-mode values once --p1..--p5 became theme-aware. */
     --card-mix-1: #275b63;
     --card-mix-2: #0d435f;
+    /* How much of --pc gets mixed into .fcard.on's background (see the rule itself). Tokenized
+       because the SAME percentage against a dark-mode-bright --pc vs a light-mode-dark --pc
+       produces very different visual jumps - light mode needs a smaller share to land at a
+       comparably subtle selected-vs-unselected delta (verified via sRGB distance across all 5
+       phase colours: dark 32/20% ~= light 14/9%, see the light override below). */
+    --fcard-on-mix-1: 32%;
+    --fcard-on-mix-2: 20%;
     --on-phase-ink: #06121c;
     /* .fcard's 1px border box already exists in dark mode - it's just transparent, since dark
        separates the card from the page purely by fill contrast. Tokenising the colour (not adding
@@ -220,6 +227,9 @@
     --on-accent-rgb: 10, 33, 54;
     --card-mix-1: #f4fcfd;
     --card-mix-2: #c9ebf2;
+    /* Smaller than dark mode's 32/20% - see the base :root comment on --fcard-on-mix-1. */
+    --fcard-on-mix-1: 14%;
+    --fcard-on-mix-2: 9%;
     --on-phase-ink: #ffffff;
     --gradient-card: linear-gradient(135deg, #f4fcfd 0%, #c9ebf2 100%);
     --gradient-card-2: linear-gradient(135deg, #e2f6fa 0%, #bfe7ef 100%);
@@ -391,7 +401,7 @@
   .fcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--pc); opacity: .9; transition: width .16s; }
   .fcard:hover { transform: translateY(-3px); box-shadow: 0 10px 24px -12px rgba(0,0,0,0.6); }
   /* selected - thicker left accent bar + a brighter surface, no surrounding ring */
-  .fcard.on { background: linear-gradient(135deg, color-mix(in srgb, var(--pc) 32%, var(--card-mix-1)) 0%, color-mix(in srgb, var(--pc) 20%, var(--card-mix-2)) 100%); }
+  .fcard.on { background: linear-gradient(135deg, color-mix(in srgb, var(--pc) var(--fcard-on-mix-1), var(--card-mix-1)) 0%, color-mix(in srgb, var(--pc) var(--fcard-on-mix-2), var(--card-mix-2)) 100%); }
   .fcard.on::before { width: 5px; }
   /* the brighter selected background washes out --ink-faint (#7d97a8) - lift the muted text */
   .fcard.on .fsid { color: var(--on-accent-soft); }
@@ -419,7 +429,15 @@
   /* ---------- RACI grid ---------- */
   .rg-controls { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
   .rg-pfilters { display: flex; gap: 7px; flex-wrap: wrap; }
-  .rg-pchip { font-family: inherit; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 15px; border: 1px solid transparent; cursor: pointer; }
+  /* Same on/off treatment as .participant-chip, not a per-phase identity colour - this is a plain
+     multi-select filter, and colour-coding each chip by its phase read as "why are these all
+     different colours?" rather than as on/off state. */
+  .rg-pchip { font-family: inherit; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 15px; border: 1px solid var(--line); background: rgba(var(--wash-rgb),0.05); color: var(--ink-faint); cursor: pointer; display: inline-flex; align-items: center; transition: background .12s, color .12s, border-color .12s; }
+  .rg-pchip:hover { border-color: var(--teal); color: var(--ink); }
+  .rg-pchip.on { background: var(--chip-on-bg); color: var(--teal); border-color: var(--teal); }
+  /* Checkmark animates in on select, matching the participant chips. */
+  .rgp-check { width: 0; height: 11px; margin-right: 0; flex: none; opacity: 0; transform: scale(0.4) rotate(-20deg); transition: width .18s ease, margin-right .18s ease, opacity .16s ease, transform .22s cubic-bezier(.34,1.56,.64,1); }
+  .rg-pchip.on .rgp-check { width: 11px; margin-right: 5px; opacity: 1; transform: scale(1) rotate(0deg); }
   .rg-legend { display: flex; gap: 14px; margin-left: auto; align-items: center; flex-wrap: wrap; }
   .rg-legend .lg { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-soft); }
   .rg-legend .sw { width: 16px; height: 16px; border-radius: 4px; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 10px; color: var(--text-on-primary); }
@@ -431,6 +449,13 @@
      its own inner scroller. thead th's position: sticky then sticks to the viewport instead of this
      container, which is the better behaviour for a long table anyway. */
   .rg-scroller { border: 1px solid var(--line-soft); border-radius: 12px; }
+  /* Without overflow:hidden on .rg-scroller, its border-radius doesn't clip the table's own
+     opaque, square-cornered cells - rounded directly on the table's 4 corner cells instead
+     (11px = container's 12px minus its 1px border, so the curve nests exactly). */
+  .rg-table thead tr:first-child th:first-child { border-top-left-radius: 11px; }
+  .rg-table thead tr:first-child th:last-child { border-top-right-radius: 11px; }
+  .rg-table tfoot tr:last-child td:first-child { border-bottom-left-radius: 11px; }
+  .rg-table tfoot tr:last-child td:last-child { border-bottom-right-radius: 11px; }
   .rg-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
   .rg-table thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 3; padding: 11px 8px; text-align: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--teal); border-bottom: 2px solid var(--line); cursor: pointer; white-space: nowrap; user-select: none; }
   /* Was a fixed dark navy literal - broke once the base th (var(--surface-2)) started tracking
@@ -893,10 +918,17 @@
     font-size: 13.5px; font-weight: 500; color: var(--ink);
   }
   .jt-pick-btn:hover { border-color: var(--teal); }
-  .jt-pick-btn.active { background: var(--gradient-pill); color: var(--on-gradient-ink); border-color: #fff; font-weight: 700; box-shadow: var(--shadow-inset); }
+  /* Same on/off treatment as .participant-chip - was colour-coded like the RACI phase chips below,
+     which read as "why are these all different colours?" rather than as a plain multi-select. */
+  .jt-pick-btn.active { background: var(--chip-on-bg); color: var(--teal); border-color: var(--teal); font-weight: 700; }
   .jt-pick-btn .abbr { font-family: var(--font-mono); font-size: 11px; color: var(--hs-mint); }
-  .jt-pick-btn.active .abbr { color: var(--on-gradient-ink); }
+  .jt-pick-btn.active .abbr { color: var(--teal); }
   .jt-pick-btn .n { font-family: var(--font-mono); font-size: 11px; opacity: 0.7; }
+  /* Checkmark animates in on select, matching the participant chips. .jt-pick-btn's parent uses
+     flex `gap` (unlike the plain-margin participant chips), so the collapsed icon also cancels the
+     gap after it via a negative margin, rather than reserving it. */
+  .jt-check { width: 0; height: 12px; margin-right: -8px; flex: none; opacity: 0; transform: scale(0.4) rotate(-20deg); transition: width .18s ease, margin-right .18s ease, opacity .16s ease, transform .22s cubic-bezier(.34,1.56,.64,1); }
+  .jt-pick-btn.active .jt-check { width: 12px; margin-right: 0; opacity: 1; transform: scale(1) rotate(0deg); }
 
   .jt-group { margin-bottom: 28px; }
   .jt-group-head {
@@ -1018,7 +1050,7 @@
             <button class="vtab" data-view="new" id="newTab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>What's New</span></button>
           </div>
           <div class="hdr-search-group">
-            <button type="button" class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+            <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode" data-tip="Toggle light/dark mode">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
             </button>
             <div class="hsearch">
@@ -1030,7 +1062,7 @@
         <div class="pagehdr-title">
           <div class="pagehdr-title-row">
             <h1 id="pgTitle" class="pg-h1">The Delivery Journey</h1>
-            <label class="loe-billable-toggle jargon-toggle" id="jargonWrap" title="Highlight jargon and acronyms with hover-over definitions"><input type="checkbox" id="jargonToggle" /> Explain terms</label>
+            <label class="loe-billable-toggle jargon-toggle" id="jargonWrap" data-tip="Highlight jargon and acronyms with hover-over definitions"><input type="checkbox" id="jargonToggle" /> Explain terms</label>
           </div>
           <p id="pgSub" class="pg-sub"></p>
         </div>
@@ -1735,17 +1767,17 @@ function structToolbarHtml(m) {
     h += `<div class="struct-phase"><div class="struct-phase-head"><span class="struct-num">${pi + 1}</span>` +
       `<input type="text" class="edit-in struct-rename" data-rename-phase="${pi}" value="${esc(p.name)}" placeholder="Phase name" aria-label="Phase name">` +
       `<span class="struct-controls">` +
-      `<button type="button" class="reorder-btn" data-move-phase="${pi}:up" ${pi === 0 ? 'disabled' : ''} title="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>` +
-      `<button type="button" class="reorder-btn" data-move-phase="${pi}:down" ${pi === m.phases.length - 1 ? 'disabled' : ''} title="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>` +
-      `<button type="button" class="field-x" data-delete-phase="${pi}" title="Delete phase" aria-label="Delete phase">&times;</button>` +
+      `<button type="button" class="reorder-btn" data-move-phase="${pi}:up" ${pi === 0 ? 'disabled' : ''} data-tip="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>` +
+      `<button type="button" class="reorder-btn" data-move-phase="${pi}:down" ${pi === m.phases.length - 1 ? 'disabled' : ''} data-tip="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>` +
+      `<button type="button" class="field-x" data-delete-phase="${pi}" data-tip="Delete phase" aria-label="Delete phase">&times;</button>` +
       `</span></div><div class="struct-subphase-list">`;
     p.subPhases.forEach((s, si) => {
       h += `<div class="struct-subphase"><span class="struct-sid">${esc(s.sid)}</span>` +
         `<input type="text" class="edit-in struct-rename" data-rename-sub="${pi}:${si}" value="${esc(s.name)}" placeholder="Sub-phase name" aria-label="Sub-phase name">` +
         `<span class="struct-controls">` +
-        `<button type="button" class="reorder-btn" data-move-sub="${pi}:${si}:up" ${si === 0 ? 'disabled' : ''} title="Move sub-phase earlier" aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>` +
-        `<button type="button" class="reorder-btn" data-move-sub="${pi}:${si}:down" ${si === p.subPhases.length - 1 ? 'disabled' : ''} title="Move sub-phase later" aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>` +
-        `<button type="button" class="field-x" data-delete-sub="${pi}:${si}" title="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>` +
+        `<button type="button" class="reorder-btn" data-move-sub="${pi}:${si}:up" ${si === 0 ? 'disabled' : ''} data-tip="Move sub-phase earlier" aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>` +
+        `<button type="button" class="reorder-btn" data-move-sub="${pi}:${si}:down" ${si === p.subPhases.length - 1 ? 'disabled' : ''} data-tip="Move sub-phase later" aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>` +
+        `<button type="button" class="field-x" data-delete-sub="${pi}:${si}" data-tip="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>` +
         `</span></div>`;
     });
     h += `<button type="button" class="add-item-btn tight" data-add-sub="${pi}">+ Add sub-phase</button></div></div>`;
@@ -1760,13 +1792,15 @@ function journeyChromeHtml() {
   const activeColor = PHASE_COLORS[pi % PHASE_COLORS.length];
   let h = '<div class="journey-chrome">';
 
-  h += `<div class="struct-toggle-row"><button type="button" class="struct-toggle-btn ${state.structureEditMode ? 'on' : ''}" data-struct-toggle>${PENCIL_SVG}${state.structureEditMode ? 'Done editing structure' : 'Edit structure'}</button></div>`;
+  if (STRUCTURE_EDIT_UI_ENABLED) {
+    h += `<div class="struct-toggle-row"><button type="button" class="struct-toggle-btn ${state.structureEditMode ? 'on' : ''}" data-struct-toggle>${PENCIL_SVG}${state.structureEditMode ? 'Done editing structure' : 'Edit structure'}</button></div>`;
+  }
 
   h += `<div class="road" style="--stations:${ps.length};--active:${pi}">`;
   h += ps.map((p, i) => {
     const cls = [i < pi ? 'done' : '', i === pi ? 'on' : ''].join(' ');
     const nc = PHASE_COLORS[i % PHASE_COLORS.length];
-    return `<button class="station ${cls}" data-phase-i="${i}" style="--nc:${nc}"><span class="n">${i + 1}${phaseHasUnread(p) ? '<span class="udot" title="Unread changes in this phase"></span>' : ''}</span><span class="nm">${esc(p.name)}</span><span class="ct">${p.subPhases.length} sub-phase${p.subPhases.length > 1 ? 's' : ''}</span></button>`;
+    return `<button class="station ${cls}" data-phase-i="${i}" style="--nc:${nc}"><span class="n">${i + 1}${phaseHasUnread(p) ? '<span class="udot" data-tip="Unread changes in this phase"></span>' : ''}</span><span class="nm">${esc(p.name)}</span><span class="ct">${p.subPhases.length} sub-phase${p.subPhases.length > 1 ? 's' : ''}</span></button>`;
   }).join('') + '</div>';
 
   const phase = ps[pi] || { name: '', subPhases: [] };
@@ -1849,7 +1883,10 @@ function openSubPhase(id) {
    direct-mutation-then-save with NO cancel semantics - cancelEdit's restore-by-key on loc.sp
    couldn't undo an array splice on the PARENT (m.phases / p.subPhases) anyway, and this prototype
    already saves immediately on every edit elsewhere, so structure edits just follow suit. Every
-   mutation is followed by recomputeSids() (position IS the sid) and save(). */
+   mutation is followed by recomputeSids() (position IS the sid) and save().
+   UI entry point (the "Edit structure" toggle button) is pulled for now - flip this back to true
+   to bring it back. Every function below stays fully wired and working either way. */
+const STRUCTURE_EDIT_UI_ENABLED = false;
 function toggleStructureEdit() {
   if (state.editMode) { toast('Finish editing first'); return; }
   state.structureEditMode = !state.structureEditMode;
@@ -1952,7 +1989,7 @@ function renderBrowse() {
   // down to zero sub-phases) so the structure toolbar - the only way OUT of that state - stays
   // reachable instead of vanishing along with the "nothing selected" message.
   let html = journeyChromeHtml();
-  if (!loc) { main.innerHTML = html + '<p class="empty">Nothing selected. Use Edit structure above to add a sub-phase.</p>'; wireJourneyChrome(); return; }
+  if (!loc) { main.innerHTML = html + '<p class="empty">Nothing selected. Use Edit structure above to add a sub-phase.</p>'; wireJourneyChrome(); wireTooltips(); return; }
   const { phase, phaseIndex, sp } = loc;
   const color = PHASE_COLORS[phaseIndex % PHASE_COLORS.length];
 
@@ -1961,6 +1998,7 @@ function renderBrowse() {
     main.innerHTML = html;
     wireJourneyChrome();
     wireEditHandlers(sp);
+    wireTooltips();
     return;
   }
 
@@ -1970,13 +2008,14 @@ function renderBrowse() {
   html += `<div class="sp-header"><div>
     <div class="pcrumb">${esc(phase.name)} › ${esc(sp.sid)}</div>
     <h1 class="sp-title">${esc(sp.name)}${unread ? `<span class="prec">● ${unread} new change${unread > 1 ? 's' : ''}</span>` : ''}</h1>
-  </div><button class="edit-pencil" data-edit-sp title="Edit this sub-phase">${PENCIL_SVG}</button></div>`;
+  </div><button class="edit-pencil" data-edit-sp data-tip="Edit this sub-phase">${PENCIL_SVG}</button></div>`;
 
   if (!hasContent(sp)) {
     html += `<p class="obj" style="color:var(--ink-faint)">This sub-phase hasn’t been written yet. Use the <b>edit ✎</b> button above to add its overview, tasks and deliverables.</p></div>`;
     main.innerHTML = html;
     wireJourneyChrome();
     main.querySelector('[data-edit-sp]').onclick = () => enterEdit();
+    wireTooltips();
     return;
   }
 
@@ -2020,9 +2059,9 @@ function renderBrowse() {
   html += '</div>'; // close .panel
   main.innerHTML = html;
   wireJourneyChrome();
-  wireTooltips();
   const ep = main.querySelector('[data-edit-sp]');
   if (ep) { ep.onclick = () => enterEdit(); }
+  wireTooltips();
 }
 
 function flowListHtml(arr, kind) {
@@ -2135,7 +2174,7 @@ function loeEditRowHtml(key, label, v, opts) {
     <span class="loe-abbr"${opts.wide ? ' style="width:auto"' : ''}>${esc(label)}</span>
     <input class="edit-in" data-loe-key="${key}" data-loe-field="text" value="${esc(v.text || '')}" placeholder="e.g. 2 hours" />
     ${loeFlagHtml(key, v)}
-    ${opts.removable ? `<button class="x-btn" data-loe-role-del="${opts.roleId}" title="Remove role" aria-label="Remove role">×</button>` : ''}
+    ${opts.removable ? `<button class="x-btn" data-loe-role-del="${opts.roleId}" data-tip="Remove role" aria-label="Remove role">×</button>` : ''}
   </div>`;
 }
 function loeEditHtml(sp) {
@@ -2208,19 +2247,19 @@ function listEditHtml(arr, kind) {
   return arr.map((v, i) => `<div class="list-edit-row">
     <textarea class="edit-in" data-list="${kind}" data-idx="${i}" rows="2">${esc(v)}</textarea>
     <div class="row-reorder">
-      <button class="reorder-btn" data-move="${kind}:${i}:up" ${i === 0 ? 'disabled' : ''} title="Move up" aria-label="Move up">${CHEVUP_SVG}</button>
-      <button class="reorder-btn" data-move="${kind}:${i}:down" ${i === arr.length - 1 ? 'disabled' : ''} title="Move down" aria-label="Move down">${CHEVDOWN_SVG}</button>
+      <button class="reorder-btn" data-move="${kind}:${i}:up" ${i === 0 ? 'disabled' : ''} data-tip="Move up" aria-label="Move up">${CHEVUP_SVG}</button>
+      <button class="reorder-btn" data-move="${kind}:${i}:down" ${i === arr.length - 1 ? 'disabled' : ''} data-tip="Move down" aria-label="Move down">${CHEVDOWN_SVG}</button>
     </div>
-    <button class="field-x" data-del-list="${kind}" data-idx="${i}" title="Remove" aria-label="Remove">×</button>
+    <button class="field-x" data-del-list="${kind}" data-idx="${i}" data-tip="Remove" aria-label="Remove">×</button>
   </div>`).join('');
 }
 
 function taskEditHtml(t, ti, n) {
   let h = `<div class="task" data-task-idx="${ti}">`;
   h += `<div class="te-head"><span class="te-num">${ti + 1}</span><span class="te-tools">`
-    + `<button class="reorder-btn" data-move="task:${ti}:up" ${ti === 0 ? 'disabled' : ''} title="Move up" aria-label="Move task up">${CHEVUP_SVG}</button>`
-    + `<button class="reorder-btn" data-move="task:${ti}:down" ${ti === n - 1 ? 'disabled' : ''} title="Move down" aria-label="Move task down">${CHEVDOWN_SVG}</button>`
-    + `<button class="x-btn" data-del-task="${ti}" title="Delete task" aria-label="Delete task">×</button>`
+    + `<button class="reorder-btn" data-move="task:${ti}:up" ${ti === 0 ? 'disabled' : ''} data-tip="Move up" aria-label="Move task up">${CHEVUP_SVG}</button>`
+    + `<button class="reorder-btn" data-move="task:${ti}:down" ${ti === n - 1 ? 'disabled' : ''} data-tip="Move down" aria-label="Move task down">${CHEVDOWN_SVG}</button>`
+    + `<button class="x-btn" data-del-task="${ti}" data-tip="Delete task" aria-label="Delete task">×</button>`
     + `</span></div>`;
   h += `<textarea class="edit-in te-text" data-task-field="text" data-idx="${ti}" rows="2" placeholder="Describe the task">${esc(t.text)}</textarea>`;
   // RACI matrix
@@ -2235,7 +2274,7 @@ function taskEditHtml(t, ti, n) {
       const on = t.raci[rid].includes(l);
       h += `<button class="raci-toggle ${on ? 'on t-' + l : ''}" data-raci-task="${ti}" data-raci-jt="${rid}" data-raci-letter="${l}">${l}</button>`;
     });
-    h += `<button class="x-btn" data-raci-remove-task="${ti}" data-raci-remove-jt="${rid}" title="Remove job title" aria-label="Remove job title">×</button></div>`;
+    h += `<button class="x-btn" data-raci-remove-task="${ti}" data-raci-remove-jt="${rid}" data-tip="Remove job title" aria-label="Remove job title">×</button></div>`;
   });
   // add job title
   const used = Object.keys(t.raci || {});
@@ -2275,7 +2314,7 @@ function jobAidEditHtml(t, ti, j, ji) {
     <div class="ja-edit-row">
       <span class="link-ic">${LINK_SVG}</span>
       <input class="edit-in" data-ja-idx="${ti}:${ji}" data-ja-field="url" value="${esc(j.url)}" placeholder="Job aid URL" style="flex:1" />
-      <button class="x-btn" data-ja-del="${ti}:${ji}" title="Remove job aid" aria-label="Remove job aid">×</button>
+      <button class="x-btn" data-ja-del="${ti}:${ji}" data-tip="Remove job aid" aria-label="Remove job aid">×</button>
     </div>
     <div class="ja-roles"><span class="ja-roles-lbl">Applies to:</span>${chips}</div>
   </div>`;
@@ -2284,9 +2323,9 @@ function meetingEditHtml(m, mi, n) {
   const roleOptions = (selected) => data.jobTitles.filter(r => !r.external).map(r => `<option value="${r.id}" ${selected === r.id ? 'selected' : ''}>${esc(r.abbr)} - ${esc(r.name)}</option>`).join('');
   let h = `<div class="task meeting" data-meeting-idx="${mi}">`;
   h += `<div class="te-head"><span class="te-num">${mi + 1}</span><span class="te-tools">`
-    + `<button class="reorder-btn" data-move="meeting:${mi}:up" ${mi === 0 ? 'disabled' : ''} title="Move up" aria-label="Move meeting up">${CHEVUP_SVG}</button>`
-    + `<button class="reorder-btn" data-move="meeting:${mi}:down" ${mi === n - 1 ? 'disabled' : ''} title="Move down" aria-label="Move meeting down">${CHEVDOWN_SVG}</button>`
-    + `<button class="x-btn" data-del-meeting="${mi}" title="Delete meeting" aria-label="Delete meeting">×</button>`
+    + `<button class="reorder-btn" data-move="meeting:${mi}:up" ${mi === 0 ? 'disabled' : ''} data-tip="Move up" aria-label="Move meeting up">${CHEVUP_SVG}</button>`
+    + `<button class="reorder-btn" data-move="meeting:${mi}:down" ${mi === n - 1 ? 'disabled' : ''} data-tip="Move down" aria-label="Move meeting down">${CHEVDOWN_SVG}</button>`
+    + `<button class="x-btn" data-del-meeting="${mi}" data-tip="Delete meeting" aria-label="Delete meeting">×</button>`
     + `</span></div>`;
   h += `<input class="edit-in te-text" data-meeting-field="name" data-idx="${mi}" placeholder="Meeting name / purpose" value="${esc(m.name)}" />`;
   h += `<div class="mtg-edit-row">
@@ -2583,7 +2622,7 @@ function renderRaci() {
     html += '<div class="jt-picker">';
     ids.forEach(id => {
       const jt = jobTitleById(id);
-      html += `<button class="jt-pick-btn ${rgFocusJob === id ? 'active' : ''}" data-rgby="${id}"><span class="abbr">${esc(jt.abbr)}</span>${esc(jt.name)}<span class="n">${counts[id] || 0}</span></button>`;
+      html += `<button class="jt-pick-btn ${rgFocusJob === id ? 'active' : ''}" data-rgby="${id}"><svg class="jt-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"/></svg><span class="abbr">${esc(jt.abbr)}</span>${esc(jt.name)}<span class="n">${counts[id] || 0}</span></button>`;
     });
     html += '</div>';
     if (rgFocusJob) {
@@ -2608,14 +2647,14 @@ function renderRaci() {
     main.querySelectorAll('[data-rgmode]').forEach(b => b.onclick = () => { raciMode = b.dataset.rgmode; renderRaci(); });
     main.querySelectorAll('[data-rgby]').forEach(b => b.onclick = () => { rgFocusJob = b.dataset.rgby; renderRaci(); });
     main.querySelectorAll('[data-jump]').forEach(a => a.onclick = () => openSubPhase(a.dataset.jump));
+    wireTooltips();
     return;
   }
 
   html += '<div class="rg-controls"><div class="rg-pfilters">';
-  m.phases.forEach((p, i) => {
+  m.phases.forEach(p => {
     const on = rgActivePhases.has(p.id);
-    const c = PHASE_COLORS[i % PHASE_COLORS.length];
-    html += `<button class="rg-pchip" data-rgp="${esc(p.id)}" style="background:${on ? c : 'var(--surface-flat)'};color:${on ? 'var(--on-phase-ink)' : 'var(--ink-soft)'};border-color:${on ? 'var(--on-phase-ink)' : 'var(--line)'};box-shadow:${on ? 'var(--shadow-inset)' : 'none'}">${esc(p.name)}</button>`;
+    html += `<button class="rg-pchip ${on ? 'on' : ''}" data-rgp="${esc(p.id)}"><svg class="rgp-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"/></svg>${esc(p.name)}</button>`;
   });
   html += '</div><div class="rg-legend">';
   RACI_LETTERS.forEach(l => { html += `<span class="lg"><span class="sw" style="background:${RACI_HEX[l]}">${l}</span>${RACI_NAMES[l]}</span>`; });
@@ -2682,6 +2721,7 @@ function renderRaci() {
     main.querySelectorAll('.rg-exrow.show').forEach(e => e.classList.remove('show'));
     if (!open) { ex.classList.add('show'); }
   });
+  wireTooltips();
 }
 
 /* ---------------- What's New ---------------- */
@@ -2710,6 +2750,7 @@ function renderWhatsNew() {
     if (b.dataset.meth !== state.methodologyId) { state.methodologyId = b.dataset.meth; }
     jumpTo(b.dataset.jump);
   });
+  wireTooltips();
 }
 
 /* ---------------- Reference (RACI explainer · escalation · job-aids index) ---------------- */
@@ -2778,6 +2819,7 @@ function renderReference() {
     if (b.dataset.meth !== state.methodologyId) { state.methodologyId = b.dataset.meth; }
     jumpTo(b.dataset.jump);
   });
+  wireTooltips();
 }
 
 /* ---------------- Search ---------------- */
@@ -2807,6 +2849,7 @@ function renderSearch() {
     if (b.dataset.meth !== state.methodologyId) { state.methodologyId = b.dataset.meth; }
     jumpTo(b.dataset.jump);
   });
+  wireTooltips();
 }
 function makeSnippet(hay, q) {
   const clean = hay.replace(/\n+/g, ' · ');
@@ -2886,6 +2929,11 @@ function showTip(el) {
   tip.classList.add('show');
 }
 function hideTip() { tip.classList.remove('show'); }
+// Clicking a data-tip element (edit-pencil, a reorder/delete button, the theme toggle...) very
+// often re-renders main.innerHTML - the element mouseleave was hovering never fires because it's
+// gone, not moved away from, so the tooltip is otherwise left showing, stuck, over whatever's
+// rendered in its place. One listener, bound once, rather than re-binding per render.
+document.addEventListener('click', hideTip);
 function positionTip(e) {
   const pad = 14;
   let x = e.clientX + pad;

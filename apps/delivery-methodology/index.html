@@ -26,7 +26,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=20260725c">
+<link rel="stylesheet" href="css/app.css?v=20260725d">
 </head>
 <body>
 
@@ -43,7 +43,7 @@
 <script src="js/services/data.service.js"></script>
 <script src="js/controllers/main.controller.js"></script>
 
-<div class="app" ng-controller="MainController as vm" ng-class="{editing: vm.editMode}" ng-mouseover="vm.tipMouseOver($event)" ng-mouseout="vm.tipMouseOut($event)">
+<div class="app" ng-controller="MainController as vm" ng-class="{editing: vm.editMode}" ng-mouseover="vm.tipMouseOver($event)" ng-mouseout="vm.tipMouseOut($event)" ng-click="vm.dismissTip()">
 
   <div class="dm-loading" ng-if="vm.loading">Loading…</div>
 
@@ -65,7 +65,7 @@
         </div>
         <div class="hdr-search-group">
           <button type="button" class="theme-toggle" ng-click="vm.toggleTheme()"
-                  aria-pressed="{{vm.theme === 'dark'}}" title="Toggle light/dark mode">
+                  aria-pressed="{{vm.theme === 'dark'}}" aria-label="Toggle light/dark mode" data-tip="Toggle light/dark mode">
             <svg ng-if="vm.theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
             <svg ng-if="vm.theme !== 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
           </button>
@@ -78,7 +78,7 @@
       <div class="pagehdr-title">
         <div class="pagehdr-title-row">
           <h1>{{vm.pageTitle()}}</h1>
-          <label class="loe-billable-toggle jargon-toggle" ng-if="vm.view === 'journey' || vm.view === 'reference'" title="Highlight jargon and acronyms with hover-over definitions">
+          <label class="loe-billable-toggle jargon-toggle" ng-if="vm.view === 'journey' || vm.view === 'reference'" data-tip="Highlight jargon and acronyms with hover-over definitions">
             <input type="checkbox" ng-model="vm.showJargon"> Explain terms
           </label>
         </div>
@@ -93,7 +93,7 @@
 
     <div ng-if="vm.view === 'journey'">
     <div class="journey-chrome">
-    <div class="struct-toggle-row">
+    <div class="struct-toggle-row" ng-if="vm.structureEditUiEnabled">
       <button type="button" class="struct-toggle-btn" ng-class="{on: vm.structureEditMode}" ng-click="vm.toggleStructureEdit()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
         {{vm.structureEditMode ? 'Done editing structure' : 'Edit structure'}}
@@ -133,9 +133,9 @@
           <span class="struct-num">{{$index + 1}}</span>
           <input type="text" class="edit-in struct-rename" ng-model="p.name" ng-model-options="{updateOn: 'blur'}" ng-change="vm.renamePhase(p)" placeholder="Phase name" aria-label="Phase name">
           <span class="struct-controls">
-            <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="vm.movePhase($index, 'up')" title="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
-            <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="vm.movePhase($index, 'down')" title="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
-            <button type="button" class="field-x" ng-click="vm.deletePhase($index)" title="Delete phase" aria-label="Delete phase">&times;</button>
+            <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="vm.movePhase($index, 'up')" data-tip="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+            <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="vm.movePhase($index, 'down')" data-tip="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+            <button type="button" class="field-x" ng-click="vm.deletePhase($index)" data-tip="Delete phase" aria-label="Delete phase">&times;</button>
           </span>
         </div>
         <div class="struct-subphase-list">
@@ -143,9 +143,9 @@
             <span class="struct-sid">{{s.sid}}</span>
             <input type="text" class="edit-in struct-rename" ng-model="s.name" ng-model-options="{updateOn: 'blur'}" ng-change="vm.renameSubPhase(s)" placeholder="Sub-phase name" aria-label="Sub-phase name">
             <span class="struct-controls">
-              <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="vm.moveSubPhase($parent.$index, $index, 'up')" title="Move sub-phase earlier" aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
-              <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="vm.moveSubPhase($parent.$index, $index, 'down')" title="Move sub-phase later" aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
-              <button type="button" class="field-x" ng-click="vm.deleteSubPhase($parent.$index, $index)" title="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>
+              <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="vm.moveSubPhase($parent.$index, $index, 'up')" data-tip="Move sub-phase earlier" aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+              <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="vm.moveSubPhase($parent.$index, $index, 'down')" data-tip="Move sub-phase later" aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+              <button type="button" class="field-x" ng-click="vm.deleteSubPhase($parent.$index, $index)" data-tip="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>
             </span>
           </div>
           <button type="button" class="add-item-btn tight" ng-click="vm.addSubPhase($index)">+ Add sub-phase</button>
@@ -164,7 +164,7 @@
             <span class="prec" ng-if="vm.unreadCount(vm.loc.sp)">&#9679; {{vm.unreadCount(vm.loc.sp)}} new change{{vm.unreadCount(vm.loc.sp) > 1 ? 's' : ''}}</span>
           </h1>
         </div>
-        <button type="button" class="edit-pencil" ng-click="vm.enterEdit()" title="Edit this sub-phase" aria-label="Edit this sub-phase">
+        <button type="button" class="edit-pencil" ng-click="vm.enterEdit()" data-tip="Edit this sub-phase" aria-label="Edit this sub-phase">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
         </button>
       </div>
@@ -355,7 +355,7 @@
                   <button type="button" class="loe-flag-btn" ng-class="{on: vm.editSp.levelOfEffort.roles[r.id].billable, billable: vm.editSp.levelOfEffort.roles[r.id].billable}" ng-click="vm.setLoeFlag(vm.editSp.levelOfEffort.roles[r.id], 'billable')">Billable</button>
                 </div>
               </div>
-              <button type="button" class="x-btn" ng-click="vm.removeLoeRole(r.id)" title="Remove role" aria-label="Remove role">&times;</button>
+              <button type="button" class="x-btn" ng-click="vm.removeLoeRole(r.id)" data-tip="Remove role" aria-label="Remove role">&times;</button>
             </div>
             <div class="add-jt-row" ng-if="vm.loeAvailableRoles().length">
               <select class="edit-in" ng-model="vm.tmpLoeRole" ng-change="vm.addLoeRole()">
@@ -372,10 +372,10 @@
       <div class="list-edit-row" ng-repeat="c in vm.editSp.comments track by $index">
         <textarea class="edit-in" rows="2" ng-model="vm.editSp.comments[$index]"></textarea>
         <div class="row-reorder">
-          <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveListItem('comments', $index, 'up')" title="Move up" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
-          <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.comments.length - 1" ng-click="vm.moveListItem('comments', $index, 'down')" title="Move down" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveListItem('comments', $index, 'up')" data-tip="Move up" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+          <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.comments.length - 1" ng-click="vm.moveListItem('comments', $index, 'down')" data-tip="Move down" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
         </div>
-        <button type="button" class="field-x" ng-click="vm.removeListItem('comments', $index)" title="Remove" aria-label="Remove">&times;</button>
+        <button type="button" class="field-x" ng-click="vm.removeListItem('comments', $index)" data-tip="Remove" aria-label="Remove">&times;</button>
       </div>
       <button type="button" class="add-item-btn tight" ng-click="vm.addListItem('comments')">+ Add comment</button>
 
@@ -384,9 +384,9 @@
         <div class="te-head">
           <span class="te-num">{{$index + 1}}</span>
           <span class="te-tools">
-            <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveMeeting($index, 'up')" title="Move up" aria-label="Move meeting up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
-            <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.meetings.length - 1" ng-click="vm.moveMeeting($index, 'down')" title="Move down" aria-label="Move meeting down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
-            <button type="button" class="x-btn" ng-click="vm.removeMeeting($index)" title="Delete meeting" aria-label="Delete meeting">&times;</button>
+            <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveMeeting($index, 'up')" data-tip="Move up" aria-label="Move meeting up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+            <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.meetings.length - 1" ng-click="vm.moveMeeting($index, 'down')" data-tip="Move down" aria-label="Move meeting down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+            <button type="button" class="x-btn" ng-click="vm.removeMeeting($index)" data-tip="Delete meeting" aria-label="Delete meeting">&times;</button>
           </span>
         </div>
         <input class="edit-in te-text" placeholder="Meeting name / purpose" ng-model="m.name">
@@ -417,10 +417,10 @@
       <div class="list-edit-row" ng-repeat="x in vm.editSp.inputs track by $index">
         <textarea class="edit-in" rows="2" ng-model="vm.editSp.inputs[$index]"></textarea>
         <div class="row-reorder">
-          <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveListItem('inputs', $index, 'up')" title="Move up" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
-          <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.inputs.length - 1" ng-click="vm.moveListItem('inputs', $index, 'down')" title="Move down" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveListItem('inputs', $index, 'up')" data-tip="Move up" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+          <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.inputs.length - 1" ng-click="vm.moveListItem('inputs', $index, 'down')" data-tip="Move down" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
         </div>
-        <button type="button" class="field-x" ng-click="vm.removeListItem('inputs', $index)" title="Remove" aria-label="Remove">&times;</button>
+        <button type="button" class="field-x" ng-click="vm.removeListItem('inputs', $index)" data-tip="Remove" aria-label="Remove">&times;</button>
       </div>
       <button type="button" class="add-item-btn tight" ng-click="vm.addListItem('inputs')">+ Add input</button>
 
@@ -430,9 +430,9 @@
           <div class="te-head">
             <span class="te-num">{{$index + 1}}</span>
             <span class="te-tools">
-              <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveTask($index, 'up')" title="Move up" aria-label="Move task up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
-              <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.tasks.length - 1" ng-click="vm.moveTask($index, 'down')" title="Move down" aria-label="Move task down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
-              <button type="button" class="x-btn" ng-click="vm.removeTask($index)" title="Delete task" aria-label="Delete task">&times;</button>
+              <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveTask($index, 'up')" data-tip="Move up" aria-label="Move task up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+              <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.tasks.length - 1" ng-click="vm.moveTask($index, 'down')" data-tip="Move down" aria-label="Move task down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+              <button type="button" class="x-btn" ng-click="vm.removeTask($index)" data-tip="Delete task" aria-label="Delete task">&times;</button>
             </span>
           </div>
           <textarea class="edit-in te-text" rows="2" placeholder="Describe the task" ng-model="t.text"></textarea>
@@ -442,7 +442,7 @@
             <div class="raci-matrix-row" ng-class="{orphan: vm.taskRoleOrphan(r.id)}" ng-repeat="r in vm.taskRaciRoles(t)">
               <span class="raci-row-name"><span class="abbr">{{r.abbr}}</span>{{r.name}}<span class="orphan-badge" ng-if="vm.taskRoleOrphan(r.id)">Not a participant</span></span>
               <button type="button" class="raci-toggle" ng-class="{on: t.raci[r.id].indexOf(l) >= 0, 't-R': l === 'R' && t.raci[r.id].indexOf(l) >= 0, 't-A': l === 'A' && t.raci[r.id].indexOf(l) >= 0, 't-C': l === 'C' && t.raci[r.id].indexOf(l) >= 0, 't-I': l === 'I' && t.raci[r.id].indexOf(l) >= 0}" ng-repeat="l in vm.raciLetters" ng-click="vm.toggleRaci(t, r.id, l)">{{l}}</button>
-              <button type="button" class="x-btn" ng-click="vm.removeTaskRole(t, r.id)" title="Remove job title" aria-label="Remove job title">&times;</button>
+              <button type="button" class="x-btn" ng-click="vm.removeTaskRole(t, r.id)" data-tip="Remove job title" aria-label="Remove job title">&times;</button>
             </div>
             <div class="add-jt-row" ng-if="vm.taskAvailableRoles(t).length">
               <select class="edit-in" ng-model="vm.tmpAddJt[t.id]" ng-change="vm.addTaskRole(t, vm.tmpAddJt[t.id]); vm.tmpAddJt[t.id] = ''">
@@ -459,7 +459,7 @@
               <div class="ja-edit-row">
                 <span class="link-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span>
                 <input class="edit-in" placeholder="Job aid URL" ng-model="j.url">
-                <button type="button" class="x-btn" ng-click="vm.removeJobAid(t, $index)" title="Remove job aid" aria-label="Remove job aid">&times;</button>
+                <button type="button" class="x-btn" ng-click="vm.removeJobAid(t, $index)" data-tip="Remove job aid" aria-label="Remove job aid">&times;</button>
               </div>
               <div class="ja-roles">
                 <span class="ja-roles-lbl">Applies to:</span>
@@ -476,10 +476,10 @@
       <div class="list-edit-row" ng-repeat="x in vm.editSp.deliverables track by $index">
         <textarea class="edit-in" rows="2" ng-model="vm.editSp.deliverables[$index]"></textarea>
         <div class="row-reorder">
-          <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveListItem('deliverables', $index, 'up')" title="Move up" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
-          <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.deliverables.length - 1" ng-click="vm.moveListItem('deliverables', $index, 'down')" title="Move down" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <button type="button" class="reorder-btn" ng-disabled="$index === 0" ng-click="vm.moveListItem('deliverables', $index, 'up')" data-tip="Move up" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+          <button type="button" class="reorder-btn" ng-disabled="$index === vm.editSp.deliverables.length - 1" ng-click="vm.moveListItem('deliverables', $index, 'down')" data-tip="Move down" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
         </div>
-        <button type="button" class="field-x" ng-click="vm.removeListItem('deliverables', $index)" title="Remove" aria-label="Remove">&times;</button>
+        <button type="button" class="field-x" ng-click="vm.removeListItem('deliverables', $index)" data-tip="Remove" aria-label="Remove">&times;</button>
       </div>
       <button type="button" class="add-item-btn tight" ng-click="vm.addListItem('deliverables')">+ Add deliverable</button>
     </div>
@@ -494,7 +494,7 @@
       <div ng-if="vm.raciMode === 'byrole'">
         <div class="jt-picker">
           <button type="button" class="jt-pick-btn" ng-class="{active: vm.rgFocusJob === id}" ng-repeat="id in vm.rg.ids" ng-click="vm.rgSelectByRole(id)">
-            <span class="abbr">{{vm.jobTitleById(id).abbr}}</span>{{vm.jobTitleById(id).name}}<span class="jt-pick-count">{{vm.rg.counts[id] || 0}}</span>
+            <svg class="jt-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"></polyline></svg><span class="abbr">{{vm.jobTitleById(id).abbr}}</span>{{vm.jobTitleById(id).name}}<span class="jt-pick-count">{{vm.rg.counts[id] || 0}}</span>
           </button>
         </div>
         <div ng-if="vm.rgFocusJob">
@@ -515,9 +515,10 @@
       <div ng-if="vm.raciMode === 'grid'">
         <div class="rg-controls">
           <div class="rg-pfilters">
-            <button type="button" class="rg-pchip" ng-repeat="p in vm.curMeth().phases"
-                    ng-style="{background: vm.rgActivePhases[p.id] ? vm.phaseColor($index) : 'var(--surface-flat)', color: vm.rgActivePhases[p.id] ? 'var(--on-phase-ink)' : 'var(--ink-soft)', 'border-color': vm.rgActivePhases[p.id] ? 'var(--on-phase-ink)' : 'var(--line)', 'box-shadow': vm.rgActivePhases[p.id] ? 'var(--shadow-inset)' : 'none'}"
-                    ng-click="vm.rgTogglePhase(p.id)">{{p.name}}</button>
+            <button type="button" class="rg-pchip" ng-class="{on: vm.rgActivePhases[p.id]}" ng-repeat="p in vm.curMeth().phases"
+                    ng-click="vm.rgTogglePhase(p.id)">
+              <svg class="rgp-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"></polyline></svg>{{p.name}}
+            </button>
           </div>
           <div class="rg-legend">
             <span class="lg" ng-repeat="l in vm.raciLetters"><span class="sw" ng-style="{background: vm.raciHex[l]}">{{l}}</span>{{vm.raciNames[l]}}</span>

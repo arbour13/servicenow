@@ -47,6 +47,14 @@
   --chip-on-bg: rgba(0, 224, 172, 0.1);
   --gradient-card: linear-gradient(135deg, #275b63 0%, #0d435f 100%);
   --gradient-card-2: linear-gradient(135deg, #327374 0%, #0c506e 100%);
+  /* How much of --pc gets mixed into .fcard.on's background (see the rule itself, further down).
+     Tokenized because the SAME percentage against a dark-mode-bright --pc vs a light-mode-dark --pc
+     produces very different visual jumps - mixing a dark, saturated colour into a near-white base
+     shifts perceived lightness much harder than the same % of a bright colour into a dark base, so
+     light mode needs a smaller share to land at a comparably subtle selected-vs-unselected delta
+     (verified via sRGB distance across all 5 phase colours: dark 32/20% ~= light 14/9%). */
+  --fcard-on-mix-1: 32%;
+  --fcard-on-mix-2: 20%;
   --shadow-md: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
   --r-r: #01cc52;
   --r-a: #e5c20b;
@@ -181,6 +189,9 @@
      digit color on an active phase-color station fill (see --on-phase-ink below). */
   --card-mix-1: #f4fcfd;
   --card-mix-2: #c9ebf2;
+  /* Smaller than dark mode's 32/20% - see the base :root comment on --fcard-on-mix-1. */
+  --fcard-on-mix-1: 14%;
+  --fcard-on-mix-2: 9%;
   --on-phase-ink: #ffffff;
   --gradient-card: linear-gradient(135deg, #f4fcfd 0%, #c9ebf2 100%);
   --gradient-card-2: linear-gradient(135deg, #e2f6fa 0%, #bfe7ef 100%);
@@ -801,7 +812,7 @@ button {
 }
 
 .fcard.on {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--pc) 32%, var(--card-mix-1)) 0%, color-mix(in srgb, var(--pc) 20%, var(--card-mix-2)) 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--pc) var(--fcard-on-mix-1), var(--card-mix-1)) 0%, color-mix(in srgb, var(--pc) var(--fcard-on-mix-2), var(--card-mix-2)) 100%);
 }
 
 .fcard.on::before {
@@ -2527,14 +2538,52 @@ select.edit-in option {
   flex-wrap: wrap;
 }
 
+/* Same on/off treatment as .participant-chip, not a per-phase identity colour - this is a plain
+   multi-select filter (include/exclude this phase from the grid below), and colour-coding each
+   chip by its phase read as "why are these all different colours?" rather than as on/off state. */
 .rg-pchip {
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
   padding: 5px 12px;
   border-radius: 15px;
-  border: 1px solid transparent;
+  border: 1px solid var(--line);
+  background: rgba(var(--wash-rgb), 0.05);
+  color: var(--ink-faint);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.rg-pchip:hover {
+  border-color: var(--teal);
+  color: var(--ink);
+}
+
+.rg-pchip.on {
+  background: var(--chip-on-bg);
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+/* Checkmark animates in on select, matching the participant chips - width/margin collapse to 0
+   when off. */
+.rgp-check {
+  width: 0;
+  height: 11px;
+  margin-right: 0;
+  flex: none;
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+  transition: width 0.18s ease, margin-right 0.18s ease, opacity 0.16s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rg-pchip.on .rgp-check {
+  width: 11px;
+  margin-right: 5px;
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
 }
 
 .rg-legend {
@@ -2600,6 +2649,28 @@ select.edit-in option {
 .rg-scroller {
   border: 1px solid var(--line-soft);
   border-radius: 12px;
+}
+
+/* Without overflow: hidden on .rg-scroller (removed above so the sticky header can pin to the
+   viewport, not just this container), its border-radius no longer clips the table's own opaque,
+   square-cornered cells - the corners round rather than "hide" then. Rounded directly on the
+   table's own 4 corner cells instead (11px = the container's 12px minus its 1px border, so the
+   curve nests exactly). Safe with border-collapse: separate - corner-cell radius doesn't need
+   collapsed borders to render. */
+.rg-table thead tr:first-child th:first-child {
+  border-top-left-radius: 11px;
+}
+
+.rg-table thead tr:first-child th:last-child {
+  border-top-right-radius: 11px;
+}
+
+.rg-table tfoot tr:last-child td:first-child {
+  border-bottom-left-radius: 11px;
+}
+
+.rg-table tfoot tr:last-child td:last-child {
+  border-bottom-right-radius: 11px;
 }
 
 .rg-table {
@@ -2841,12 +2912,15 @@ select.edit-in option {
   border-color: var(--teal);
 }
 
+/* Same on/off treatment as .participant-chip - the phase filter chips right below this picker on
+   the Grid tab used to be colour-coded per phase, which read as "why are these all different
+   colours?" rather than as a plain multi-select filter. Both now use one uniform selected look
+   (soft tint + ring + checkmark) instead of borrowing an identity colour that isn't the point here. */
 .jt-pick-btn.active {
-  background: var(--gradient-pill);
-  color: var(--on-gradient-ink);
-  border-color: #fff;
+  background: var(--chip-on-bg);
+  color: var(--teal);
+  border-color: var(--teal);
   font-weight: 700;
-  box-shadow: var(--shadow-inset);
 }
 
 .jt-pick-btn .abbr {
@@ -2856,13 +2930,33 @@ select.edit-in option {
 }
 
 .jt-pick-btn.active .abbr {
-  color: var(--on-gradient-ink);
+  color: var(--teal);
 }
 
 .jt-pick-btn .jt-pick-count {
   font-family: var(--font-mono);
   font-size: 11px;
   opacity: 0.7;
+}
+
+/* Checkmark animates in on select, matching the participant chips - width/margin collapse to 0
+   when off. .jt-pick-btn's parent uses flex `gap` (unlike the plain-margin participant chips), so
+   the collapsed icon also cancels the gap after it via a negative margin, rather than reserving it. */
+.jt-check {
+  width: 0;
+  height: 12px;
+  margin-right: -8px;
+  flex: none;
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+  transition: width 0.18s ease, margin-right 0.18s ease, opacity 0.16s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.jt-pick-btn.active .jt-check {
+  width: 12px;
+  margin-right: 0;
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
 }
 
 .jt-group {
