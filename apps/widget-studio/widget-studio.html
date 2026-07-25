@@ -1071,7 +1071,6 @@ class Component extends DCLogic {
   // clicking an ancestor, a dimmed sibling, or a Layers-tree row outside the card is ignored.
   select(id,e){ if(e) { e.stopPropagation(); } if(this._suppressClick){ this._suppressClick=false; return; }
     this._crumbOpen=null; this._crumbFlip=false; this._crumbExpanded=false;   // any selection change closes the walk-up ancestor label stack + re-collapses the breadcrumb
-    this._spPop=null;   // ...and the spacing-diagram edge popover, since it's anchored to the previously-selected node
     if(this.focusStack.length){ const fid=this.focusId(); if(id!==fid && !this.isDesc(fid,id)) { return; } }
     // Shift-click builds a group selection, but only across SIBLINGS of one parent (the only thing that wraps
     // cleanly). Clicking a different-parent element with shift, or clicking without shift, resets to single.
@@ -1094,7 +1093,7 @@ class Component extends DCLogic {
     const inField = e.target && (e.target.isContentEditable || /input|textarea|select/i.test(e.target.tagName));
     // ⌘/Ctrl+S saves to the library from anywhere (incl. while typing in a field).
     if((e.metaKey||e.ctrlKey)&&(e.key==='s'||e.key==='S')){ e.preventDefault(); this.saveWidget(false); return; }
-    if(e.key==='Escape'){ if(this._discard){ this._discard=null; this.forceUpdate(); return; } if(this.libOpen){ this.libOpen=false; clearTimeout(this._delArmT); this._delArm=null; this.forceUpdate(); return; } if(this.ctxMenu){ this.closeContextMenu(); return; } if(this._spPop){ this._spPop=null; this.forceUpdate(); return; }if(this._crumbOpen){ this._crumbOpen=null; this._crumbFlip=false; this.forceUpdate(); return; } if(this._editing){ this._editing=null; } else if(this.focusStack.length){ this.selectedId=this.focusId(); } else { this.selectedId='root'; this.exportOpen=false; } this.forceUpdate(); return; }
+    if(e.key==='Escape'){ if(this._discard){ this._discard=null; this.forceUpdate(); return; } if(this.libOpen){ this.libOpen=false; clearTimeout(this._delArmT); this._delArm=null; this.forceUpdate(); return; } if(this.ctxMenu){ this.closeContextMenu(); return; } if(this._crumbOpen){ this._crumbOpen=null; this._crumbFlip=false; this.forceUpdate(); return; } if(this._editing){ this._editing=null; } else if(this.focusStack.length){ this.selectedId=this.focusId(); } else { this.selectedId='root'; this.exportOpen=false; } this.forceUpdate(); return; }
     if(inField) { return; }
     // "/" is the add-property command line's own shortcut, reachable from anywhere on the canvas —
     // it switches to the Style tab (creating it if the Element tab was showing) and focuses the line.
@@ -3988,7 +3987,10 @@ class Component extends DCLogic {
   // stays over the band, which is the common case for a short drag. `_bmDidScrub` tells the band's click
   // handler to swallow the click that would otherwise fire (harmlessly, since a plain click is a no-op) right
   // after a real drag.
-  scrubSpaceToken(e,node,target,side){ if(e.button!==0) { return; }
+  // forcedSides: when given, the drag always writes to exactly these longhand sides (used by the spacing
+  // bands' grouped "all"/"axis" fields, where the field itself already IS the group — no Shift/Alt needed).
+  // Omitted, the drag falls back to the original single-field shift=all/alt=axis-pair inference.
+  scrubSpaceToken(e,node,target,side,forcedSides){ if(e.button!==0) { return; }
     const scale=this._spaceScale(target==='m'); if(scale.length<=1) { return; }
     const prop=s=>(target==='p'?'padding':'margin')+{t:'Top',r:'Right',b:'Bottom',l:'Left'}[s];
     const vertical=side==='t'||side==='b';
@@ -4005,204 +4007,91 @@ class Component extends DCLogic {
       lastPos=cur;
       const ni=Math.max(0,Math.min(scale.length-1,startIdx+Math.round(away/STEP)));
       if(ni!==lastIdx){ lastIdx=ni; const val=scale[ni];
-        const sides=ev.shiftKey?['t','r','b','l']:(ev.altKey?((side==='t'||side==='b')?['t','b']:['l','r']):[side]);
+        const sides=forcedSides||(ev.shiftKey?['t','r','b','l']:(ev.altKey?((side==='t'||side==='b')?['t','b']:['l','r']):[side]));
         sides.forEach(s=>this.setCS(node,prop(s),val));
       } else { this.forceUpdate(); } };
     const up=()=>{ window.removeEventListener('mousemove',mv,true); window.removeEventListener('mouseup',up,true);
       this._unlockCursor(); document.body.style.userSelect=''; this._bmDragKey=null; this._bmCursor=null; this.forceUpdate();
       setTimeout(()=>{ this._bmDidScrub=false; },0); };
     window.addEventListener('mousemove',mv,true); window.addEventListener('mouseup',up,true); }
-  // The beveled margin/padding diagram — one frame showing all 8 edges at once. Each edge value is BOTH a
-  // drag-to-scrub handle (steps through spacing tokens; Shift = all sides, Alt = opposite pair) AND, on a
-  // plain click, a popover for Auto/an exact value/Reset. Faces are shaded (margin raised, padding recessed)
-  // so the frame reads as a 3-D beveled object.
-  // The Webflow-style box-model diagram. Each SIDE of the shape (a trapezoid band) is itself the drag
-  // target: press anywhere on a band and drag to step that edge's value through the spacing tokens live, in
-  // the direction that band actually moves (vertical for top/bottom, horizontal for left/right). Click a band
-  // (no drag) to open its popover; Alt-click clears instantly. Shift-drag = all sides, Alt-drag = the
-  // opposite pair.
-  spacingDiagram(node,t){ const h=React.createElement; const H=132, P=24, PB=48; // margin-band depth 24, padding inner offset 48
-    const prop=(target,side)=>(target==='p'?'padding':'margin')+{t:'Top',r:'Right',b:'Bottom',l:'Left'}[side];
-    const valOf=(target,side)=>(this.csVal(node,prop(target,side))||'').toString();
-    const writeSide=(target,side,v)=>this.setCS(node,prop(target,side),v);
-    const clearSet=(target,side,all)=>{ (all?['t','r','b','l']:[side]).forEach(s=>writeSide(target,s,'')); };
-    // Each face: target/side, trapezoid points (margin outer→padding, or padding→core), a rank (used for
-    // hover only — see HOVER_GRAD below), and the label's centre point (ly derived from P/PB/H so it stays
-    // centered in its own band regardless of their exact values). Rest fill is theme-aware:
-    // Light mode: a real 3-D bevel needs a SINGLE light source, which means shading by facing direction, not
-    // by margin/padding — the two "up-facing" surfaces (margin-top, padding-bottom) share one tone, the two
-    // "left-facing" (margin-left, padding-right) share another, and so on for the shadowed right/down pairs.
-    // Four tones total, graduated light→dark: up (lit) → left (lit, but a shallower angle so more shadowed
-    // than up) → right (shadowed) → down (most shadowed, facing straight away from the light).
-    // Dark mode mostly keeps its original mixed scheme (already reads well), except padding-top/margin-bottom
-    // — which shared the black channel with padding-left/margin-right and were hard to tell apart from them —
-    // get a small white overlay instead, a smidge lighter so all four read as distinct.
-    const HP=H-P, HB=H-PB;
-    const faces=[
-      {tg:'m',sd:'t',pts:'0,0 100,0 80,'+P+' 20,'+P,           fillLight:'rgba(0,0,0,.015)',fillDark:'rgba(255,255,255,.08)', rank:0, lx:'50%', ly:P/2},
-      {tg:'p',sd:'b',pts:'20,'+HP+' 80,'+HP+' 66,'+HB+' 34,'+HB,   fillLight:'rgba(0,0,0,.015)',fillDark:'rgba(255,255,255,.065)',rank:1, lx:'50%', ly:H-(P+PB)/2},
-      {tg:'m',sd:'l',pts:'0,0 0,'+H+' 20,'+HP+' 20,'+P,        fillLight:'rgba(0,0,0,.035)',fillDark:'rgba(255,255,255,.04)', rank:2, lx:'9%',  ly:H/2},
-      {tg:'p',sd:'r',pts:'80,'+P+' 80,'+HP+' 66,'+HB+' 66,'+PB,    fillLight:'rgba(0,0,0,.035)',fillDark:'rgba(255,255,255,.03)', rank:3, lx:'71%', ly:H/2},
-      {tg:'p',sd:'l',pts:'20,'+P+' 20,'+HP+' 34,'+HB+' 34,'+PB,    fillLight:'rgba(0,0,0,.05)', fillDark:'rgba(0,0,0,.009)',      rank:4, lx:'29%', ly:H/2},
-      {tg:'m',sd:'r',pts:'100,0 100,'+H+' 80,'+HP+' 80,'+P,    fillLight:'rgba(0,0,0,.05)', fillDark:'rgba(0,0,0,.012)',      rank:5, lx:'91%', ly:H/2},
-      {tg:'p',sd:'t',pts:'20,'+P+' 80,'+P+' 66,'+PB+' 34,'+PB,     fillLight:'rgba(0,0,0,.065)',fillDark:'rgba(255,255,255,.022)',rank:6, lx:'50%', ly:(P+PB)/2},
-      {tg:'m',sd:'b',pts:'0,'+H+' 100,'+H+' 80,'+HP+' 20,'+HP, fillLight:'rgba(0,0,0,.065)',fillDark:'rgba(255,255,255,.028)',rank:7, lx:'50%', ly:H-P/2}
-    ];
-    // Graduated hover opacity by rank — small for the lightest-resting face (a small nudge is enough to read
-    // as "hovering"), large for the darkest-resting face (needs more to become visible at all against a
-    // background it already nearly blends into).
-    const HOVER_GRAD_LIGHT=[.035,.045,.055,.065,.075,.085,.095,.105];
-    const HOVER_GRAD_DARK=[.05,.065,.08,.095,.11,.125,.14,.155];
-    const hoverFillFor=f=>{ const op=(this.dark?HOVER_GRAD_DARK:HOVER_GRAD_LIGHT)[f.rank];
-      return this.dark?('rgba(255,255,255,'+op+')'):('rgba(0,0,0,'+op+')'); };
-    const labelFor=f=>{ const cur=valOf(f.tg,f.sd);
-      return h('span',{key:'lbl'+f.tg+f.sd,style:{position:'absolute',left:f.lx,top:f.ly,transform:'translate(-50%,-50%)',zIndex:3,pointerEvents:'none',
-        fontSize:11,fontFamily:'ui-monospace,monospace',fontWeight:cur?600:400,color:cur?t.accent:t.faint,whiteSpace:'nowrap'}}, this._spaceLabel(cur)); };
-    // Frame fill ("the floor"): margin-top's own bevel tone, but resolved to a SOLID hex instead of used as
-    // a semi-transparent rgba overlay directly. The ring sits astride the margin/padding boundary — some of
-    // its stroke over a margin bevel, some over a padding bevel — so a translucent stroke there composites
-    // with whichever different tone is underneath at each point and comes out a slightly different color at
-    // every side, instead of matching the flat, uniformly-lit core box. Blending margin-top's overlay onto
-    // segBg ONCE up front gives one constant solid color that reads identically everywhere, on the ring or
-    // the core box, regardless of what's underneath.
-    // No separate border color traces the ring or core box — just this one flat fill, so there's no second
-    // "border between the frames" color to keep in sync with it in the first place.
-    const blend=(hex,rgba)=>{ const m=/rgba?\((\d+),(\d+),(\d+),([\d.]+)\)/.exec(rgba); if(!m) { return hex; }
-      const [,rr,gg,bb,aa]=m; const a=parseFloat(aa); const h2=hex.replace('#','');
-      const br=parseInt(h2.slice(0,2),16),bg=parseInt(h2.slice(2,4),16),bb2=parseInt(h2.slice(4,6),16);
-      const mix=(base,over)=>Math.round(base*(1-a)+over*a);
-      const hx=v=>v.toString(16).padStart(2,'0');
-      return '#'+hx(mix(br,+rr))+hx(mix(bg,+gg))+hx(mix(bb2,+bb)); };
-    const frameFill = blend(t.segBg, this.dark?faces[0].fillDark:faces[0].fillLight);
-    return h('div',{style:{position:'relative',width:'100%',height:H,marginTop:4,border:'1px solid '+t.border,borderRadius:8,overflow:'hidden',boxSizing:'border-box'}},
-      // decorative layer (pointer-events off): base fill, bevel faces, the element core, the margin↔padding
-      // ring. No seams between individual bevel faces — their fills already differ enough in tone to read as
-      // distinct without an extra line. vector-effect=non-scaling-stroke keeps the ring's width identical on
-      // every side: the viewBox is 100 units wide but only H units tall, so with preserveAspectRatio=none
-      // stretching to a WIDE, SHORT box, x and y scale by very different factors — without this, the same
-      // strokeWidth renders far thicker on the vertical (left/right) segments than the horizontal ones.
-      // Both the ring AND the core box are <rect rx/ry> rather than stroked/plain shapes: stroke-linejoin
-      // ="round" only rounds a join by (strokeWidth ÷ 2) — at this 2.5 stroke that's ~1px, imperceptible —
-      // and can't be made bigger without thickening the whole ring. rx/ry give an independent, controllable
-      // radius, matched on both shapes so the "cutout" reads as one consistent rounded object. Because the
-      // same x/y scale mismatch applies to geometry as to stroke, rx (x-units) and ry (y-units) aren't the
-      // same real-pixel radius — ry≈3px is exact (y already maps ~1:1), rx is tuned for this diagram's
-      // typical rendered width, so it stays "slight" and roughly round rather than a precise circle at any width.
-      h('svg',{viewBox:'0 0 100 '+H,preserveAspectRatio:'none',style:{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'}},
-        h('rect',{x:0,y:0,width:100,height:H,fill:t.segBg}),
-        faces.map((f,i)=>h('polygon',{key:i,points:f.pts,fill:this.dark?f.fillDark:f.fillLight})),
-        h('rect',{x:34,y:PB,width:32,height:H-PB*2,rx:1.1,ry:3,fill:this.dark?'#0d1117':'#ffffff'}),
-        h('rect',{x:20,y:P,width:60,height:HP-P,rx:1.1,ry:3,fill:'none',stroke:frameFill,strokeWidth:2.5,vectorEffect:'non-scaling-stroke'})),
-      // The "Content" box is an HTML overlay, not SVG: this svg is preserveAspectRatio="none" on a wide/short
-      // box, so an SVG dashed stroke and text label would both stretch horizontally. Positioned in % to match
-      // the core rect above (x 34→66 of 100, y PB→H-PB of H).
-      h('div',{style:{position:'absolute',left:'34%',width:'32%',top:(PB/H*100)+'%',height:((H-PB*2)/H*100)+'%',border:'1px dashed '+t.accent,borderRadius:5,display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:600,color:t.accent,pointerEvents:'none',boxSizing:'border-box'}},'Content'),
-      // interactive layer: each trapezoid band is a drag/click target — transparent at rest, tinted (per its
-      // own hover color above) on hover, a flat darker/lighter fill while actively being dragged OR while its
-      // own popover is open. Cursor is rendered on the element too (not just set on document.body): a static
-      // `cursor` here would otherwise win over body's cursor for as long as the pointer stays over the band,
-      // which is the common case during a drag. Hover is suppressed entirely while ANY band is mid-drag (the
-      // browser doesn't know a drag is in progress on a sibling, so without this, dragging margin-top while
-      // the pointer sweeps over padding would light padding up too, as if you were hovering it) — driven here
-      // in JS rather than :hover so both rules can share one source of truth.
-      h('svg',{viewBox:'0 0 100 '+H,preserveAspectRatio:'none',style:{position:'absolute',inset:0,width:'100%',height:'100%'}},
-        faces.map((f,i)=>{ const key=f.tg+f.sd;
-          const active=this._bmDragKey===key || (this._spPop&&this._spPop.nodeId===node.id&&this._spPop.tg===f.tg&&this._spPop.sd===f.sd);
-          const hovered=!active && !this._bmDragKey && this._bmHoverKey===key;
-          const fill=active?(this.dark?'rgba(255,255,255,.15)':'rgba(0,0,0,.13)'):(hovered?hoverFillFor(f):'transparent');
-          const cursorVal=(this._bmDragKey===key)?(this._bmCursor||'default'):'default';
-          return h('polygon',{key:i,
-          points:f.pts,
-          style:{fill,stroke:'none',cursor:cursorVal,pointerEvents:'all',transition:'fill .1s'},
-          onMouseEnter:e=>{ this.showTip({h:(f.tg==='m'?'Margin ':'Padding ')+{t:'top',r:'right',b:'bottom',l:'left'}[f.sd],b:'Drag to set. Click to open. Shift: all sides. Alt: opposite side. Alt-click: clear.'},e.currentTarget); if(!this._bmDragKey && this._bmHoverKey!==key){ this._bmHoverKey=key; this.forceUpdate(); } },
-          onMouseLeave:()=>{ this.hideTip(); if(this._bmHoverKey===key){ this._bmHoverKey=null; this.forceUpdate(); } },
-          onMouseDown:e=>{ this.hideTip(); this.scrubSpaceToken(e,node,f.tg,f.sd); },
-          onClick:e=>{ if(this._bmDidScrub) { return; } if(e.altKey){ clearSet(f.tg,f.sd,e.shiftKey); return; }
-            const r=e.currentTarget.getBoundingClientRect();
-            this._spPop={tg:f.tg,sd:f.sd,nodeId:node.id,rect:{left:r.left,top:r.top,bottom:r.bottom,right:r.right,width:r.width,height:r.height}};
-            this.forceUpdate(); }}); })),
-      h('span',{style:{position:'absolute',pointerEvents:'none',left:8,top:5,fontSize:8.5,fontWeight:700,letterSpacing:'.05em',color:t.faint}},'MARGIN'),
-      h('span',{style:{position:'absolute',pointerEvents:'none',left:'21%',top:P+5,fontSize:8.5,fontWeight:700,letterSpacing:'.05em',color:t.faint}},'PADDING'),
-      faces.map(labelFor),
-      (this._spPop&&this._spPop.nodeId===node.id)?this.spaceEdgePopover(node,t):null
-    );
+  // ---- Spacing: nested flat bands (Controls Spec "Nested field bands" — the fields ARE the diagram) ----
+  // Replaces the beveled trapezoid: a Margin band physically CONTAINS a Padding band, which contains a
+  // "content" strip — literal containment instead of a picture of containment. Target selection dissolves:
+  // there's no picking step, because every side is always a real, visible field. Drag-to-scrub survives
+  // (the one genuinely good thing about the trapezoid) via scrubSpaceToken; the click-to-open popover does
+  // not (comboField's own menu already covers token pick + free-text entry + Unset).
+  spaceProp(target,side){ return (target==='p'?'padding':'margin')+{t:'Top',r:'Right',b:'Bottom',l:'Left'}[side]; }
+  // Granularity (one value / two axes / four sides) is DERIVED from the 4 real longhand values, never
+  // stored as a separate source of truth — "what you see is what's written." All 4 equal -> one field;
+  // T=B and L=R (not all 4 equal) -> two; anything else -> four.
+  deriveGrain(vals){ const [tp,r,b,l]=vals; if(tp===r&&r===b&&b===l) { return 'all'; } if(tp===b&&l===r) { return 'axis'; } return 'sides'; }
+  GRAIN_RANK={all:0,axis:1,sides:2};
+  // The band's granularity seg + fields. `override` (transient, per node+band, cleared once the real
+  // values catch up with it) lets clicking to FEWER fields show a ghost preview without writing anything —
+  // "asks nothing... commits only on edit." Clicking to MORE fields is a real write: the current shared
+  // value is expanded into every longhand it's splitting into, so the new fields show real values immediately.
+  spaceBand(node,t,target,inner){ const h=React.createElement;
+    const label=target==='m'?'Margin':'Padding'; const neg=target==='m';
+    const propOf=s=>this.spaceProp(target,s);
+    const sideKeys=['t','r','b','l'];
+    const vals=sideKeys.map(s=>(this.csVal(node,propOf(s))||'').toString());
+    const derived=this.deriveGrain(vals);
+    const ovKey=node.id+':'+target;
+    this._granOv=this._granOv||{};
+    let grain=this._granOv[ovKey]||derived;
+    if(this._granOv[ovKey] && this._granOv[ovKey]===derived) { delete this._granOv[ovKey]; grain=derived; }
+    const setGrain=g=>{
+      if(g===derived){ if(this._granOv[ovKey]){ delete this._granOv[ovKey]; this.forceUpdate(); } return; }
+      // Switching UP is a real write: all->anything expands the single shared value into every side;
+      // axis->sides needs no write (each side already equals its own axis-pair's value). Switching DOWN
+      // writes nothing — "asks nothing... commits only on edit." Either way the override still gets set:
+      // without it, an UP-move that happens to leave the values equal (e.g. clicking Sides while every
+      // side is already the same 16px) would instantly re-derive back to 'all' and the extra fields would
+      // never appear. The override self-clears once a real edit makes `derived` reach it on its own.
+      if(this.GRAIN_RANK[g]>this.GRAIN_RANK[derived] && derived==='all'){ sideKeys.forEach(s=>this.setCS(node,propOf(s),vals[0])); }
+      this._granOv[ovKey]=g; this.forceUpdate(); };
+    const grainSeg=this.grainSwitch(t,grain,setGrain,['all','axis','sides'],{all:{h:'One value',b:'All sides share a value'},axis:{h:'Two values',b:'Vertical / horizontal'},sides:{h:'Four values',b:'Each side independent'}});
+    // The px-largest value in a group, as a ghost preview while an override shows fewer fields than the
+    // real (unequal) values would derive — "shows the max value ghosted."
+    const repOf=group=>{ let best=vals[sideKeys.indexOf(group[0])],bestPx=-Infinity;
+      group.forEach(s=>{ const v=vals[sideKeys.indexOf(s)]; const px=this._spaceScalePx(v); if(px>bestPx){bestPx=px;best=v;} }); return best; };
+    const ghosting = this.GRAIN_RANK[grain]<this.GRAIN_RANK[derived];
+    const field=(sides,microLabel)=>{ const single=sides.length===1;
+      const rep=single?vals[sideKeys.indexOf(sides[0])]:repOf(sides);
+      const dragSide=sides[0];
+      const dragIcon=h('div',Object.assign({},this.tt('Drag to adjust'),{onMouseDown:e=>this.scrubSpaceToken(e,node,target,dragSide,sides),
+        style:{cursor:(dragSide==='t'||dragSide==='b')?'ns-resize':'ew-resize',flexShrink:0,display:'flex'}}), this.spaceIcon(sides.length===sideKeys.length?'all':(sides.length===2?(dragSide==='t'?'v':'h'):dragSide),t));
+      // A truly single-side field (grain==='sides', never ghosted — see setGrain) routes straight through
+      // node+propOf(side), same as any other field in the panel. A grouped field (all/axis, or ANY field
+      // while an override has collapsed the grain below what the real values need) doesn't map to one real
+      // property, so it reads/writes via comboField's value/onWrite override instead — a ghost rep value,
+      // fanning any edit out to every side the group represents.
+      const comboOpts={tokens:this.spaceTokens(), keywords:neg?[{v:'auto',l:'auto'}]:[], unsetLabel:'0',
+        ghost: ghosting?this._spaceLabel(rep):'0'};
+      const control = (single && !ghosting)
+        ? this.comboField('sp:'+target+':'+dragSide+':'+node.id,t,node,propOf(dragSide),comboOpts)
+        : this.comboField('sp:'+target+':'+sides.join('')+':'+node.id,t,node,propOf(dragSide),Object.assign({},comboOpts,{
+            cssProp:propOf(dragSide), value:ghosting?'':rep, onWrite:v=>sides.forEach(s=>this.setCS(node,propOf(s),v))
+          }));
+      return h('div',{key:sides.join(''),style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:2}},
+        microLabel?h('span',{style:{fontSize:8,fontWeight:600,letterSpacing:'.06em',color:t.faint,paddingLeft:1}},microLabel):null,
+        h('div',{style:{display:'flex',alignItems:'center',gap:5}}, dragIcon, control));
+    };
+    const rows = grain==='all' ? [field(sideKeys,null)]
+      : grain==='axis' ? [field(['t','b'],'T · B'),field(['l','r'],'L · R')]
+      : [field(['t'],'T'),field(['r'],'R'),field(['b'],'B'),field(['l'],'L')];
+    const bandBg=target==='m'?t.segBg:t.panel;
+    return h('div',{style:{border:'1px solid '+t.border,borderRadius:8,background:bandBg,padding:8}},
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:6}}, this.stateEditDot(node,sideKeys.map(propOf),t),
+          h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},label)),
+        grainSeg),
+      h('div',{style:{display:'flex',gap:6}}, rows),
+      inner?h('div',{style:{marginTop:8}}, inner):null);
   }
-  // Plain click (no drag) on a spacing-diagram band opens this: Auto (margin sides only — padding:auto
-  // isn't valid CSS), a text box for an exact value, and Reset (plain word+icon, not a pill). Token presets
-  // live on the drag itself now (scrubSpaceToken steps through them), so the popover stays to just these
-  // three. Anchored via a captured getBoundingClientRect (position:fixed, same pattern as xselect's menu) so
-  // it escapes the panel's own scroll/overflow.
-  spaceEdgePopover(node,t){ const h=React.createElement; const pop=this._spPop; const r=pop.rect;
-    const prop=(pop.tg==='p'?'padding':'margin')+{t:'Top',r:'Right',b:'Bottom',l:'Left'}[pop.sd];
-    const cur=(this.csVal(node,prop)||'').toString().trim();
-    const isAuto=cur==='auto';
-    const curPx=this._spaceScalePx(cur);
-    const close=()=>{ this._spPop=null; this.forceUpdate(); };
-    const apply=v=>{ this.setCS(node,prop,v); this.forceUpdate(); };
-    const tokens=this.spaceTokens().slice().sort((a,b)=>this.spacePx(a)-this.spacePx(b));
-    const commitText=raw=>{ const neg=pop.tg==='m'; raw=(''+raw).trim();
-      if(raw===''){ apply(''); return; }
-      if(neg&&raw.toLowerCase()==='auto'){ apply('auto'); return; }
-      const bare=raw.replace(/^-/,''); const isNeg=neg&&raw.charAt(0)==='-';
-      const step=tokens.find(x=>((x.step||x.name.replace(/^sp-space--/,'')).toLowerCase())===bare.toLowerCase());
-      if(step){ apply(isNeg?('calc(var(--'+step.name+') * -1)'):('var(--'+step.name+')')); return; }
-      if(/^-?[0-9]*\.?[0-9]+$/.test(raw)){ apply((neg?raw:bare)+'px'); return; }
-      // Anything else — calc(), %, rem/em/vh/vw/ch, var(--x), min()/max()/clamp(), 0, … — is any other valid
-      // CSS length the user typed on purpose, not garbage to discard. setCS stores it verbatim (it's just a
-      // string; the browser's own style engine is what actually validates it), so pass it straight through
-      // rather than silently clearing the field like every case above this one used to.
-      apply(neg?raw:bare); };
-    const resetIcon=h('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
-      h('path',{d:'M3 12a9 9 0 1 0 3-6.7'}), h('path',{d:'M3 3v5h5'}));
-    // Clamped to the viewport (same pattern as the size-token menu's Math.min(...,window.innerWidth-…)):
-    // opening near the right or bottom edge of the app shell would otherwise push the panel partly or fully
-    // off-screen. estH is a conservative height estimate (the panel's height only varies by whether the Auto
-    // row is present) — good enough for a flip decision without needing a measure-then-reposition round trip.
-    const PANEL_W=150, GAP=6, EDGE=10;
-    const estH = pop.tg==='m' ? 160 : 124;
-    const panelLeft = Math.min(Math.max(EDGE, r.left), window.innerWidth-PANEL_W-EDGE);
-    const flipUp = r.bottom+GAP+estH > window.innerHeight-EDGE;
-    const panelTop = flipUp ? Math.max(EDGE, r.top-GAP-estH) : r.bottom+GAP;
-    // The value field mirrors the Opacity control (a real range-input thumb — native browser dragging, no
-    // custom pointer-tracking to get right) paired with a small numeric field for typing an exact value or a
-    // token name. RANGE spans -RANGE..RANGE for margin (negative allowed) and 0..RANGE for padding (clamped),
-    // so one min/max pair covers both without a branch on the math the old center-anchored bar needed.
-    // Dragging the slider always writes a literal px (overriding Auto), same as the diagram bands do.
-    // The text field is keyed on the CURRENT value (not just the edge) so it remounts — picking up a fresh
-    // defaultValue — whenever the slider (or a token commit) changes it; keying on the edge alone would leave
-    // it showing a stale number while the slider visibly moved. It does NOT remount mid-keystroke, since `cur`
-    // only changes once the typed value is actually committed.
-    const RANGE=96;
-    const sliderMin=pop.tg==='m'?-RANGE:0;
-    const sliderVal=Math.max(sliderMin,Math.min(RANGE,curPx));
-    const valueField=h('div',{style:{display:'flex',flexDirection:'column',gap:6}},
-      h('input',{type:'range',min:sliderMin,max:RANGE,step:1,value:sliderVal,
-        onChange:e=>apply(e.target.value+'px'),
-        // Sets the SAME '_bmDragKey' the diagram's own drag uses, purely so the canvas's green spacing
-        // indicator (renderSpacingDragIndicator) shows while this slider is held too — a nice side effect is
-        // the diagram band for this edge also shows its "pressed" fill in step with the slider.
-        onMouseDown:()=>{ this._bmDragKey=pop.tg+pop.sd; this.forceUpdate(); },
-        onMouseUp:()=>{ this._bmDragKey=null; this.forceUpdate(); },
-        style:{width:'100%',accentColor:t.accent,cursor:'pointer'}}),
-      h('input',{key:'inp'+pop.tg+pop.sd+':'+cur,defaultValue:isAuto?'auto':this._spaceLabel(cur),spellCheck:false,
-        onKeyDown:e=>{ if(e.key==='Enter'){ commitText(e.target.value); e.target.blur(); } },
-        onBlur:e=>commitText(e.target.value),
-        style:{width:'100%',height:30,boxSizing:'border-box',border:'1px solid '+t.border,borderRadius:6,padding:'0 9px',
-          fontSize:12,fontFamily:'ui-monospace,monospace',color:t.text,background:t.panel,outline:'none'}}));
-    return h(React.Fragment,null,
-      h('div',{onMouseDown:close,style:{position:'fixed',inset:0,zIndex:1998}}),
-      h('div',{onMouseDown:e=>e.stopPropagation(),
-        style:{position:'fixed',left:panelLeft,top:panelTop,zIndex:1999,width:PANEL_W,boxSizing:'border-box',
-          background:t.panel,border:'1px solid '+t.border,borderRadius:10,boxShadow:'0 12px 30px rgba(0,0,0,'+(this.dark?'.5':'.18')+')',padding:10}},
-        pop.tg==='m'?h('div',{onClick:()=>apply('auto'),
-          style:{display:'flex',alignItems:'center',justifyContent:'center',height:30,marginBottom:8,borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:isAuto?600:500,
-            border:'1px solid '+(isAuto?t.accent:t.border),background:isAuto?t.accentSoft:t.segBg,color:isAuto?t.accent:t.text}}, 'Auto'):null,
-        valueField,
-        h('div',{onClick:()=>apply(''),
-          style:{display:'inline-flex',alignItems:'center',gap:5,marginTop:8,cursor:'pointer',color:t.muted,fontSize:11.5,fontWeight:500}},
-          resetIcon,'Reset')
-      )
-    );
+  spacingBands(node,t){ const h=React.createElement;
+    const content=h('div',{style:{marginTop:2,border:'1px dashed '+t.accent,borderRadius:5,padding:'10px 0',textAlign:'center',fontSize:9,fontWeight:600,color:t.accent,background:t.segBg}},'Content');
+    return this.spaceBand(node,t,'m', this.spaceBand(node,t,'p', content));
   }
   JUSTIFY_VALUES(){ return [{v:'flex-start',title:'Start'},{v:'center',title:'Center'},{v:'flex-end',title:'End'},{v:'space-between',title:'Space between'},{v:'space-around',title:'Space around'},{v:'space-evenly',title:'Space evenly'}]; }
   ALIGN_ITEMS_VALUES(){ return [{v:'flex-start',title:'Start'},{v:'center',title:'Center'},{v:'flex-end',title:'End'},{v:'stretch',title:'Stretch'},{v:'baseline',title:'Baseline'}]; }
@@ -4212,55 +4101,18 @@ class Component extends DCLogic {
   // A token reference \u2014 var(--x), or its negated calc(var(--x) * -1) form \u2014 is opaque: never px-stripped,
   // never drag-scrubbed, and is what decides "variable" vs "manual" mode for a field.
   isTokenLike(v){ return v.indexOf('var(')===0||v.indexOf('calc(')===0; }
-  // Negative token values are their own dropdown row (calc(var(--x) * -1)), not a separate sign toggle \u2014
-  // margin's picker lists "$step" and "-$step" side by side. Padding/gap never get the negative rows since
-  // neither has a meaningful negative CSS value.
-  // The picker shows the step name only (sm, md, lg\u2026) with the px value as a muted sub-label: every token
-  // shares the identical $sp-space-- prefix, so that prefix is pure noise that also causes the field to clip.
-  // The full var(--sp-space--x) is still what's written to CSS \u2014 only the display is shortened.
-  spaceTokenOptions(allowNegative){ const opts=[['','\u2014']];
-    this.spaceTokens().forEach(tk=>{ const step=tk.step||tk.name.replace('sp-space--',''); opts.push(['var(--'+tk.name+')',step,tk.value]);
-      if(allowNegative) { opts.push(['calc(var(--'+tk.name+') * -1)','-'+step,'-'+tk.value]); } });
-    return opts; }
-  scrubSpace(e,read,writeManual,allowNegative){ e.preventDefault(); const sv=parseFloat(read())||0, sy=e.clientY;
-    const floor=allowNegative?-Infinity:0;
-    const mv=ev=>writeManual(String(Math.max(floor, sv+Math.round((sy-ev.clientY)/2))));
-    const up=()=>{ window.removeEventListener('mousemove',mv,true); window.removeEventListener('mouseup',up,true); document.body.style.cursor=''; };
-    window.addEventListener('mousemove',mv,true); window.addEventListener('mouseup',up,true); document.body.style.cursor='ns-resize'; }
-  // tiny box glyph with the relevant edge(s) lit; doubles as the drag handle for manual (non-token) values.
-  // 'v'/'h' (top+bottom / left+right lit) double as the row-gap/column-gap glyphs for the Gap field.
+  // tiny box glyph with the relevant edge(s) lit \u2014 the spacing bands' per-field drag handle (scrubSpaceToken).
+  // 'v'/'h' light top+bottom / left+right for a grouped axis field; 'all' lights every edge for the single
+  // one-value field; a bare side letter (t/r/b/l) lights just that one for an independent field.
   spaceIcon(kind,t){ const h=React.createElement; const color=t.muted;
     const edge={top:{left:2,right:2,top:2,height:2.5},bottom:{left:2,right:2,bottom:2,height:2.5},left:{top:2,bottom:2,left:2,width:2.5},right:{top:2,bottom:2,right:2,width:2.5}};
     const bars={v:['top','bottom'],h:['left','right'],t:['top'],r:['right'],b:['bottom'],l:['left'],all:['top','bottom','left','right']}[kind];
     return h('div',{style:{position:'relative',width:15,height:15,flexShrink:0}},
       h('div',{style:{position:'absolute',inset:2,border:'1px solid '+t.borderSoft,borderRadius:2}}),
       bars.map(s=>h('div',{key:s,style:Object.assign({position:'absolute',background:color,borderRadius:1},edge[s])}))); }
-  // One field's worth of control: a single searchable dropdown that ALSO accepts free-typed numbers \u2014
-  // typing something that matches a token picks it; typing something that doesn't (e.g. "20") commits it
-  // as a manual value instead (via xselect's onFreeText, on Tab/Enter with no filtered match). No separate
-  // variable/manual toggle: which one you get is decided by what you typed, not by a mode you have to set.
-  // Shared by Padding, Margin (boxModel) AND Gap (gapBlock) \u2014 one field implementation, selectable for
-  // spacing variables everywhere it's used.
-  spaceField(t,key,kind,allowNegative,read,write,compact){ const h=React.createElement;
-    const v=read();
-    const writeManual=(val)=>{ val=(''+val).trim();
-      if(val===''){ write(''); return; }
-      if(!allowNegative){ // no negative or keyword CSS value here, so strip anything else (incl. a typed "-") rather than store invalid CSS
-        val=val.replace(/[^0-9.]/g,''); write(val===''?'':val+'px'); return; }
-      const re=/^-?[0-9.]+$/;
-      write(re.test(val)?val+'px':val); };
-    const control = h('div',{style:{flex:1,minWidth:0}}, this.xselect('sp:'+key,t,v,this.spaceTokenOptions(allowNegative),write,{compact,search:true,mono:true,fontSize:compact?11:12,height:28,onFreeText:writeManual}));
-    const dragIcon = !this.isTokenLike(v)
-      ? h('div',Object.assign({},this.tt('Drag to adjust'),{onMouseDown:e=>this.scrubSpace(e,()=>v.replace(/px$/,''),writeManual,allowNegative),style:{cursor:'ns-resize',flexShrink:0,display:'flex',padding:compact?'1px 0':'2px 0'}}), this.spaceIcon(kind,t))
-      : h('div',{style:{flexShrink:0,display:'flex',padding:compact?'1px 0':'2px 0',opacity:.45}}, this.spaceIcon(kind,t));
-    if(compact) { return h('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',gap:4,width:'100%'}}, control, dragIcon); }
-    return h('div',{style:{display:'flex',alignItems:'center',gap:6,flex:1,minWidth:0}}, dragIcon, control);
-  }
-  // Icon-only granularity switch: one rounded box (all sides/the whole gap share a value) \u2192 the box
-  // quartered by both axis lines (top/bottom paired, left/right paired \u2014 or row/column paired, for Gap) \u2192
-  // the box broken into four detached corners (each side independent; Padding/Margin only, Gap has no
-  // per-side concept). "Sides" reuses the exact glyph already shipped elsewhere so it reads as the same
-  // concept everywhere in this panel.
+  // Icon-only granularity switch: one rounded box (all sides share a value) \u2192 the box quartered by both
+  // axis lines (top/bottom paired, left/right paired) \u2192 the box broken into four detached corners (each
+  // side independent). Used by the spacing bands' per-band granularity seg.
   grainIcon(g){ const h=React.createElement; const p={width:14,height:14,viewBox:'0 0 16 16',fill:'none',stroke:'currentColor',strokeWidth:1.5,strokeLinecap:'round',strokeLinejoin:'round'};
     if(g==='all') { return h('svg',p, h('rect',{x:3,y:3,width:10,height:10,rx:1.5})); }
     if(g==='axis') { return h('svg',p, h('rect',{key:'r',x:3,y:3,width:10,height:10,rx:1.5}), h('path',{key:'c',d:'M8 3v10M3 8h10'})); }
@@ -4271,10 +4123,10 @@ class Component extends DCLogic {
   // overflow:hidden used to cut the ring off before it could fully paint.
   grainSwitch(t,grain,setGrain,grains,titles){ const h=React.createElement; grains=grains||['all','axis','sides'];
     const tt=titles||{all:{h:'All sides',b:'One value'},axis:{h:'Vertical / horizontal',b:'Two values'},sides:{h:'Each side',b:'Four values'}};
-    return h('div',{style:{display:'flex',flexShrink:0,borderRadius:6,border:'1px solid '+t.border}},
-      grains.map((g,i)=>{ const on=grain===g; const first=i===0, last=i===grains.length-1;
-        return h('button',{key:g,onClick:()=>setGrain(g),...this.tt(tt[g]),
-          style:{width:26,height:24,display:'inline-flex',alignItems:'center',justifyContent:'center',border:'none',borderLeft:i?'1px solid '+t.border:'none',borderRadius:(first?'5px 0 0 5px':last?'0 5px 5px 0':'0'),cursor:on?'default':'pointer',background:on?t.accentSoft:t.panel,color:on?t.accent:t.muted,padding:0}}, this.grainIcon(g)); }));
+    return h('div',{role:'group','aria-label':'Granularity',style:{display:'flex',flexShrink:0,borderRadius:6,border:'1px solid '+t.border}},
+      grains.map((g,i)=>{ const on=grain===g; const first=i===0, last=i===grains.length-1; const go=()=>setGrain(g);
+        return h('button',Object.assign({key:g,onClick:go},this.tt(tt[g]),this.a11y(go,{pressed:on,label:(tt[g]&&tt[g].h)||g}),
+          {style:{width:26,height:24,display:'inline-flex',alignItems:'center',justifyContent:'center',border:'none',borderLeft:i?'1px solid '+t.border:'none',borderRadius:(first?'5px 0 0 5px':last?'0 5px 5px 0':'0'),cursor:on?'default':'pointer',background:on?t.accentSoft:t.panel,color:on?t.accent:t.muted,padding:0}}), this.grainIcon(g)); }));
   }
   // Gap — the token combo-field (below), with a link/unlink padlock. Linked writes `gap`; separated splits
   // into C (column-gap) and R (row-gap) rows, each its own combo-field. Previously its own bespoke "md · 16"
@@ -4306,8 +4158,14 @@ class Component extends DCLogic {
   // deletes the whole chip back to empty text, never edits mid-name (xselect's chipTokens/ghost opts). An
   // unset field ghosts the real CSS default via opts.ghost. opts.keywords are CSS keywords (auto, 100%, …)
   // offered above the token list — plain mono like any raw value, never chips (they're real CSS, not tokens).
+  // opts.value/opts.onWrite: for a field that represents a GROUP of real properties (e.g. the spacing bands'
+  // grouped T·B / all-sides fields) rather than exactly one — read/write bypass csVal/setCS(node,key) and use
+  // these instead; opts.cssProp names the real property to validate against (CSS.supports/UNITLESS_KEYS), since
+  // `key` itself may not be one in that case. Every other caller leaves these unset and gets the plain node+key
+  // behavior as before.
   comboField(ddKey,t,node,key,opts){ opts=opts||{};
-    const value=(this.csVal(node,key)||'').toString();
+    const propKey=opts.cssProp||key;
+    const value=opts.value!=null ? opts.value : (this.csVal(node,key)||'').toString();
     const toks=(opts.tokens||this.spaceTokens()).slice().sort((a,b)=>(parseFloat(a.value)||0)-(parseFloat(b.value)||0));
     const kwOpts=(opts.keywords||[]).map(k=>[k.v,k.l]);
     const tokOpts=toks.map(tk=>['var(--'+tk.name+')', tk.step||tk.name.replace(/^sp-space--/,''), tk.value]);
@@ -4320,15 +4178,15 @@ class Component extends DCLogic {
     if(value && !options.some(o=>String(o[0])===value)) { options=options.concat([[value,value]]); }
     const open=this._ddOpen===ddKey; const q=open?(this._ddSearch||''):'';
     const writeRaw=raw=>{ const trimmed=(raw||'').trim(); if(!trimmed) { return ''; }
-      const isBareNum=/^-?[0-9.]+$/.test(trimmed); return (isBareNum&&!this.UNITLESS_KEYS[key])?trimmed+'px':trimmed; };
+      const isBareNum=/^-?[0-9.]+$/.test(trimmed); return (isBareNum&&!this.UNITLESS_KEYS[propKey])?trimmed+'px':trimmed; };
     if(q.trim() && q.trim().indexOf('var(--')!==0){
       const rawVal=writeRaw(q);
-      if(rawVal && rawVal!==value && this.cssAccepts(key,rawVal) && !options.some(o=>String(o[1]).toLowerCase()===rawVal.toLowerCase())) {
+      if(rawVal && rawVal!==value && this.cssAccepts(propKey,rawVal) && !options.some(o=>String(o[1]).toLowerCase()===rawVal.toLowerCase())) {
         options=options.concat([[rawVal,rawVal,'raw · Enter']]);
       }
     }
     options=options.concat([['', opts.unsetLabel||'Unset']]);
-    const write=v=>this.setCS(node,key,v);
+    const write=opts.onWrite || (v=>this.setCS(node,key,v));
     return this.xselect(ddKey,t,value,options,write,{mono:true,search:true,height:opts.height||30,fontSize:opts.fontSize,
       onFreeText:raw=>write(writeRaw(raw)), chipTokens:true, ghost:true, placeholder:opts.ghost, menuMinWidth:opts.menuMinWidth});
   }
@@ -5188,7 +5046,7 @@ class Component extends DCLogic {
     if(pflex){ els.push(this.flexChild(node,t,parent)); }
     // ---- spacing (padding & margin \u2014 the most-used box controls, so shown first & prominent) ----
     els.push(this.subHead(t,'Spacing'));
-    els.push(this.spacingDiagram(node,t));
+    els.push(this.spacingBands(node,t));
     // ---- size (dense: width/height + min/max always visible, no disclosure) ----
     // Keyword-grouped token-fields (Controls Spec §1.6): presets are menu rows, not a separate tile row —
     // "auto"/"full"/"fit-content" render as plain mono keywords above the token list, so a $token width has
