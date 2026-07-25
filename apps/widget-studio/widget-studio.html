@@ -2032,6 +2032,37 @@ class Component extends DCLogic {
   // Segmented pill row. Selected = SOFT TINT (accentSoft fill + accent text + accent border), matching the
   // approved design and the Display icon tiles — deliberately not a solid accentFill/white-text pill.
   seg(t,opts,cur,onPick,opt){ opt=opt||{}; const h=React.createElement; return h('div',{role:'group','aria-label':opt.aria||undefined,style:{display:'flex',gap:2,background:t.segBg,border:'1px solid '+t.border,borderRadius:7,padding:2}}, opts.map(o=>{ const val=o.v!==undefined?o.v:o; const lbl=o.l!==undefined?o.l:o; const on=cur===val; return h('div',Object.assign({key:String(val),onClick:()=>onPick(val)},this.a11y(()=>onPick(val),{pressed:on}),{style:{flex:opt.fill?1:'none',textAlign:'center',cursor:'pointer',padding:opt.pad||'4px 10px',fontSize:12,borderRadius:5,whiteSpace:'nowrap',boxSizing:'border-box',color:on?t.accent:t.muted,background:on?t.accentSoft:'transparent',border:'1px solid '+(on?t.accent:'transparent'),fontWeight:on?600:500,transition:'none'}}),lbl); })); }
+  // A segmented control where the selection SLIDES between equal-width options, instead of each
+  // button independently swapping its own background (what seg()/the old grainSwitch/Width switcher
+  // did). Every segment is the same width, so the indicator needs no DOM measurement — its position
+  // and width are pure arithmetic against the track's own box (an absolutely-positioned child of a
+  // padding-free `position:relative` track, itself inset from the outer chrome by that chrome's own
+  // padding) — unlike measureBox/positionCrumbStack, which measure irregular layouts and so need a
+  // render → measure → forceUpdate cycle. Two sizing modes: default is `flex:1` fill (percentage
+  // math — the Width switcher, which spans its row); `opts.itemWidth` (a px number) switches every
+  // button to that FIXED width instead (px math) — for a small, natural-footprint control like the
+  // spacing grain switch, which sits compactly next to a label rather than stretching to fill a row.
+  // `items`: [{v,label,tt,render(on)}]. `render(on)` returns the button's content (icon, optional
+  // corner dot for "has an override elsewhere") — segSlider only owns chrome, the indicator, and
+  // click/a11y wiring.
+  segSlider(t,items,curIdx,onPick,opts){ opts=opts||{}; const h=React.createElement; const n=items.length;
+    const reduceMotion = typeof matchMedia==='function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const slide=reduceMotion?'none':'left .18s cubic-bezier(.4,0,.2,1), width .18s cubic-bezier(.4,0,.2,1)';
+    const iw=opts.itemWidth;
+    const indicatorStyle=iw
+      ? {left:(curIdx*iw)+'px',width:iw+'px'}
+      : {left:(curIdx*100/n)+'%',width:(100/n)+'%'};
+    const itemStyle=iw ? {width:iw,flex:'0 0 auto'} : {flex:1};
+    return h('div',{style:Object.assign({display:'flex',flexShrink:iw?0:undefined,background:opts.trackBg||t.panel,border:'1px solid '+t.border,borderRadius:opts.radius!=null?opts.radius:6,padding:2},opts.wrapStyle||{})},
+      h('div',{role:'group','aria-label':opts.aria||undefined,style:{position:'relative',display:'flex',flex:iw?'0 0 auto':1}},
+        h('div',{'aria-hidden':'true',style:Object.assign({position:'absolute',top:0,bottom:0,borderRadius:opts.indicatorRadius!=null?opts.indicatorRadius:4,background:opts.indicatorBg||t.accentFill,transition:slide,zIndex:0},indicatorStyle)}),
+        items.map((it,i)=>{ const on=i===curIdx; const go=()=>onPick(it.v,i);
+          return h('div',Object.assign({key:String(it.v)},{onClick:go},this.a11y(go,{pressed:on,label:it.label}),it.tt?this.tt(it.tt):{},
+            {style:Object.assign({position:'relative',zIndex:1,padding:opts.pad||'4px 9px',boxSizing:'border-box',borderRadius:opts.radius!=null?opts.radius:6,cursor:on?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:on?(opts.onColor||'#fff'):t.muted},itemStyle)}),
+            it.render(on)); })
+      )
+    );
+  }
   // Sun (light-mode destination) / moon (dark-mode destination) toggle \u2014 icon shows where the click takes you.
   darkToggle(t){ const h=React.createElement;
     const sunIcon=h('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}}, h('circle',{cx:12,cy:12,r:4}), h('path',{d:'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41'}));
@@ -2043,7 +2074,10 @@ class Component extends DCLogic {
     return h('div',Object.assign({onClick:()=>{this._previewMode=!this._previewMode; this.forceUpdate();}},this.a11y(()=>{this._previewMode=!this._previewMode;this.forceUpdate();},{label:on?'Exit preview':'Preview',pressed:on}),this.tt(on?{h:'Exit preview',b:'Back to editing'}:{h:'Preview',b:'Live, interactive'}),{style:{width:30,height:30,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:6,border:'1px solid '+(on?t.accentFill:t.border),background:on?t.accentFill:t.panel,color:on?'#fff':t.muted,cursor:'pointer'}}), eye); }
   renderHeader(t){
     const h=React.createElement;
-    const dib=(name,title)=>{ const on=this.device===name; const hasBp=name!=='lg'&&this.responsive[name]&&Object.keys(this.responsive[name]).length; const go=()=>this.setDevice(name); return h('div',{onClick:go,...this.tt(name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'}),...this.a11y(go,{pressed:on,label:title+' breakpoint'}),style:{position:'relative',padding:'4px 11px',borderRadius:4,cursor:'pointer',color:on?'#fff':t.muted,background:on?t.accentFill:'transparent',display:'flex',alignItems:'center'}},this.devIcon(name), hasBp?h('span',{style:{position:'absolute',top:3,right:4,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null); };
+    const DEVICE_ITEMS=[['lg','Desktop · lg ≥ 1200px'],['md','md · ≤ 1199px'],['sm','sm · ≤ 991px'],['xs','xs · ≤ 767px']].map(([name,title])=>({v:name,label:title+' breakpoint',
+      tt:name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'},
+      render:on=>{ const hasBp=name!=='lg'&&this.responsive[name]&&Object.keys(this.responsive[name]).length;
+        return h(React.Fragment,null, this.devIcon(name), hasBp?h('span',{style:{position:'absolute',top:3,right:4,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null); }}));
     // Narrow viewports: drop the field labels and the base-class hint, and shrink the Name/ID
     // inputs, so the device switcher and Save/Open/Export stay on screen instead of scrolling off.
     const narrow=window.innerWidth<1150;
@@ -2057,7 +2091,7 @@ class Component extends DCLogic {
       narrow?null:h('span',{style:{fontSize:11,color:t.faint,fontFamily:'ui-monospace,monospace'}},'.'+this.baseClass()),
       (!narrow&&this._draftAt)?h('span',{...this.tt('Auto-saved to this browser \u2014 Save still makes the durable library copy'),style:{fontSize:11,color:t.faint,whiteSpace:'nowrap'}}, 'Draft saved \u00b7 '+this.relTime(this._draftAt)):null,
       h('div',{style:{flex:1}}),
-      h('div',{style:{display:'flex',gap:2,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:2}}, dib('lg','Desktop \u00b7 lg \u2265\u202f1200px'), dib('md','md \u00b7 \u2264\u202f1199px'), dib('sm','sm \u00b7 \u2264\u202f991px'), dib('xs','xs \u00b7 \u2264\u202f767px')),
+      this.segSlider(t,DEVICE_ITEMS,DEVICE_ITEMS.findIndex(it=>it.v===this.device),v=>this.setDevice(v),{itemWidth:37,pad:'4px 0'}),
       this.previewToggle(t),
       this.darkToggle(t),
       (()=>{ const saved=!!this._saveFlash, err=!!this._saveErr; const svg=h('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}}, saved?h('path',{d:'M20 6 9 17l-5-5'}):[h('path',{key:'a',d:'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'}),h('polyline',{key:'b',points:'17 21 17 13 7 13 7 21'}),h('polyline',{key:'c',points:'7 3 7 8 15 8'})]);
@@ -3738,13 +3772,12 @@ class Component extends DCLogic {
     const WIDTHS=[['lg','Desktop'],['md','md · ≤'+this.BREAKPOINTS.md.max+'px'],['sm','sm · ≤'+this.BREAKPOINTS.sm.max+'px'],['xs','xs · ≤'+this.BREAKPOINTS.xs.max+'px']];
     const widthHas=w=>w!=='lg'&&c&&this.responsive[w]&&this.responsive[w][c]&&Object.keys(this.responsive[w][c]).length;
     const setWidth=v=>this.setDevice(v);
-    // Same look as the header's device switcher (dib()) — one consistent "which width am I on"
-    // control language for the whole app, not a bespoke seg just for this panel.
-    const widthBtn=(name,title)=>{ const on=this.device===name; const dot=widthHas(name);
-      const go=()=>setWidth(name);
-      return h('div',Object.assign({key:name,onClick:go},this.tt(name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'}),this.a11y(go,{pressed:on,label:title+' breakpoint'}),
-        {style:{position:'relative',padding:'4px 9px',borderRadius:4,cursor:'pointer',color:on?'#fff':t.muted,background:on?t.accentFill:'transparent',display:'flex',alignItems:'center'}}),
-        this.devIcon(name), dot?h('span',{style:{position:'absolute',top:2,right:3,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null); };
+    // Same look as the header's device switcher (DEVICE_ITEMS in renderHeader) — one consistent "which width am I on"
+    // control language for the whole app, not a bespoke seg just for this panel. Both go through
+    // segSlider so the sliding indicator and the "has an override" corner dot stay identical.
+    const widthItems=WIDTHS.map(([name,title])=>({v:name,label:title+' breakpoint',
+      tt:name==='lg'?title+' (base)':{h:title,b:'Edits write @media overrides'},
+      render:on=>h(React.Fragment,null, this.devIcon(name), widthHas(name)?h('span',{style:{position:'absolute',top:2,right:3,width:5,height:5,borderRadius:'50%',background:on?'#fff':t.accent}}):null)}));
 
     const isPseudo=this.isPseudoState(this._estate);
     const bucket=(!atBp&&this._estate!=='base'&&c&&this.stateStyles[c])?this.stateStyles[c][this._estate]:null;
@@ -3763,7 +3796,7 @@ class Component extends DCLogic {
       this.xselect('estate:'+(c||''),t,this._estate,stateOpts,setState,{label:'Style state'}));
     const widthCol=h('div',{style:{flexShrink:0}},
       this.lbl(t,'Width'),
-      h('div',{style:{display:'flex',gap:2,background:t.segBg,border:'1px solid '+t.border,borderRadius:6,padding:2}}, WIDTHS.map(([v,title])=>widthBtn(v,title))));
+      this.segSlider(t,widthItems,WIDTHS.findIndex(([v])=>v===this.device),setWidth,{itemWidth:33,pad:'4px 0',trackBg:t.segBg}));
     const stateRow=h('div',{style:{display:'flex',gap:10,alignItems:'flex-start'}}, stateCol, widthCol);
 
     const contentRow=isPseudo?h('div',{style:{marginTop:10}}, this.lbl(t,'Content'), this.rawField(t,node,'content','""')):null;
@@ -4118,9 +4151,13 @@ class Component extends DCLogic {
         : this.comboField('sp:'+target+':'+sides.join('')+':'+node.id,t,node,propOf(dragSide),Object.assign({},comboOpts,{
             cssProp:propOf(dragSide), value:ghosting?'':rep, onWrite:v=>sides.forEach(s=>this.setCS(node,propOf(s),v))
           }));
+      // comboField/xselect's own outer wrapper has no flex-grow of its own (only its inner trigger
+      // is width:100%, which is circular as a flex item's auto-basis and collapses to content width
+      // — ~42px, regardless of how much row space is actually available) — wrapping it in its own
+      // flex:1 host here is what actually lets it use the wider cell the 2x2 grid now provides.
       return h('div',{key:sides.join(''),style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:2}},
         microLabel?h('span',{style:{fontSize:8,fontWeight:600,letterSpacing:'.06em',color:t.faint,paddingLeft:1}},microLabel):null,
-        h('div',{style:{display:'flex',alignItems:'center',gap:5}}, dragIcon, control));
+        h('div',{style:{display:'flex',alignItems:'center',gap:5}}, dragIcon, h('div',{style:{flex:1,minWidth:0}}, control)));
     };
     const rows = grain==='all' ? [field(sideKeys,null)]
       : grain==='axis' ? [field(['t','b'],'T · B'),field(['l','r'],'L · R')]
@@ -4131,7 +4168,10 @@ class Component extends DCLogic {
         h('div',{style:{display:'flex',alignItems:'center',gap:6}}, this.stateEditDot(node,sideKeys.map(propOf),t),
           h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},label)),
         grainSeg),
-      h('div',{style:{display:'flex',gap:6}}, rows),
+      // Four independent sides in one flex row left each combo-field only ~46px — too narrow to read
+      // a value. A 2x2 grid (T,R / B,L — CSS shorthand order, filled by normal grid auto-placement)
+      // roughly triples each field's width; `all`/`axis` have room in a single row and stay there.
+      h('div',{style:grain==='sides'?{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}:{display:'flex',gap:6}}, rows),
       inner?h('div',{style:{marginTop:8}}, inner):null);
   }
   spacingBands(node,t){ const h=React.createElement;
@@ -4166,12 +4206,11 @@ class Component extends DCLogic {
   // per-side concept). Corner rounding lives on the FIRST/LAST button (not a `overflow:hidden` on the
   // wrapper) specifically so a keyboard focus ring on any button isn't clipped by the group's own edge \u2014
   // overflow:hidden used to cut the ring off before it could fully paint.
-  grainSwitch(t,grain,setGrain,grains,titles){ const h=React.createElement; grains=grains||['all','axis','sides'];
+  grainSwitch(t,grain,setGrain,grains,titles){ grains=grains||['all','axis','sides'];
     const tt=titles||{all:{h:'All sides',b:'One value'},axis:{h:'Vertical / horizontal',b:'Two values'},sides:{h:'Each side',b:'Four values'}};
-    return h('div',{role:'group','aria-label':'Granularity',style:{display:'flex',flexShrink:0,borderRadius:6,border:'1px solid '+t.border}},
-      grains.map((g,i)=>{ const on=grain===g; const first=i===0, last=i===grains.length-1; const go=()=>setGrain(g);
-        return h('button',Object.assign({key:g,onClick:go},this.tt(tt[g]),this.a11y(go,{pressed:on,label:(tt[g]&&tt[g].h)||g}),
-          {style:{width:26,height:24,display:'inline-flex',alignItems:'center',justifyContent:'center',border:'none',borderLeft:i?'1px solid '+t.border:'none',borderRadius:(first?'5px 0 0 5px':last?'0 5px 5px 0':'0'),cursor:on?'default':'pointer',background:on?t.accentSoft:t.panel,color:on?t.accent:t.muted,padding:0}}), this.grainIcon(g)); }));
+    const items=grains.map(g=>({v:g,label:(tt[g]&&tt[g].h)||g,tt:tt[g],render:()=>this.grainIcon(g)}));
+    return this.segSlider(t,items,grains.indexOf(grain),g=>setGrain(g),
+      {aria:'Granularity',itemWidth:26,pad:'4px 0',indicatorBg:t.accentSoft,onColor:t.accent,wrapStyle:{flexShrink:0}});
   }
   // Gap — the token combo-field (below), with a link/unlink padlock. Linked writes `gap`; separated splits
   // into C (column-gap) and R (row-gap) rows, each its own combo-field. Previously its own bespoke "md · 16"
