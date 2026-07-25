@@ -75,8 +75,6 @@ class Component extends DCLogic {
     this.CANVAS_GAP = '0';  // no synthetic spacing between siblings — elements render flush (real gap/margin only)
     this.REPEAT_PREVIEW_N = 6;  // fixed ghost-copy count for a repeating element with no real sample array to size from — no longer user-editable ("Preview copies" field removed, it just confused people)
     this._inspOpen = {};  // big-card (Structure/Appearance) open/closed state; inspector sections are tabs now
-    this._reveal = null;  // one-shot "scroll the Style tab to this block" request, see revealBlockOnAdd
-    this._blockEls = {};  // block-header DOM nodes by anchor name, the reveal scroll's targets
     this.dark = false; this.device = 'lg';
     this._scrollFade = {left:false, right:false};  // canvas scroll-edge fade state, see measureScrollFade
     this.codeTheme = 'auto';  // Monaco theme: 'auto' follows the app theme, or pin 'light'/'dark' independently
@@ -1060,9 +1058,6 @@ class Component extends DCLogic {
         if(dropCol){ const tc=this.find(dropContainer); const te=tc&&this.effectiveStyle(tc.node);
           if(te&&te.display==='grid'&&this.gridColCount(te.gridTemplateColumns)>1) { this.setCS(node,'gridColumnStart',String(dropCol)); } }
         this._justAdded=node.id; setTimeout(()=>{this._justAdded=null;this.forceUpdate();},300);
-        // Only a genuine ADD reveals its lead block — the other branch is a MOVE of an existing
-        // element, where the panel's scroll is the user's own and shouldn't be taken from them.
-        if(this.drag.kind==='add') { this.revealBlockOnAdd(node); }
         // A configurable component drops EMPTY and immediately enters design (focus) mode.
         if(this.drag.kind==='add'&&this.isComposable(node)) { this._enterFocusAfterDrop=node.id; }
       }
@@ -1181,7 +1176,7 @@ class Component extends DCLogic {
     document.head.appendChild(s);
   }
   componentWillUnmount(){ document.removeEventListener('keydown',this._key); if(this._winResize) { window.removeEventListener('resize',this._winResize); } if(this._beforeUnload) { window.removeEventListener('beforeunload',this._beforeUnload); } this.removeDragListeners(); clearInterval(this._cmPoll); if(this._mon){ this._mon.dispose(); this._mon=null; } }
-  componentDidUpdate(){ this.playFlip(); this.syncEditor(); this.syncPreview(); this.syncTokenVars(); this.measureBox(); this.measureFlexGrid(); this.positionCtxMenu(); this.positionCrumbStack(); this.measureScrollFade(); this.revealPendingBlock(); }
+  componentDidUpdate(){ this.playFlip(); this.syncEditor(); this.syncPreview(); this.syncTokenVars(); this.measureBox(); this.measureFlexGrid(); this.positionCtxMenu(); this.positionCrumbStack(); this.measureScrollFade(); }
   // Walk-up ancestor label stack: normally grows UPWARD from the clicked label (bottom:100%, see
   // crumbAnchor). Near the top of the canvas there's no room above for it, so measure it after render and
   // flip it to grow DOWNWARD instead — the same collision-flip idea as positionCtxMenu, just measured
@@ -2967,7 +2962,7 @@ class Component extends DCLogic {
     // otherwise it would just append to the end and rely on auto-flow, which only happens to land
     // in the right column when it's the earliest open cell.
     if(col!=null) { this.setCS(node,'gridColumnStart',String(col)); }
-    if(this.treeCollapsed) { this.treeCollapsed[targetId]=false; } this.selectedId=node.id; this._justAdded=node.id; this.revealBlockOnAdd(node); this.save();
+    if(this.treeCollapsed) { this.treeCollapsed[targetId]=false; } this.selectedId=node.id; this._justAdded=node.id; this.save();
     // A configurable component drops EMPTY and immediately enters design (focus) mode.
     if(this.isComposable(node)) { this.enterFocus(node.id); }
     this.forceUpdate(); setTimeout(()=>{this._justAdded=null;this.forceUpdate();},300); }
@@ -3873,9 +3868,8 @@ class Component extends DCLogic {
   // child, Typography, Background, Border, Effects, Transforms & Transitions) — was 8 near-
   // identical hand-rolled style objects (5 with a trailing stateEditDot, 3 without); now one helper
   // so every block gets the dot and the same spacing/border-top treatment.
-  // opts.anchor registers this header as a scroll target for revealBlockOnAdd.
   blockHead(t,label,opts){ opts=opts||{}; const h=React.createElement;
-    return h('div',{ref:opts.anchor?(el=>{this._blockEls[opts.anchor]=el;}):undefined,style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:opts.first?'0 0 12px':'20px 0 12px',paddingTop:opts.first?0:16,borderTop:opts.first?'none':'1px solid '+t.border}}, label, opts.dot||null);
+    return h('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:opts.first?'0 0 12px':'20px 0 12px',paddingTop:opts.first?0:16,borderTop:opts.first?'none':'1px solid '+t.border}}, label, opts.dot||null);
   }
   // Identity icon for a bigCard header — a small, separate icon set from gl()'s bars/dots (layout state)
   // and glyphSvg's per-tag glyphs (element identity): these two just label "which card is this."
@@ -4426,7 +4420,7 @@ class Component extends DCLogic {
             d[3]?h('span',{...this.tt('This element carries data bindings'),style:{width:5,height:5,borderRadius:'50%',background:'#0e9f6e',flexShrink:0}}):null); };
         return h('div',{style:{flex:1,minHeight:0,display:'flex',flexDirection:'column'}},
           h('div',{role:'tablist','aria-label':'Inspector',style:{display:'flex',borderBottom:'1px solid '+(tint?tint.bd:t.border),flexShrink:0}}, defs.map(tabBtn)),
-          h('div',{ref:el=>{this._inspScroll=el;},style:{overflowY:'auto',flex:1,scrollbarGutter:'stable',background:tint?tint.bg:undefined,boxShadow:tint?('inset 3px 0 0 '+tint.bd):undefined}}, h('div',{style:{padding:'12px 14px 14px'}}, active?active[2]:null)));
+          h('div',{style:{overflowY:'auto',flex:1,scrollbarGutter:'stable',background:tint?tint.bg:undefined,boxShadow:tint?('inset 3px 0 0 '+tint.bd):undefined}}, h('div',{style:{padding:'12px 14px 14px'}}, active?active[2]:null)));
       })()
     );
   }
@@ -5168,61 +5162,9 @@ class Component extends DCLogic {
     els.push(this.positionEditor(node,t));
     return h('div',null,els);
   }
-  // Tag/type lists purpose-built for styleLead()'s content-type classification — deliberately NOT
-  // TEXT_TAGS/CONTAINER_TAGS (those serve drag/drop containment and disagree here: TEXT_TAGS calls
-  // 'button' text, CONTAINER_TAGS calls 'li'/'blockquote' containers; both wrong for this feature).
-  STYLE_LEAD_TEXT_TAGS=['h1','h2','h3','h4','h5','h6','p','span','a','label','li','blockquote'];
-  STYLE_LEAD_SURFACE_TAGS=['button','input','select','textarea','hr'];
-  STYLE_LEAD_SURFACE_TYPES={button:1,badge:1,alert:1,panel:1,card:1,input:1,select:1,checkbox:1,radio:1};
-  // Which Style-tab block this node's type is most likely to want first: 'text' → Typography,
-  // 'surface' → Background/Border, 'structure' → nothing (Structure is already the top card, so
-  // these never scroll). No flex/grid-child override by design — an <h2> shouldn't behave
-  // differently based on where it happens to sit in the layout.
-  styleLead(node){
-    if(node.id==='root') { return 'structure'; }
-    if(node.type==='icon') { return 'text'; }
-    if(node.type==='el'){ const tg=node.data.tag;
-      if(this.STYLE_LEAD_SURFACE_TAGS.includes(tg)) { return 'surface'; }
-      if(this.STYLE_LEAD_TEXT_TAGS.includes(tg)) { return 'text'; }
-      return 'structure'; }
-    if(this.STYLE_LEAD_SURFACE_TYPES[node.type]) { return 'surface'; }
-    return 'structure'; // table, navtabs, listgroup, progress, breadcrumb, buttongroup, html
-  }
-  LEAD_BLOCK={text:'typography',surface:'background'};  // styleLead() → blockHead anchor to reveal
-  // Called from the two add paths (palette click, palette drop). A freshly added element is the one
-  // moment with clean intent and no scroll position worth protecting, so the Style tab travels to the
-  // block that element type most likely needs. Deliberately NOT wired to plain selection: re-selecting
-  // is usually you returning to something specific, and hijacking the scroll there is just theft.
-  revealBlockOnAdd(node){
-    const block=this.LEAD_BLOCK[this.styleLead(node)];
-    if(!block) { return; }
-    // Both targets live inside Appearance. A collapsed card makes the scroll meaningless AND makes the
-    // measurement wrong (animatedBox keeps the body mounted at a 0fr track), so open it and, if it
-    // wasn't already open, wait out animatedBox's .18s before measuring.
-    const wasOpen=this._inspOpen['card:appearance']!==false;
-    this._inspOpen['card:appearance']=true;
-    this._reveal={block,delay:wasOpen?0:190};
-  }
-  // Consumes the one-shot request above. Reads layout and scrolls but never calls forceUpdate, so
-  // unlike measureBox/positionCrumbStack it's safe to run straight from componentDidUpdate.
-  revealPendingBlock(){
-    const req=this._reveal; if(!req) { return; }
-    this._reveal=null;
-    setTimeout(()=>{
-      const sc=this._inspScroll, el=this._blockEls[req.block];
-      if(!sc||!el) { return; }
-      const delta=el.getBoundingClientRect().top - sc.getBoundingClientRect().top - 12;  // 12 = a little headroom above the block header
-      if(Math.abs(delta)<8) { return; }  // already sitting where we'd put it — no motion for motion's sake
-      sc.scrollTo({top:sc.scrollTop+delta,behavior:'smooth'});  // smooth, so it reads as "I moved you" not "the panel is different"
-    },req.delay);
-  }
   // Merged Layout + Style — one panel, a single state switcher, grouped into two elevated cards:
   // Structure (display/flex-grid/spacing/size/overflow/position) and Appearance (typography/background/
   // border/effects/transforms). Position now lives inside Structure (per the reference), not below the cards.
-  // Section order is FIXED regardless of what's selected — the panel is a map you learn, and making its
-  // structure a function of the selection means it reflows on every click and can never be learned. The
-  // per-type "what does this element care about" signal lands as a scroll target instead: see
-  // revealBlockOnAdd, which moves the viewport (recoverable, self-explaining) rather than the map.
   designTab(node,t){ const h=React.createElement; return h('div',null,
     this.layerZone(node,t),
     this.bigCard(t,'card:structure','structure','Structure', this.layoutTab(node,t)),
@@ -5458,7 +5400,7 @@ class Component extends DCLogic {
     const alignTile=o=>{ const on=ta===o.v; const pick=()=>this.setCS(node,'textAlign',o.v==='left'?'':o.v); return h('div',Object.assign({key:o.v,onClick:pick},this.tt(o.title),this.a11y(pick,{pressed:on,label:o.title}),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),o.icon); };
     const caseTile=(g,v,title)=>styleTile(tform===v,g,title,()=>this.setCS(node,'textTransform',tform===v?'':v),{fontSize:12});
     return h('div',null,
-      this.blockHead(t,'Typography',{first:true,anchor:'typography',dot:this.stateEditDot(node,['fontFamily','fontWeight','fontSize','lineHeight','letterSpacing','color','textAlign','fontStyle','textDecoration','textTransform','textShadow','whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'],t)}),
+      this.blockHead(t,'Typography',{first:true,dot:this.stateEditDot(node,['fontFamily','fontWeight','fontSize','lineHeight','letterSpacing','color','textAlign','fontStyle','textDecoration','textTransform','textShadow','whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'],t)}),
       h('div',{style:{marginBottom:8}}, this.selectField(t,famOpts,this.csVal(node,'fontFamily')||'',v=>this.setCS(node,'fontFamily',v))),
       h('div',{style:{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:8}},
         this.selectField(t,wOpts,w,v=>this.setCS(node,'fontWeight',v)),
@@ -5537,7 +5479,7 @@ class Component extends DCLogic {
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Repeat'), this.selectField(t,[['no-repeat','No repeat'],['repeat','Repeat'],['repeat-x','Repeat X'],['repeat-y','Repeat Y']],this.csVal(node,'backgroundRepeat')||'no-repeat',v=>this.setCS(node,'backgroundRepeat',v==='no-repeat'?'':v)))));
       body.push(h('div',{key:'fb',style:{marginTop:8}}, this.colorInlineField(t,node,'backgroundColor',{noAlpha:true,placeholder:'Fallback'}))); }
     return h('div',null,
-      this.blockHead(t,'Background',{anchor:'background',dot:this.stateEditDot(node,['background','backgroundImage','backgroundColor'],t)}),
+      this.blockHead(t,'Background',{dot:this.stateEditDot(node,['background','backgroundImage','backgroundColor'],t)}),
       h('div',{style:{marginBottom:10}}, this.seg(t,[{v:'solid',l:'Solid'},{v:'gradient',l:'Gradient'},{v:'image',l:'Image'}],type,v=>this.switchBgType(node,v),{fill:true,pad:'6px 0'})),
       body); }
   // ---- Border ----
