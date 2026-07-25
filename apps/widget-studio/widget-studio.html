@@ -2439,7 +2439,23 @@ class Component extends DCLogic {
       btn(this.hicon('undo'),()=>this.undo(),canU,'Undo (⌘Z)'),
       btn(this.hicon('redo'),()=>this.redo(),canR,'Redo (⌘⇧Z)'));
   }
-  widthLabel(){ return this.device==='md'?'1024px (md)':(this.device==='sm'?'768px (sm)':'375px (xs)'); }
+  // The device-preview widths (md/sm/xs) are fixed device pixels, so on an ordinary laptop window they
+  // often don't fit the canvas column even after the side panels shrink to their minimums — unlike lg's
+  // fluid 100% width, which always fits. Rather than force horizontal scrolling to see the whole preview
+  // (technically correct, but reads as "broken" sitting next to lg's smooth resize), the stage zooms out
+  // to fit — same as Chrome's device toolbar. CSS `zoom` (not transform:scale) specifically: it's
+  // LAYOUT-affecting, not just visual, so the stage's height still auto-sizes correctly for its zoomed-
+  // down content, and getBoundingClientRect()/clientX/Y — which all of drag/drop and box-model
+  // measurement already rely on — report real post-zoom viewport pixels, so nothing downstream needs to
+  // know zoom exists. Floored at 35% so the preview never shrinks past legibility.
+  DEVICE_PX={md:1024,sm:768,xs:375};
+  canvasZoom(){ const naturalPx=this.DEVICE_PX[this.device]; if(!naturalPx) { return 1; }
+    const pw=this.effPanelWidths();
+    const avail=window.innerWidth - pw.left - pw.right - 10 - 60; // 10 = two 5px resizers, 60 = canvas's own 30px+30px side padding
+    if(avail<=0 || naturalPx<=avail) { return 1; }
+    return Math.max(0.35, avail/naturalPx); }
+  widthLabel(){ const px=this.device==='md'?'1024px (md)':(this.device==='sm'?'768px (sm)':'375px (xs)'); const z=this.canvasZoom();
+    return z<1?(px+' · '+Math.round(z*100)+'%'):px; }
   renderCanvas(t){
     const h=React.createElement;
     // The artboard is the WIDGET preview, not editor chrome — it stays LIGHT even when the editor is dark, so
@@ -2724,7 +2740,7 @@ class Component extends DCLogic {
         onClick:e=>this.select(null,e),
         onMouseOver:e=>{ if(this.hoverId!=null){this.hoverId=null;this.forceUpdate();} },
         onMouseLeave:()=>{ if(this.hoverId){this.hoverId=null;this.forceUpdate();} }},
-        h('div',{style:{width:widths[this.device],margin:'0 auto',flex:'1 0 auto',display:'flex',flexDirection:'column',transition:'width .2s'}},
+        h('div',{style:{width:widths[this.device],margin:'0 auto',flex:'1 0 auto',display:'flex',flexDirection:'column',transition:'width .2s',zoom:this.canvasZoom()}},
           (()=>{ const _sd=this.dark; this.dark=false; try{
             // An empty widget shows a first-run Add-element prompt — the blank white stage alone
             // gives nothing to click and no hint to drag. Rendered as an ABSOLUTE centered overlay,
