@@ -2836,8 +2836,9 @@ class Component extends DCLogic {
         {id:'panel', label:'Panel', hint:'Heading + body', build:()=>{
           const p=this.make('panel'); const txt=this.make('el','p'); txt.text='Panel content goes here.'; p.children=[txt]; return [p]; }},
         panelTable,
-        {id:'panel-list', label:'Panel with list', hint:'List in a panel', build:()=>{
-          const p=this.make('panel'); p.children=[this.make('el','ul')]; return [p]; }}
+        {id:'panel-form', label:'Panel with form', hint:'Field + submit', build:()=>{
+          const p=this.make('panel'); const btn=this.make('button'); btn.text='Submit';
+          p.children=[this.make('formgroup'), btn]; return [p]; }}
       ],
       table: [
         panelTable,
