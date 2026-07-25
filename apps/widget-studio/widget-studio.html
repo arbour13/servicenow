@@ -5168,13 +5168,42 @@ class Component extends DCLogic {
     els.push(this.positionEditor(node,t));
     return h('div',null,els);
   }
-  // Merged Layout + Style — one panel, a single state switcher, grouped into two elevated cards:
-  // Structure (display/flex-grid/spacing/size/overflow/position) and Appearance (typography/background/
-  // border/effects/transforms). Position now lives inside Structure (per the reference), not below the cards.
+  // Deck flattening (Property Editor Exploration.dc.html, zone ③): Structure's own controls
+  // (display/flex-grid/spacing/size/overflow/position) stay flat and always visible — no card
+  // chrome, no collapse — since they're the ~80% path this deck exists for. Appearance shrinks to
+  // its two most-reached-for rows (Text, Fill+Radius) also flat; everything else it used to always
+  // show (line-height/letter-spacing/color/alignment, gradient/image modes, border style & full
+  // corner radii, effects, transforms & transitions) moves into ONE "More styling" card, collapsed
+  // by default — reachable, not gone, just no longer permanently in the scroll path. Zones ①②④⑤
+  // (classManager/layerZone/ledger/addPropertyLine) are unchanged.
+  textCoreRow(node,t){ const h=React.createElement;
+    const wRaw=this.csVal(node,'fontWeight')||''; const w=(wRaw==='normal'||wRaw==='400')?'':(wRaw==='bold'?'700':wRaw);
+    const wOpts=[['','Regular 400'],['300','Light 300'],['500','Medium 500'],['600','Semibold 600'],['700','Bold 700']];
+    const famOpts=[['','System'],['Inter, system-ui, sans-serif','Inter'],['Georgia, serif','Georgia'],['ui-monospace, SFMono-Regular, monospace','Monospace']];
+    const fs=(this.csVal(node,'fontSize')||'').toString().replace(/px$/,'');
+    return h('div',null,
+      this.blockHead(t,'Text',{dot:this.stateEditDot(node,['fontFamily','fontWeight','fontSize'],t)}),
+      h('div',{style:{marginBottom:8}}, this.selectField(t,famOpts,this.csVal(node,'fontFamily')||'',v=>this.setCS(node,'fontFamily',v))),
+      h('div',{style:{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:8}},
+        this.selectField(t,wOpts,w,v=>this.setCS(node,'fontWeight',v)),
+        this.prefixField(t,'',fs,v=>{ const x=v.trim(); this.setCS(node,'fontSize',x===''?'':(/^[0-9.]+$/.test(x)?x+'px':x)); },{unit:'px',placeholder:'16'})));
+  }
+  // Reuses colorInlineField('background') and radiusBand exactly as backgroundBlock/borderBlock do
+  // below — same CSS prop, same control, so a value set here and a value set in "More styling"'s
+  // full Background/Border sections can never disagree; this is a second entry point, not a copy.
+  fillRadiusRow(node,t){ const h=React.createElement;
+    return h('div',null,
+      this.blockHead(t,'Fill + Radius',{dot:this.stateEditDot(node,['background','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius'],t)}),
+      this.row2(
+        h('div',null,this.lbl(t,'Fill'), this.colorInlineField(t,node,'background',{placeholder:'#1F8FFF'})),
+        h('div',null,this.lbl(t,'Radius'), this.radiusBand(node,t))));
+  }
   designTab(node,t){ const h=React.createElement; return h('div',null,
     this.layerZone(node,t),
-    this.bigCard(t,'card:structure','structure','Structure', this.layoutTab(node,t)),
-    this.bigCard(t,'card:appearance','palette','Appearance', this.styleTab(node,t,true)),
+    this.layoutTab(node,t),
+    this.textCoreRow(node,t),
+    this.fillRadiusRow(node,t),
+    this.bigCard(t,'card:more','palette','More styling', this.styleTab(node,t,true), false),
     this.ledger(node,t));
   }
   // The ledger: every declaration actually SET on this class, grouped by layer — the layer you're
