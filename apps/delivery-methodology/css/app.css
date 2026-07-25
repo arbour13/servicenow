@@ -85,6 +85,11 @@
   --card-mix-1: #275b63;
   --card-mix-2: #0d435f;
   --on-phase-ink: #06121c;
+  /* .fcard's 1px border box already exists in dark mode - it's just transparent, since dark
+     separates the card from the page purely by fill contrast. Tokenising the colour (not adding
+     a rule) lets light mode make that same border visible without changing width/style/radius -
+     a pure value swap, satisfying "light and dark differ only in colour, never in structure". */
+  --card-line: transparent;
 }
 
 /* Light theme - re-based on the REAL HomeSpace light-surface tokens (verbatim from
@@ -97,60 +102,69 @@
    provider) - see js/app.module.js's `core` module dependency and the inline pre-paint script in
    index.html. */
 :root[data-theme=light] {
-  --paper: #e2fbff; /* $brand-tertiary-lightest - navy on it: 15.17:1 */
-  --surface: linear-gradient(160deg, #ffffff 0%, #f4fbfd 100%);
+  /* "C · Teal surfaces, fixed" - the fourth palette round. Earlier rounds (see git history) put
+     the tint on the wrong surface (a mint PANEL inside a white page reads as "mint everywhere in
+     a box", not "white content in a tinted environment"), used $border-tertiary #c5dce7 directly
+     as surface-2 (desaturated blue-grey - reads muddy against mint), and let the filmstrip cards
+     (#52c2cc solid) out-saturate the actual content. This version moves the wash to --paper (the
+     environment), keeps every content surface white/near-white, and calms the cards to a
+     near-page tint - each confirmed against the real rendered app, not just contrast math. */
+  --paper: #cfeef5;
+  --surface: linear-gradient(160deg, #ffffff 0%, #f2fafc 100%);
   --surface-flat: #ffffff; /* $background-primary */
-  --surface-2: #f4fbfd;
-  --navy: #e2fbff;
+  --surface-2: #e6f5f9; /* replaces $border-tertiary #c5dce7 - same role, no longer muddy */
+  --navy: #cfeef5;
   --navy-2: #ffffff;
   --ink: #0a2136; /* $text-primary - the theme's canonical on-light text */
-  --ink-soft: #013c56; /* $text-secondary - 5.58:1 on the mint card body */
+  --ink-soft: #013c56; /* $text-secondary */
   --ink-2: var(--ink-soft);
-  --ink-faint: #55697c; /* 5.27:1 on --paper, 5.68:1 on white */
-  /* $border-tertiary is a single theme constant used both as a hairline divider (panel-
-     heading-light's own border-bottom is 1px solid $border-tertiary on white - same low-contrast
-     hairline by the theme's own design, not a bug) AND as a hover-fill background paired with dark
-     navy text (11.5:1) - decoupled from --ink-soft on purpose, since in light mode ink-soft is now
-     dark navy and would be invisible paired with itself as a fill. */
-  --hs-border-tertiary: #c5dce7;
-  --line: #c5dce7; /* $border-tertiary */
-  --line-soft: rgba(10, 33, 54, 0.12);
+  --ink-faint: #4e6270; /* >=4.5:1 verified against every surface below, incl. the card fill */
+  /* $border-tertiary's role split (see the base :root comment above --hs-border-tertiary) still
+     applies - decoupled from --ink-soft because ink-soft is dark navy in light mode and would be
+     invisible paired with itself as a .btn:hover fill. Re-solved for the tinted page: navy text
+     on this fill is still 10.37:1. */
+  --hs-border-tertiary: #a5d6e2;
+  --line: rgba(1, 60, 86, .40); /* tuned alpha, not a flat token - solved to match dark's own
+   line-vs-page separation ratio (2.569:1) rather than guessed */
+  --line-soft: rgba(1, 60, 86, .18);
   --wash-rgb: 10, 33, 54;
-  --hs-teal: #017a5e;
-  --teal: #017a5e;
-  /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb) - each verified >=4.5:1
-     against both --paper and --surface-flat (white). See the --r-*-text comment above for why only
-     the text role changes, not the background-fill role. These letters ALSO fail against the mint
-     --gradient-card body (2.5-2.9:1) - that's why RACI-bearing surfaces (the task table, RACI
-     grid) stay flat white rather than taking the two-tone card treatment; see scss comments on
-     those rules. */
-  --r-r-text: #087a33;
-  --r-a-text: #7a5f00;
-  --r-c-text: #0b6fa4;
-  --r-i-text: #5b6472;
+  --card-line: #a5d6e2; /* .fcard's existing 1px border box - see --card-line comment
+    on the base :root; only visible once its colour isn't transparent */
+  --hs-teal: #008365;
+  --teal: #005c63; /* darker than the mid-palette version - a tinted page eats
+    contrast margin, verified >=4.5:1 on every surface below */
+  /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb), kept as four distinct
+     hues on purpose - these are the task table's only colour signal (role colours were removed
+     everywhere else). An earlier AI-generated palette round collapsed these to four near-identical
+     navies (worst pairwise perceptual distance ΔE 10.8 - effectively one colour at small mono-font
+     size); restored to darkened R/A/C/I hues (ΔE 27.3, dark mode itself is 36.7) and re-verified
+     >=4.5:1 against every surface below, including the --gradient-card fill. */
+  --r-r-text: #076b2c;
+  --r-a-text: #6b5300;
+  --r-c-text: #0a608e;
+  --r-i-text: #4e5665;
   /* Darker steps of the same teal->blue family used for the dark-mode ramp, mirroring the dark-mode
      rebase's own finding in reverse: light/lighter brand steps read well on a DARK surface, darker
      steps read well on a LIGHT one. Verified >=3:1 (WCAG 1.4.11 non-text) against --paper; this is a
-     decorative progress-bar fill, not body text, so the lighter AA text bar doesn't apply. */
-  --p1: #017a5e;
-  --p2: #0c6a86;
-  --p3: #1f5a8f;
-  --p4: #1f77a8;
-  --p5: #2a4a78;
-  /* Text ON the mint --gradient-card body (--on-accent-* only ever appears on that fixed accent
-     surface, in EITHER theme - see the base :root comment). Verified against the worst stop of
-     $gradient-light-4 (#52c2cc): navy 7.75:1, text-secondary 5.58:1, mid-navy 4.51:1. */
+     decorative fill (progress line + station digit background), not body text. */
+  --p1: #006e76;
+  --p2: #008365;
+  --p3: #2e6d70;
+  --p4: #1c4854;
+  --p5: #013c56;
+  /* Text ON the --gradient-card body (--on-accent-* only ever appears on that fixed accent
+     surface, in EITHER theme - see the base :root comment). */
   --on-accent-ink: #0a2136;
   --on-accent-soft: #013c56;
-  --on-accent-faint: #0e4b63;
+  --on-accent-faint: #2e5666;
   --on-accent-rgb: 10, 33, 54;
   /* The two color-mix() stops .fcard.on blends --pc into (see --card-mix-1/-2 below) and the
      digit color on an active phase-color station fill (see --on-phase-ink below). */
-  --card-mix-1: #a9dbde; /* $gradient-light-1 stop 1 */
-  --card-mix-2: #71d5dc; /* $gradient-light-1 stop 2 */
+  --card-mix-1: #f4fcfd;
+  --card-mix-2: #c9ebf2;
   --on-phase-ink: #ffffff;
-  --gradient-card: linear-gradient(120deg, #9bcacd 0%, #52c2cc 100%); /* $gradient-light-4 */
-  --gradient-card-2: linear-gradient(120deg, #a9dbde 0%, #71d5dc 100%); /* $gradient-light-1 */
+  --gradient-card: linear-gradient(135deg, #f4fcfd 0%, #c9ebf2 100%);
+  --gradient-card-2: linear-gradient(135deg, #e2f6fa 0%, #bfe7ef 100%);
   --shadow-md: 0 4px 10px 0 rgba(10, 33, 54, 0.12);
   --shadow-sm: 2px 2px 8px 0 rgba(10, 33, 54, 0.08);
 }
@@ -160,23 +174,6 @@
    copy here instead of staying stuck light-on-light once the select's own background goes pale. */
 :root[data-theme=light] select.edit-in {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23013c56' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-}
-
-/* Real HomeSpace light panels are two-tone (panel-heading-light: white + a hairline
-   $border-tertiary bottom border, over panel-body-light: the mint gradient) - .fcard is the one
-   card here whose layout (icon+id identity row, then title/content) actually matches that shape,
-   so it gets a literal hard-stop split instead of a smooth single-color fill. Only the DEFAULT
-   (has-content, unselected) state - .fcard.on keeps its existing phase-color-blended glow instead
-   of also taking a header split, and .fcard.stub:not(.on) already overrides to transparent above. */
-:root[data-theme=light] .fcard:not(.stub, .on) {
-  background: linear-gradient(180deg, #ffffff 0, #ffffff 60px, var(--line) 60px, var(--line) 61px, #9bcacd 61px, #52c2cc 100%);
-}
-
-/* .fcard-sid's base color (#9db3c2) assumes it always sits on the dark gradient-card - true in
-   dark mode (no split there) and true for .fcard.on/.stub (which have their own overrides above),
-   but the split just introduced puts THIS state's sid inside the new white header zone instead. */
-:root[data-theme=light] .fcard:not(.stub, .on) .fcard-sid {
-  color: var(--ink-faint);
 }
 
 /* .whatsnew-item / .search-result / .metacard have no natural header/body split (a single-purpose
@@ -597,7 +594,7 @@ button {
   flex-direction: column;
   min-height: 142px;
   background: var(--gradient-card);
-  border: 1px solid transparent;
+  border: 1px solid var(--card-line);
   border-radius: 12px;
   padding: 12px 15px 13px;
   cursor: pointer;
