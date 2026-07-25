@@ -60,6 +60,18 @@
     /* primary button system - $gradient-light-5 / -7, $gradient-dark-9, from btn-dark / btn-dark-toggle mixins */
     --gradient-pill: linear-gradient(90deg, #21fbc8 0%, #3ec2f8 100%);
     --gradient-pill-hover: linear-gradient(90deg, #a7ffeb 0%, #49c6fa 100%);
+    /* Text sitting ON --gradient-pill. Split out of --text-on-primary because that token has two
+       jobs that must NOT move together: on the BRIGHT RACI fills (.raci-toggle.on, .rg-legend .sw)
+       dark navy is correct in both themes, but --gradient-pill itself darkens for light mode, where
+       dark-on-dark would be unreadable. Same dual-role problem --on-phase-ink already solves for
+       phase-colour fills. */
+    --on-gradient-ink: var(--text-on-primary);
+    /* Chip "selected" fill (participant picker, job-aid role scoping). A token because the two chip
+       types must stay identical, and because light mode wants a pale tint where dark wants a teal
+       wash. NOTE the on-signal is really the border + text colour: no pale tint separates
+       meaningfully from the pale aqua card these chips sit on (max ~1.1:1), whereas the teal ring
+       lands at 6.1-7.8:1. The tint is an assist, not the signal. */
+    --chip-on-bg: rgba(0, 224, 172, 0.1);
     --gradient-selected: linear-gradient(90deg, #1e737e 0%, #055c7c 100%);
     --gradient-card: linear-gradient(135deg, #275b63 0%, #0d435f 100%);    /* $gradient-dark-10 */
     --gradient-card-2: linear-gradient(135deg, #327374 0%, #0c506e 100%);  /* $gradient-dark-11 */
@@ -174,6 +186,12 @@
     --hs-teal: #008365;
     --teal: #005c63;               /* darker than the mid-palette version - a tinted page eats
                                        contrast margin, verified >=4.5:1 on every surface below */
+    /* The brand gradient darkened so it stops glowing on a pale page (the "too flashy" feedback).
+       First stop is literally --p1, so it stays in-palette. White on the stops: 6.01 / 6.81. */
+    --gradient-pill: linear-gradient(90deg, #006e76 0%, #1c5f8f 100%);
+    --gradient-pill-hover: linear-gradient(90deg, #00838d 0%, #226fa6 100%);
+    --on-gradient-ink: #ffffff;    /* NOT --text-on-primary - see the base :root comment */
+    --chip-on-bg: var(--surface-2);
     /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb), kept as four distinct
        hues on purpose - these are the task table's only colour signal (role colours were removed
        everywhere else). An earlier AI-generated palette round collapsed these to four near-identical
@@ -277,13 +295,20 @@
 
   /* controls row below the title: methodology switch (Project/GRS) */
   .pagehdr-controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+  /* Groups the toggle and search together as one flex child of .pagehdr-top, so
+     justify-content: space-between pins the PAIR to the right edge - the toggle sits flush against
+     search rather than floating at its own independent distance from it. */
+  .hdr-search-group { display: flex; align-items: center; gap: 10px; }
   .hsearch { position: relative; }
   .hsearch input { height: 34px; width: 200px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface-flat); color: var(--ink); padding: 0 14px 0 34px; font-family: inherit; font-size: 13px; outline: none; }
   .hsearch input::placeholder { color: var(--ink-faint); }
   .hsearch input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,224,172,0.2); }
   .hsearch svg { position: absolute; left: 12px; top: 10px; width: 15px; height: 15px; stroke: var(--ink-faint); fill: none; stroke-width: 2; }
-  .theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-flat); color: var(--ink-faint); transition: color 0.15s, border-color 0.15s; }
-  .theme-toggle:hover { color: var(--teal); border-color: var(--teal); }
+  /* .edit-pencil shares this treatment with .theme-toggle - the user asked for the two to
+     "interact like" each other, so it's one factored rule rather than duplicated declarations. */
+  .theme-toggle, .edit-pencil { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-flat); color: var(--ink-faint); cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+  .theme-toggle { width: 34px; height: 34px; flex: none; }
+  .theme-toggle:hover, .edit-pencil:hover { color: var(--teal); border-color: var(--teal); }
   .theme-toggle svg { width: 16px; height: 16px; }
   /* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
      color rule regardless of declaration order - the element carries both classes. */
@@ -306,7 +331,7 @@
     transition: background 0.12s, color 0.12s;
   }
   .meth-tab:hover { color: var(--ink); }
-  .meth-tab.active { background: var(--gradient-pill); color: var(--text-on-primary); box-shadow: var(--shadow-inset); }
+  .meth-tab.active { background: var(--gradient-pill); color: var(--on-gradient-ink); box-shadow: var(--shadow-inset); }
 
   /* View intro (RACI / What's New / Search headers) */
   .view-intro { margin-bottom: 22px; }
@@ -357,7 +382,7 @@
   .fcard.stub:not(.on) .fsid { color: var(--ink-faint); }
   .fcard .fnm { font-size: 14px; font-weight: 700; margin-top: 2px; line-height: 1.25; color: var(--on-accent-ink); }
   .fcard .fmeta { font-size: 11px; color: var(--ink-faint); font-style: italic; margin-top: auto; padding-top: 8px; }
-  .fcard .rbadge, .badge-new { display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; background: var(--gradient-pill); color: var(--text-on-primary); padding: 3px 8px; border-radius: 20px; width: fit-content; flex-shrink: 0; white-space: nowrap; }
+  .fcard .rbadge, .badge-new { display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; background: var(--gradient-pill); color: var(--on-gradient-ink); padding: 3px 8px; border-radius: 20px; width: fit-content; flex-shrink: 0; white-space: nowrap; }
   .fcard .rbadge { margin-top: auto; }
   .badge-new { margin-top: 9px; }
 
@@ -376,16 +401,21 @@
   .rg-focusbar.show { display: flex; }
   .rg-focusbar b { color: var(--hs-mint); }
   .rg-focusbar button { margin-left: auto; font-family: inherit; font-size: 12px; font-weight: 600; color: var(--teal); background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 4px 12px; cursor: pointer; }
-  .rg-scroller { overflow: auto; max-height: calc(100vh - 220px); border: 1px solid var(--line-soft); border-radius: 12px; }
+  /* No overflow/max-height - the user wants the whole table on the page, scrolling with it, not in
+     its own inner scroller. thead th's position: sticky then sticks to the viewport instead of this
+     container, which is the better behaviour for a long table anyway. */
+  .rg-scroller { border: 1px solid var(--line-soft); border-radius: 12px; }
   .rg-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
   .rg-table thead th { position: sticky; top: 0; background: var(--surface-2); z-index: 3; padding: 11px 8px; text-align: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--teal); border-bottom: 2px solid var(--line); cursor: pointer; white-space: nowrap; user-select: none; }
   /* Was a fixed dark navy literal - broke once the base th (var(--surface-2)) started tracking
      theme too. Now tracks theme like the rest of the table. */
   .rg-table thead th:hover { background: var(--surface-flat); color: var(--ink); }
   .rg-table thead th.taskcol { position: sticky; left: 0; z-index: 4; text-align: left; width: 300px; min-width: 300px; cursor: default; background: var(--surface-2); }
-  .rg-table thead th.focused { background: var(--teal); color: var(--text-on-primary); }
+  /* --teal flips brightness across themes the same way phase-colour fills do, so this needs
+     --on-phase-ink too, not --text-on-primary - matching .station.on .n's identical pairing. */
+  .rg-table thead th.focused { background: var(--teal); color: var(--on-phase-ink); }
   .rg-table th .cnt { display: block; font-size: 9px; color: var(--teal); font-weight: 400; margin-top: 2px; }
-  .rg-table th.focused .cnt { color: var(--text-on-primary); }
+  .rg-table th.focused .cnt { color: var(--on-phase-ink); }
   .rg-grouprow td { background: var(--surface-2); font-weight: 700; padding: 9px 12px; font-size: 12.5px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); position: sticky; left: 0; }
   /* Sits on a PHASE color fill (row's own color), not the fixed gradient-pill accent -
      --text-on-primary is invariant dark navy, but light-mode phase colors are themselves dark (a
@@ -417,9 +447,8 @@
 
   /* sub-phase content header - Edit pencil lives here (right of the title), not in app chrome */
   .sp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-  .edit-pencil { flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(0,224,172,0.5); background: none; color: var(--teal); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.12s, box-shadow 0.12s; }
+  .edit-pencil { flex-shrink: 0; width: 36px; height: 36px; }
   .edit-pencil svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
-  .edit-pencil:hover { background: var(--teal-wash); box-shadow: var(--shadow-md); }
 
   h1.sp-title {
     font-size: 26px;
@@ -431,7 +460,7 @@
   .prec {
     display: inline-flex; align-items: center; gap: 5px;
     background: var(--gradient-pill);
-    color: var(--text-on-primary);
+    color: var(--on-gradient-ink);
     font-size: 10px; font-weight: 700;
     padding: 3px 9px;
     border-radius: 20px;
@@ -524,7 +553,7 @@
   .loe-all .tags { display: flex; gap: 6px; }
   .loe-mode { display: inline-flex; gap: 2px; background: var(--surface-flat); border-radius: 8px; padding: 3px; margin-bottom: 12px; }
   .loe-mode-btn { font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--ink-faint); background: none; border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; }
-  .loe-mode-btn.on { background: var(--gradient-pill); color: var(--text-on-primary); }
+  .loe-mode-btn.on { background: var(--gradient-pill); color: var(--on-gradient-ink); }
 
   /* job aids - read scope chips + editor */
   .ttbl .ja { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
@@ -541,7 +570,7 @@
   .ja-roles-lbl { font-size: 11px; color: var(--ink-2); margin-right: 2px; }
   .ja-rolechip { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--ink-faint); background: rgba(var(--wash-rgb),.05); border: 1px solid var(--line); border-radius: 20px; padding: 4px 11px; cursor: pointer; display: inline-flex; align-items: center; transition: background .12s, color .12s, border-color .12s; }
   .ja-rolechip:hover { border-color: var(--teal); color: var(--ink); }
-  .ja-rolechip.on { color: var(--teal); background: rgba(0,224,172,.1); border-color: var(--teal); }
+  .ja-rolechip.on { color: var(--teal); background: var(--chip-on-bg); border-color: var(--teal); }
   .ja-rolechip.ext { border-style: dashed; }
   /* Checkmark animates in on select - width/margin collapse to 0 when off, matching the participant chips. */
   .ja-check { width: 0; height: 10px; margin-right: 0; flex: none; opacity: 0; transform: scale(.4) rotate(-20deg); transition: width .18s ease, margin-right .18s ease, opacity .16s ease, transform .22s cubic-bezier(.34,1.56,.64,1); }
@@ -783,7 +812,7 @@
   .btn:hover { background: var(--hs-border-tertiary); color: var(--text-on-primary); border-color: var(--ink); box-shadow: var(--shadow-md); }
   .btn:active { background: transparent; color: var(--ink); border-color: var(--ink); box-shadow: var(--shadow-inset); }
   /* btn-dark mixin (primary/Save) - gradient-light-5, brightens to gradient-light-7 on hover, insets on press */
-  .btn.primary { background: var(--gradient-pill); border-color: transparent; color: var(--text-on-primary); font-weight: 600; }
+  .btn.primary { background: var(--gradient-pill); border-color: transparent; color: var(--on-gradient-ink); font-weight: 600; }
   .btn.primary:hover { background: var(--gradient-pill-hover); border-color: #fff; box-shadow: var(--shadow-md); }
   .btn.primary:active { background: var(--gradient-pill); border-color: #fff; box-shadow: var(--shadow-inset); }
   .btn.sm { height: 28px; padding: 0 12px; font-size: 12.5px; }
@@ -838,9 +867,9 @@
     font-size: 13.5px; font-weight: 500; color: var(--ink);
   }
   .jt-pick-btn:hover { border-color: var(--teal); }
-  .jt-pick-btn.active { background: var(--gradient-pill); color: var(--text-on-primary); border-color: #fff; font-weight: 700; box-shadow: var(--shadow-inset); }
+  .jt-pick-btn.active { background: var(--gradient-pill); color: var(--on-gradient-ink); border-color: #fff; font-weight: 700; box-shadow: var(--shadow-inset); }
   .jt-pick-btn .abbr { font-family: var(--font-mono); font-size: 11px; color: var(--hs-mint); }
-  .jt-pick-btn.active .abbr { color: var(--text-on-primary); }
+  .jt-pick-btn.active .abbr { color: var(--on-gradient-ink); }
   .jt-pick-btn .n { font-family: var(--font-mono); font-size: 11px; opacity: 0.7; }
 
   .jt-group { margin-bottom: 28px; }
@@ -938,7 +967,9 @@
   }
   @media (max-width: 620px) {
     .pagehdr-top { flex-direction: column; align-items: stretch; }
-    .hsearch, .hsearch input { width: 100%; }
+    .hdr-search-group { width: 100%; }
+    .hsearch { flex: 1; }
+    .hsearch input { width: 100%; }
     .vtab span { display: none; }
     .views { justify-content: space-between; }
   }
@@ -960,13 +991,15 @@
             <button class="vtab" data-view="ref"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5a6 6 0 0 0-8 0v12a6 6 0 0 1 8 0 6 6 0 0 1 8 0v-12a6 6 0 0 0-8 0zM12 6.5V19"/></svg><span>Reference</span></button>
             <button class="vtab" data-view="new" id="newTab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>What's New</span></button>
           </div>
-          <div class="hsearch">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-            <input id="searchInput" type="text" placeholder="Search…" autocomplete="off" />
+          <div class="hdr-search-group">
+            <button type="button" class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            </button>
+            <div class="hsearch">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input id="searchInput" type="text" placeholder="Search…" autocomplete="off" />
+            </div>
           </div>
-          <button type="button" class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-          </button>
         </div>
         <div class="pagehdr-title">
           <div class="pagehdr-title-row">
@@ -2373,7 +2406,7 @@ function renderRaci() {
   m.phases.forEach((p, i) => {
     const on = rgActivePhases.has(p.name);
     const c = PHASE_COLORS[i % PHASE_COLORS.length];
-    html += `<button class="rg-pchip" data-rgp="${esc(p.name)}" style="background:${on ? c : 'var(--surface-flat)'};color:${on ? 'var(--text-on-primary)' : 'var(--ink-soft)'};border-color:${on ? '#fff' : 'var(--line)'};box-shadow:${on ? 'var(--shadow-inset)' : 'none'}">${esc(p.name)}</button>`;
+    html += `<button class="rg-pchip" data-rgp="${esc(p.name)}" style="background:${on ? c : 'var(--surface-flat)'};color:${on ? 'var(--on-phase-ink)' : 'var(--ink-soft)'};border-color:${on ? 'var(--on-phase-ink)' : 'var(--line)'};box-shadow:${on ? 'var(--shadow-inset)' : 'none'}">${esc(p.name)}</button>`;
   });
   html += '</div><div class="rg-legend">';
   RACI_LETTERS.forEach(l => { html += `<span class="lg"><span class="sw" style="background:${RACI_HEX[l]}">${l}</span>${RACI_NAMES[l]}</span>`; });

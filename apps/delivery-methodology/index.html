@@ -26,7 +26,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=20260725a">
+<link rel="stylesheet" href="css/app.css?v=20260725b">
 </head>
 <body>
 
@@ -63,15 +63,17 @@
           <button type="button" class="vtab" ng-class="{on: vm.view === 'reference'}" ng-click="vm.setView('reference')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5a6 6 0 0 0-8 0v12a6 6 0 0 1 8 0 6 6 0 0 1 8 0v-12a6 6 0 0 0-8 0zM12 6.5V19"></path></svg><span>Reference</span></button>
           <button type="button" class="vtab" ng-if="vm.anyUnread()" ng-class="{on: vm.view === 'whatsnew'}" ng-click="vm.setView('whatsnew')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>What's New</span></button>
         </div>
-        <div class="hsearch">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
-          <input type="text" placeholder="Search…" autocomplete="off" ng-model="vm.searchQuery" ng-change="vm.runSearch()">
+        <div class="hdr-search-group">
+          <button type="button" class="theme-toggle" ng-click="vm.toggleTheme()"
+                  aria-pressed="{{vm.theme === 'dark'}}" title="Toggle light/dark mode">
+            <svg ng-if="vm.theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+            <svg ng-if="vm.theme !== 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+          <div class="hsearch">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+            <input type="text" placeholder="Search…" autocomplete="off" ng-model="vm.searchQuery" ng-change="vm.runSearch()">
+          </div>
         </div>
-        <button type="button" class="theme-toggle" ng-click="vm.toggleTheme()"
-                aria-pressed="{{vm.theme === 'dark'}}" title="Toggle light/dark mode">
-          <svg ng-if="vm.theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
-          <svg ng-if="vm.theme !== 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-        </button>
       </div>
       <div class="pagehdr-title">
         <div class="pagehdr-title-row">
@@ -480,7 +482,7 @@
         <div class="rg-controls">
           <div class="rg-pfilters">
             <button type="button" class="rg-pchip" ng-repeat="p in vm.curMeth().phases"
-                    ng-style="{background: vm.rgActivePhases[p.name] ? vm.phaseColor($index) : 'var(--surface-flat)', color: vm.rgActivePhases[p.name] ? 'var(--text-on-primary)' : 'var(--ink-soft)', 'border-color': vm.rgActivePhases[p.name] ? '#fff' : 'var(--line)', 'box-shadow': vm.rgActivePhases[p.name] ? 'var(--shadow-inset)' : 'none'}"
+                    ng-style="{background: vm.rgActivePhases[p.name] ? vm.phaseColor($index) : 'var(--surface-flat)', color: vm.rgActivePhases[p.name] ? 'var(--on-phase-ink)' : 'var(--ink-soft)', 'border-color': vm.rgActivePhases[p.name] ? 'var(--on-phase-ink)' : 'var(--line)', 'box-shadow': vm.rgActivePhases[p.name] ? 'var(--shadow-inset)' : 'none'}"
                     ng-click="vm.rgTogglePhase(p.name)">{{p.name}}</button>
           </div>
           <div class="rg-legend">

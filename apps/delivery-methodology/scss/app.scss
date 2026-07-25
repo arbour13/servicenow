@@ -31,6 +31,19 @@
   --teal: var(--hs-teal);
   --teal-wash: rgba(0, 224, 172, 0.12);
   --gradient-pill: linear-gradient(90deg, #21fbc8 0%, #3ec2f8 100%);
+  --gradient-pill-hover: linear-gradient(90deg, #a7ffeb 0%, #49c6fa 100%);
+  /* Text sitting ON --gradient-pill. Split out of --text-on-primary because that token has two
+     jobs that must NOT move together: on the BRIGHT RACI fills (.raci-toggle.on, .rg-legend .sw)
+     dark navy is correct in both themes, but --gradient-pill itself darkens for light mode, where
+     dark-on-dark would be unreadable. Same dual-role problem --on-phase-ink already solves for
+     phase-colour fills. */
+  --on-gradient-ink: var(--text-on-primary);
+  /* Chip "selected" fill (participant picker, job-aid role scoping). A token because the two chip
+     types must stay identical, and because light mode wants a pale tint where dark wants a teal
+     wash. NOTE the on-signal is really the border + text colour: no pale tint separates
+     meaningfully from the pale aqua card these chips sit on (max ~1.1:1), whereas the teal ring
+     lands at 6.1-7.8:1. The tint is an assist, not the signal. */
+  --chip-on-bg: rgba(0, 224, 172, 0.1);
   --gradient-card: linear-gradient(135deg, #275b63 0%, #0d435f 100%);
   --gradient-card-2: linear-gradient(135deg, #327374 0%, #0c506e 100%);
   --shadow-md: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
@@ -132,6 +145,12 @@
   --hs-teal: #008365;
   --teal: #005c63;               /* darker than the mid-palette version - a tinted page eats
                                      contrast margin, verified >=4.5:1 on every surface below */
+  /* The brand gradient darkened so it stops glowing on a pale page (the "too flashy" feedback).
+     First stop is literally --p1, so it stays in-palette. White on the stops: 6.01 / 6.81. */
+  --gradient-pill: linear-gradient(90deg, #006e76 0%, #1c5f8f 100%);
+  --gradient-pill-hover: linear-gradient(90deg, #00838d 0%, #226fa6 100%);
+  --on-gradient-ink: #ffffff;    /* NOT --text-on-primary - see the base :root comment */
+  --chip-on-bg: var(--surface-2);
   /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb), kept as four distinct
      hues on purpose - these are the task table's only colour signal (role colours were removed
      everywhere else). An earlier AI-generated palette round collapsed these to four near-identical
@@ -248,6 +267,15 @@ button {
   margin-bottom: 0;
 }
 
+/* Groups the toggle and search together as one flex child of .pagehdr-top, so
+   justify-content: space-between pins the PAIR to the right edge - the toggle sits flush against
+   search rather than floating at its own independent distance from it. */
+.hdr-search-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .hsearch {
   position: relative;
 }
@@ -285,21 +313,29 @@ button {
   stroke-width: 2;
 }
 
-.theme-toggle {
+/* .edit-pencil shares this treatment with .theme-toggle - the user asked for the two to "interact
+   like" each other, so it's one factored rule rather than duplicated declarations. */
+.theme-toggle,
+.edit-pencil {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  flex: none;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--surface-flat);
   color: var(--ink-faint);
+  cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
 
-.theme-toggle:hover {
+.theme-toggle {
+  width: 34px;
+  height: 34px;
+  flex: none;
+}
+
+.theme-toggle:hover,
+.edit-pencil:hover {
   color: var(--teal);
   border-color: var(--teal);
 }
@@ -438,7 +474,7 @@ button {
 
 .meth-tab.active {
   background: var(--gradient-pill);
-  color: var(--text-on-primary);
+  color: var(--on-gradient-ink);
   box-shadow: var(--shadow-inset);
 }
 
@@ -452,7 +488,13 @@ button {
     flex-direction: column;
     align-items: stretch;
   }
-  .hsearch, .hsearch input {
+  .hdr-search-group {
+    width: 100%;
+  }
+  .hsearch {
+    flex: 1;
+  }
+  .hsearch input {
     width: 100%;
   }
   .vtab span {
@@ -719,7 +761,7 @@ button {
   font-size: 9.5px;
   font-weight: 700;
   background: var(--gradient-pill);
-  color: var(--text-on-primary);
+  color: var(--on-gradient-ink);
   padding: 3px 8px;
   border-radius: 20px;
   width: fit-content;
@@ -765,7 +807,7 @@ h1.sp-title {
   align-items: center;
   gap: 5px;
   background: var(--gradient-pill);
-  color: var(--text-on-primary);
+  color: var(--on-gradient-ink);
   font-size: 10px;
   font-weight: 700;
   padding: 3px 9px;
@@ -778,15 +820,6 @@ h1.sp-title {
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 224, 172, 0.5);
-  background: none;
-  color: var(--teal);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.12s, box-shadow 0.12s;
 }
 
 .edit-pencil svg {
@@ -795,11 +828,6 @@ h1.sp-title {
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
-}
-
-.edit-pencil:hover {
-  background: var(--teal-wash);
-  box-shadow: var(--shadow-md);
 }
 
 .pchange {
@@ -1536,7 +1564,7 @@ table.ttbl .jobaid {
 .btn.primary {
   background: var(--gradient-pill);
   border-color: transparent;
-  color: var(--text-on-primary);
+  color: var(--on-gradient-ink);
   font-weight: 600;
 }
 
@@ -1544,6 +1572,12 @@ table.ttbl .jobaid {
   background: var(--gradient-pill-hover, var(--gradient-pill));
   border-color: #fff;
   box-shadow: var(--shadow-md);
+}
+
+.btn.primary:active {
+  background: var(--gradient-pill);
+  border-color: #fff;
+  box-shadow: var(--shadow-inset);
 }
 
 .btn.sm {
@@ -1673,7 +1707,7 @@ select.edit-in option {
 }
 
 .participant-chip.on {
-  background: rgba(0, 224, 172, 0.1);
+  background: var(--chip-on-bg);
   color: var(--teal);
   border-color: var(--teal);
 }
@@ -2122,7 +2156,7 @@ select.edit-in option {
 
 .ja-rolechip.on {
   color: var(--teal);
-  background: rgba(0, 224, 172, 0.1);
+  background: var(--chip-on-bg);
   border-color: var(--teal);
 }
 
@@ -2171,7 +2205,7 @@ select.edit-in option {
 
 .loe-mode-btn.on {
   background: var(--gradient-pill);
-  color: var(--text-on-primary);
+  color: var(--on-gradient-ink);
 }
 
 .loe-mode.mtg-toggle {
@@ -2422,9 +2456,10 @@ select.edit-in option {
   cursor: pointer;
 }
 
+/* No overflow/max-height - the user wants the whole table on the page, scrolling with it, not in
+   its own inner scroller. thead th's position: sticky then sticks to the viewport instead of this
+   container, which is the better behaviour for a long table anyway. */
 .rg-scroller {
-  overflow: auto;
-  max-height: calc(100vh - 220px);
   border: 1px solid var(--line-soft);
   border-radius: 12px;
 }
@@ -2472,9 +2507,12 @@ select.edit-in option {
   background: var(--surface-2);
 }
 
+/* --teal flips brightness across themes the same way phase-colour fills do (bright accent in dark
+   mode, darkened accent in light mode), so this needs --on-phase-ink too, not --text-on-primary -
+   matching .station.on .n's identical pairing. */
 .rg-table thead th.focused {
   background: var(--teal);
-  color: var(--text-on-primary);
+  color: var(--on-phase-ink);
 }
 
 .rg-table th .cnt {
@@ -2486,7 +2524,7 @@ select.edit-in option {
 }
 
 .rg-table th.focused .cnt {
-  color: var(--text-on-primary);
+  color: var(--on-phase-ink);
 }
 
 .rg-grouprow td {
@@ -2667,7 +2705,7 @@ select.edit-in option {
 
 .jt-pick-btn.active {
   background: var(--gradient-pill);
-  color: var(--text-on-primary);
+  color: var(--on-gradient-ink);
   border-color: #fff;
   font-weight: 700;
   box-shadow: var(--shadow-inset);
@@ -2680,7 +2718,7 @@ select.edit-in option {
 }
 
 .jt-pick-btn.active .abbr {
-  color: var(--text-on-primary);
+  color: var(--on-gradient-ink);
 }
 
 .jt-pick-btn .jt-pick-count {
