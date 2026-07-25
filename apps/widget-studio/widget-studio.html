@@ -75,6 +75,7 @@ class Component extends DCLogic {
     this.CANVAS_GAP = '0';  // no synthetic spacing between siblings — elements render flush (real gap/margin only)
     this.REPEAT_PREVIEW_N = 6;  // fixed ghost-copy count for a repeating element with no real sample array to size from — no longer user-editable ("Preview copies" field removed, it just confused people)
     this._inspOpen = {};  // big-card (Structure/Appearance) open/closed state; inspector sections are tabs now
+    this._lastLead = null;  // previous styleLead() result, so designTab only auto-opens the leading card on a genuine change
     this.dark = false; this.device = 'lg';
     this._scrollFade = {left:false, right:false};  // canvas scroll-edge fade state, see measureScrollFade
     this.codeTheme = 'auto';  // Monaco theme: 'auto' follows the app theme, or pin 'light'/'dark' independently
@@ -5162,14 +5163,42 @@ class Component extends DCLogic {
     els.push(this.positionEditor(node,t));
     return h('div',null,els);
   }
+  // Tag/type lists purpose-built for styleLead()'s content-type classification — deliberately NOT
+  // TEXT_TAGS/CONTAINER_TAGS (those serve drag/drop containment and disagree here: TEXT_TAGS calls
+  // 'button' text, CONTAINER_TAGS calls 'li'/'blockquote' containers; both wrong for this feature).
+  STYLE_LEAD_TEXT_TAGS=['h1','h2','h3','h4','h5','h6','p','span','a','label','li','blockquote'];
+  STYLE_LEAD_SURFACE_TAGS=['button','input','select','textarea','hr'];
+  STYLE_LEAD_SURFACE_TYPES={button:1,badge:1,alert:1,panel:1,card:1,input:1,select:1,checkbox:1,radio:1};
+  // Which Style-tab section should lead for this node: 'text' (Typography first), 'surface'
+  // (Background/Border first), or 'structure' (Structure card first, today's order). No flex/grid-
+  // child override by design — an <h2> shouldn't reorder based on where it sits in the layout.
+  styleLead(node){
+    if(node.id==='root') { return 'structure'; }
+    if(node.type==='icon') { return 'text'; }
+    if(node.type==='el'){ const tg=node.data.tag;
+      if(this.STYLE_LEAD_SURFACE_TAGS.includes(tg)) { return 'surface'; }
+      if(this.STYLE_LEAD_TEXT_TAGS.includes(tg)) { return 'text'; }
+      return 'structure'; }
+    if(this.STYLE_LEAD_SURFACE_TYPES[node.type]) { return 'surface'; }
+    return 'structure'; // table, navtabs, listgroup, progress, breadcrumb, buttongroup, html
+  }
   // Merged Layout + Style — one panel, a single state switcher, grouped into two elevated cards:
   // Structure (display/flex-grid/spacing/size/overflow/position) and Appearance (typography/background/
   // border/effects/transforms). Position now lives inside Structure (per the reference), not below the cards.
-  designTab(node,t){ const h=React.createElement; return h('div',null,
-    this.layerZone(node,t),
-    this.bigCard(t,'card:structure','structure','Structure', this.layoutTab(node,t)),
-    this.bigCard(t,'card:appearance','palette','Appearance', this.styleTab(node,t,true)),
-    this.ledger(node,t));
+  // Card order and Appearance's internal block order both follow styleLead() — the leading card
+  // auto-opens on a genuine lead CHANGE only (tracked via _lastLead); a card the user deliberately
+  // collapsed for the same lead stays collapsed.
+  designTab(node,t){ const h=React.createElement;
+    const lead=this.styleLead(node);
+    if(this._lastLead!==lead){ this._lastLead=lead;
+      if(lead==='structure'){ this._inspOpen['card:structure']=true; } else { this._inspOpen['card:appearance']=true; }
+    }
+    const structureCard=this.bigCard(t,'card:structure','structure','Structure', this.layoutTab(node,t));
+    const appearanceCard=this.bigCard(t,'card:appearance','palette','Appearance', this.styleTab(node,t,true,lead));
+    return h('div',null,
+      this.layerZone(node,t),
+      lead==='structure' ? h(React.Fragment,null,structureCard,appearanceCard) : h(React.Fragment,null,appearanceCard,structureCard),
+      this.ledger(node,t));
   }
   // The ledger: every declaration actually SET on this class, grouped by layer — the layer you're
   // editing (if off-base) plus Base beneath it. A Base value the active layer also sets is struck
@@ -5506,15 +5535,19 @@ class Component extends DCLogic {
     if(this._estate==='base'||this.isPseudoState(this._estate)) { return null; }
     const b=c&&this.stateStyles[c]&&this.stateStyles[c][this._estate]; const hit=b&&keys.some(k=>b[k]!=null); if(!hit) { return null; }
     return h('span',Object.assign({onClick:()=>{ keys.forEach(k=>{ if(b[k]!=null) { this.setCS(node,k,''); } }); }},this.tt('Edited in this state — click to reset'),{style:{width:7,height:7,borderRadius:'50%',background:t.accent,cursor:'pointer',flex:'0 0 auto'}})); }
-  styleTab(node,t,noState){
+  // lead ('surface') puts Background/Border ahead of Typography; anything else (incl. undefined,
+  // for callers outside designTab) keeps Typography first — see styleLead() for the classification.
+  styleTab(node,t,noState,lead){
     const h=React.createElement;
+    const typo=this.typographyBlock(node,t);
+    const bg=this.backgroundBlock(node,t);
+    const border=this.borderBlock(node,t);
+    const effects=this.effectsBlock(node,t);
+    const transforms=this.transformsBlock(node,t);
+    const blocks=lead==='surface' ? [bg,border,typo,effects,transforms] : [typo,bg,border,effects,transforms];
     return h('div',null,
       noState?null:this.layerZone(node,t),
-      this.typographyBlock(node,t),
-      this.backgroundBlock(node,t),
-      this.borderBlock(node,t),
-      this.effectsBlock(node,t),
-      this.transformsBlock(node,t)
+      ...blocks
     );
   }
   // ---- box-shadow parse/compose (raw multi-shadow cards) ----
