@@ -214,12 +214,18 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   function curMeth() {
     return vm.methodologies.find(function (m) { return m.id === vm.methodologyId; });
   }
+  // Guarded against structure editing leaving a phase (or every phase) with zero sub-phases -
+  // returns null rather than throwing; callers (vm.subPhaseId = ...) already tolerate a null
+  // location (vm.loc stays null, and every template block that reads it is ng-if="vm.loc"-gated).
   function firstContentSubPhase(meth) {
     for (var i = 0; i < meth.phases.length; i++) {
       var found = meth.phases[i].subPhases.find(hasContent);
       if (found) { return found.id; }
     }
-    return meth.phases[0].subPhases[0].id;
+    for (var j = 0; j < meth.phases.length; j++) {
+      if (meth.phases[j].subPhases.length) { return meth.phases[j].subPhases[0].id; }
+    }
+    return null;
   }
   // Anything an editor can actually add from the edit panel counts as "written" - not just
   // overview/objective/tasks. Otherwise adding participants (or comments, meetings, inputs,
@@ -379,6 +385,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   vm.selectPhase = function (phaseIndex) {
     if (vm.editMode) { return; }
     var p = curMeth().phases[phaseIndex];
+    if (!p.subPhases.length) { return; } // structure editing can leave a phase empty - nothing to open
     var written = p.subPhases.find(hasContent);
     vm.openSubPhase((written || p.subPhases[0]).id);
   };
@@ -398,6 +405,101 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     vm.searchQuery = '';
     vm.searchResultsList = [];
     vm.openSubPhase(subId);
+  };
+
+  /* ================= Structure editing (phases + sub-phases) =================
+     Add/rename/delete/reorder, direct-mutation-then-save (no working-copy/snapshot pattern like
+     vm.editSp above - there's no per-field changelog to diff here, just a tree shape edit). Every
+     mutation below is followed by recomputeSids() (position IS the sid) and DataService.saveData()
+     (persists the whole tree - see the service's own comment on why that's fine to do every time). */
+  vm.structureEditMode = false;
+  vm.toggleStructureEdit = function () {
+    if (vm.editMode) { showToast('Finish editing first'); return; }
+    vm.structureEditMode = !vm.structureEditMode;
+  };
+  vm.renamePhase = function (phase) {
+    DataService.saveData(vm.methodologies);
+  };
+  vm.renameSubPhase = function (sp) {
+    DataService.saveData(vm.methodologies);
+  };
+  vm.addPhase = function () {
+    var m = curMeth();
+    var phase = { id: 'phase' + (phaseSeq++), name: 'New Phase', order: m.phases.length + 1, subPhases: [] };
+    m.phases.push(phase);
+    rgEnsureActivePhases();
+    vm.rgActivePhases[phase.id] = true;
+    DataService.saveData(vm.methodologies);
+  };
+  // Lands the editor directly in the new sub-phase's content edit panel (enterEdit) rather than
+  // just creating a stub and leaving the user to find and open it - selectPhase deliberately skips
+  // unwritten sub-phases, so without this the one just created would be effectively invisible.
+  vm.addSubPhase = function (phaseIndex) {
+    var m = curMeth();
+    var p = m.phases[phaseIndex];
+    var sp = DataService.blankSubPhase('subphase' + (subPhaseSeq++), '', 'New Sub-Phase', p.subPhases.length + 1);
+    sp.changelog.push({ id: 'c' + (changelogSeq++), ts: TODAY, text: 'Sub-phase created', read: false });
+    p.subPhases.push(sp);
+    recomputeSids(m);
+    DataService.saveData(vm.methodologies);
+    vm.structureEditMode = false;
+    vm.subPhaseId = sp.id;
+    refreshLoc();
+    vm.justRead = markRead(vm.loc.sp);
+    vm.enterEdit();
+  };
+  vm.movePhase = function (index, dir) {
+    var m = curMeth();
+    var j = dir === 'up' ? index - 1 : index + 1;
+    if (j < 0 || j >= m.phases.length) { return; }
+    var tmp = m.phases[index]; m.phases[index] = m.phases[j]; m.phases[j] = tmp;
+    recomputeSids(m);
+    DataService.saveData(vm.methodologies);
+  };
+  vm.moveSubPhase = function (phaseIndex, index, dir) {
+    var m = curMeth();
+    var arr = m.phases[phaseIndex].subPhases;
+    var j = dir === 'up' ? index - 1 : index + 1;
+    if (j < 0 || j >= arr.length) { return; }
+    var tmp = arr[index]; arr[index] = arr[j]; arr[j] = tmp;
+    recomputeSids(m);
+    DataService.saveData(vm.methodologies);
+  };
+  vm.deletePhase = function (index) {
+    var m = curMeth();
+    if (m.phases.length <= 1) { showToast('A methodology needs at least one phase'); return; }
+    var phase = m.phases[index];
+    if (!window.confirm('Delete phase “' + phase.name + '” and all ' + phase.subPhases.length + ' of its sub-phases? This cannot be undone.')) { return; }
+    var removedIds = phase.subPhases.map(function (s) { return s.id; });
+    m.phases.splice(index, 1);
+    recomputeSids(m);
+    delete vm.rgActivePhases[phase.id];
+    if (removedIds.indexOf(vm.subPhaseId) >= 0) {
+      vm.subPhaseId = firstContentSubPhase(m);
+      refreshLoc();
+    }
+    DataService.saveData(vm.methodologies);
+    refreshWhatsNew();
+    if (vm.view === 'raci') { refreshRg(); }
+  };
+  vm.deleteSubPhase = function (phaseIndex, index) {
+    var m = curMeth();
+    var arr = m.phases[phaseIndex].subPhases;
+    if (arr.length <= 1) { showToast('A phase needs at least one sub-phase'); return; }
+    var sp = arr[index];
+    if (!window.confirm('Delete sub-phase “' + sp.name + '”? This cannot be undone.')) { return; }
+    var wasOpen = sp.id === vm.subPhaseId;
+    arr.splice(index, 1);
+    recomputeSids(m);
+    if (wasOpen) {
+      // Land on the sibling that slid into this position, or the previous one if this was last.
+      var next = arr[index] || arr[index - 1];
+      vm.subPhaseId = next ? next.id : firstContentSubPhase(m);
+      refreshLoc();
+    }
+    DataService.saveData(vm.methodologies);
+    refreshWhatsNew();
+    if (vm.view === 'raci') { refreshRg(); }
   };
 
   // Level of effort - one row for "all participants", or one row per role in byRole mode; only
@@ -449,7 +551,11 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   // loaded) scans all existing ids and bumps each counter past the max. Seed task ids are
   // hand-authored strings like 'd2-1-1-t1' (never match the 't'+digits shape addTask mints), so
   // taskSeq only ever needs to out-run OTHER counter-minted task ids from prior sessions.
-  var taskSeq = 1, jaSeq = 1, meetingSeq = 1, changelogSeq = 1000;
+  // phaseSeq/subPhaseSeq mint ids for structure edits ("+ Add phase"/"+ Add sub-phase" below).
+  // 'phase'/'subphase' are prefixes no seed id uses (seed ids are hand-authored dash-joined
+  // strings like 'd2-initiate'/'d2-1-1'), so a freshly minted 'phase1' can never collide with one -
+  // seedIdCounters() below still bumps past any that a PRIOR session already created and persisted.
+  var taskSeq = 1, jaSeq = 1, meetingSeq = 1, changelogSeq = 1000, phaseSeq = 1, subPhaseSeq = 1;
   function idNum(prefix, id) {
     if (typeof id !== 'string' || id.indexOf(prefix) !== 0) { return 0; }
     var n = parseInt(id.slice(prefix.length), 10);
@@ -458,12 +564,22 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   function seedIdCounters() {
     vm.methodologies.forEach(function (m) {
       m.phases.forEach(function (p) {
+        phaseSeq = Math.max(phaseSeq, idNum('phase', p.id) + 1);
         p.subPhases.forEach(function (s) {
+          subPhaseSeq = Math.max(subPhaseSeq, idNum('subphase', s.id) + 1);
           (s.meetings || []).forEach(function (x) { meetingSeq = Math.max(meetingSeq, idNum('mt', x.id) + 1); });
           (s.changelog || []).forEach(function (x) { changelogSeq = Math.max(changelogSeq, idNum('c', x.id) + 1); });
           (s.tasks || []).forEach(function (t) { taskSeq = Math.max(taskSeq, idNum('t', t.id) + 1); (t.jobAids || []).forEach(function (j) { jaSeq = Math.max(jaSeq, idNum('ja', j.id) + 1); }); });
         });
       });
+    });
+  }
+  // sid ('1.1', '2.3', ...) is DISPLAY-ONLY and now derived from position rather than
+  // hand-authored, so it stays correct through inserts/deletes/reorders instead of drifting -
+  // called after every structural mutation to a methodology's phase/sub-phase arrays.
+  function recomputeSids(meth) {
+    meth.phases.forEach(function (p, pi) {
+      p.subPhases.forEach(function (s, si) { s.sid = (pi + 1) + '.' + (si + 1); });
     });
   }
   function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -475,6 +591,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   vm.tmpAddJt = {};
 
   vm.enterEdit = function () {
+    if (vm.structureEditMode) { return; }
     vm.editSnapshot = deepClone(vm.loc.sp);
     vm.editSp = deepClone(vm.loc.sp);
     vm.tmpLoeRole = '';
@@ -793,11 +910,13 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   vm.rgOpenRow = null;
   vm.rg = { ids: [], counts: {}, groups: [], byRoleGroups: [] };
 
+  // Keyed by phase ID, not name - a name key meant renaming a phase silently reset its RACI filter
+  // (the old name's entry just went stale) and two same-named phases would collapse into one chip.
   function rgEnsureActivePhases() {
-    var names = curMeth().phases.map(function (p) { return p.name; });
-    if (!vm.rgActivePhases || Object.keys(vm.rgActivePhases).some(function (n) { return names.indexOf(n) < 0; })) {
+    var ids = curMeth().phases.map(function (p) { return p.id; });
+    if (!vm.rgActivePhases || Object.keys(vm.rgActivePhases).some(function (id) { return ids.indexOf(id) < 0; })) {
       vm.rgActivePhases = {};
-      names.forEach(function (n) { vm.rgActivePhases[n] = true; });
+      ids.forEach(function (id) { vm.rgActivePhases[id] = true; });
     }
   }
   function refreshRg() {
@@ -817,14 +936,14 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
 
     var counts = {};
     curMeth().phases.forEach(function (p) {
-      if (!vm.rgActivePhases[p.name]) { return; }
+      if (!vm.rgActivePhases[p.id]) { return; }
       p.subPhases.forEach(function (s) { if (hasContent(s)) { s.tasks.forEach(function (t) { Object.keys(t.raci || {}).forEach(function (id) { counts[id] = (counts[id] || 0) + t.raci[id].length; }); }); } });
     });
 
     var groups = [];
     var byRoleGroups = [];
     curMeth().phases.forEach(function (p, pi) {
-      if (!vm.rgActivePhases[p.name]) { return; }
+      if (!vm.rgActivePhases[p.id]) { return; }
       var color = PHASE_COLORS[pi % PHASE_COLORS.length];
       p.subPhases.filter(hasContent).forEach(function (s) {
         var rows = vm.rgFocusJob ? s.tasks.filter(function (t) { return t.raci[vm.rgFocusJob]; }) : s.tasks;
@@ -849,7 +968,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     });
     vm.rg = { ids: ids, counts: counts, groups: groups, byRoleGroups: byRoleGroups };
   }
-  vm.rgTogglePhase = function (name) { rgEnsureActivePhases(); vm.rgActivePhases[name] = !vm.rgActivePhases[name]; refreshRg(); };
+  vm.rgTogglePhase = function (id) { rgEnsureActivePhases(); vm.rgActivePhases[id] = !vm.rgActivePhases[id]; refreshRg(); };
   vm.rgToggleCol = function (id) { vm.rgFocusJob = (vm.rgFocusJob === id) ? null : id; refreshRg(); };
   vm.rgClearFocus = function () { vm.rgFocusJob = null; refreshRg(); };
   vm.rgSetMode = function (mode) { vm.raciMode = mode; refreshRg(); };

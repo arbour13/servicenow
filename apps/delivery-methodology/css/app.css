@@ -630,6 +630,143 @@ button {
   margin-bottom: 4px;
 }
 
+.struct-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.struct-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface-flat);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-round);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.struct-toggle-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.struct-toggle-btn:hover {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.struct-toggle-btn.on {
+  color: var(--teal);
+  border-color: var(--teal);
+  background: var(--teal-wash);
+}
+
+/* Structure editor - a plain, direct-mutation-then-save panel (no working-copy/snapshot like
+   vm.editSp's content editor above it): there's no per-field changelog to diff for a tree shape
+   edit, just phase/sub-phase add/rename/reorder/delete, saved immediately on every change. */
+.struct-toolbar {
+  margin: 4px 0 20px;
+  padding: 18px 20px;
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
+
+.struct-toolbar-hint {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin: 0 0 16px;
+}
+
+.struct-phase {
+  margin-bottom: 14px;
+}
+
+.struct-phase-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.struct-num {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  background: var(--surface-flat);
+  border-radius: 50%;
+}
+
+.struct-rename {
+  flex: 1;
+}
+
+.struct-phase .struct-rename {
+  font-weight: 700;
+}
+
+.struct-controls {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.struct-controls .reorder-btn,
+.struct-controls .field-x {
+  position: static;
+}
+
+.struct-controls .reorder-btn {
+  width: 22px;
+  height: 22px;
+}
+
+.struct-controls .reorder-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.struct-subphase-list {
+  padding-left: 30px;
+}
+
+.struct-subphase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.struct-sid {
+  flex: none;
+  width: 34px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+.struct-add-phase {
+  margin-top: 4px;
+}
+
 .fcard {
   position: relative;
   display: flex;

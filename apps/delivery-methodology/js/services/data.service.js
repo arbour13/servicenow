@@ -14,8 +14,12 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
   // way that would be confusing to silently merge with someone's already-saved edits (e.g. today's
   // job title renames) - a mismatched version just falls back to the fresh seed below, rather than
   // trying to migrate an old snapshot.
+  // v2: sub-phase `sid` is now DERIVED from position (see main.controller.js's recomputeSids), not
+  // hand-authored - a v1 snapshot's sids are still position-correct today, but bumping the version
+  // means any future structural edit made under v1 (before that controller change existed) is
+  // discarded in favor of the fresh seed rather than silently trusted as still position-correct.
   var STORAGE_KEY = 'gf-delivery-methodology-v1';
-  var SEED_VERSION = 1;
+  var SEED_VERSION = 2;
   function loadStoredMethodologies() {
     try {
       var raw = window.localStorage.getItem(STORAGE_KEY);
@@ -222,6 +226,9 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
     // thing when a single sub-phase save or a read-state change could touch either one, and the
     // payload is small enough that writing all of it each time costs nothing noticeable.
     saveData: function (methodologies) { storeMethodologies(methodologies); },
-    resetData: function () { try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+    resetData: function () { try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) {} },
+    // Exposed so the controller can mint new sub-phases (structure editing) with the same shape
+    // as every seeded one, instead of hand-rolling a second copy of this object literal.
+    blankSubPhase: blankSubPhase
   };
 }]);

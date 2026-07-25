@@ -360,6 +360,32 @@
 
   .strip-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 10px 2px; }
   .film { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 4px; }
+
+  .struct-toggle-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+  .struct-toggle-btn { display: inline-flex; align-items: center; gap: 6px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); background: var(--surface-flat); border: 1px solid var(--line); border-radius: var(--radius-round); padding: 6px 14px; cursor: pointer; transition: color .12s, border-color .12s, background .12s; }
+  .struct-toggle-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .struct-toggle-btn:hover { color: var(--teal); border-color: var(--teal); }
+  .struct-toggle-btn.on { color: var(--teal); border-color: var(--teal); background: var(--teal-wash); }
+
+  /* Structure editor - a plain, direct-mutation-then-save panel (no working-copy/snapshot like the
+     content editor above it): there's no per-field changelog to diff for a tree shape edit, just
+     phase/sub-phase add/rename/reorder/delete, saved immediately on every change. */
+  .struct-toolbar { margin: 4px 0 20px; padding: 18px 20px; background: var(--surface-2); border: 1px dashed var(--line); border-radius: 12px; }
+  .struct-toolbar-hint { font-size: 12.5px; color: var(--ink-faint); margin: 0 0 16px; }
+  .struct-phase { margin-bottom: 14px; }
+  .struct-phase-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .struct-num { flex: none; width: 22px; height: 22px; display: grid; place-items: center; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--ink-faint); background: var(--surface-flat); border-radius: 50%; }
+  .struct-rename { flex: 1; }
+  .struct-phase .struct-rename { font-weight: 700; }
+  .struct-controls { flex: none; display: flex; align-items: center; gap: 2px; }
+  .struct-controls .reorder-btn, .struct-controls .field-x { position: static; }
+  .struct-controls .reorder-btn { width: 22px; height: 22px; }
+  .struct-controls .reorder-btn svg { width: 14px; height: 14px; }
+  .struct-subphase-list { padding-left: 30px; }
+  .struct-subphase { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .struct-sid { flex: none; width: 34px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); text-align: right; }
+  .struct-add-phase { margin-top: 4px; }
+
   /* enhanced sub-phase cards: phase-colour accent rail, icon chip, hover lift, glow-ring when selected */
   .fcard { position: relative; display: flex; flex-direction: column; min-height: 142px; background: var(--gradient-card); border: 1px solid var(--card-line); border-radius: 12px; padding: 12px 15px 13px; cursor: pointer; text-align: left; font-family: inherit; overflow: hidden; transition: transform .16s, box-shadow .16s; }
   .fcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--pc); opacity: .9; transition: width .16s; }
@@ -1248,6 +1274,12 @@ let changelogSeq = 1000;
 let jaSeq = 1;
 let meetingSeq = 1;
 let taskSeq = 1;
+// phaseSeq/subPhaseSeq mint ids for structure edits ("+ Add phase"/"+ Add sub-phase" below).
+// 'phase'/'subphase' are prefixes no seed id uses (seed ids are hand-authored dash-joined strings
+// like 'd2-initiate'/'d2-1-1'), so a freshly minted 'phase1' can never collide with one -
+// seedIdCounters() below still bumps past any that a PRIOR session already created and persisted.
+let phaseSeq = 1;
+let subPhaseSeq = 1;
 // Bump each id counter past the highest id already present in seed + persisted data, so a newly
 // created 'mt1'/'ja1'/'c1000'/'t1' can never collide with an existing record. Run once after
 // load/normalize. Seed task ids are hand-authored strings like 'd2-1-1-t1' (never match the
@@ -1258,11 +1290,27 @@ function idNum(prefix, id) {
   return isNaN(n) ? 0 : n;
 }
 function seedIdCounters(d) {
-  (d.methodologies || []).forEach(m => (m.phases || []).forEach(p => (p.subPhases || []).forEach(s => {
-    (s.meetings || []).forEach(x => { meetingSeq = Math.max(meetingSeq, idNum('mt', x.id) + 1); });
-    (s.changelog || []).forEach(x => { changelogSeq = Math.max(changelogSeq, idNum('c', x.id) + 1); });
-    (s.tasks || []).forEach(t => { taskSeq = Math.max(taskSeq, idNum('t', t.id) + 1); (t.jobAids || []).forEach(j => { jaSeq = Math.max(jaSeq, idNum('ja', j.id) + 1); }); });
-  })));
+  (d.methodologies || []).forEach(m => (m.phases || []).forEach(p => {
+    phaseSeq = Math.max(phaseSeq, idNum('phase', p.id) + 1);
+    (p.subPhases || []).forEach(s => {
+      subPhaseSeq = Math.max(subPhaseSeq, idNum('subphase', s.id) + 1);
+      (s.meetings || []).forEach(x => { meetingSeq = Math.max(meetingSeq, idNum('mt', x.id) + 1); });
+      (s.changelog || []).forEach(x => { changelogSeq = Math.max(changelogSeq, idNum('c', x.id) + 1); });
+      (s.tasks || []).forEach(t => { taskSeq = Math.max(taskSeq, idNum('t', t.id) + 1); (t.jobAids || []).forEach(j => { jaSeq = Math.max(jaSeq, idNum('ja', j.id) + 1); }); });
+    });
+  }));
+}
+// New sub-phase shape - matches what normalizeSubPhase() leaves every SEEDED sub-phase in, so a
+// freshly created one needs no separate normalization pass. No `participants` field: this
+// prototype still derives participants from task RACI (derivedParticipants above) rather than a
+// picked roster - see Task #15 in the backlog memory, a pre-existing gap this doesn't resolve.
+function blankSubPhase(id, sid, name, order) {
+  return { id, sid, name, order, changelog: [], overview: '', objective: '', comments: [], inputs: [], deliverables: [], tasks: [], meetings: [], levelOfEffort: { mode: 'all', all: {}, roles: {} } };
+}
+// sid ('1.1', '2.3', ...) is DISPLAY-ONLY and derived from position rather than hand-authored, so
+// it stays correct through inserts/deletes/reorders - called after every structural mutation.
+function recomputeSids(meth) {
+  meth.phases.forEach((p, pi) => { p.subPhases.forEach((s, si) => { s.sid = (pi + 1) + '.' + (si + 1); }); });
 }
 
 /* ---------------- State ---------------- */
@@ -1274,6 +1322,7 @@ let state = {
   subPhaseId: firstContentSubPhase(data.methodologies[0]),
   editMode: false,
   editSnapshot: null,
+  structureEditMode: false,
   search: '',
   showJargon: prefs.showJargon,
   justRead: []               // changelog entries just marked read by opening the current sub-phase
@@ -1419,11 +1468,15 @@ function savePrefs() {
 /* ---------------- Lookups ---------------- */
 function curMeth() { return data.methodologies.find(m => m.id === state.methodologyId); }
 function jobTitleById(id) { return data.jobTitles.find(r => r.id === id); }
+// Guarded against structure editing leaving a phase (or every phase) with zero sub-phases -
+// returns null rather than throwing; callers already tolerate a null subPhaseId (findSubPhase
+// returns null too, and renderBrowse's `if (!loc)` branch already handles that).
 function firstContentSubPhase(meth) {
   for (const p of meth.phases) {
     for (const s of p.subPhases) { if (hasContent(s)) { return s.id; } }
   }
-  return meth.phases[0].subPhases[0].id;
+  for (const p of meth.phases) { if (p.subPhases.length) { return p.subPhases[0].id; } }
+  return null;
 }
 function hasContent(sp) { return !!(sp.overview || sp.objective || (sp.tasks && sp.tasks.length)); }
 function findSubPhase(id) {
@@ -1592,7 +1645,8 @@ function describeChanges(before, after) {
 
 /* ---------------- Render root ---------------- */
 const main = document.getElementById('main');
-let rgActivePhases = null;   // Set of phase names shown in the RACI grid
+let rgActivePhases = null;   // Set of phase ids shown in the RACI grid (id, not name - a name key
+                              // meant renaming a phase silently reset its filter)
 let rgFocusJob = null;       // job-title id the RACI grid is focused on
 let raciMode = 'grid';       // 'grid' | 'byrole' - how the RACI view presents itself
 
@@ -1643,6 +1697,7 @@ function phaseIndexOfSub(subId) {
   return 0;
 }
 function firstSubOfPhase(p) {
+  if (!p.subPhases.length) { return null; } // structure editing can leave a phase empty
   const written = p.subPhases.find(s => hasContent(s));
   return (written || p.subPhases[0]).id;
 }
@@ -1674,12 +1729,38 @@ function subPhaseIconKey(name) {
   if (/retrospective|closure|lesson/.test(n)) { return 'check'; }
   return 'doc';
 }
+function structToolbarHtml(m) {
+  let h = '<div class="struct-toolbar"><p class="struct-toolbar-hint">Rename phases and sub-phases inline, reorder with the arrows, or remove them. Adding a new sub-phase opens it straight into edit mode so you can write it.</p>';
+  m.phases.forEach((p, pi) => {
+    h += `<div class="struct-phase"><div class="struct-phase-head"><span class="struct-num">${pi + 1}</span>` +
+      `<input type="text" class="edit-in struct-rename" data-rename-phase="${pi}" value="${esc(p.name)}" placeholder="Phase name" aria-label="Phase name">` +
+      `<span class="struct-controls">` +
+      `<button type="button" class="reorder-btn" data-move-phase="${pi}:up" ${pi === 0 ? 'disabled' : ''} title="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>` +
+      `<button type="button" class="reorder-btn" data-move-phase="${pi}:down" ${pi === m.phases.length - 1 ? 'disabled' : ''} title="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>` +
+      `<button type="button" class="field-x" data-delete-phase="${pi}" title="Delete phase" aria-label="Delete phase">&times;</button>` +
+      `</span></div><div class="struct-subphase-list">`;
+    p.subPhases.forEach((s, si) => {
+      h += `<div class="struct-subphase"><span class="struct-sid">${esc(s.sid)}</span>` +
+        `<input type="text" class="edit-in struct-rename" data-rename-sub="${pi}:${si}" value="${esc(s.name)}" placeholder="Sub-phase name" aria-label="Sub-phase name">` +
+        `<span class="struct-controls">` +
+        `<button type="button" class="reorder-btn" data-move-sub="${pi}:${si}:up" ${si === 0 ? 'disabled' : ''} title="Move sub-phase earlier" aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>` +
+        `<button type="button" class="reorder-btn" data-move-sub="${pi}:${si}:down" ${si === p.subPhases.length - 1 ? 'disabled' : ''} title="Move sub-phase later" aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>` +
+        `<button type="button" class="field-x" data-delete-sub="${pi}:${si}" title="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>` +
+        `</span></div>`;
+    });
+    h += `<button type="button" class="add-item-btn tight" data-add-sub="${pi}">+ Add sub-phase</button></div></div>`;
+  });
+  h += '<button type="button" class="add-item-btn struct-add-phase" data-add-phase>+ Add phase</button></div>';
+  return h;
+}
 function journeyChromeHtml() {
   const m = curMeth();
   const pi = phaseIndexOfSub(state.subPhaseId);
   const ps = m.phases;
   const activeColor = PHASE_COLORS[pi % PHASE_COLORS.length];
   let h = '<div class="journey-chrome">';
+
+  h += `<div class="struct-toggle-row"><button type="button" class="struct-toggle-btn ${state.structureEditMode ? 'on' : ''}" data-struct-toggle>${PENCIL_SVG}${state.structureEditMode ? 'Done editing structure' : 'Edit structure'}</button></div>`;
 
   h += `<div class="road" style="--stations:${ps.length};--active:${pi}">`;
   h += ps.map((p, i) => {
@@ -1688,7 +1769,7 @@ function journeyChromeHtml() {
     return `<button class="station ${cls}" data-phase-i="${i}" style="--nc:${nc}"><span class="n">${i + 1}${phaseHasUnread(p) ? '<span class="udot" title="Unread changes in this phase"></span>' : ''}</span><span class="nm">${esc(p.name)}</span><span class="ct">${p.subPhases.length} sub-phase${p.subPhases.length > 1 ? 's' : ''}</span></button>`;
   }).join('') + '</div>';
 
-  const phase = ps[pi];
+  const phase = ps[pi] || { name: '', subPhases: [] };
   h += `<p class="strip-label">${esc(phase.name)} - sub-phases</p><div class="film">`;
   h += phase.subPhases.map(s => {
     const on = s.id === state.subPhaseId;
@@ -1698,14 +1779,47 @@ function journeyChromeHtml() {
     if (!hasContent(s)) { inner += '<div class="fmeta">Not yet written</div>'; }
     return `<button class="fcard ${on ? 'on' : ''} ${hasContent(s) ? '' : 'stub'}" data-sub="${s.id}" style="--pc:${activeColor}">${inner}</button>`;
   }).join('') + '</div>';
+
+  if (state.structureEditMode) { h += structToolbarHtml(m); }
   return h + '</div>';
 }
 function wireJourneyChrome() {
   main.querySelectorAll('[data-phase-i]').forEach(b => b.onclick = () => {
     if (state.editMode) { return; }
-    openSubPhase(firstSubOfPhase(curMeth().phases[+b.dataset.phaseI]));
+    const target = firstSubOfPhase(curMeth().phases[+b.dataset.phaseI]);
+    if (target) { openSubPhase(target); }
   });
   main.querySelectorAll('.fcard[data-sub]').forEach(b => b.onclick = () => openSubPhase(b.dataset.sub));
+  const toggle = main.querySelector('[data-struct-toggle]');
+  if (toggle) { toggle.onclick = () => toggleStructureEdit(); }
+  if (!state.structureEditMode) { return; }
+  main.querySelectorAll('[data-rename-phase]').forEach(inp => inp.onblur = () => {
+    curMeth().phases[+inp.dataset.renamePhase].name = inp.value;
+    save();
+    render();
+  });
+  main.querySelectorAll('[data-rename-sub]').forEach(inp => inp.onblur = () => {
+    const [pi, si] = inp.dataset.renameSub.split(':').map(Number);
+    curMeth().phases[pi].subPhases[si].name = inp.value;
+    save();
+    render();
+  });
+  main.querySelectorAll('[data-move-phase]').forEach(b => b.onclick = () => {
+    const [i, dir] = b.dataset.movePhase.split(':');
+    movePhase(+i, dir);
+  });
+  main.querySelectorAll('[data-move-sub]').forEach(b => b.onclick = () => {
+    const [pi, si, dir] = b.dataset.moveSub.split(':');
+    moveSubPhase(+pi, +si, dir);
+  });
+  main.querySelectorAll('[data-delete-phase]').forEach(b => b.onclick = () => deletePhase(+b.dataset.deletePhase));
+  main.querySelectorAll('[data-delete-sub]').forEach(b => b.onclick = () => {
+    const [pi, si] = b.dataset.deleteSub.split(':').map(Number);
+    deleteSubPhase(pi, si);
+  });
+  main.querySelectorAll('[data-add-sub]').forEach(b => b.onclick = () => addSubPhase(+b.dataset.addSub));
+  const addPhaseBtn = main.querySelector('[data-add-phase]');
+  if (addPhaseBtn) { addPhaseBtn.onclick = () => addPhase(); }
 }
 function wireMethSwitch() {
   main.querySelectorAll('[data-meth]').forEach(b => b.onclick = () => switchMethodology(b.dataset.meth));
@@ -1730,6 +1844,98 @@ function openSubPhase(id) {
   render();
 }
 
+/* ---------------- Structure editing (phases + sub-phases) ----------------
+   Add/rename/delete/reorder. Unlike the content editor above (editSnapshot + Cancel), this is
+   direct-mutation-then-save with NO cancel semantics - cancelEdit's restore-by-key on loc.sp
+   couldn't undo an array splice on the PARENT (m.phases / p.subPhases) anyway, and this prototype
+   already saves immediately on every edit elsewhere, so structure edits just follow suit. Every
+   mutation is followed by recomputeSids() (position IS the sid) and save(). */
+function toggleStructureEdit() {
+  if (state.editMode) { toast('Finish editing first'); return; }
+  state.structureEditMode = !state.structureEditMode;
+  render();
+}
+function addPhase() {
+  const m = curMeth();
+  const phase = { id: 'phase' + (phaseSeq++), name: 'New Phase', order: m.phases.length + 1, subPhases: [] };
+  m.phases.push(phase);
+  if (rgActivePhases) { rgActivePhases.add(phase.id); }
+  save();
+  render();
+}
+// Lands the editor directly in the new sub-phase's content edit panel rather than just creating a
+// stub and leaving the user to find and open it - phase clicks deliberately skip unwritten
+// sub-phases, so without this the one just created would be effectively invisible.
+function addSubPhase(phaseIndex) {
+  const m = curMeth();
+  const p = m.phases[phaseIndex];
+  const sp = blankSubPhase('subphase' + (subPhaseSeq++), '', 'New Sub-Phase', p.subPhases.length + 1);
+  sp.changelog.push({ id: 'c' + (changelogSeq++), ts: TODAY, text: 'Sub-phase created', read: false });
+  p.subPhases.push(sp);
+  recomputeSids(m);
+  state.structureEditMode = false;
+  state.subPhaseId = sp.id;
+  state.view = 'browse';
+  state.justRead = markRead(sp);
+  save();
+  enterEdit();
+}
+function movePhase(index, dir) {
+  const m = curMeth();
+  const j = dir === 'up' ? index - 1 : index + 1;
+  if (j < 0 || j >= m.phases.length) { return; }
+  const tmp = m.phases[index]; m.phases[index] = m.phases[j]; m.phases[j] = tmp;
+  recomputeSids(m);
+  save();
+  render();
+}
+function moveSubPhase(phaseIndex, index, dir) {
+  const m = curMeth();
+  const arr = m.phases[phaseIndex].subPhases;
+  const j = dir === 'up' ? index - 1 : index + 1;
+  if (j < 0 || j >= arr.length) { return; }
+  const tmp = arr[index]; arr[index] = arr[j]; arr[j] = tmp;
+  recomputeSids(m);
+  save();
+  render();
+}
+function deletePhase(index) {
+  const m = curMeth();
+  if (m.phases.length <= 1) { toast('A methodology needs at least one phase'); return; }
+  const phase = m.phases[index];
+  if (!window.confirm('Delete phase “' + phase.name + '” and all ' + phase.subPhases.length + ' of its sub-phases? This cannot be undone.')) { return; }
+  const removedIds = phase.subPhases.map(s => s.id);
+  m.phases.splice(index, 1);
+  recomputeSids(m);
+  if (rgActivePhases) { rgActivePhases.delete(phase.id); }
+  if (removedIds.includes(state.subPhaseId)) {
+    state.subPhaseId = firstContentSubPhase(m);
+    const loc = findSubPhase(state.subPhaseId);
+    state.justRead = loc ? markRead(loc.sp) : [];
+  }
+  save();
+  render();
+}
+function deleteSubPhase(phaseIndex, index) {
+  const m = curMeth();
+  const arr = m.phases[phaseIndex].subPhases;
+  if (arr.length <= 1) { toast('A phase needs at least one sub-phase'); return; }
+  const sp = arr[index];
+  if (!window.confirm('Delete sub-phase “' + sp.name + '”? This cannot be undone.')) { return; }
+  const wasOpen = sp.id === state.subPhaseId;
+  arr.splice(index, 1);
+  recomputeSids(m);
+  if (wasOpen) {
+    // Land on the sibling that slid into this position, or the previous one if this was last.
+    const next = arr[index] || arr[index - 1];
+    state.subPhaseId = next ? next.id : firstContentSubPhase(m);
+    const loc = findSubPhase(state.subPhaseId);
+    state.justRead = loc ? markRead(loc.sp) : [];
+  }
+  save();
+  render();
+}
+
 /* ---------------- Main dispatcher ---------------- */
 function renderMain() {
   if (state.view === 'raci') { return renderRaci(); }
@@ -1742,11 +1948,13 @@ function renderMain() {
 /* ---------------- Browse (Journey + sub-phase detail) ---------------- */
 function renderBrowse() {
   const loc = findSubPhase(state.subPhaseId);
-  if (!loc) { main.innerHTML = '<p class="empty">Nothing selected.</p>'; return; }
+  // journeyChromeHtml() renders even with no location selected (a methodology structure-edited
+  // down to zero sub-phases) so the structure toolbar - the only way OUT of that state - stays
+  // reachable instead of vanishing along with the "nothing selected" message.
+  let html = journeyChromeHtml();
+  if (!loc) { main.innerHTML = html + '<p class="empty">Nothing selected. Use Edit structure above to add a sub-phase.</p>'; wireJourneyChrome(); return; }
   const { phase, phaseIndex, sp } = loc;
   const color = PHASE_COLORS[phaseIndex % PHASE_COLORS.length];
-
-  let html = journeyChromeHtml();
 
   if (state.editMode) {
     html += editPanelHtml(loc, color);
@@ -2291,6 +2499,7 @@ function reRenderEdit() {
 }
 
 function enterEdit() {
+  if (state.structureEditMode) { return; }
   if (state.view !== 'browse') { state.view = 'browse'; }
   const loc = findSubPhase(state.subPhaseId);
   if (!loc) { return; }
@@ -2349,15 +2558,15 @@ function rgJtIds() {
 function rgCounts() {
   const c = {};
   curMeth().phases.forEach(p => {
-    if (!rgActivePhases.has(p.name)) { return; }
+    if (!rgActivePhases.has(p.id)) { return; }
     p.subPhases.forEach(s => { if (hasContent(s)) { s.tasks.forEach(t => Object.keys(t.raci || {}).forEach(id => { c[id] = (c[id] || 0) + t.raci[id].length; })); } });
   });
   return c;
 }
 function renderRaci() {
   const m = curMeth();
-  const names = m.phases.map(p => p.name);
-  if (!rgActivePhases || [...rgActivePhases].some(n => !names.includes(n))) { rgActivePhases = new Set(names); }
+  const ids0 = m.phases.map(p => p.id);
+  if (!rgActivePhases || [...rgActivePhases].some(n => !ids0.includes(n))) { rgActivePhases = new Set(ids0); }
   const ids = rgJtIds();
   const counts = rgCounts();
   let rgRowSeq = 0;
@@ -2378,7 +2587,7 @@ function renderRaci() {
     });
     html += '</div>';
     if (rgFocusJob) {
-      m.phases.filter(p => rgActivePhases.has(p.name)).forEach(p => {
+      m.phases.filter(p => rgActivePhases.has(p.id)).forEach(p => {
         const pColor = PHASE_COLORS[m.phases.indexOf(p) % PHASE_COLORS.length];
         p.subPhases.filter(s => hasContent(s)).forEach(s => {
           const matched = s.tasks.filter(t => t.raci[rgFocusJob]);
@@ -2404,9 +2613,9 @@ function renderRaci() {
 
   html += '<div class="rg-controls"><div class="rg-pfilters">';
   m.phases.forEach((p, i) => {
-    const on = rgActivePhases.has(p.name);
+    const on = rgActivePhases.has(p.id);
     const c = PHASE_COLORS[i % PHASE_COLORS.length];
-    html += `<button class="rg-pchip" data-rgp="${esc(p.name)}" style="background:${on ? c : 'var(--surface-flat)'};color:${on ? 'var(--on-phase-ink)' : 'var(--ink-soft)'};border-color:${on ? 'var(--on-phase-ink)' : 'var(--line)'};box-shadow:${on ? 'var(--shadow-inset)' : 'none'}">${esc(p.name)}</button>`;
+    html += `<button class="rg-pchip" data-rgp="${esc(p.id)}" style="background:${on ? c : 'var(--surface-flat)'};color:${on ? 'var(--on-phase-ink)' : 'var(--ink-soft)'};border-color:${on ? 'var(--on-phase-ink)' : 'var(--line)'};box-shadow:${on ? 'var(--shadow-inset)' : 'none'}">${esc(p.name)}</button>`;
   });
   html += '</div><div class="rg-legend">';
   RACI_LETTERS.forEach(l => { html += `<span class="lg"><span class="sw" style="background:${RACI_HEX[l]}">${l}</span>${RACI_NAMES[l]}</span>`; });
@@ -2425,7 +2634,7 @@ function renderRaci() {
   html += '</tr></thead><tbody>';
 
   let body = '';
-  m.phases.filter(p => rgActivePhases.has(p.name)).forEach(p => {
+  m.phases.filter(p => rgActivePhases.has(p.id)).forEach(p => {
     const pColor = PHASE_COLORS[m.phases.indexOf(p) % PHASE_COLORS.length];
     p.subPhases.filter(s => hasContent(s)).forEach(s => {
       const rows = rgFocusJob ? s.tasks.filter(t => t.raci[rgFocusJob]) : s.tasks;
@@ -2452,8 +2661,8 @@ function renderRaci() {
   wireMethSwitch();
   main.querySelectorAll('[data-rgmode]').forEach(b => b.onclick = () => { raciMode = b.dataset.rgmode; renderRaci(); });
   main.querySelectorAll('[data-rgp]').forEach(b => b.onclick = () => {
-    const n = b.dataset.rgp;
-    if (rgActivePhases.has(n)) { rgActivePhases.delete(n); } else { rgActivePhases.add(n); }
+    const id = b.dataset.rgp;
+    if (rgActivePhases.has(id)) { rgActivePhases.delete(id); } else { rgActivePhases.add(id); }
     renderRaci();
   });
   main.querySelectorAll('th[data-rgcol]').forEach(th => {

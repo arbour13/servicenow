@@ -26,7 +26,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=20260725b">
+<link rel="stylesheet" href="css/app.css?v=20260725c">
 </head>
 <body>
 
@@ -93,6 +93,12 @@
 
     <div ng-if="vm.view === 'journey'">
     <div class="journey-chrome">
+    <div class="struct-toggle-row">
+      <button type="button" class="struct-toggle-btn" ng-class="{on: vm.structureEditMode}" ng-click="vm.toggleStructureEdit()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+        {{vm.structureEditMode ? 'Done editing structure' : 'Edit structure'}}
+      </button>
+    </div>
     <div class="road" style="--stations: {{vm.curMeth().phases.length}}; --active: {{vm.activePhaseIndex()}};">
       <button type="button" class="station" ng-repeat="p in vm.curMeth().phases"
               ng-class="{done: $index < vm.activePhaseIndex(), on: $index === vm.activePhaseIndex()}"
@@ -118,6 +124,34 @@
         <div class="rbadge" ng-if="vm.hasContent(s) && vm.unreadCount(s)">&#9679; {{vm.unreadCount(s)}} new change{{vm.unreadCount(s) > 1 ? 's' : ''}}</div>
         <div class="fcard-meta" ng-if="!vm.hasContent(s)">Not yet written</div>
       </button>
+    </div>
+
+    <div class="struct-toolbar" ng-if="vm.structureEditMode">
+      <p class="struct-toolbar-hint">Rename phases and sub-phases inline, reorder with the arrows, or remove them. Adding a new sub-phase opens it straight into edit mode so you can write it.</p>
+      <div class="struct-phase" ng-repeat="p in vm.curMeth().phases">
+        <div class="struct-phase-head">
+          <span class="struct-num">{{$index + 1}}</span>
+          <input type="text" class="edit-in struct-rename" ng-model="p.name" ng-model-options="{updateOn: 'blur'}" ng-change="vm.renamePhase(p)" placeholder="Phase name" aria-label="Phase name">
+          <span class="struct-controls">
+            <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="vm.movePhase($index, 'up')" title="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+            <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="vm.movePhase($index, 'down')" title="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+            <button type="button" class="field-x" ng-click="vm.deletePhase($index)" title="Delete phase" aria-label="Delete phase">&times;</button>
+          </span>
+        </div>
+        <div class="struct-subphase-list">
+          <div class="struct-subphase" ng-repeat="s in p.subPhases">
+            <span class="struct-sid">{{s.sid}}</span>
+            <input type="text" class="edit-in struct-rename" ng-model="s.name" ng-model-options="{updateOn: 'blur'}" ng-change="vm.renameSubPhase(s)" placeholder="Sub-phase name" aria-label="Sub-phase name">
+            <span class="struct-controls">
+              <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="vm.moveSubPhase($parent.$index, $index, 'up')" title="Move sub-phase earlier" aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg></button>
+              <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="vm.moveSubPhase($parent.$index, $index, 'down')" title="Move sub-phase later" aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+              <button type="button" class="field-x" ng-click="vm.deleteSubPhase($parent.$index, $index)" title="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>
+            </span>
+          </div>
+          <button type="button" class="add-item-btn tight" ng-click="vm.addSubPhase($index)">+ Add sub-phase</button>
+        </div>
+      </div>
+      <button type="button" class="add-item-btn struct-add-phase" ng-click="vm.addPhase()">+ Add phase</button>
     </div>
     </div>
 
@@ -482,8 +516,8 @@
         <div class="rg-controls">
           <div class="rg-pfilters">
             <button type="button" class="rg-pchip" ng-repeat="p in vm.curMeth().phases"
-                    ng-style="{background: vm.rgActivePhases[p.name] ? vm.phaseColor($index) : 'var(--surface-flat)', color: vm.rgActivePhases[p.name] ? 'var(--on-phase-ink)' : 'var(--ink-soft)', 'border-color': vm.rgActivePhases[p.name] ? 'var(--on-phase-ink)' : 'var(--line)', 'box-shadow': vm.rgActivePhases[p.name] ? 'var(--shadow-inset)' : 'none'}"
-                    ng-click="vm.rgTogglePhase(p.name)">{{p.name}}</button>
+                    ng-style="{background: vm.rgActivePhases[p.id] ? vm.phaseColor($index) : 'var(--surface-flat)', color: vm.rgActivePhases[p.id] ? 'var(--on-phase-ink)' : 'var(--ink-soft)', 'border-color': vm.rgActivePhases[p.id] ? 'var(--on-phase-ink)' : 'var(--line)', 'box-shadow': vm.rgActivePhases[p.id] ? 'var(--shadow-inset)' : 'none'}"
+                    ng-click="vm.rgTogglePhase(p.id)">{{p.name}}</button>
           </div>
           <div class="rg-legend">
             <span class="lg" ng-repeat="l in vm.raciLetters"><span class="sw" ng-style="{background: vm.raciHex[l]}">{{l}}</span>{{vm.raciNames[l]}}</span>
