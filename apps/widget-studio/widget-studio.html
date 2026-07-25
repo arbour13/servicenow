@@ -5057,7 +5057,11 @@ class Component extends DCLogic {
       h('div',{style:{flex:1.5,minWidth:0}}, h('div',Object.assign({},this.tt({h:'Relative to',b:'Determined by the Position value'}),{style:{height:30,display:'flex',alignItems:'center',border:'1px solid '+t.border,borderRadius:6,padding:'0 9px',fontSize:12,color:t.muted,background:t.segBg,boxSizing:'border-box'}}),relText), h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:5}},'Relative to')),
       h('div',{style:{flex:1,minWidth:0}}, this.numField(t,node,'zIndex','auto'), h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:5}},'Z-index'))));
     return h('div',null,els); }
-  layoutTab(node,t,first){
+  // Display + flex/grid dynamics + grid/flex-child placement — the Layout section's body. Spacing,
+  // Size (now also holding Children/Overflow), and Position are separate top-level sections (see
+  // designTab) so each is independently collapsible; this one no longer renders its own "Layout"
+  // header — flatSection owns that now.
+  layoutCore(node,t){
     // Use the EFFECTIVE (cascaded) display so a base grid/flex still reads as selected at smaller
     // breakpoints — otherwise the layout controls hide and you can't tweak the grid per device.
     const h=React.createElement; const defD=this.defaultDisplay(node); const disp=this.effectiveStyle(node).display||defD; const els=[];
@@ -5080,7 +5084,6 @@ class Component extends DCLogic {
       if(/grid$/.test(v)&&!this.effectiveStyle(node).gridTemplateColumns) { this.setCS(node,'gridTemplateColumns','1fr 1fr'); } };
     // Grid starts with no explicit gridTemplateColumns — gridColCount() already treats that as 1 column
     // (matching the "1" preset tile below reading as selected).
-    els.push(h('div',{key:'layout-hdr'},this.blockHead(t,'Layout',{first:!!first})));
     els.push(h('div',{key:'d'}, this.subHead(t,'Display',true),
       this.iconRow(t,primaryDisp,isOther?null:disp,setDisp,'Display'),
       h('div',{style:{marginTop:6}}, this.xselect('disp-other',t, isOther?disp:'', [{v:'',label:'Other…'},...otherDisp], v=>{ if(v==='') { return; } setDisp(v); }))
@@ -5151,34 +5154,17 @@ class Component extends DCLogic {
     // ---- flex-item options (when this element sits inside a flex parent) — reference: Flex child ----
     const pflex=parent && this.effectiveStyle(parent).display==='flex';
     if(pflex){ els.push(this.flexChild(node,t,parent)); }
-    // ---- spacing (padding & margin \u2014 the most-used box controls, so shown first & prominent) ----
-    els.push(this.subHead(t,'Spacing'));
-    els.push(this.spacingBands(node,t));
-    // ---- children sizing (containers) — reference: Size → Children select ----
-    if(this.canHaveChildren(node)){
-      const ai=this.csVal(node,'alignItems')||'';
-      const childMode = ai==='stretch'?'fill' : (ai==='flex-start'?'fit' : 'manual');
-      els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Children'), this.selectField(t,[['fill','Fill space'],['fit','Fit content'],['manual','Manual']],childMode,
-        v=>this.setCS(node,'alignItems', v==='fill'?'stretch':(v==='fit'?'flex-start':'')))));
-    }
-    // ---- overflow (how this box's own content behaves once it doesn't fit — a Size question) ----
-    if(this.canHaveChildren(node)){
-      els.push(this.subHead(t,'Overflow'));
-      els.push(this.seg(t,[{v:'visible',l:'Visible'},{v:'hidden',l:'Hidden'},{v:'auto',l:'Auto'},{v:'scroll',l:'Scroll'}],this.csVal(node,'overflow')||'visible',v=>this.setCS(node,'overflow',v),{fill:true,pad:'6px 0'}));
-    }
-    // ---- position (reference: inside the Structure card) ----
-    els.push(this.subHead(t,'Position'));
-    els.push(this.positionEditor(node,t));
     return h('div',null,els);
   }
-  // Width/Height/min/max + img/video object-fit — demoted out of Structure's always-visible content
-  // into the collapsed tail: elements mostly fill their space (Fill/Fit/Manual in Structure already
-  // covers the common case), so Size is rarely the thing you reach for. No design tokens here (unlike
-  // Gap/Spacing/Radius, which keep theirs) - a $token WIDTH was token-system overreach; keywords
-  // (auto/full/fit-content) and raw values only. Tokens may come back for specific per-element cases
-  // (an input/button's height) later, deliberately - not as a blanket size-field default.
-  sizeExtras(node,t,first){ const h=React.createElement; const els=[];
-    els.push(h('div',{key:'size-hdr'},this.blockHead(t,'Size',{first:!!first,dot:this.stateEditDot(node,['width','height','minWidth','maxWidth','minHeight','maxHeight','objectFit','objectPosition'],t)})));
+  // Width/Height/min/max + img/video object-fit, plus Children fill-mode and Overflow (both
+  // genuinely Size questions — "how does this box size itself and its content" — folded in here
+  // rather than living in Layout). Demoted out of Structure's always-visible content: elements
+  // mostly fill their space (Fill/Fit/Manual covers the common case), so Size overall is rarely
+  // the thing reached for first. No design tokens on the length fields here (unlike Gap/Spacing/
+  // Radius, which keep theirs) - a $token WIDTH was token-system overreach; keywords (auto/full/
+  // fit-content) and raw values only. Tokens may come back for specific per-element cases (an
+  // input/button's height) later, deliberately - not as a blanket size-field default.
+  sizeExtras(node,t){ const h=React.createElement; const els=[];
     // tokens:[] (not omitted) — comboField falls back to this.spaceTokens() when opts.tokens is
     // undefined, so leaving it out would have silently swapped one token set for another instead
     // of actually removing tokens from these fields.
@@ -5195,6 +5181,14 @@ class Component extends DCLogic {
       els.push(h('div',{style:{display:'flex',gap:8,marginTop:12}},
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object fit'), this.selectField(t,['fill','cover','contain','none','scale-down'],this.csVal(node,'objectFit')||'fill',v=>this.setCS(node,'objectFit',v==='fill'?'':v))),
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object position'), this.selectField(t,['center','top','right','bottom','left'],this.csVal(node,'objectPosition')||'center',v=>this.setCS(node,'objectPosition',v==='center'?'':v)))));
+    }
+    if(this.canHaveChildren(node)){
+      const ai=this.csVal(node,'alignItems')||'';
+      const childMode = ai==='stretch'?'fill' : (ai==='flex-start'?'fit' : 'manual');
+      els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Children'), this.selectField(t,[['fill','Fill space'],['fit','Fit content'],['manual','Manual']],childMode,
+        v=>this.setCS(node,'alignItems', v==='fill'?'stretch':(v==='fit'?'flex-start':'')))));
+      els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Overflow'),
+        this.seg(t,[{v:'visible',l:'Visible'},{v:'hidden',l:'Hidden'},{v:'auto',l:'Auto'},{v:'scroll',l:'Scroll'}],this.csVal(node,'overflow')||'visible',v=>this.setCS(node,'overflow',v),{fill:true,pad:'6px 0'})));
     }
     return h('div',null,els);
   }
@@ -5220,40 +5214,60 @@ class Component extends DCLogic {
     if(this.STYLE_LEAD_SURFACE_TYPES[node.type]) { return 'surface'; }
     return 'structure'; // table, navtabs, listgroup, progress, breadcrumb, buttongroup, html
   }
-  // Whichever of Typography/Background/Border wasn't hoisted to lead for this type, plus Effects,
-  // Transforms & Transitions, plus Size (demoted — see sizeExtras). Collapsed by default, behind a
-  // flat toggle header (flatSection) rather than a nested card — the tail should look like the rest
-  // of this panel, not like a narrower box sitting inside it.
-  tailBlocks(node,t,lead){ const h=React.createElement; const blocks=[]; let first=true;
-    if(lead!=='text') { blocks.push(this.typographyBlock(node,t,first)); first=false; }
-    if(lead!=='surface') { blocks.push(this.backgroundBlock(node,t,first)); first=false; blocks.push(this.borderBlock(node,t)); }
-    blocks.push(this.effectsBlock(node,t)); blocks.push(this.transformsBlock(node,t));
-    blocks.push(this.sizeExtras(node,t));
-    return h('div',null,blocks);
-  }
-  // Same header language as blockHead (bold uppercase, border-top divider) plus a chevron and
-  // click-to-toggle — deliberately NOT bigCard's card chrome (border/shadow/rounded corners/13px
-  // inset), which reads as a narrower, denser box sitting inside an otherwise-flat panel.
-  flatSection(t,key,label,body,defOpen){ const h=React.createElement;
-    const open = this._inspOpen[key]!=null ? this._inspOpen[key] : (defOpen!==false);
+  // Provenance-dot key lists, one per top-level section — colocated here rather than computed
+  // inline in designTab, since each block function is the actual authority on which CSS props it
+  // touches. Layout/Spacing/Position have none: they never had a top-level dot before this pass
+  // (Layout/Position used the plain, dot-less `subHead`; Spacing's own two bands already show
+  // their OWN per-band dots inside spacingBands, so a third outer one would be redundant).
+  SIZE_DOT_KEYS=['width','height','minWidth','maxWidth','minHeight','maxHeight','objectFit','objectPosition','alignItems','overflow'];
+  TYPOGRAPHY_DOT_KEYS=['fontFamily','fontWeight','fontSize','lineHeight','letterSpacing','color','textAlign','fontStyle','textDecoration','textTransform','textShadow','whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'];
+  BACKGROUND_DOT_KEYS=['background','backgroundImage','backgroundColor'];
+  BORDER_DOT_KEYS=['borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderColor'];
+  EFFECTS_DOT_KEYS=['opacity','mixBlendMode','boxShadow','filter','backdropFilter','cursor'];
+  TRANSFORMS_DOT_KEYS=['transform','transformOrigin','perspective','transition'];
+  // Which sections start open for each lead. Spacing is open for every type — it's used constantly
+  // regardless of what's selected; everything else defaults closed unless it's the type's own lead.
+  DEFAULT_OPEN_BY_LEAD={text:['typography','spacing'],surface:['background','border','spacing'],structure:['layout','spacing']};
+  // Same header language as blockHead (bold uppercase, border-top divider, optional dot) plus a
+  // chevron and click-to-toggle — deliberately NOT bigCard's card chrome (border/shadow/rounded
+  // corners/13px inset), which reads as a narrower, denser box sitting inside an otherwise-flat
+  // panel. opts.first drops the top border/margin, same convention as blockHead, since this can
+  // now be the very first section in the panel (whichever one the current lead promotes to top).
+  flatSection(t,key,label,body,opts){ opts=opts||{}; const h=React.createElement;
+    const open = this._inspOpen[key]!=null ? this._inspOpen[key] : (opts.defOpen!==false);
     const toggle=()=>{ this._inspOpen[key]=!open; this.forceUpdate(); };
     return h('div',null,
       h('div',Object.assign({onClick:toggle},this.a11y(toggle,{label:label+(open?' section, expanded':' section, collapsed'),pressed:open}),
-        {style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer',userSelect:'none',fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:'20px 0 12px',paddingTop:16,borderTop:'1px solid '+t.border}}),
+        {style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer',userSelect:'none',fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:opts.first?'0 0 12px':'20px 0 12px',paddingTop:opts.first?0:16,borderTop:opts.first?'none':'1px solid '+t.border}}),
         h('span',{style:{display:'inline-flex',color:t.faint,transition:'transform .12s',transform:open?'rotate(90deg)':'none'}},this.chev('right',10)),
-        label),
+        label, opts.dot||null),
       this.animatedBox(open, body));
   }
+  // Every top-level section is independently collapsible, in a FIXED canonical order — only the
+  // current lead's section(s) are promoted to the front; nothing else ever moves (see styleLead()'s
+  // comment for why this isn't the reorder-on-select that was tried and reverted: sections here are
+  // real, never duplicated, and the rest of the order is stable regardless of what's selected).
   designTab(node,t){ const h=React.createElement;
     const lead=this.styleLead(node);
-    const structure=this.layoutTab(node,t,lead==='structure');
-    const leadBlock = lead==='text' ? this.typographyBlock(node,t,true)
-      : lead==='surface' ? h(React.Fragment,null,this.backgroundBlock(node,t,true),this.borderBlock(node,t))
-      : null;
+    const openSet=this.DEFAULT_OPEN_BY_LEAD[lead];
+    const sec=(id,label,body,dotKeys)=>({id,key:'card:'+id,label,body,
+      dot: dotKeys?this.stateEditDot(node,dotKeys,t):null, defOpen: openSet.includes(id)});
+    const canonical=[
+      sec('layout','Layout', this.layoutCore(node,t), null),
+      sec('spacing','Spacing', this.spacingBands(node,t), null),
+      sec('size','Size', this.sizeExtras(node,t), this.SIZE_DOT_KEYS),
+      sec('typography','Typography', this.typographyBlock(node,t), this.TYPOGRAPHY_DOT_KEYS),
+      sec('background','Background', this.backgroundBlock(node,t), this.BACKGROUND_DOT_KEYS),
+      sec('border','Border', this.borderBlock(node,t), this.BORDER_DOT_KEYS),
+      sec('effects','Effects', this.effectsBlock(node,t), this.EFFECTS_DOT_KEYS),
+      sec('transforms','Transforms & Transitions', this.transformsBlock(node,t), this.TRANSFORMS_DOT_KEYS),
+      sec('position','Position', this.positionEditor(node,t), null),
+    ];
+    const leadIds = lead==='text' ? ['typography'] : lead==='surface' ? ['background','border'] : [];
+    const ordered = leadIds.map(id=>canonical.find(s=>s.id===id)).concat(canonical.filter(s=>!leadIds.includes(s.id)));
     return h('div',null,
       this.layerZone(node,t),
-      lead==='structure' ? structure : h(React.Fragment,null,leadBlock,structure),
-      this.flatSection(t,'card:more','More styling', this.tailBlocks(node,t,lead), false),
+      ordered.map((s,i)=>h('div',{key:s.key}, this.flatSection(t,s.key,s.label,s.body,{defOpen:s.defOpen,dot:s.dot,first:i===0}))),
       this.ledger(node,t));
   }
   // The ledger: every declaration actually SET on this class, grouped by layer — the layer you're
@@ -5471,7 +5485,7 @@ class Component extends DCLogic {
           onChange:e=>{ const raw=e.target.value; const v=raw.replace('%',''); if(v.trim()===''||/^\d{1,3}$/.test(v.trim())) { delete this._tsErr[ek('alpha')]; write(x,y,blur,color,v); } else { this._tsErr[ek('alpha')]=raw; this.forceUpdate(); } },
           onBlur:()=>{ if(aErr!=null) { delete this._tsErr[ek('alpha')]; this.forceUpdate(); } },
           style:{width:36,flex:'0 0 auto',border:'none',background:'none',color:aErr!=null?this.errClr():t.muted,fontSize:11,textAlign:'right',outline:'none'}}))); }
-  typographyBlock(node,t,first){ const h=React.createElement;
+  typographyBlock(node,t){ const h=React.createElement;
     const famOpts=[['','System'],['Inter, system-ui, sans-serif','Inter'],['Georgia, serif','Georgia'],['ui-monospace, SFMono-Regular, monospace','Monospace']];
     const wRaw=this.csVal(node,'fontWeight')||''; const w=(wRaw==='normal'||wRaw==='400')?'':(wRaw==='bold'?'700':wRaw);
     const wOpts=[['','Regular 400'],['300','Light 300'],['500','Medium 500'],['600','Semibold 600'],['700','Bold 700']];
@@ -5485,7 +5499,6 @@ class Component extends DCLogic {
     const alignTile=o=>{ const on=ta===o.v; const pick=()=>this.setCS(node,'textAlign',o.v==='left'?'':o.v); return h('div',Object.assign({key:o.v,onClick:pick},this.tt(o.title),this.a11y(pick,{pressed:on,label:o.title}),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),o.icon); };
     const caseTile=(g,v,title)=>styleTile(tform===v,g,title,()=>this.setCS(node,'textTransform',tform===v?'':v),{fontSize:12});
     return h('div',null,
-      this.blockHead(t,'Typography',{first:!!first,dot:this.stateEditDot(node,['fontFamily','fontWeight','fontSize','lineHeight','letterSpacing','color','textAlign','fontStyle','textDecoration','textTransform','textShadow','whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'],t)}),
       h('div',{style:{marginBottom:8}}, this.selectField(t,famOpts,this.csVal(node,'fontFamily')||'',v=>this.setCS(node,'fontFamily',v))),
       h('div',{style:{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:8}},
         this.selectField(t,wOpts,w,v=>this.setCS(node,'fontWeight',v)),
@@ -5528,7 +5541,7 @@ class Component extends DCLogic {
     const stops=parts.slice(start).map(p=>{ const mm=p.trim().match(/^(.*?)(\s+(-?[\d.]+%?))?$/); const col=(mm?mm[1]:p).trim(); const pos=(mm&&mm[3])?mm[3]:''; return {color:col,pos:pos}; });
     return {angle,stops:stops.length?stops:[{color:'#1F8FFF',pos:'0%'},{color:'#8250DF',pos:'100%'}]}; }
   composeGradient(angle,stops){ return 'linear-gradient('+angle+', '+stops.map(s=>s.color+(s.pos?(' '+s.pos):'')).join(', ')+')'; }
-  backgroundBlock(node,t,first){ const h=React.createElement; const type=this.bgTypeOf(node);
+  backgroundBlock(node,t){ const h=React.createElement; const type=this.bgTypeOf(node);
     const body=[];
     if(type==='solid'){ body.push(h('div',{key:'solid'}, this.colorInlineField(t,node,'background',{placeholder:'#1F8FFF'}))); }
     else if(type==='gradient'){ const g=this.parseGradient(this.csVal(node,'background')||'');
@@ -5564,7 +5577,6 @@ class Component extends DCLogic {
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Repeat'), this.selectField(t,[['no-repeat','No repeat'],['repeat','Repeat'],['repeat-x','Repeat X'],['repeat-y','Repeat Y']],this.csVal(node,'backgroundRepeat')||'no-repeat',v=>this.setCS(node,'backgroundRepeat',v==='no-repeat'?'':v)))));
       body.push(h('div',{key:'fb',style:{marginTop:8}}, this.colorInlineField(t,node,'backgroundColor',{noAlpha:true,placeholder:'Fallback'}))); }
     return h('div',null,
-      this.blockHead(t,'Background',{first:!!first,dot:this.stateEditDot(node,['background','backgroundImage','backgroundColor'],t)}),
       h('div',{style:{marginBottom:10}}, this.seg(t,[{v:'solid',l:'Solid'},{v:'gradient',l:'Gradient'},{v:'image',l:'Image'}],type,v=>this.switchBgType(node,v),{fill:true,pad:'6px 0'})),
       body); }
   // ---- Border ----
@@ -5574,9 +5586,8 @@ class Component extends DCLogic {
     return h('div',{role:'group','aria-label':'Border style',style:{display:'flex',gap:5}}, ['solid','dashed','dotted','double'].map(v=>{ const on=cur===v;
       return h('div',Object.assign({key:v,onClick:()=>this.setCS(node,'borderStyle',v)},this.tt(this.bcap(v)),this.a11y(()=>this.setCS(node,'borderStyle',v),{pressed:on,label:this.bcap(v)}),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),borderRadius:6,background:on?t.accentSoft:t.segBg}}),
         h('div',{style:{width:'68%',height:0,borderTop:'3px '+v+' '+(on?t.accent:t.muted)}})); })); }
-  borderBlock(node,t,first){ const h=React.createElement;
+  borderBlock(node,t){ const h=React.createElement;
     return h('div',null,
-      this.blockHead(t,'Border',{first:!!first,dot:this.stateEditDot(node,['borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderColor'],t)}),
       this.borderWidthBand(node,t),
       h('div',{style:{marginTop:10}}, this.lbl(t,'Style'), this.borderStyleSwatches(node,t)),
       h('div',{style:{marginTop:10}}, this.radiusBand(node,t)),
@@ -5624,7 +5635,7 @@ class Component extends DCLogic {
   parseTransitions(str){ return this.splitCommaTop(str||'').map(x=>{ const p=x.trim().split(/\s+/); return {prop:p[0]||'all',dur:(p[1]||'200ms').replace('ms',''),ease:p[2]||'ease',delay:(p[3]||'0ms').replace('ms','')}; }); }
   composeTransitions(list){ return list.map(x=>x.prop+' '+x.dur+'ms '+x.ease+' '+x.delay+'ms').join(', '); }
   // ---- Effects: opacity, blending, box shadow (token row + manual), filters (fixed toggle rows) + backdrop, cursor ----
-  effectsBlock(node,t,first){ const h=React.createElement; const opacityRaw=this.csVal(node,'opacity'); const opacity=opacityRaw===''?1:parseFloat(opacityRaw);
+  effectsBlock(node,t){ const h=React.createElement; const opacityRaw=this.csVal(node,'opacity'); const opacity=opacityRaw===''?1:parseFloat(opacityRaw);
     // filters — a fixed row per filter function (not an add/remove list); each row's own switch decides
     // whether it contributes to the composed value, so "off" rows keep their last dialed-in number instead
     // of losing it, and the panel always shows the same six rows rather than only the ones currently active.
@@ -5638,7 +5649,6 @@ class Component extends DCLogic {
     const setFilterValue=(type,v)=>{ const map=Object.assign({},activeMap,{[type]:v}); setFilterMap(composeFromMap(map)); };
     const toggleBackdrop=()=>{ const cur=this.csVal(node,fprop)||''; this.setCS(node,fprop,''); this.setCS(node, backdropOn?'filter':'backdropFilter', cur); };
     return h('div',null,
-      this.blockHead(t,'Effects',{first:!!first,dot:this.stateEditDot(node,['opacity','mixBlendMode','boxShadow','filter','backdropFilter','cursor'],t)}),
       this.lbl(t,'Opacity'),
       this.slider(t,opacity,0,1,0.05,v=>this.setCS(node,'opacity', v>=1?'':String(v))),
       h('div',{style:{marginTop:12}}, this.lbl(t,'Blending'), this.selectField(t,[['normal','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['difference','Difference'],['luminosity','Luminosity']],this.csVal(node,'mixBlendMode')||'normal',v=>this.setCS(node,'mixBlendMode',v==='normal'?'':v))),
@@ -5678,7 +5688,6 @@ class Component extends DCLogic {
         h('input',{value:err!=null?err:v,spellCheck:false,onChange:e=>commit(e.target.value),onBlur:()=>{ if(err!=null) { delete this._transErr[key]; this.forceUpdate(); } },style:{flex:1,minWidth:0,border:'none',background:'none',color:err!=null?this.errClr():t.text,fontSize:11,outline:'none'}}),
         h('span',{style:{fontSize:9,color:t.faint}},'ms')); };
     return h('div',null,
-      this.blockHead(t,'Transforms & Transitions',{dot:this.stateEditDot(node,['transform','transformOrigin','perspective','transition'],t)}),
       h('div',{style:{marginBottom:10}}, seg),
       h('div',{style:{display:'grid',gridTemplateColumns:axes.map(()=>'1fr').join(' '),gap:8}}, axes.map(ax=>this.prefixField(t,axLabel[ax],xf[tab][ax],v=>setAxis(ax,v)))),
       h('div',{style:{display:'flex',gap:8,marginTop:8}},
