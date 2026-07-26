@@ -3936,7 +3936,7 @@ class Component extends DCLogic {
   // (rejected in the spec — border/radius axis-pairing is rare enough that all/individual suffice) and
   // no drag-to-scrub (neither picker had it before — they were target-then-numField, no drag existed to
   // preserve). `sides`: [{k,l,prop},...] — 4 edges (border) or 4 corners (radius), each a real longhand.
-  edgeBand(node,t,label,sides,ovKind,afterWrite){ const h=React.createElement;
+  edgeBand(node,t,label,sides,ovKind,afterWrite,opts){ opts=opts||{}; const h=React.createElement;
     const vals=sides.map(s=>(this.csVal(node,s.prop)||'').toString());
     const derived=vals.every(v=>v===vals[0])?'all':'sides';
     const ovKey=node.id+':'+ovKind;
@@ -3962,20 +3962,16 @@ class Component extends DCLogic {
         grain==='sides'?h('span',{style:{fontSize:8,fontWeight:600,letterSpacing:'.06em',color:t.faint,paddingLeft:1}},s.l):null,
         control); };
     const rows = grain==='all' ? [field(sides[0])] : sides.map(field);
-    return h('div',{style:{border:'1px solid '+t.border,borderRadius:8,background:t.panel,padding:8}},
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
-        h('div',{style:{display:'flex',alignItems:'center',gap:6}}, this.stateEditDot(node,sides.map(s=>s.prop),t),
-          h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},label)),
-        grainSeg),
-      h('div',{style:{display:'flex',gap:6}}, rows));
+    return this.inspBand(t,label, h('div',{style:{display:'flex',gap:6}}, rows),
+      {lead:this.stateEditDot(node,sides.map(s=>s.prop),t), trail:grainSeg, first:opts.first});
   }
   BORDER_SIDES(){ return [{k:'t',l:'T',prop:'borderTopWidth'},{k:'r',l:'R',prop:'borderRightWidth'},{k:'b',l:'B',prop:'borderBottomWidth'},{k:'l',l:'L',prop:'borderLeftWidth'}]; }
   RADIUS_CORNERS(){ return [{k:'tl',l:'TL',prop:'borderTopLeftRadius'},{k:'tr',l:'TR',prop:'borderTopRightRadius'},{k:'br',l:'BR',prop:'borderBottomRightRadius'},{k:'bl',l:'BL',prop:'borderBottomLeftRadius'}]; }
   // border-style must be present or per-side widths render invisibly — ensured on WRITE (not during
   // render: ensureBorderStyle can itself call setCS, and setCS calls forceUpdate synchronously, so
   // triggering it mid-render would be a nested update while React is still rendering this tree).
-  borderWidthBand(node,t){ return this.edgeBand(node,t,'Border width',this.BORDER_SIDES(),'bw',()=>this.ensureBorderStyle(node)); }
-  radiusBand(node,t){ return this.edgeBand(node,t,'Radius',this.RADIUS_CORNERS(),'rad'); }
+  borderWidthBand(node,t,opts){ return this.edgeBand(node,t,'Border width',this.BORDER_SIDES(),'bw',()=>this.ensureBorderStyle(node),opts); }
+  radiusBand(node,t,opts){ return this.edgeBand(node,t,'Radius',this.RADIUS_CORNERS(),'rad',null,opts); }
   truncMode(node){ if(this.csVal(node,'WebkitLineClamp')) { return 'clamp'; } if((this.csVal(node,'textOverflow')||'')==='ellipsis') { return 'ellipsis'; } return 'wrap'; }
   setTrunc(node,mode){
     const clear=['whiteSpace','textOverflow','WebkitLineClamp','WebkitBoxOrient'];
@@ -4019,13 +4015,17 @@ class Component extends DCLogic {
   // Quiet sub-section label used INSIDE a bigCard (Layout/Spacing/Size, Background/Typography/…) — one
   // notch lighter than section()'s bold uppercase treatment, since the card header now carries that role.
   subHead(t,label,first){ return React.createElement('div',{style:{fontSize:11,fontWeight:600,color:t.muted,margin:first?'0 0 8px':'18px 0 8px'}},label); }
-  // Nested field band used inside Style-tab sections (same chrome as spaceBand / insetBand): bordered
-  // surface, uppercase title, optional trailing control. Stacks with marginTop:8 so Typography /
-  // Background / Effects / Transforms match Spacing/Size density instead of ad-hoc marginTop rows.
+  // THE band primitive for the Style tab. Every group of fields in every section is one of these —
+  // bordered surface, uppercase title, optional leading dot (`lead`) and trailing control (`trail`).
+  // edgeBand and spaceBand render through this too, so "a band" has exactly one definition and the
+  // nine sections can't drift apart again. The band also OWNS the vertical rhythm (marginTop:8,
+  // suppressed on the first band in a section) — callers must not wrap bands in spacer divs.
   inspBand(t,title,body,opts){ opts=opts||{}; const h=React.createElement;
     return h('div',{style:{border:'1px solid '+t.border,borderRadius:8,background:opts.bg||t.panel,padding:8,marginTop:opts.first?0:8}},
-      title?h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
-        h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},title),
+      title?h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6,marginBottom:8}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:6,minWidth:0}},
+          opts.lead||null,
+          h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},title)),
         opts.trail||null):null,
       body); }
   // The bold uppercase divider between the top-level blocks inside a bigCard (Layout, Flex/Grid
@@ -4239,7 +4239,7 @@ class Component extends DCLogic {
   // values catch up with it) lets clicking to FEWER fields show a ghost preview without writing anything —
   // "asks nothing... commits only on edit." Clicking to MORE fields is a real write: the current shared
   // value is expanded into every longhand it's splitting into, so the new fields show real values immediately.
-  spaceBand(node,t,target,inner){ const h=React.createElement;
+  spaceBand(node,t,target,inner,opts){ opts=opts||{}; const h=React.createElement;
     const label=target==='m'?'Margin':'Padding'; const neg=target==='m';
     const propOf=s=>this.spaceProp(target,s);
     const sideKeys=['t','r','b','l'];
@@ -4294,20 +4294,19 @@ class Component extends DCLogic {
       : grain==='axis' ? [field(['t','b'],'T · B'),field(['l','r'],'L · R')]
       : [field(['t'],'T'),field(['r'],'R'),field(['b'],'B'),field(['l'],'L')];
     const bandBg=target==='m'?t.segBg:t.panel;
-    return h('div',{style:{border:'1px solid '+t.border,borderRadius:8,background:bandBg,padding:8}},
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
-        h('div',{style:{display:'flex',alignItems:'center',gap:6}}, this.stateEditDot(node,sideKeys.map(propOf),t),
-          h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},label)),
-        grainSeg),
-      // Four independent sides in one flex row left each combo-field only ~46px — too narrow to read
-      // a value. A 2x2 grid (T,R / B,L — CSS shorthand order, filled by normal grid auto-placement)
-      // roughly triples each field's width; `all`/`axis` have room in a single row and stay there.
-      h('div',{style:grain==='sides'?{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}:{display:'flex',gap:6}}, rows),
-      inner?h('div',{style:{marginTop:8}}, inner):null);
+    return this.inspBand(t,label,
+      h('div',null,
+        // Four independent sides in one flex row left each combo-field only ~46px — too narrow to read
+        // a value. A 2x2 grid (T,R / B,L — CSS shorthand order, filled by normal grid auto-placement)
+        // roughly triples each field's width; `all`/`axis` have room in a single row and stay there.
+        h('div',{style:grain==='sides'?{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}:{display:'flex',gap:6}}, rows),
+        // `inner` is itself a band and brings its own marginTop — no spacer wrapper (see inspBand).
+        inner||null),
+      {lead:this.stateEditDot(node,sideKeys.map(propOf),t), trail:grainSeg, bg:bandBg, first:opts.first});
   }
   spacingBands(node,t){ const h=React.createElement;
     const content=h('div',{style:{marginTop:2,border:'1px dashed '+t.accent,borderRadius:5,padding:'10px 0',textAlign:'center',fontSize:9,fontWeight:600,color:t.accent,background:t.segBg}},'Content');
-    return this.spaceBand(node,t,'m', this.spaceBand(node,t,'p', content));
+    return this.spaceBand(node,t,'m', this.spaceBand(node,t,'p', content), {first:true});
   }
   JUSTIFY_VALUES(){ return [{v:'flex-start',title:'Start'},{v:'center',title:'Center'},{v:'flex-end',title:'End'},{v:'space-between',title:'Space between'},{v:'space-around',title:'Space around'},{v:'space-evenly',title:'Space evenly'}]; }
   ALIGN_ITEMS_VALUES(){ return [{v:'flex-start',title:'Start'},{v:'center',title:'Center'},{v:'flex-end',title:'End'},{v:'stretch',title:'Stretch'},{v:'baseline',title:'Baseline'}]; }
@@ -4361,7 +4360,8 @@ class Component extends DCLogic {
       : h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
           h('div',{style:{display:'flex',alignItems:'center',gap:6,minWidth:0}}, cLbl, sel('col','columnGap'), lockBtn),
           h('div',{style:{display:'flex',alignItems:'center',gap:6,minWidth:0}}, rLbl, sel('row','rowGap'), h('span',{style:{width:24,flex:'0 0 auto'}})));
-    return h('div',null, this.subHead(t,'Gap'), body);
+    // No title of its own — layoutCore wraps this in an inspBand titled "Gap".
+    return h('div',null, body);
   }
   // The token combo-field primitive — one field grammar for every tokenized length in the panel (Gap, Size,
   // min/max — more to follow as the rest of the panel adopts it). Menu order is filtered tokens → a raw-parse
@@ -4973,7 +4973,7 @@ class Component extends DCLogic {
     const prevRows=rows.length?rows:['auto'];
     const preview=h('div',{style:{display:'grid',gridTemplateColumns:previewCols.map(()=>'1fr').join(' '),gridTemplateRows:prevRows.map(()=>'22px').join(' '),gap:3,padding:6,background:t.segBg,border:'1px solid '+t.border,borderRadius:7,marginTop:8}},
       previewCols.flatMap((_,ci)=>prevRows.map((_,ri)=>h('div',{key:ci+'-'+ri,style:{background:t.accentSoft,border:'1px dashed '+(this.dark?t.accent:'#bcd6f5'),borderRadius:3,minHeight:18}}))));
-    const els=[h('div',{key:'gp'}, this.subHead(t,'Grid template'), preview)];
+    const els=[h('div',{key:'gp'}, this.lbl(t,'Grid template'), preview)];
     const setColMode=v=>{ if(v===colMode) { return; } if(v==='auto') { this.setCS(node,'gridTemplateColumns',autoTemplate); } else { this.setCS(node,'gridTemplateColumns',cols.join(' ')); } };
     els.push(h('div',{key:'colhdr',style:{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'18px 0 6px'}},
       h('span',{style:{fontSize:11,fontWeight:600,color:t.muted}},'Columns'),
@@ -4991,7 +4991,7 @@ class Component extends DCLogic {
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Max'), h('input',{value:autoMax==='1fr'?'':autoMax.replace(/px$/,''),placeholder:'1fr',spellCheck:false,onChange:e=>rebuild(autoMin,norm(e.target.value)||'1fr'),style:mmField}))));
       els.push(h('div',{key:'autotmpl',style:{fontSize:10.5,fontFamily:'ui-monospace,monospace',color:t.muted,background:t.segBg,border:'1px solid '+t.border,borderRadius:6,padding:'7px 9px',wordBreak:'break-all',marginTop:8}}, autoTemplate));
     }
-    els.push(h('div',{key:'rowhdr'}, this.subHead(t,'Rows')));
+    els.push(h('div',{key:'rowhdr',style:{marginTop:10}}, this.lbl(t,'Rows')));
     if(rows.length) { els.push(h('div',{key:'rowtracks',style:{display:'flex',flexDirection:'column',gap:5}}, rows.map((r,i)=>trackRow(rows,i,setRows,0)))); }
     els.push(addBtn('+ Add row',()=>setRows(rows.concat('auto'))));
     const jItems=this.csVal(node,'justifyItems')||'stretch';
@@ -5000,9 +5000,9 @@ class Component extends DCLogic {
     // Icon rows, not dropdowns — matches every other justify/align choice in this panel (flex's
     // own Justify/Align, and this same grid's Justify self/Align self just below); the reference
     // mockup used dropdowns here, but that was its own inconsistency with its identical flex rows.
-    els.push(h('div',{key:'alignx',style:{marginTop:16}}, this.subHead(t,'Align X'),
+    els.push(h('div',{key:'alignx',style:{marginTop:10}}, this.lbl(t,'Align X'),
       this.iconSlider(t,[{v:'stretch',title:'Stretch',icon:gIc('j-stretch')},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')}],jItems,v=>this.setCS(node,'justifyItems',v),'Align X')));
-    els.push(h('div',{key:'aligny',style:{marginTop:16}}, this.subHead(t,'Align Y'),
+    els.push(h('div',{key:'aligny',style:{marginTop:10}}, this.lbl(t,'Align Y'),
       this.iconSlider(t,[{v:'stretch',title:'Stretch',icon:gIc('a-stretch')},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')}],aItems,v=>this.setCS(node,'alignItems',v),'Align Y')));
     const flow=this.csVal(node,'gridAutoFlow')||'row';
     els.push(h('div',{key:'flow',style:{marginTop:12}}, this.lbl(t,'Auto flow'), this.segTextSlider(t,[{v:'row',l:'Row'},{v:'column',l:'Column'},{v:'dense',l:'Dense'}],flow.indexOf('dense')>=0?'dense':flow,v=>this.setCS(node,'gridAutoFlow',v),{pad:'6px 0'})));
@@ -5097,12 +5097,8 @@ class Component extends DCLogic {
     const rows = grain==='all' ? [field(['t','r','b','l'],null)]
       : grain==='axis' ? [field(['t','b'],'T · B'),field(['l','r'],'L · R')]
       : [field(['t'],'T'),field(['r'],'R'),field(['b'],'B'),field(['l'],'L')];
-    return h('div',{style:{border:'1px solid '+t.border,borderRadius:8,background:t.panel,padding:8}},
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
-        h('div',{style:{display:'flex',alignItems:'center',gap:6}}, this.stateEditDot(node,sides.map(s=>s.prop),t),
-          h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},'Inset')),
-        grainSeg),
-      h('div',{style:{display:'flex',gap:6}}, rows));
+    return this.inspBand(t,'Inset', h('div',{style:{display:'flex',gap:6}}, rows),
+      {lead:this.stateEditDot(node,sides.map(s=>s.prop),t), trail:grainSeg});
   }
   // Position (reference): select, 9 inset presets, box-model inset editor, relative-to indicator, z-index.
   // The preset row/inset diagram/relative-to/z-index always render below the select — even at Static —
@@ -5110,19 +5106,21 @@ class Component extends DCLogic {
   // insets, so hiding this block until non-static would mean showing it only after the fact.
   positionEditor(node,t){ const h=React.createElement;
     const pos=this.csVal(node,'position')||'static';
-    const els=[this.selectField(t,[['static','Static'],['relative','Relative'],['absolute','Absolute'],['fixed','Fixed'],['sticky','Sticky']],pos,v=>this.setCS(node,'position',v),'pos:'+node.id)];
+    const modeKids=[this.selectField(t,[['static','Static'],['relative','Relative'],['absolute','Absolute'],['fixed','Fixed'],['sticky','Sticky']],pos,v=>this.setCS(node,'position',v),'pos:'+node.id)];
+    const els=[];
     const insetVal=k=>this.csVal(node,k)||'';
     const presetDefs=[['tl','Top left',{top:'0',left:'0'},[3.5,3.5,5,5]],['tr','Top right',{top:'0',right:'0'},[7.5,3.5,5,5]],['bl','Bottom left',{bottom:'0',left:'0'},[3.5,7.5,5,5]],['br','Bottom right',{bottom:'0',right:'0'},[7.5,7.5,5,5]],['top','Stretch top',{top:'0',left:'0',right:'0'},[3.5,3.5,9,4]],['left','Stretch left',{top:'0',bottom:'0',left:'0'},[3.5,3.5,4,9]],['right','Stretch right',{top:'0',bottom:'0',right:'0'},[8.5,3.5,4,9]],['bottom','Stretch bottom',{bottom:'0',left:'0',right:'0'},[3.5,8.5,9,4]],['fill','Full',{top:'0',right:'0',bottom:'0',left:'0'},[3.5,3.5,9,9]]];
     const curCombo=()=>{ const o={}; ['top','right','bottom','left'].forEach(k=>{ const v=insetVal(k); if(v!=='') { o[k]=v; } }); return o; };
     const matches=combo=>{ const cur=curCombo(); const ck=Object.keys(combo); if(!ck.length||Object.keys(cur).length!==ck.length) { return false; } return ck.every(k=>(cur[k]||'')===(combo[k]||'')); };
     const applyPreset=combo=>{ ['top','right','bottom','left'].forEach(k=>this.setCS(node,k,combo[k]!=null?combo[k]:'')); };
     const pIcon=(x,y,w,hh)=>h('svg',{viewBox:'0 0 16 16',width:20,height:20},[h('rect',{key:'f',x:2,y:2,width:12,height:12,rx:2,fill:'none',stroke:'currentColor',strokeWidth:1,opacity:0.45}),h('rect',{key:'i',x,y,width:w,height:hh,rx:1,fill:'currentColor'})]);
-    els.push(h('div',{key:'presets',role:'group','aria-label':'Position presets',style:{display:'flex',gap:3,marginTop:10}}, presetDefs.map(([id,title,combo,box])=>{ const on=matches(combo); return h('div',Object.assign({key:id},this.tt(title),this.a11y(()=>applyPreset(combo),{pressed:on,label:title}),{onClick:()=>applyPreset(combo),style:{flex:'1 1 0',minWidth:0,height:22,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:on?t.accent:t.faint}}), pIcon(box[0],box[1],box[2],box[3])); })));
-    els.push(h('div',{key:'inset',style:{marginTop:10}}, this.insetBand(node,t)));
+    modeKids.push(h('div',{key:'presets',role:'group','aria-label':'Position presets',style:{display:'flex',gap:3,marginTop:10}}, presetDefs.map(([id,title,combo,box])=>{ const on=matches(combo); return h('div',Object.assign({key:id},this.tt(title),this.a11y(()=>applyPreset(combo),{pressed:on,label:title}),{onClick:()=>applyPreset(combo),style:{flex:'1 1 0',minWidth:0,height:22,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:on?t.accent:t.faint}}), pIcon(box[0],box[1],box[2],box[3])); })));
+    els.push(this.inspBand(t,'Mode', h('div',null,modeKids), {first:true}));
+    els.push(this.insetBand(node,t));
     const relText=(pos==='absolute'||pos==='fixed')?'Nearest ancestor':'Itself';
-    els.push(h('div',{key:'rel',style:{display:'flex',gap:8,marginTop:12}},
+    els.push(this.inspBand(t,'Stacking', h('div',{key:'rel',style:{display:'flex',gap:8}},
       h('div',{style:{flex:1.5,minWidth:0}}, h('div',Object.assign({},this.tt({h:'Relative to',b:'Determined by the Position value'}),{style:{height:30,display:'flex',alignItems:'center',border:'1px solid '+t.border,borderRadius:6,padding:'0 9px',fontSize:12,color:t.muted,background:t.segBg,boxSizing:'border-box'}}),relText), h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:5}},'Relative to')),
-      h('div',{style:{flex:1,minWidth:0}}, this.numField(t,node,'zIndex','auto'), h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:5}},'Z-index'))));
+      h('div',{style:{flex:1,minWidth:0}}, this.numField(t,node,'zIndex','auto'), h('div',{style:{fontSize:10,color:t.faint,textAlign:'center',marginTop:5}},'Z-index')))));
     return h('div',null,els); }
   // Display + flex/grid dynamics + grid/flex-child placement — the Layout section's body. Spacing,
   // Size (now also holding Children/Overflow), and Position are separate top-level sections (see
@@ -5162,9 +5160,9 @@ class Component extends DCLogic {
     // outer wrapper has no flex-grow of its own.
     const moreBtn=h('div',{key:'more',style:{flex:1}}, this.xselect('disp-other',t,isOther?disp:'',otherDisp,setDisp,
       {label:'Other display type',renderTrigger:props=>h('div',Object.assign({},props,this.tt('Other display type'),{style:dispBtnStyle(isOther)}),this.gl('more'))}));
-    els.push(h('div',{key:'d'}, this.subHead(t,'Display',true),
-      h('div',{role:'group','aria-label':'Display',style:{display:'flex',gap:5}}, dispBtns, moreBtn)
-    ));
+    els.push(h('div',{key:'d'}, this.inspBand(t,'Display',
+      h('div',{role:'group','aria-label':'Display',style:{display:'flex',gap:5}}, dispBtns, moreBtn),
+      {first:true})));
     const dyn=[];
     if(dispK==='flex'){
       // Direction / Justify / Align / Wrap — icon rows per the reference. Each control's SELECTED value reads
@@ -5175,31 +5173,28 @@ class Component extends DCLogic {
       // nowrap). Clearing the prop instead made picking the default produce no CSS at all, which read as
       // "the control does nothing." Selected state always reads live from csVal(...)||<default>.
       const dir=this.csVal(node,'flexDirection')||'row';
-      dyn.push(h('div',{key:'dir',style:{marginTop:16}}, this.subHead(t,'Direction'),
-        this.iconSlider(t,[{v:'row',title:'Row',icon:dirIc('row')},{v:'column',title:'Column',icon:dirIc('column')},{v:'row-reverse',title:'Row reverse',icon:dirIc('row-reverse')},{v:'column-reverse',title:'Column reverse',icon:dirIc('column-reverse')}],dir,
-          v=>this.flipLayout(node,()=>this.setCS(node,'flexDirection',v)),'Direction')));
       const just=this.csVal(node,'justifyContent')||'flex-start';
-      dyn.push(h('div',{key:'just',style:{marginTop:16}}, this.subHead(t,'Justify'),
-        this.iconSlider(t,[{v:'flex-start',title:'Start',icon:jaIc('j-flex-start')},{v:'center',title:'Center',icon:jaIc('j-center')},{v:'flex-end',title:'End',icon:jaIc('j-flex-end')},{v:'space-between',title:'Space between',icon:jaIc('j-space-between')},{v:'space-around',title:'Space around',icon:jaIc('j-space-around')}],just,
-          v=>this.setCS(node,'justifyContent',v),'Justify')));
       const align=this.csVal(node,'alignItems')||'stretch';
-      dyn.push(h('div',{key:'align',style:{marginTop:16}}, this.subHead(t,'Align'),
-        this.iconSlider(t,[{v:'flex-start',title:'Start',icon:jaIc('a-flex-start')},{v:'center',title:'Center',icon:jaIc('a-center')},{v:'flex-end',title:'End',icon:jaIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:jaIc('a-stretch')},{v:'baseline',title:'Baseline',icon:jaIc('a-baseline')}],align,
-          v=>this.setCS(node,'alignItems',v),'Align')));
       const wrap=this.csVal(node,'flexWrap')||'nowrap';
-      dyn.push(h('div',{key:'wr',style:{marginTop:16}}, this.subHead(t,'Wrap'),
-        this.iconSlider(t,[{v:'nowrap',title:'No wrap',icon:dirIc('w-nowrap')},{v:'wrap',title:'Wrap',icon:dirIc('w-wrap')}],wrap,
-          v=>this.flipLayout(node,()=>this.setCS(node,'flexWrap',v)),'Wrap')));
-      if(wrap!=='nowrap'){
-        const ac=this.csVal(node,'alignContent')||'stretch';
-        dyn.push(h('div',{key:'ac',style:{marginTop:12}}, this.lbl(t,'Align content'), this.selectField(t,this.ALIGN_CONTENT_VALUES().map(v=>[v.v,v.title]),ac,v=>this.setCS(node,'alignContent',v))));
-      }
+      const ac=this.csVal(node,'alignContent')||'stretch';
+      const sub=(label,ctrl)=>h('div',null, this.lbl(t,label), ctrl);
+      dyn.push(this.inspBand(t,'Flow', h('div',{key:'flow',style:{display:'flex',flexDirection:'column',gap:10}},
+        sub('Direction', this.iconSlider(t,[{v:'row',title:'Row',icon:dirIc('row')},{v:'column',title:'Column',icon:dirIc('column')},{v:'row-reverse',title:'Row reverse',icon:dirIc('row-reverse')},{v:'column-reverse',title:'Column reverse',icon:dirIc('column-reverse')}],dir,
+          v=>this.flipLayout(node,()=>this.setCS(node,'flexDirection',v)),'Direction')),
+        sub('Justify', this.iconSlider(t,[{v:'flex-start',title:'Start',icon:jaIc('j-flex-start')},{v:'center',title:'Center',icon:jaIc('j-center')},{v:'flex-end',title:'End',icon:jaIc('j-flex-end')},{v:'space-between',title:'Space between',icon:jaIc('j-space-between')},{v:'space-around',title:'Space around',icon:jaIc('j-space-around')}],just,
+          v=>this.setCS(node,'justifyContent',v),'Justify')),
+        sub('Align', this.iconSlider(t,[{v:'flex-start',title:'Start',icon:jaIc('a-flex-start')},{v:'center',title:'Center',icon:jaIc('a-center')},{v:'flex-end',title:'End',icon:jaIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:jaIc('a-stretch')},{v:'baseline',title:'Baseline',icon:jaIc('a-baseline')}],align,
+          v=>this.setCS(node,'alignItems',v),'Align')),
+        sub('Wrap', this.iconSlider(t,[{v:'nowrap',title:'No wrap',icon:dirIc('w-nowrap')},{v:'wrap',title:'Wrap',icon:dirIc('w-wrap')}],wrap,
+          v=>this.flipLayout(node,()=>this.setCS(node,'flexWrap',v)),'Wrap')),
+        wrap!=='nowrap'?sub('Align content', this.selectField(t,this.ALIGN_CONTENT_VALUES().map(v=>[v.v,v.title]),ac,v=>this.setCS(node,'alignContent',v))):null
+      )));
     }
     if(dispK==='grid'){
-      dyn.push(h('div',{key:'grid',style:{marginTop:16}}, this.gridEditor(node,t)));
+      dyn.push(this.inspBand(t,'Grid', this.gridEditor(node,t)));
     }
     if(disp==='flex'||disp==='grid'){
-      dyn.push(h('div',{key:'gap',style:{marginTop:16}}, this.gapBlock(node,t)));
+      dyn.push(this.inspBand(t,'Gap', this.gapBlock(node,t)));
     }
     // No fill-mode: 'both' would keep this element's transform animation permanently "in effect" even after
     // it settles at transform:none, which makes it a CSS containing block for any position:fixed descendant
@@ -5245,19 +5240,22 @@ class Component extends DCLogic {
     // tokens:[] (not omitted) — comboField falls back to this.spaceTokens() when opts.tokens is
     // undefined, so leaving it out would have silently swapped one token set for another instead
     // of actually removing tokens from these fields.
-    els.push(this.row2(
-      h('div',null,this.lbl(t,'Width'),this.comboField('cf:width:'+node.id,t,node,'width',{tokens:[],keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'},{v:'fit-content',l:'fit-content'}],ghost:'auto'})),
-      h('div',null,this.lbl(t,'Height'),this.comboField('cf:height:'+node.id,t,node,'height',{tokens:[],keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'}],ghost:'auto'}))));
-    els.push(h('div',{style:{marginTop:10}}, this.row2(
-      h('div',null,this.lbl(t,'Min width'),this.comboField('cf:minWidth:'+node.id,t,node,'minWidth',{tokens:[],ghost:'auto',unsetLabel:'auto'})),
-      h('div',null,this.lbl(t,'Max width'),this.comboField('cf:maxWidth:'+node.id,t,node,'maxWidth',{tokens:[],ghost:'none',unsetLabel:'none'})))));
-    els.push(h('div',{style:{marginTop:10}}, this.row2(
-      h('div',null,this.lbl(t,'Min height'),this.comboField('cf:minHeight:'+node.id,t,node,'minHeight',{tokens:[],ghost:'auto',unsetLabel:'auto'})),
-      h('div',null,this.lbl(t,'Max height'),this.comboField('cf:maxHeight:'+node.id,t,node,'maxHeight',{tokens:[],ghost:'none',unsetLabel:'none'})))));
+    const stack=(...kids)=>h('div',{style:{display:'flex',flexDirection:'column',gap:10}},kids.filter(Boolean));
+    els.push(this.inspBand(t,'Dimensions', stack(
+      this.row2(
+        h('div',null,this.lbl(t,'Width'),this.comboField('cf:width:'+node.id,t,node,'width',{tokens:[],keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'},{v:'fit-content',l:'fit-content'}],ghost:'auto'})),
+        h('div',null,this.lbl(t,'Height'),this.comboField('cf:height:'+node.id,t,node,'height',{tokens:[],keywords:[{v:'auto',l:'auto'},{v:'100%',l:'full'}],ghost:'auto'}))),
+      this.row2(
+        h('div',null,this.lbl(t,'Min width'),this.comboField('cf:minWidth:'+node.id,t,node,'minWidth',{tokens:[],ghost:'auto',unsetLabel:'auto'})),
+        h('div',null,this.lbl(t,'Max width'),this.comboField('cf:maxWidth:'+node.id,t,node,'maxWidth',{tokens:[],ghost:'none',unsetLabel:'none'}))),
+      this.row2(
+        h('div',null,this.lbl(t,'Min height'),this.comboField('cf:minHeight:'+node.id,t,node,'minHeight',{tokens:[],ghost:'auto',unsetLabel:'auto'})),
+        h('div',null,this.lbl(t,'Max height'),this.comboField('cf:maxHeight:'+node.id,t,node,'maxHeight',{tokens:[],ghost:'none',unsetLabel:'none'})))
+    ), {first:true}));
     if(node.type==='el'&&(node.data.tag==='img'||node.data.tag==='video')){
-      els.push(h('div',{style:{display:'flex',gap:8,marginTop:12}},
+      els.push(this.inspBand(t,'Media fit', h('div',{style:{display:'flex',gap:8}},
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object fit'), this.selectField(t,['fill','cover','contain','none','scale-down'],this.csVal(node,'objectFit')||'fill',v=>this.setCS(node,'objectFit',v))),
-        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object position'), this.selectField(t,['center','top','right','bottom','left'],this.csVal(node,'objectPosition')||'center',v=>this.setCS(node,'objectPosition',v)))));
+        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object position'), this.selectField(t,['center','top','right','bottom','left'],this.csVal(node,'objectPosition')||'center',v=>this.setCS(node,'objectPosition',v))))));
     }
     if(this.canHaveChildren(node)){
       // Empty reads as 'fill', matching CSS_DEFAULTS — align-items' own initial behavior in a flex
@@ -5265,10 +5263,12 @@ class Component extends DCLogic {
       // both show "Fill space" selected here (not "Manual" for one and "Fill space" for the other).
       const ai=this.csVal(node,'alignItems')||'';
       const childMode = (ai===''||ai==='stretch')?'fill' : (ai==='flex-start'?'fit' : 'manual');
-      els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Children'), this.selectField(t,[['fill','Fill space'],['fit','Fit content'],['manual','Manual']],childMode,
-        v=>this.setCS(node,'alignItems', v==='fill'?'stretch':(v==='fit'?'flex-start':'')))));
-      els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Overflow'),
-        this.segTextSlider(t,[{v:'visible',l:'Visible'},{v:'hidden',l:'Hidden'},{v:'auto',l:'Auto'},{v:'scroll',l:'Scroll'}],this.csVal(node,'overflow')||'visible',v=>this.setCS(node,'overflow',v),{pad:'6px 0'})));
+      els.push(this.inspBand(t,'Containment', stack(
+        h('div',null, this.lbl(t,'Children'), this.selectField(t,[['fill','Fill space'],['fit','Fit content'],['manual','Manual']],childMode,
+          v=>this.setCS(node,'alignItems', v==='fill'?'stretch':(v==='fit'?'flex-start':'')))),
+        h('div',null, this.lbl(t,'Overflow'),
+          this.segTextSlider(t,[{v:'visible',l:'Visible'},{v:'hidden',l:'Hidden'},{v:'auto',l:'Auto'},{v:'scroll',l:'Scroll'}],this.csVal(node,'overflow')||'visible',v=>this.setCS(node,'overflow',v),{pad:'6px 0'}))
+      )));
     }
     return h('div',null,els);
   }
@@ -5319,9 +5319,13 @@ class Component extends DCLogic {
   flatSection(t,key,label,body,opts){ opts=opts||{}; const h=React.createElement;
     const open = this._inspOpen[key]!=null ? this._inspOpen[key] : (opts.defOpen!==false);
     const toggle=()=>{ this._inspOpen[key]=!open; this.forceUpdate(); };
+    // The header STICKS while its own section is on screen, so a section's name is always visible no
+    // matter how far into its bands you've scrolled — the panel is long enough that a header scrolled
+    // off the top used to leave you with no way to tell which section a field belonged to. Needs an
+    // opaque background (it scrolls over content) and a z-index above the bands' own borders.
     return h('div',null,
       h('div',Object.assign({onClick:toggle},this.a11y(toggle,{label:label+(open?' section, expanded':' section, collapsed'),pressed:open}),
-        {style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer',userSelect:'none',fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,marginTop:opts.first?0:6,marginBottom:open?8:0,padding:'6px 0'}}),
+        {style:{position:'sticky',top:0,zIndex:3,background:t.panel2,display:'flex',alignItems:'center',gap:6,cursor:'pointer',userSelect:'none',fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,marginTop:opts.first?0:6,marginBottom:open?8:0,padding:'6px 0'}}),
         h('span',{style:{display:'inline-flex',color:t.faint,transition:'transform .12s',transform:open?'rotate(90deg)':'none'}},this.chev('right',10)),
         label, opts.dot||null),
       this.animatedBox(open, body));
@@ -5679,10 +5683,11 @@ class Component extends DCLogic {
         h('div',{style:{width:'68%',height:0,borderTop:'3px '+v+' '+(on?t.accent:t.muted)}})); })); }
   borderBlock(node,t){ const h=React.createElement;
     return h('div',null,
-      this.borderWidthBand(node,t),
-      h('div',{style:{marginTop:10}}, this.lbl(t,'Style'), this.borderStyleSwatches(node,t)),
-      h('div',{style:{marginTop:10}}, this.radiusBand(node,t)),
-      h('div',{style:{marginTop:10}}, this.colorInlineField(t,node,'borderColor',{placeholder:'#D0D7DE',noAlpha:true}))); }
+      this.borderWidthBand(node,t,{first:true}),
+      this.inspBand(t,'Line', h('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+        h('div',null, this.lbl(t,'Style'), this.borderStyleSwatches(node,t)),
+        this.colorInlineField(t,node,'borderColor',{placeholder:'#D0D7DE',noAlpha:true}))),
+      this.radiusBand(node,t)); }
   // Small accent dot next to a section label when the active off-base layer (a state, or a
   // breakpoint) holds any of `keys` — provenance at the section level ("● set here", clickable to
   // reset) until the deck itself gets per-field provenance in a later pass. Excludes pseudo-elements
