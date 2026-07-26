@@ -113,10 +113,6 @@ lands on disk to commit, not just a browser download.
 One server serves the whole `ServiceNow/` tree, so cross-tree files are referenced **by relative
 path** — no vendoring:
 
-- **Browser app with its own live Deploy modal** (see `apps/glide-studio/js/services/deploy.service.js`):
-  load `<script src="../../tools/sn-deployment-packager/core.js">` before your own deploy service; it
-  exposes `window.SNDeploymentPackager.core`. (Only true external npm deps that aren't in the served tree — e.g.
-  js-beautify — still get vendored into the app's own `lib/`.)
 - **Node build script** (see `apps/standards/scripts/build-deploy.js`): just
   `require('../../../tools/sn-deployment-packager/core.js')` by relative path.
 - **The standalone deploy console** (`tools/sn-deployment-packager/index.html`) - build/preview/download

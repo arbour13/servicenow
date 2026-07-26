@@ -3755,22 +3755,9 @@ document.addEventListener('scroll', function (e) {
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sp_angular_provider_b2c3d4e5f69280684300112233</sys_update_name>
 </sp_angular_provider>
-<sp_angular_provider action="INSERT_OR_UPDATE">
-<active>true</active>
-<name>DeployModalService</name>
-<type>service</type>
-<script><![CDATA[[function () {
-  /* Dev-harness-only stub - the real DeployModalService ships only in the dev harness. */
-  return {};
-}]]]></script>
-<sys_id>b2c3d4e5f673f0d5ef00112233</sys_id>
-<sys_name>DeployModalService</sys_name>
-<sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f673f0d5ef00112233</sys_update_name>
-</sp_angular_provider>
 <sp_widget action="INSERT_OR_UPDATE">
 <category>custom</category>
-<client_script><![CDATA[api.controller = function ($scope, $sce, $timeout, SchemaService, CodegenService, AggregateService, AjaxService, EncoderService, ScriptIncludeService, GlideQueryService, ExampleCallService, SchemaLiveService, ThemeService, DeployModalService, SchemaUiService, ConnectionUiService, ConfirmModalService, PreviewUiService, StandardsUiService) {
+<client_script><![CDATA[api.controller = function ($scope, $sce, $timeout, SchemaService, CodegenService, AggregateService, AjaxService, EncoderService, ScriptIncludeService, GlideQueryService, ExampleCallService, SchemaLiveService, ThemeService, SchemaUiService, ConnectionUiService, ConfirmModalService, PreviewUiService, StandardsUiService) {
     'use strict';
     var vm = this;
 
@@ -3944,15 +3931,6 @@ document.addEventListener('scroll', function (e) {
         window.location.reload();
       });
     };
-
-    /* ============================= Deploy ============================= */
-    // The Deploy modal (packaging this app as an installable scoped application - App name/Version,
-    // a target-instance connection for vendor-prefix detection, a Scope field, and tabs previewing
-    // each package piece) lives entirely in DeployModalService: state, tab switching, prefix
-    // detection, copy/download. Exposed here as one handle the template binds to (vm.deployUi.*).
-    // Dev-harness-only: the Deploy button is hidden when the app runs inside an instance, so none of
-    // it runs in the deployed widget (see DeployService.DEPLOYED_STUB_PROVIDERS).
-    vm.deployUi = DeployModalService;
 
     // Read-only record preview (GlideRecord) / stats preview (GlideAggregate) - one shared modal,
     // lives in PreviewUiService. Passed straight through (vm.preview is the SAME object that service
@@ -4736,8 +4714,7 @@ document.addEventListener('scroll', function (e) {
       });
     };
     // A Blob + object URL saved as the panel's title-appropriate filename. mime defaults to the
-    // code panels' own (always .js); the Deploy modal's per-tab downloads (xml/html/css/js) pass
-    // their own.
+    // code panels' own (always .js).
     function downloadText(text, filename, mime) {
       if (!text) { return; }
       var blob = new Blob([text], { type: mime || 'text/javascript' });
@@ -4829,10 +4806,11 @@ document.addEventListener('scroll', function (e) {
    CSS field on that portal, so a CSS Include declaring `$gs-accent: #054b80 !default;` picks up
    whatever the theme defines for `$gs-accent` instead, with the value here only ever used as a
    fallback (e.g. compiling this file standalone, outside ServiceNow, like the `build:css` step
-   does for this dev harness). DeployService.js's generated Update Set ships these same $gs-*
-   defaults as the packaged sp_theme's actual `css_variables`, and ships this file's CONTENT
-   (uncompiled, still referencing $gs-*) as an sp_css CSS Include tied to that theme - see that
-   file's header comment for the full mechanism and what's verified vs. best-effort against a real
+   does for this dev harness). The shared SN Deployment Packager's generated Update Set (built from
+   this app's own deploy.manifest.js - see tools/sn-deployment-packager/core.js) ships these same
+   $gs-* defaults as the packaged sp_theme's actual `css_variables`, and ships this file's CONTENT
+   (uncompiled, still referencing $gs-*) as an sp_css CSS Include tied to that theme - see
+   manifest.schema.md for the full mechanism and what's verified vs. best-effort against a real
    instance.
 
    Dark mode ($gs-*-dark below) is this APP's own feature (a runtime data-theme attribute + CSS
@@ -5360,8 +5338,8 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
   color: #e6e9ef; font-weight: 600; font-size: 13px;
 }.gsb-widget .icon-x { background: transparent; border: 0; color: #9aa1ab; font-size: 15px; cursor: pointer; line-height: 1; }.gsb-widget .icon-x:hover { color: #fff; }// Borderless, same always-dark modal chrome as .out-btn above - grounded with that palette's own// button-hover shade (#2a3040, same as .out-btn's resting background) rather than a border-color..gsb-widget .icon-x:focus-visible { @include gs-focus-ring($glow: #{$gs-accent-soft-dark}); background: #2a3040; }.gsb-widget .modal-hint { margin: var(--sp-md) var(--sp-xl) 0; color: #8b93a4; font-size: 12px; line-height: 1.55; }.gsb-widget .modal-sm .modal-hint { margin-bottom: var(--sp-lg); }.gsb-widget .modal-actions { display: flex; gap: var(--sp-sm); justify-content: flex-end; padding: 0 var(--sp-xl) var(--sp-lg); }/* Fixed dark colors, not theme-tied vars - every modal in this app is permanently dark regardless
    of the app's light/dark theme (see .preview-table's comment below), so a button that appears
-   inside one (Confirm's Cancel/Reset, Deploy's Copy/Download) needs its own always-dark palette
-   too, not whichever theme happens to be active. */.gsb-widget .out-btn {
+   inside one (Confirm's Cancel/OK) needs its own always-dark palette too, not whichever theme
+   happens to be active. */.gsb-widget .out-btn {
   height: 30px; padding: 0 var(--sp-md); background: #2a3040; border: 1px solid #39404f; color: #d7dbe4;
   border-radius: 7px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
   display: inline-flex; align-items: center; gap: var(--sp-sm); transition: background .12s;
@@ -5371,34 +5349,7 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
    whichever theme happens to be active. */.gsb-widget .preview-table th, .gsb-widget .preview-table td {
   border: 1px solid #2c3242; padding: var(--sp-xs) var(--sp-sm); color: #e6e9ef;
   text-align: left; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis;
-}.gsb-widget .preview-table th { background: #232838; font-weight: 650; }/* Deploy dialog - packages this app as a scoped application (see DeployService's header
-   comment). This app's modals are ALWAYS dark regardless of the active app theme (see
-   .preview-table's comment above), so the dialog's inputs/tabs use fixed dark colors (matching
-   the modal's own chrome, plus this app's own $gs-accent-dark/$gs-accent-soft-dark for the one
-   accent this dialog needs) rather than the app's ordinary theme-tied vars - otherwise they'd
-   randomly shift between light and dark chrome depending on whatever theme the REST of the app
-   happens to be in. */.gsb-widget .deploy-form { margin: var(--sp-md) var(--sp-xl) 0; }.gsb-widget .deploy-form .field-label, .gsb-widget .deploy-target .field-label { color: #8b93a4; }.gsb-widget .deploy-form input[type="text"], .gsb-widget .deploy-target input[type="text"] {
-  background: #12151d; border: 1px solid #39404f; color: #e6e9ef;
-}.gsb-widget .deploy-form input[type="text"]::placeholder, .gsb-widget .deploy-target input[type="text"]::placeholder { color: #6e7681; }.gsb-widget .deploy-form input[type="text"]:focus-visible, .gsb-widget .deploy-target input[type="text"]:focus-visible {
-  @include gs-focus-ring($glow: #{$gs-accent-soft-dark});
-  border-color: #{$gs-accent-dark};
-}.gsb-widget .deploy-target {
-  border: 1px solid #39404f; border-radius: var(--radius-sm); padding: var(--sp-md); background: #12151d;
-}.gsb-widget .deploy-target .hint { color: #8b93a4; margin: 0 0 var(--sp-sm); }/* One shared "primary" fill for accent-colored controls in this dialog (Detect prefix, the active
-   tab below) - fixed to the same $gs-accent-dark, for the same reason everything else in this
-   block is fixed rather than theme-tied (see this section's header comment). .btn-primary is a
-   MODAL-scoped counterpart to the app-wide .btn-accent (which stays correctly theme-tied for
-   buttons outside modals) - .btn-accent inside a modal would make Detect prefix silently drift
-   out of sync with the tab's fixed accent depending on whatever theme the rest of the app happens
-   to be in, the exact bug this replaces. */.gsb-widget .btn-primary { background: #{$gs-accent-dark}; border-color: #{$gs-accent-dark}; color: #fff; }.gsb-widget .btn-primary:hover { background: #{$gs-accent-hover-dark}; border-color: #{$gs-accent-hover-dark}; }// Overrides the theme-tied .btn base ring for the same reason background/hover above are fixed// rather than theme-tied - this modal is always dark regardless of the app's own theme..gsb-widget .btn-primary:focus-visible { @include gs-focus-ring($glow: #{$gs-accent-soft-dark}); border-color: #{$gs-accent-dark}; }.gsb-widget .deploy-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: var(--sp-md) var(--sp-xl) 0; }.gsb-widget .deploy-tab {
-  font: inherit; font-size: 12px; padding: 4px 10px; border: 1px solid #39404f; border-radius: var(--radius-sm);
-  background: #232838; color: #9aa1ab; cursor: pointer;
-}.gsb-widget .deploy-tab:hover { color: #e6e9ef; }.gsb-widget .deploy-tab.active { background: #{$gs-accent-dark}; border-color: #{$gs-accent-dark}; color: #fff; }.gsb-widget .deploy-tab:focus-visible { @include gs-focus-ring($glow: #{$gs-accent-soft-dark}); border-color: #{$gs-accent-dark}; }.gsb-widget .modal-code {
-  margin: var(--sp-md) var(--sp-xl); flex: 1; min-height: 220px;
-  background: #11141d; border: 1px solid #2c3242; border-radius: var(--sp-sm);
-  color: #c3e88d; font-family: var(--mono); font-size: 12px; line-height: 1.5;
-  padding: var(--sp-md); resize: none;
-}.gsb-widget .modal-code:focus-visible { @include gs-focus-ring($glow: #{$gs-accent-soft-dark}); border-color: #{$gs-accent-dark}; }/* ---------- Output pane ---------- *//* Every color here reads from the --ed-* custom properties (see the .output-pane[data-editor-theme]
+}.gsb-widget .preview-table th { background: #232838; font-weight: 650; }/* ---------- Output pane ---------- *//* Every color here reads from the --ed-* custom properties (see the .output-pane[data-editor-theme]
    blocks up top) rather than app-theme vars or literals - this pane has its own independent
    light/dark/auto toggle (vm.editorTheme), separate from the rest of the app. *//* border-left, not just the background-color contrast between this pane and .builder - the two
    used to read as clearly separate purely because the output pane was always dark, but now that
@@ -6370,17 +6321,6 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
         </div>
       </div>
 
-      <div class="card" ng-if="!vm.instanceHosted">
-        <div class="card-head"><h2>Deploy</h2></div>
-        <div class="card-body">
-          <p class="hint">Packages this tool itself as an installable scoped application.</p>
-          <button type="button" class="btn btn-accent" ng-click="vm.deployUi.open()">
-            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12V2.5M5.5 6L9 2.5 12.5 6"/><path d="M2.5 11.5v3a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-3"/></svg>
-            <span>Deploy</span>
-          </button>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -6533,58 +6473,6 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
           <p class="hint" ng-if="!vm.preview.stats.length">No result.</p>
           <p class="hint" ng-repeat="s in vm.preview.stats"><strong>{{s.label}}:</strong> {{s.value}}</p>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" ng-if="vm.deployUi.modal.open" core-modal="vm.deployUi.close()" core-modal-focus="deployCopyBtn" ng-click="$event.target === $event.currentTarget && vm.deployUi.close()">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Scoped application XML">
-      <div class="modal-head">
-        <span>Scoped application XML</span>
-        <button class="icon-x" type="button" aria-label="Close" ng-click="vm.deployUi.close()">✕</button>
-      </div>
-      <p class="modal-hint">Packages the tool as a <b>scoped application</b> (app record + theme, portal, page, widget, instance, all scoped to it). In ServiceNow, open any list ▸ context menu ▸ <b>Import XML</b> and upload this. Enter the <b>target instance</b> you'll import into below and click <b>Detect prefix</b> to fill the scope, or set <b>Scope</b> by hand. A scope is capped at <b>18 characters</b>.</p>
-      <div class="deploy-form">
-        <div class="grid2" style="margin-bottom:var(--sp-sm);">
-          <div>
-            <label class="field-label" for="fldDeployAppName">App name</label>
-            <input type="text" id="fldDeployAppName" autocomplete="off" ng-model="vm.deployUi.deploy.appName" ng-change="vm.deployUi.onAppNameEdit()">
-          </div>
-          <div>
-            <label class="field-label" for="fldDeployVersion">Version</label>
-            <input type="text" id="fldDeployVersion" autocomplete="off" ng-model="vm.deployUi.deploy.version" ng-change="vm.deployUi.onFieldEdit()">
-          </div>
-        </div>
-        <div class="deploy-target">
-          <label class="field-label" for="fldDeployInstanceUrl">Deploy target instance <span class="hint" style="display:inline; margin:0;">— separate from your Settings connection on purpose, so you can stay on your PDI while packaging a deploy for another instance</span></label>
-          <input type="text" id="fldDeployInstanceUrl" autocomplete="off" placeholder="https://devXXXXX.service-now.com" ng-model="vm.deployUi.deploy.instanceUrl" ng-change="vm.deployUi.onFieldEdit()">
-          <div class="grid2" style="margin-top:9px;">
-            <div>
-              <label class="field-label" for="fldDeployUsername">Username</label>
-              <input type="text" id="fldDeployUsername" autocomplete="off" ng-model="vm.deployUi.deploy.username" ng-change="vm.deployUi.onFieldEdit()">
-            </div>
-            <div>
-              <label class="field-label" for="fldDeployPassword">Password</label>
-              <input type="text" id="fldDeployPassword" class="masked-input" autocomplete="off" spellcheck="false"
-                     data-1p-ignore data-lpignore="true" ng-model="vm.deployUi.deploy.password" ng-change="vm.deployUi.onFieldEdit()">
-            </div>
-          </div>
-          <div class="row" style="margin-top:10px; align-items:center;">
-            <button type="button" class="btn btn-primary btn-sm" ng-click="vm.deployUi.detectPrefix()">Detect prefix</button>
-            <span class="hint" style="display:inline; margin:0;">{{vm.deployUi.detectStatus}}</span>
-          </div>
-        </div>
-        <label class="field-label" style="margin:var(--sp-md) 0 4px;" for="fldDeployScope">Scope <span class="hint" style="display:inline; margin:0;">{{vm.deployUi.scopeHint}}</span></label>
-        <input type="text" id="fldDeployScope" autocomplete="off" maxlength="18" ng-model="vm.deployUi.deploy.scope" ng-change="vm.deployUi.onScopeEdit()">
-      </div>
-      <div class="deploy-tabs">
-        <button type="button" class="deploy-tab" ng-class="{active: vm.deployUi.view === v.key}"
-                ng-repeat="v in vm.deployUi.views" ng-click="vm.deployUi.setView(v.key)">{{v.label}}</button>
-      </div>
-      <textarea class="modal-code" readonly spellcheck="false">{{vm.deployUi.tabText}}</textarea>
-      <div class="modal-actions">
-        <button id="deployCopyBtn" class="out-btn" ng-class="{copied: vm.deployUi.copyStatus !== 'Copy'}" type="button" ng-click="vm.deployUi.copyTab()">{{vm.deployUi.copyStatus}}</button>
-        <button class="out-btn" type="button" ng-click="vm.deployUi.downloadTab()">⬇ Download</button>
       </div>
     </div>
   </div>

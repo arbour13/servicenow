@@ -117,10 +117,6 @@ declare global {
                         table: "sp_angular_provider"
                         id: "b2c3d4e5f69280684300112233"
                     }
-                    "DeployModalService": {
-                        table: "sp_angular_provider"
-                        id: "b2c3d4e5f673f0d5ef00112233"
-                    }
                     "widget": {
                         table: "sp_widget"
                         id: "b2c3d4e5f60000112233445566778802"

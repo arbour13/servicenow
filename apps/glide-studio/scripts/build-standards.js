@@ -2,8 +2,9 @@
  *
  *   node scripts/build-standards.js
  *       Renders standards/glidefast-scripting-standards.md into js/services/standards.service.js
- *       - a normal glideStudio provider (so DeployService packages it like every other service)
- *       whose content is the document pre-parsed into parts (h1 chapters) / sections (h2) of HTML
+ *       - a normal glideStudio provider (packaged like every other service, via deploy.manifest.js
+ *       and the shared SN Deployment Packager) whose content is the document pre-parsed into parts
+ *       (h1 chapters) / sections (h2) of HTML
  *       with stable anchor ids (id="std-<slug>"). Run this after ANY edit to the markdown.
  *
  * The markdown is the single hand-maintained source of truth. It is organized BY TOPIC (readable
@@ -397,7 +398,8 @@ function render() {
     '   parts (h1 chapters) / sections (h2) of HTML with stable anchor ids (id="std-<slug>"). The',
     '   Standards page renders these directly; the "std-link" tips across the builder modes deep-',
     '   link to the slugs, and "std-build" buttons in the doc link back to the builders. A normal',
-    '   glideStudio provider so DeployService packages it like every other service. */',
+    '   glideStudio provider, packaged like every other service via deploy.manifest.js and the',
+    '   shared SN Deployment Packager. */',
     "angular.module('glideStudio').factory('StandardsService', function () {",
     "  'use strict';",
     '',

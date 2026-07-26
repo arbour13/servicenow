@@ -1,14 +1,12 @@
 {
   "name": "glide-studio-angular",
   "private": true,
-  "description": "Build tooling for Glide Studio's SCSS source (scss/app.scss -> css/app.css) and the vendored js-beautify used by DeployService to format exported widget code to ServiceNow's standard. No runtime dependency in the deployed widget - both dev/authoring-only. js-beautify is vendored at lib/beautify.js (self-contained); this dep just records its origin/version for regenerating that file. The shared deploy-packaging core is NOT vendored - it's referenced directly from /tools/sn-deployment-packager via the single ServiceNow-root dev server (see index.html).",
+  "description": "Build tooling for Glide Studio's SCSS source (scss/app.scss -> css/app.css). No runtime dependency in the deployed widget - dev/authoring-only. Deployment packaging is not this app's job - see deploy.manifest.js and the shared tools/sn-deployment-packager/ (standalone deploy console + Node build.js CLI).",
   "scripts": {
     "build:css": "sass scss/app.scss css/app.css --no-source-map",
-    "watch:css": "sass --watch scss/app.scss css/app.css --no-source-map",
-    "vendor:beautify": "cp node_modules/js-beautify/js/lib/beautify.js lib/beautify.js"
+    "watch:css": "sass --watch scss/app.scss css/app.css --no-source-map"
   },
   "devDependencies": {
-    "js-beautify": "^2.0.3",
     "sass": "^1.101.0"
   }
 }

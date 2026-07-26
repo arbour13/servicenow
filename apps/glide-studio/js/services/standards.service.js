@@ -6,7 +6,8 @@
    parts (h1 chapters) / sections (h2) of HTML with stable anchor ids (id="std-<slug>"). The
    Standards page renders these directly; the "std-link" tips across the builder modes deep-
    link to the slugs, and "std-build" buttons in the doc link back to the builders. A normal
-   glideStudio provider so DeployService packages it like every other service. */
+   glideStudio provider, packaged like every other service via deploy.manifest.js and the
+   shared SN Deployment Packager. */
 angular.module('glideStudio').factory('StandardsService', function () {
   'use strict';
 

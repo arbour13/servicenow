@@ -4,8 +4,8 @@
    removed 2026-07-11 - the app now pushes users toward Script Include as the one place to build
    reusable server-side code, rather than spreading logic across four separate builders. */
 angular.module('glideStudio').controller('MainController', [
-  '$scope', '$sce', '$timeout', 'SchemaService', 'CodegenService', 'AggregateService', 'AjaxService', 'EncoderService', 'ScriptIncludeService', 'GlideQueryService', 'ExampleCallService', 'SchemaLiveService', 'ThemeService', 'DeployModalService', 'SchemaUiService', 'ConnectionUiService', 'ConfirmModalService', 'PreviewUiService', 'StandardsUiService',
-  function ($scope, $sce, $timeout, SchemaService, CodegenService, AggregateService, AjaxService, EncoderService, ScriptIncludeService, GlideQueryService, ExampleCallService, SchemaLiveService, ThemeService, DeployModalService, SchemaUiService, ConnectionUiService, ConfirmModalService, PreviewUiService, StandardsUiService) {
+  '$scope', '$sce', '$timeout', 'SchemaService', 'CodegenService', 'AggregateService', 'AjaxService', 'EncoderService', 'ScriptIncludeService', 'GlideQueryService', 'ExampleCallService', 'SchemaLiveService', 'ThemeService', 'SchemaUiService', 'ConnectionUiService', 'ConfirmModalService', 'PreviewUiService', 'StandardsUiService',
+  function ($scope, $sce, $timeout, SchemaService, CodegenService, AggregateService, AjaxService, EncoderService, ScriptIncludeService, GlideQueryService, ExampleCallService, SchemaLiveService, ThemeService, SchemaUiService, ConnectionUiService, ConfirmModalService, PreviewUiService, StandardsUiService) {
     'use strict';
     var vm = this;
 
@@ -179,15 +179,6 @@ angular.module('glideStudio').controller('MainController', [
         window.location.reload();
       });
     };
-
-    /* ============================= Deploy ============================= */
-    // The Deploy modal (packaging this app as an installable scoped application - App name/Version,
-    // a target-instance connection for vendor-prefix detection, a Scope field, and tabs previewing
-    // each package piece) lives entirely in DeployModalService: state, tab switching, prefix
-    // detection, copy/download. Exposed here as one handle the template binds to (vm.deployUi.*).
-    // Dev-harness-only: the Deploy button is hidden when the app runs inside an instance, so none of
-    // it runs in the deployed widget (see DeployService.DEPLOYED_STUB_PROVIDERS).
-    vm.deployUi = DeployModalService;
 
     // Read-only record preview (GlideRecord) / stats preview (GlideAggregate) - one shared modal,
     // lives in PreviewUiService. Passed straight through (vm.preview is the SAME object that service
@@ -971,8 +962,7 @@ angular.module('glideStudio').controller('MainController', [
       });
     };
     // A Blob + object URL saved as the panel's title-appropriate filename. mime defaults to the
-    // code panels' own (always .js); the Deploy modal's per-tab downloads (xml/html/css/js) pass
-    // their own.
+    // code panels' own (always .js).
     function downloadText(text, filename, mime) {
       if (!text) { return; }
       var blob = new Blob([text], { type: mime || 'text/javascript' });

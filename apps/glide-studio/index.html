@@ -28,9 +28,10 @@
 
 <!--
   This dev harness loads AngularJS from a CDN purely so this page is previewable in a plain
-  browser - the *deployed* Service Portal widget does not include this shell. The Deploy step
-  packages the template/controller/services into an sp_widget + sp_angular_provider records
-  instead (see DeployService).
+  browser - the *deployed* Service Portal widget does not include this shell. Packaging the
+  template/controller/services into an sp_widget + sp_angular_provider records is the shared SN
+  Deployment Packager's job, driven by this app's own deploy.manifest.js (see
+  tools/sn-deployment-packager/index.html, or the Node build.js CLI).
 -->
 
 <!-- ng-cloak on the WHOLE app root, not scattered on individual elements - the browser's HTML
@@ -961,17 +962,6 @@
         </div>
       </div>
 
-      <div class="card" ng-if="!vm.instanceHosted">
-        <div class="card-head"><h2>Deploy</h2></div>
-        <div class="card-body">
-          <p class="hint">Packages this tool itself as an installable scoped application.</p>
-          <button type="button" class="btn btn-accent" ng-click="vm.deployUi.open()">
-            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12V2.5M5.5 6L9 2.5 12.5 6"/><path d="M2.5 11.5v3a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-3"/></svg>
-            <span>Deploy</span>
-          </button>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -1128,58 +1118,6 @@
     </div>
   </div>
 
-  <div class="modal-overlay" ng-if="vm.deployUi.modal.open" core-modal="vm.deployUi.close()" core-modal-focus="deployCopyBtn" ng-click="$event.target === $event.currentTarget && vm.deployUi.close()">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Scoped application XML">
-      <div class="modal-head">
-        <span>Scoped application XML</span>
-        <button class="icon-x" type="button" aria-label="Close" ng-click="vm.deployUi.close()">✕</button>
-      </div>
-      <p class="modal-hint">Packages the tool as a <b>scoped application</b> (app record + theme, portal, page, widget, instance, all scoped to it). In ServiceNow, open any list ▸ context menu ▸ <b>Import XML</b> and upload this. Enter the <b>target instance</b> you'll import into below and click <b>Detect prefix</b> to fill the scope, or set <b>Scope</b> by hand. A scope is capped at <b>18 characters</b>.</p>
-      <div class="deploy-form">
-        <div class="grid2" style="margin-bottom:var(--sp-sm);">
-          <div>
-            <label class="field-label" for="fldDeployAppName">App name</label>
-            <input type="text" id="fldDeployAppName" autocomplete="off" ng-model="vm.deployUi.deploy.appName" ng-change="vm.deployUi.onAppNameEdit()">
-          </div>
-          <div>
-            <label class="field-label" for="fldDeployVersion">Version</label>
-            <input type="text" id="fldDeployVersion" autocomplete="off" ng-model="vm.deployUi.deploy.version" ng-change="vm.deployUi.onFieldEdit()">
-          </div>
-        </div>
-        <div class="deploy-target">
-          <label class="field-label" for="fldDeployInstanceUrl">Deploy target instance <span class="hint" style="display:inline; margin:0;">— separate from your Settings connection on purpose, so you can stay on your PDI while packaging a deploy for another instance</span></label>
-          <input type="text" id="fldDeployInstanceUrl" autocomplete="off" placeholder="https://devXXXXX.service-now.com" ng-model="vm.deployUi.deploy.instanceUrl" ng-change="vm.deployUi.onFieldEdit()">
-          <div class="grid2" style="margin-top:9px;">
-            <div>
-              <label class="field-label" for="fldDeployUsername">Username</label>
-              <input type="text" id="fldDeployUsername" autocomplete="off" ng-model="vm.deployUi.deploy.username" ng-change="vm.deployUi.onFieldEdit()">
-            </div>
-            <div>
-              <label class="field-label" for="fldDeployPassword">Password</label>
-              <input type="text" id="fldDeployPassword" class="masked-input" autocomplete="off" spellcheck="false"
-                     data-1p-ignore data-lpignore="true" ng-model="vm.deployUi.deploy.password" ng-change="vm.deployUi.onFieldEdit()">
-            </div>
-          </div>
-          <div class="row" style="margin-top:10px; align-items:center;">
-            <button type="button" class="btn btn-primary btn-sm" ng-click="vm.deployUi.detectPrefix()">Detect prefix</button>
-            <span class="hint" style="display:inline; margin:0;">{{vm.deployUi.detectStatus}}</span>
-          </div>
-        </div>
-        <label class="field-label" style="margin:var(--sp-md) 0 4px;" for="fldDeployScope">Scope <span class="hint" style="display:inline; margin:0;">{{vm.deployUi.scopeHint}}</span></label>
-        <input type="text" id="fldDeployScope" autocomplete="off" maxlength="18" ng-model="vm.deployUi.deploy.scope" ng-change="vm.deployUi.onScopeEdit()">
-      </div>
-      <div class="deploy-tabs">
-        <button type="button" class="deploy-tab" ng-class="{active: vm.deployUi.view === v.key}"
-                ng-repeat="v in vm.deployUi.views" ng-click="vm.deployUi.setView(v.key)">{{v.label}}</button>
-      </div>
-      <textarea class="modal-code" readonly spellcheck="false">{{vm.deployUi.tabText}}</textarea>
-      <div class="modal-actions">
-        <button id="deployCopyBtn" class="out-btn" ng-class="{copied: vm.deployUi.copyStatus !== 'Copy'}" type="button" ng-click="vm.deployUi.copyTab()">{{vm.deployUi.copyStatus}}</button>
-        <button class="out-btn" type="button" ng-click="vm.deployUi.downloadTab()">⬇ Download</button>
-      </div>
-    </div>
-  </div>
-
   <div class="modal-overlay" ng-if="vm.confirm.open" core-modal="vm.closeConfirm()" core-modal-focus="confirmCancelBtn">
     <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
       <div class="modal-head">
@@ -1197,27 +1135,10 @@
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
-<!-- Vendored js-beautify (dev/authoring only) - DeployService runs the exported widget JS through
-     it so the packaged code matches ServiceNow's own Format Code standard (js-beautify is the
-     engine behind that button). Loaded in this dev harness, NOT shipped in the deployed widget.
-     If absent, DeployService.beautify() degrades to a no-op (exports the raw source instead). -->
-<script src="lib/beautify.js"></script>
-<!-- The shared deploy-packaging core (dev/authoring only) DeployService packages this app's own
-     Update Set XML with. Referenced directly from tools/sn-deployment-packager via the single
-     ServiceNow-root dev server - not vendored/copied. Exposes window.SNDeploymentPackager.core.
-     Never shipped in the deployed widget. -->
-<script src="../../tools/sn-deployment-packager/core.js"></script>
-<!-- Live-instance connection helper (dev/authoring only) - detectCompanyPrefix, shared with the
-     standalone deploy console. Never shipped in the deployed widget. -->
-<script src="../../tools/sn-deployment-packager/instance.js"></script>
-<!-- This app's own deploy descriptor (dev/authoring only) - the single source of truth for its
-     deployment manifest, also read by the shared deploy console
-     (tools/sn-deployment-packager/index.html). Never shipped in the deployed widget. -->
-<script src="deploy.manifest.js"></script>
 <!-- Core (this app's module depends on it) + the shared providers it hosts. Loaded
      directly from /apps/core/ via the single ServiceNow-root dev server. In the deployed Service
      Portal these register into the shared page injector from the installed Core app; this app injects
-     them by name and does NOT ship its own copies (see deploy.service.js - absent from PROVIDER_FILES). -->
+     them by name and does NOT ship its own copies. -->
 <script src="../core/js/app.module.js"></script>
 <script src="../core/js/services/theme.service.js"></script>
 <script src="../core/js/services/confirm-modal.service.js"></script>
@@ -1237,8 +1158,6 @@
 <script src="js/services/connection-ui.service.js"></script>
 <script src="js/services/schema-live.service.js"></script>
 <script src="js/services/schema-ui.service.js"></script>
-<script src="js/services/deploy.service.js"></script>
-<script src="js/services/deploy-modal.service.js"></script>
 <script src="js/services/preview-ui.service.js"></script>
 <script src="js/services/standards-ui.service.js"></script>
 <script src="js/directives/gs-select.directive.js"></script>

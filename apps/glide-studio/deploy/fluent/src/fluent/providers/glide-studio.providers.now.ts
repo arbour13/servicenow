@@ -118,10 +118,3 @@ SPAngularProvider({
     type: 'directive',
     script: Now.include('gsConditionGroups.js'),
 })
-
-SPAngularProvider({
-    $id: Now.ID['DeployModalService'],
-    name: 'DeployModalService',
-    type: 'service',
-    script: Now.include('DeployModalService.js'),
-})

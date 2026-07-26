@@ -910,17 +910,6 @@
         </div>
       </div>
 
-      <div class="card" ng-if="!vm.instanceHosted">
-        <div class="card-head"><h2>Deploy</h2></div>
-        <div class="card-body">
-          <p class="hint">Packages this tool itself as an installable scoped application.</p>
-          <button type="button" class="btn btn-accent" ng-click="vm.deployUi.open()">
-            <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12V2.5M5.5 6L9 2.5 12.5 6"/><path d="M2.5 11.5v3a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-3"/></svg>
-            <span>Deploy</span>
-          </button>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -1073,58 +1062,6 @@
           <p class="hint" ng-if="!vm.preview.stats.length">No result.</p>
           <p class="hint" ng-repeat="s in vm.preview.stats"><strong>{{s.label}}:</strong> {{s.value}}</p>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" ng-if="vm.deployUi.modal.open" core-modal="vm.deployUi.close()" core-modal-focus="deployCopyBtn" ng-click="$event.target === $event.currentTarget && vm.deployUi.close()">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Scoped application XML">
-      <div class="modal-head">
-        <span>Scoped application XML</span>
-        <button class="icon-x" type="button" aria-label="Close" ng-click="vm.deployUi.close()">✕</button>
-      </div>
-      <p class="modal-hint">Packages the tool as a <b>scoped application</b> (app record + theme, portal, page, widget, instance, all scoped to it). In ServiceNow, open any list ▸ context menu ▸ <b>Import XML</b> and upload this. Enter the <b>target instance</b> you'll import into below and click <b>Detect prefix</b> to fill the scope, or set <b>Scope</b> by hand. A scope is capped at <b>18 characters</b>.</p>
-      <div class="deploy-form">
-        <div class="grid2" style="margin-bottom:var(--sp-sm);">
-          <div>
-            <label class="field-label" for="fldDeployAppName">App name</label>
-            <input type="text" id="fldDeployAppName" autocomplete="off" ng-model="vm.deployUi.deploy.appName" ng-change="vm.deployUi.onAppNameEdit()">
-          </div>
-          <div>
-            <label class="field-label" for="fldDeployVersion">Version</label>
-            <input type="text" id="fldDeployVersion" autocomplete="off" ng-model="vm.deployUi.deploy.version" ng-change="vm.deployUi.onFieldEdit()">
-          </div>
-        </div>
-        <div class="deploy-target">
-          <label class="field-label" for="fldDeployInstanceUrl">Deploy target instance <span class="hint" style="display:inline; margin:0;">— separate from your Settings connection on purpose, so you can stay on your PDI while packaging a deploy for another instance</span></label>
-          <input type="text" id="fldDeployInstanceUrl" autocomplete="off" placeholder="https://devXXXXX.service-now.com" ng-model="vm.deployUi.deploy.instanceUrl" ng-change="vm.deployUi.onFieldEdit()">
-          <div class="grid2" style="margin-top:9px;">
-            <div>
-              <label class="field-label" for="fldDeployUsername">Username</label>
-              <input type="text" id="fldDeployUsername" autocomplete="off" ng-model="vm.deployUi.deploy.username" ng-change="vm.deployUi.onFieldEdit()">
-            </div>
-            <div>
-              <label class="field-label" for="fldDeployPassword">Password</label>
-              <input type="text" id="fldDeployPassword" class="masked-input" autocomplete="off" spellcheck="false"
-                     data-1p-ignore data-lpignore="true" ng-model="vm.deployUi.deploy.password" ng-change="vm.deployUi.onFieldEdit()">
-            </div>
-          </div>
-          <div class="row" style="margin-top:10px; align-items:center;">
-            <button type="button" class="btn btn-primary btn-sm" ng-click="vm.deployUi.detectPrefix()">Detect prefix</button>
-            <span class="hint" style="display:inline; margin:0;">{{vm.deployUi.detectStatus}}</span>
-          </div>
-        </div>
-        <label class="field-label" style="margin:var(--sp-md) 0 4px;" for="fldDeployScope">Scope <span class="hint" style="display:inline; margin:0;">{{vm.deployUi.scopeHint}}</span></label>
-        <input type="text" id="fldDeployScope" autocomplete="off" maxlength="18" ng-model="vm.deployUi.deploy.scope" ng-change="vm.deployUi.onScopeEdit()">
-      </div>
-      <div class="deploy-tabs">
-        <button type="button" class="deploy-tab" ng-class="{active: vm.deployUi.view === v.key}"
-                ng-repeat="v in vm.deployUi.views" ng-click="vm.deployUi.setView(v.key)">{{v.label}}</button>
-      </div>
-      <textarea class="modal-code" readonly spellcheck="false">{{vm.deployUi.tabText}}</textarea>
-      <div class="modal-actions">
-        <button id="deployCopyBtn" class="out-btn" ng-class="{copied: vm.deployUi.copyStatus !== 'Copy'}" type="button" ng-click="vm.deployUi.copyTab()">{{vm.deployUi.copyStatus}}</button>
-        <button class="out-btn" type="button" ng-click="vm.deployUi.downloadTab()">⬇ Download</button>
       </div>
     </div>
   </div>

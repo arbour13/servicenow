@@ -1,10 +1,12 @@
 /* Glide Studio's deployment descriptor - the single source of truth for its deployment manifest,
-   read by both this app's own live Deploy modal (js/services/deploy.service.js) and the shared
-   deploy console (tools/sn-deployment-packager/index.html). See
-   ../../tools/sn-deployment-packager/manifest.schema.md's "deploy.manifest.js" section for the contract. Every
-   path below is relative to this file's own folder (apps/glide-studio/). Loaded via <script src>
-   in index.html, same as any other provider file - never required in Node (this app has no
-   build-deploy.js of its own; its only deploy host is the live browser modal). */
+   read by the shared tooling: the standalone deploy console (tools/sn-deployment-packager/index.html,
+   loaded as a <script src> like any other provider file) and the Node build.js CLI
+   (`node tools/sn-deployment-packager/build.js glide-studio`, which require()s this file - the UMD
+   wrapper below is what makes both hosts work off the one file). See
+   ../../tools/sn-deployment-packager/manifest.schema.md's "deploy.manifest.js" section for the
+   contract. Every path below is relative to this file's own folder (apps/glide-studio/). This app
+   has no build-deploy.js of its own - it doesn't need one, since both deploy hosts already read this
+   manifest directly. */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -77,13 +79,6 @@
           trailingMarker: "document.addEventListener('scroll'" },
         { file: 'js/directives/gs-condition-groups.directive.js', name: 'gsConditionGroups', type: 'directive' },
       ],
-      // MainController injects a couple of dev-harness-only services (the Deploy tooling) that
-      // are NOT packaged as real providers - the deployed widget hides the Deploy button
-      // (ng-if="!vm.instanceHosted"), so their methods are never called inside an instance. But
-      // AngularJS still resolves EVERY controller injection at instantiation, so without these the
-      // deployed widget throws "Unknown provider: ..." and never renders. Ship an empty stub for
-      // each so the injector is satisfied.
-      stubProviders: ['DeployModalService'],
       features: { roles: true },
       roles: {
         userRoleName: 'glide_studio_user',
