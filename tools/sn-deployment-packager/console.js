@@ -100,7 +100,6 @@
   var fldPassword = document.getElementById('fldPassword');
   var detectPrefixBtn = document.getElementById('detectPrefixBtn');
   var detectStatus = document.getElementById('detectStatus');
-  var scopeHint = document.getElementById('scopeHint');
   var overridesSection = document.getElementById('overridesSection');
   var fldAppName = document.getElementById('fldAppName');
   var fldScope = document.getElementById('fldScope');
@@ -277,7 +276,6 @@
     setStatus(buildStatus, 'Fetching sources for ' + descriptor.manifest.appName + '…', false);
 
     connState = { scopeAuto: true, companyCode: '' };
-    scopeHint.textContent = '';
     detectStatus.textContent = '';
     var showConnection = !!(descriptor.deployOptions && descriptor.deployOptions.showConnection);
     connectionSection.style.display = showConnection ? '' : 'none';
@@ -332,7 +330,6 @@
   function onScopeInput() {
     if (currentlyShowsConnection()) {
       connState.scopeAuto = false; // the user has taken manual control
-      scopeHint.textContent = '';
     }
     rebuildOutput();
   }
@@ -350,7 +347,6 @@
       connState.companyCode = code;
       connState.scopeAuto = true;
       fldScope.value = recommendedScope();
-      scopeHint.textContent = '· detected from ' + fldInstanceUrl.value.replace(/^https?:\/\//, '').replace(/\/$/, '');
       var truncated = recommendedScope().length >= core.SCOPE_MAX;
       detectStatus.textContent = 'Prefix detected: x_' + code + (truncated ? ' (app name shortened to fit 18 chars)' : '');
       rebuildOutput();

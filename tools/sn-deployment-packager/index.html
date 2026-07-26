@@ -28,7 +28,21 @@
     width: 100%; padding: 9px 10px; background: #0e1626; border: 1px solid var(--border); border-radius: 6px;
     color: var(--text); font-size: 14px;
   }
-  select:disabled { opacity: .5; }
+  /* Custom chevron via appearance:none + an SVG data-URI background-image - the same technique
+     every other app in the suite uses to restyle a native <select> past its OS-drawn dropdown
+     arrow (glide-studio's app.scss, delivery-methodology's app.scss, theme-generator's own
+     stylesheet). A CSS custom property can't be interpolated into a data-URI, so the chevron color
+     below is a literal hex matching --text-muted rather than var(--text-muted). */
+  select {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    cursor: pointer; padding-right: 30px; transition: border-color .12s;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5L6 7.5L9 4.5' stroke='%2393a1bd' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  select:hover:not(:disabled) { border-color: var(--text-muted); }
+  select:focus-visible { border-color: var(--accent); outline: none; }
+  select:disabled { opacity: .5; cursor: default; }
   .status { margin-top: 10px; font-size: 13px; color: var(--text-muted); min-height: 16px; }
   .status-error { color: var(--danger); }
   .ineligible-note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
@@ -109,7 +123,7 @@
       <input type="text" id="fldAppName" autocomplete="off">
     </div>
     <div class="field">
-      <label for="fldScope">Scope <span id="scopeHint" class="hint"></span></label>
+      <label for="fldScope">Scope</label>
       <input type="text" id="fldScope" autocomplete="off" maxlength="18">
     </div>
     <div class="field">
