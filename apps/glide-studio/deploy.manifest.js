@@ -1,6 +1,6 @@
 /* Glide Studio's deployment descriptor - the single source of truth for its deployment manifest,
    read by both this app's own live Deploy modal (js/services/deploy.service.js) and the shared
-   deploy console (tools/sn-deployment-packager/deploy-console.html). See
+   deploy console (tools/sn-deployment-packager/index.html). See
    ../../tools/sn-deployment-packager/manifest.schema.md's "deploy.manifest.js" section for the contract. Every
    path below is relative to this file's own folder (apps/glide-studio/). Loaded via <script src>
    in index.html, same as any other provider file - never required in Node (this app has no

@@ -102,7 +102,7 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
 - **Fetching** every source file (`fetch()` vs `fs.readFileSync`).
 - **The deploy modal UI** (browser-only) - option form, connection fields, theming, copy/download.
   There's no single generic UI file; each host implements its own (e.g. Glide Studio's own Deploy
-  modal). `tools/sn-deployment-packager/deploy-console.html` is a shared instance of this host that
+  modal). `tools/sn-deployment-packager/index.html` is a shared instance of this host that
   works across every app with a `deploy.manifest.js` (see above), instead of each app growing its
   own copy - use it when you want to build/preview/download a package outside of any one app's own
   dev harness.
@@ -119,7 +119,7 @@ Every deployable app declares ONE `deploy.manifest.js` at its own root (`apps/<a
 - a UMD file, same pattern as `core.js`, so it loads unchanged via `require()` in Node
 and `<script src>` in a browser. This is the single source of truth for that app's manifest: an
 app's own build host (`scripts/build-deploy.js`, or a live Deploy modal's service) reads it, and so
-does the shared **deploy console** (`tools/sn-deployment-packager/deploy-console.html` - see below), so no app's
+does the shared **deploy console** (`tools/sn-deployment-packager/index.html` - see below), so no app's
 manifest is ever hand-copied into a second place.
 
 An app with no `deploy.manifest.js` is simply not deployable by any host - the deploy console

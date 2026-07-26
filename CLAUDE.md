@@ -119,7 +119,7 @@ path** — no vendoring:
   js-beautify — still get vendored into the app's own `lib/`.)
 - **Node build script** (see `apps/standards/scripts/build-deploy.js`): just
   `require('../../../tools/sn-deployment-packager/core.js')` by relative path.
-- **The standalone deploy console** (`tools/sn-deployment-packager/deploy-console.html`) - build/preview/download
+- **The standalone deploy console** (`tools/sn-deployment-packager/index.html`) - build/preview/download
   a package for ANY app outside of that app's own dev harness. It discovers deployable apps by
   probing each `apps/<app>/deploy.manifest.js`; an app with no such file just doesn't show up in
   its dropdown - see "The deploy.manifest.js descriptor" below.
@@ -135,7 +135,7 @@ build host (a `build-deploy.js` Node script, or a live Deploy modal's service) A
 deploy console, so the manifest is never hand-copied into a second place. Adding a new deployable
 app means adding its `deploy.manifest.js` (see `tools/sn-deployment-packager/manifest.schema.md`'s
 "deploy.manifest.js" section for the exact shape) and its folder name to the console's
-`KNOWN_APP_FOLDERS` list (`tools/sn-deployment-packager/deploy-console.js`). An app with none is intentionally
+`KNOWN_APP_FOLDERS` list (`tools/sn-deployment-packager/console.js`). An app with none is intentionally
 not deployable - that's the "convention-exempt" tools' current state, not an error.
 
 ## Sys_id rule

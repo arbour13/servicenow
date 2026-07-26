@@ -1,6 +1,6 @@
 /* Core's deployment descriptor - the single source of truth for its deployment manifest, read by
    both scripts/build-deploy.js (Node) and the shared deploy console
-   (tools/sn-deployment-packager/deploy-console.html, browser). See
+   (tools/sn-deployment-packager/index.html, browser). See
    ../../tools/sn-deployment-packager/manifest.schema.md's
    "deploy.manifest.js" section for the contract. Every path below is relative to this file's own
    folder (apps/core/). */

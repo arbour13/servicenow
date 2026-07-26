@@ -9,7 +9,7 @@
    manifest.schema.md's "Host responsibilities" - the core never touches the network or filesystem
    itself). Shared between every browser Deploy host that opts into `deployOptions.showConnection`
    (see manifest.schema.md's "deploy.manifest.js" section) - Glide Studio's own live Deploy modal
-   (js/services/deploy.service.js) and the standalone deploy console (deploy-console.js) both load
+   (js/services/deploy.service.js) and the standalone deploy console (console.js) both load
    this file instead of each hand-keeping a copy. Exposes
    window.SNDeploymentPackager.instanceConnect. */
 (function (root) {
