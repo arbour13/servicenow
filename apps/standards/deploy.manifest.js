@@ -1,6 +1,7 @@
-/* Standards' deployment descriptor - the single source of truth for its packager manifest, read
+/* Standards' deployment descriptor - the single source of truth for its deployment manifest, read
    by both scripts/build-deploy.js (Node) and the shared deploy console
-   (tools/packager/deploy-console.html, browser). See ../../tools/packager/manifest.schema.md's
+   (tools/sn-deployment-packager/deploy-console.html, browser). See
+   ../../tools/sn-deployment-packager/manifest.schema.md's
    "deploy.manifest.js" section for the contract. Every path below is relative to this file's own
    folder (apps/standards/). */
 (function (root, factory) {
@@ -27,7 +28,7 @@
       // plus the EXACT legacy literals this app shipped before it delegated to the shared core -
       // pinning these means re-importing this package updates the same records rather than
       // duplicating them if this was ever already imported into an instance. See
-      // snpackager.core.js's deriveSysIds().
+      // core.js's deriveSysIds().
       sysIdPrefix: 'c7d8e9f0a1',
       sysIds: {
         app: 'c7d8e9f0a10000112233440001',

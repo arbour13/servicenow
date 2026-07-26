@@ -1,5 +1,5 @@
 /* Packages this app as a ServiceNow scoped application Update Set by calling into the shared
-   packaging core at ServiceNow/tools/packager/snpackager.core.js (source of truth: see that
+   packaging core at ServiceNow/tools/sn-deployment-packager/core.js (source of truth: see that
    file's header comment and manifest.schema.md alongside it). The manifest itself lives in
    ../deploy.manifest.js (this app's ONE descriptor - also read by the shared deploy console), not
    duplicated here.
@@ -15,7 +15,7 @@
 
 var fs = require('fs');
 var path = require('path');
-var core = require('../../../tools/packager/snpackager.core.js');
+var core = require('../../../tools/sn-deployment-packager/core.js');
 var descriptor = require('../deploy.manifest.js');
 
 var ROOT = path.join(__dirname, '..');

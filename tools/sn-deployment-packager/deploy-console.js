@@ -3,13 +3,13 @@
    dev harness. Every app under apps/ is probed for a deploy.manifest.js; apps without one are
    simply not offered - see manifest.schema.md's "deploy.manifest.js" section. Framework-agnostic
    plain JS (no Angular) - this is a build-time tool, never deployed, same convention as
-   snpackager.core.js. */
+   core.js. */
 (function () {
   'use strict';
 
-  var core = window.SNPackager.core;
-  var fluent = window.SNPackager.fluent;
-  var zipper = window.SNPackager.zip;
+  var core = window.SNDeploymentPackager.core;
+  var fluent = window.SNDeploymentPackager.fluent;
+  var zipper = window.SNDeploymentPackager.zip;
 
   // Every app folder this suite currently has (mirrors ServiceNow/CLAUDE.md's apps/ listing) -
   // adding a new app means adding its folder name here so the console probes it. An app with no
@@ -345,7 +345,7 @@
     detectStatus.textContent = 'Detecting…';
     var conn = { instanceUrl: fldInstanceUrl.value, username: fldUsername.value, password: fldPassword.value };
     saveConn(currentFolder);
-    window.SNPackager.browserConnect.detectCompanyPrefix(conn).then(function (code) {
+    window.SNDeploymentPackager.browserConnect.detectCompanyPrefix(conn).then(function (code) {
       if (!code) { detectStatus.textContent = "Connected, but couldn't read a vendor prefix - set Scope by hand below."; return; }
       connState.companyCode = code;
       connState.scopeAuto = true;

@@ -1,7 +1,7 @@
-/* Glide Studio's deployment descriptor - the single source of truth for its packager manifest,
+/* Glide Studio's deployment descriptor - the single source of truth for its deployment manifest,
    read by both this app's own live Deploy modal (js/services/deploy.service.js) and the shared
-   deploy console (tools/packager/deploy-console.html). See
-   ../../tools/packager/manifest.schema.md's "deploy.manifest.js" section for the contract. Every
+   deploy console (tools/sn-deployment-packager/deploy-console.html). See
+   ../../tools/sn-deployment-packager/manifest.schema.md's "deploy.manifest.js" section for the contract. Every
    path below is relative to this file's own folder (apps/glide-studio/). Loaded via <script src>
    in index.html, same as any other provider file - never required in Node (this app has no
    build-deploy.js of its own; its only deploy host is the live browser modal). */
@@ -18,7 +18,7 @@
 
   // sysIds pins this app's ORIGINAL hand-picked literals (from before this file delegated to the
   // shared core) so migrating onto the core updates the SAME records on re-import rather than
-  // creating duplicates - see snpackager.core.js's deriveSysIds() doc comment.
+  // creating duplicates - see core.js's deriveSysIds() doc comment.
   var SYS_ID_PREFIX = 'b2c3d4e5f6';
   var LEGACY_SYS_IDS = {
     app: 'b2c3d4e5f60000112233445566778801',
@@ -107,7 +107,7 @@
     // This app supports live-instance prefix detection (its own Deploy modal already has this) -
     // shows the "Deploy target instance" URL/username/password + Detect Prefix UI. Standards/Core
     // have no dynamic scope story, so they omit this (default: hidden). See
-    // ../../tools/packager/manifest.schema.md's "deploy.manifest.js" section.
+    // ../../tools/sn-deployment-packager/manifest.schema.md's "deploy.manifest.js" section.
     deployOptions: { showConnection: true },
   };
 });

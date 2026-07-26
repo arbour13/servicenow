@@ -1,6 +1,7 @@
-/* Core's deployment descriptor - the single source of truth for its packager manifest, read by
+/* Core's deployment descriptor - the single source of truth for its deployment manifest, read by
    both scripts/build-deploy.js (Node) and the shared deploy console
-   (tools/packager/deploy-console.html, browser). See ../../tools/packager/manifest.schema.md's
+   (tools/sn-deployment-packager/deploy-console.html, browser). See
+   ../../tools/sn-deployment-packager/manifest.schema.md's
    "deploy.manifest.js" section for the contract. Every path below is relative to this file's own
    folder (apps/core/). */
 (function (root, factory) {
@@ -52,7 +53,7 @@
     serverScriptSource: '(function() {\n  /* Core needs no server-side data of its own - its providers are client-side and its widget is presentational. */\n})();',
     // Shared SCSS token partial(s) inlined into the widget's own <css> ahead of this app's rules -
     // so the widget carries the suite's `!default` tokens and stays portal-portable. See
-    // tools/packager buildParts (sources.sharedScss) and tools/theme-foundation/SETUP.md.
+    // tools/sn-deployment-packager buildParts (sources.sharedScss) and tools/theme-foundation/SETUP.md.
     sharedScssPartials: ['../../tools/theme-foundation/_tokens.scss'],
   };
 });

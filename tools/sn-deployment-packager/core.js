@@ -28,8 +28,8 @@
   if (typeof module === 'object' && module.exports) {
     module.exports = factory();
   } else {
-    root.SNPackager = root.SNPackager || {};
-    root.SNPackager.core = factory();
+    root.SNDeploymentPackager = root.SNDeploymentPackager || {};
+    root.SNDeploymentPackager.core = factory();
   }
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
@@ -410,7 +410,7 @@
      record's own sys_id inside its data. `key` is the Now.ID key a Fluent emitter uses for this
      record; it's meaningless to XML.
 
-     Both assembleXml() (below) and snpackager.fluent.js's assembleFluent() build this SAME model
+     Both assembleXml() (below) and fluent.js's assembleFluent() build this SAME model
      and then just walk it their own way - so a new field on, say, sp_container is added in
      exactly one place (here) and both output formats pick it up automatically. Field ORDER is
      preserved deliberately (it matches a real ServiceNow Update Set export's per-table field
@@ -720,7 +720,7 @@
     stableSysId: stableSysId, deriveSysIds: deriveSysIds,
     deriveScope: deriveScope, scopeSlug: scopeSlug, deriveVendorPrefix: deriveVendorPrefix, SCOPE_MAX: SCOPE_MAX,
     // assembly - buildRecordModel is the shared source of truth both assembleXml (below) and
-    // snpackager.fluent.js's assembleFluent consume; renderXmlRecord is exposed for hosts that
+    // fluent.js's assembleFluent consume; renderXmlRecord is exposed for hosts that
     // want to inspect/override a single record's XML.
     buildParts: buildParts, buildRecordModel: buildRecordModel, renderXmlRecord: renderXmlRecord, assembleXml: assembleXml,
     ACL_TABLES: ACL_TABLES,

@@ -2,8 +2,9 @@
    SCSS color/spacing/type vocabulary. Every value is declared with `!default`, which is what makes
    a widget portable across portals and instances:
 
-   - The packager inlines these declarations at the TOP of each widget's own <css> field (before the
-     widget's scoped rules). See tools/packager + an app's build-deploy.js `sharedScssPartials`.
+   - The SN Deployment Packager inlines these declarations at the TOP of each widget's own <css>
+     field (before the widget's scoped rules). See tools/sn-deployment-packager + an app's
+     build-deploy.js `sharedScssPartials`.
    - `!default` means "use this value UNLESS the variable is already defined." A ServiceNow portal
      theme's own CSS Variables are compiled AHEAD of a widget's SCSS, so if the target portal already
      defines a token (e.g. `$brand-primary`), that wins and this default is a no-op. Where the portal
@@ -23,11 +24,12 @@
    file, not that one.
 
    Selectors are written PLAIN (`:root`, `body`, `.doc-*`, ...) so they apply directly in this
-   standalone dev harness; the packager's scopeScss() re-scopes them under the widget wrapper class
-   (`.core-widget`) at deploy time - do NOT hand-wrap them here. Color tokens are real SCSS variables
-   with `!default` so the deploy build ships them into the widget's own <css> field as fallbacks: a
-   host portal theme that already defines the token wins; otherwise this default applies. Phase 5
-   replaces this local token block with the shared theme-foundation partial, inlined by the packager. */
+   standalone dev harness; the SN Deployment Packager's scopeScss() re-scopes them under the widget
+   wrapper class (`.core-widget`) at deploy time - do NOT hand-wrap them here. Color tokens are real
+   SCSS variables with `!default` so the deploy build ships them into the widget's own <css> field as
+   fallbacks: a host portal theme that already defines the token wins; otherwise this default
+   applies. Phase 5 replaces this local token block with the shared theme-foundation partial,
+   inlined by the SN Deployment Packager. */
 :root {
   --core-bg: #f4f5f7;
   --core-panel: #ffffff;

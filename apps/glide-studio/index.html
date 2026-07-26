@@ -1203,16 +1203,16 @@
      If absent, DeployService.beautify() degrades to a no-op (exports the raw source instead). -->
 <script src="lib/beautify.js"></script>
 <!-- The shared deploy-packaging core (dev/authoring only) DeployService packages this app's own
-     Update Set XML with. Referenced directly from tools/packager via the single ServiceNow-root
-     dev server - not vendored/copied. Exposes window.SNPackager.core. Never shipped in the
-     deployed widget. -->
-<script src="../../tools/packager/snpackager.core.js"></script>
+     Update Set XML with. Referenced directly from tools/sn-deployment-packager via the single
+     ServiceNow-root dev server - not vendored/copied. Exposes window.SNDeploymentPackager.core.
+     Never shipped in the deployed widget. -->
+<script src="../../tools/sn-deployment-packager/core.js"></script>
 <!-- Live-instance connection helper (dev/authoring only) - detectCompanyPrefix, shared with the
      standalone deploy console. Never shipped in the deployed widget. -->
-<script src="../../tools/packager/snpackager.browser-connect.js"></script>
+<script src="../../tools/sn-deployment-packager/browser-connect.js"></script>
 <!-- This app's own deploy descriptor (dev/authoring only) - the single source of truth for its
-     packager manifest, also read by the shared deploy console (tools/packager/deploy-console.html).
-     Never shipped in the deployed widget. -->
+     deployment manifest, also read by the shared deploy console
+     (tools/sn-deployment-packager/deploy-console.html). Never shipped in the deployed widget. -->
 <script src="deploy.manifest.js"></script>
 <!-- Core (this app's module depends on it) + the shared providers it hosts. Loaded
      directly from /apps/core/ via the single ServiceNow-root dev server. In the deployed Service

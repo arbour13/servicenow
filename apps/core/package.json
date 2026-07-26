@@ -1,7 +1,7 @@
 {
   "name": "core",
   "private": true,
-  "description": "Core - the shared foundation scoped app (core Angular module) for the ServiceNow AngularJS suite: reusable providers other apps inject by name, plus a generic documentation/wiki widget. build:deploy packages it as an Update Set via the shared tools/packager core.",
+  "description": "Core - the shared foundation scoped app (core Angular module) for the ServiceNow AngularJS suite: reusable providers other apps inject by name, plus a generic documentation/wiki widget. build:deploy packages it as an Update Set via the shared tools/sn-deployment-packager core.",
   "scripts": {
     "build:css": "cat ../../tools/theme-foundation/_tokens.scss scss/app.scss | npx sass --stdin css/app.css --no-source-map",
     "build:deploy": "node scripts/build-deploy.js"

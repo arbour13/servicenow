@@ -1,15 +1,15 @@
 /* Browser-only helper: a Basic-Auth fetch against a live TARGET ServiceNow instance, used only to
    detect that instance's application vendor prefix while a Deploy UI is filling in a recommended
-   scope. Network I/O, so deliberately kept OUT of the pure snpackager.core.js (see that file's
+   scope. Network I/O, so deliberately kept OUT of the pure core.js (see that file's
    header comment and manifest.schema.md's "Host responsibilities" - the core never touches the
    network or filesystem itself). Shared between every browser Deploy host that opts into
    `deployOptions.showConnection` (see manifest.schema.md's "deploy.manifest.js" section) - Glide
    Studio's own live Deploy modal (js/services/deploy.service.js) and the standalone deploy console
    (deploy-console.js) both load this file instead of each hand-keeping a copy. Exposes
-   window.SNPackager.browserConnect. */
+   window.SNDeploymentPackager.browserConnect. */
 (function (root) {
   'use strict';
-  root.SNPackager = root.SNPackager || {};
+  root.SNDeploymentPackager = root.SNDeploymentPackager || {};
 
   // conn: {instanceUrl, username, password}. Not ConnectionService.apiFetch - that service's
   // instance-hosted branch ignores whatever `conn` it's given and always calls same-origin; the
@@ -45,5 +45,5 @@
     });
   }
 
-  root.SNPackager.browserConnect = { deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix };
+  root.SNDeploymentPackager.browserConnect = { deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix };
 })(typeof self !== 'undefined' ? self : this);

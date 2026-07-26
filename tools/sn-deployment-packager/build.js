@@ -7,12 +7,12 @@
    else, instead of only ever existing as a browser download.
 
    Usage:
-     node tools/packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]
+     node tools/sn-deployment-packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]
 
    Examples:
-     node tools/packager/build.js core
-     node tools/packager/build.js glide-studio --format=fluent
-     node tools/packager/build.js standards --format=both --fluent-mode=files
+     node tools/sn-deployment-packager/build.js core
+     node tools/sn-deployment-packager/build.js glide-studio --format=fluent
+     node tools/sn-deployment-packager/build.js standards --format=both --fluent-mode=files
 
    Output (all under apps/<app-folder>/deploy/):
      <app-folder>-update-set.xml         (--format=xml or both)
@@ -26,9 +26,9 @@
 
 var fs = require('fs');
 var path = require('path');
-var core = require('./snpackager.core.js');
-var fluent = require('./snpackager.fluent.js');
-var zipper = require('./snpackager.zip.js');
+var core = require('./core.js');
+var fluent = require('./fluent.js');
+var zipper = require('./zip.js');
 
 var ROOT = path.join(__dirname, '..', '..'); // ServiceNow/ suite root
 
@@ -117,7 +117,7 @@ function buildFluent(appRoot, descriptor, parts, fluentMode) {
 function main() {
   var args = parseArgs(process.argv.slice(2));
   if (!args.appFolder) {
-    console.error('Usage: node tools/packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]');
+    console.error('Usage: node tools/sn-deployment-packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]');
     process.exit(1);
   }
   if (['xml', 'fluent', 'both'].indexOf(args.format) === -1) { throw new Error('--format must be xml, fluent, or both'); }

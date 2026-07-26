@@ -2,9 +2,9 @@
    a valid .zip. STORE method only (no compression): the deploy console's payloads are small text
    files (a Now SDK project), so DEFLATE would add a lot of code for little benefit; a store-only
    archive is a few dozen lines and every unzip tool reads it. Build-time tooling - never shipped
-   into a widget. Runs in a browser (window.SNPackager.zip) AND in Node (module.exports, e.g.
+   into a widget. Runs in a browser (window.SNDeploymentPackager.zip) AND in Node (module.exports, e.g.
    build.js's CLI) - both have global Blob/TextEncoder/Uint32Array, same UMD pattern as
-   snpackager.core.js.
+   core.js.
 
    Format: for each entry a local-file-header + name + raw bytes, then a central-directory header
    per entry, then the end-of-central-directory record. CRC-32 (the one non-trivial bit) is a
@@ -14,8 +14,8 @@
   if (typeof module === 'object' && module.exports) {
     module.exports = factory();
   } else {
-    root.SNPackager = root.SNPackager || {};
-    root.SNPackager.zip = factory();
+    root.SNDeploymentPackager = root.SNDeploymentPackager || {};
+    root.SNDeploymentPackager.zip = factory();
   }
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';

@@ -1,6 +1,6 @@
 /* Packages this Angular app as a real ServiceNow scoped application. The extraction/XML-assembly
    logic itself (bracket-depth provider-body extraction, SCSS scoping, every sp_* record builder,
-   assembleXml) lives in the SHARED core at ../../../tools/packager/snpackager.core.js (see
+   assembleXml) lives in the SHARED core at ../../../tools/sn-deployment-packager/core.js (see
    manifest.schema.md there for the manifest/sources contract). This app's own manifest (provider
    list, sys_id prefix, roles, file paths) lives in ../../deploy.manifest.js - the one descriptor
    this app shares with the standalone deploy console - not duplicated here. This file owns
@@ -9,13 +9,13 @@
    scope-prefix detection.
 
    Every source file is fetched via its own <script src> URL; the source (not the live/compiled
-   DOM, not the compiled CSS) is always what gets packaged - see snpackager.core.js's own header
+   DOM, not the compiled CSS) is always what gets packaged - see core.js's own header
    comment for why (Angular ng-if/ng-repeat compilation artifacts, and SCSS $-variable references
    that need to reach ServiceNow's own portal compiler unresolved). */
 angular.module('glideStudio').factory('DeployService', [function () {
   'use strict';
 
-  var core = window.SNPackager.core;
+  var core = window.SNDeploymentPackager.core;
   var descriptor = window.SNAppManifests['glide-studio'];
 
   var PROVIDER_FILES = descriptor.manifest.providers;
@@ -58,8 +58,8 @@ angular.module('glideStudio').factory('DeployService', [function () {
   }
 
   // Live-instance prefix detection (network I/O) - shared with the standalone deploy console, see
-  // ../../../tools/packager/snpackager.browser-connect.js's header comment.
-  var detectCompanyPrefix = window.SNPackager.browserConnect.detectCompanyPrefix;
+  // ../../../tools/sn-deployment-packager/browser-connect.js's header comment.
+  var detectCompanyPrefix = window.SNDeploymentPackager.browserConnect.detectCompanyPrefix;
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function nowStamp() {

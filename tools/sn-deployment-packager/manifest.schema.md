@@ -1,6 +1,6 @@
 # Manifest schema
 
-`snpackager.core.js` takes two inputs per build: a **manifest** (this app's static
+`core.js` takes two inputs per build: a **manifest** (this app's static
 identity/config — the only thing that lives in the app) and **sources** (already-fetched
 source text — fetching is the host's job, never the core's). This file documents both, plus
 the small `opts` bag `buildParts`/`assembleXml` take.
@@ -19,7 +19,7 @@ the small `opts` bag `buildParts`/`assembleXml` take.
   shortDescription: '...',              // optional - defaults to appName
   urlSuffix: 'glide-studio-ng',         // required - the portal's url_suffix
 
-  // --- sys_id derivation (see snpackager.core.js header comment) ---
+  // --- sys_id derivation (see core.js header comment) ---
   // A short, distinctive string unique to THIS app, so its derived sys_ids never collide with
   // another app's if both packages are imported into the same instance. Pick one and never
   // change it - every sys_id this app's records use is derived from it, so changing it is
@@ -100,25 +100,26 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
 ## Host responsibilities (not in the core)
 
 - **Fetching** every source file (`fetch()` vs `fs.readFileSync`).
-- **The deploy modal UI** (`snpackager.ui.js`, browser-only) - option form, connection fields,
-  theming, copy/download. `tools/packager/deploy-console.html` is a shared instance of this host
-  that works across every app with a `deploy.manifest.js` (see above), instead of each app growing
-  its own copy - use it when you want to build/preview/download a package outside of any one app's
-  own dev harness.
+- **The deploy modal UI** (browser-only) - option form, connection fields, theming, copy/download.
+  There's no single generic UI file; each host implements its own (e.g. Glide Studio's own Deploy
+  modal). `tools/sn-deployment-packager/deploy-console.html` is a shared instance of this host that
+  works across every app with a `deploy.manifest.js` (see above), instead of each app growing its
+  own copy - use it when you want to build/preview/download a package outside of any one app's own
+  dev harness.
 - **Live-instance connection** - `deployFetch`/`detectCompanyPrefix`-style calls (network I/O).
-  Shared between browser hosts as `tools/packager/snpackager.browser-connect.js`
-  (`window.SNPackager.browserConnect`) rather than each one keeping its own copy - load it via
-  `<script src>` for any app with `deployOptions.showConnection: true`.
+  Shared between browser hosts as `tools/sn-deployment-packager/browser-connect.js`
+  (`window.SNDeploymentPackager.browserConnect`) rather than each one keeping its own copy - load it
+  via `<script src>` for any app with `deployOptions.showConnection: true`.
 - **Code formatting** (js-beautify or equivalent) - pass it in as `opts.formatFn`.
 - **The timestamp** - pass it in as `opts.stamp`.
 
 ## `deploy.manifest.js` — the per-app descriptor file
 
 Every deployable app declares ONE `deploy.manifest.js` at its own root (`apps/<app>/deploy.manifest.js`)
-- a UMD file, same pattern as `snpackager.core.js`, so it loads unchanged via `require()` in Node
+- a UMD file, same pattern as `core.js`, so it loads unchanged via `require()` in Node
 and `<script src>` in a browser. This is the single source of truth for that app's manifest: an
 app's own build host (`scripts/build-deploy.js`, or a live Deploy modal's service) reads it, and so
-does the shared **deploy console** (`tools/packager/deploy-console.html` - see below), so no app's
+does the shared **deploy console** (`tools/sn-deployment-packager/deploy-console.html` - see below), so no app's
 manifest is ever hand-copied into a second place.
 
 An app with no `deploy.manifest.js` is simply not deployable by any host - the deploy console
@@ -139,7 +140,7 @@ treats a missing file (404 / load error) as "not eligible," not an error to fix.
       scss: 'scss/app.scss',
       index: 'index.html',
     },
-    serverScriptSource: undefined,      // optional inline string - omit to use the packager's built-in stub
+    serverScriptSource: undefined,      // optional inline string - omit to use the SN Deployment Packager's built-in stub
     sharedScssPartials: undefined,      // optional array of app-root-relative paths (e.g. shared token partials)
     deployOptions: undefined,           // optional - see below
   };
@@ -154,7 +155,7 @@ THIS app, since not every app's manifest needs the same fields:
 ```js
 deployOptions: {
   // Show the "Deploy target instance" panel (Instance URL / Username / Password / Detect Prefix
-  // button) - a live Basic-Auth call (see snpackager.browser-connect.js) that reads the target
+  // button) - a live Basic-Auth call (see browser-connect.js) that reads the target
   // instance's vendor prefix and recomputes a recommended Scope from it. Only meaningful for an
   // app whose scope should vary per target instance (today: Glide Studio). Omit/false for an app
   // with a fixed scope (Core, Standards) - App name/Scope/Version stay plain editable fields with
@@ -188,16 +189,16 @@ it, so no separate registry has to map folder → key.
 ## Two output targets, one shared record model
 
 `buildParts()` extracts an app's content once; `buildRecordModel(manifest, parts)` (also in
-`snpackager.core.js`) is the ONE place that then knows which ServiceNow records + fields make up a
+`core.js`) is the ONE place that then knows which ServiceNow records + fields make up a
 package - an ordered array of `{ table, sysId, key, fields }`, where each field is `{ name, value }`
 plus a marker (`cdata: true` for a long script/template/css body, `empty: true` for a self-closing
 tag, `scopeTag: true` for the `<sys_scope>` tag itself, `xmlOnly: true` for bookkeeping fields only
 XML needs). Two thin emitters walk this SAME model:
 
-- `snpackager.core.js`'s **`assembleXml(manifest, parts, opts)`** → one Update Set `<unload>` string
+- `core.js`'s **`assembleXml(manifest, parts, opts)`** → one Update Set `<unload>` string
   (the classic import-an-XML path). `renderXmlRecord` CDATA-wraps `cdata` fields and self-closes
   `empty` ones; field order comes straight from the model.
-- `snpackager.fluent.js`'s **`assembleFluent(manifest, parts, opts)`** → a **file-map**
+- `fluent.js`'s **`assembleFluent(manifest, parts, opts)`** → a **file-map**
   (`{ 'relative/path': 'contents' }`) making up a ServiceNow **Now SDK / Fluent** TypeScript project.
   `opts.mode` is `'project'` (full runnable project: `package.json`, `now.config.json`,
   `src/fluent/generated/keys.ts`, `README`) or `'files'` (just the `src/fluent/**` tree, to drop
@@ -221,17 +222,17 @@ Fluent Record() equivalent at all (an app's identity is its `now.config.json`, n
 Fluent's emitter skips it entirely - its sys_id still becomes `now.config.json`'s `scopeId`.
 
 The host owns **zipping/delivery** of the file-map - both the browser deploy console and the Node
-CLI below use the dependency-free `snpackager.zip.js` (store-only; `window.SNPackager.zip` in a
+CLI below use the dependency-free `zip.js` (store-only; `window.SNDeploymentPackager.zip` in a
 browser, `module.exports` in Node) to hand it over as one `.zip`.
 
-## Node CLI: `tools/packager/build.js`
+## Node CLI: `tools/sn-deployment-packager/build.js`
 
 Generic build script - works for ANY app with a `deploy.manifest.js`, writing output into that
 app's own `apps/<app>/deploy/` folder so a build is just a file on disk (checked into git like
 anything else), not only ever a browser download:
 
 ```bash
-node tools/packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]
+node tools/sn-deployment-packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]
 ```
 
 Writes `<app-folder>-update-set.xml` (XML), `fluent/**` + `<app-folder>-fluent.zip` (Fluent, project
@@ -247,4 +248,4 @@ carries this app's own tokens. Each widget's `<css>` field is the *sole* styling
 app's entire authored SCSS source, run through `scopeScss()` once. Because `scopeScss` leaves bare
 `$token: value !default;` statements untouched, that one field ends up holding *both* the app's
 `!default` token declarations *and* its scoped rules - self-sufficient wherever the widget is
-dropped. See `snpackager.core.js`'s header comment for the full reasoning.
+dropped. See `core.js`'s header comment for the full reasoning.

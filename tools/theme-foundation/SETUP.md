@@ -28,13 +28,14 @@ living in the app's own `scss/app.scss`. See `apps/core/scss/app.scss` for the r
    ```json
    "build:css": "cat ../../tools/theme-foundation/_tokens.scss scss/app.scss | npx sass --stdin css/app.css --no-source-map"
    ```
-3. **Deploy build** — hand the partial to the packager via `sources.sharedScss` (see
+3. **Deploy build** — hand the partial to the SN Deployment Packager via `sources.sharedScss` (see
    `apps/core/scripts/build-deploy.js`):
    ```js
    sharedScss: [path.join(ROOT, '..', '..', 'tools', 'theme-foundation', '_tokens.scss')]
      .map(function (f) { return fs.readFileSync(f, 'utf8'); }).join('\n'),
    ```
-   The packager prepends it into the widget's `<css>` before scoping (`tools/packager` buildParts).
+   The SN Deployment Packager prepends it into the widget's `<css>` before scoping
+   (`tools/sn-deployment-packager` buildParts).
 
 That's it — the app now shares the suite vocabulary and inherits a host portal's theme where present.
 
