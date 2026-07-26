@@ -58,8 +58,8 @@ angular.module('glideStudio').factory('DeployService', [function () {
   }
 
   // Live-instance prefix detection (network I/O) - shared with the standalone deploy console, see
-  // ../../../tools/sn-deployment-packager/instance-connect.js's header comment.
-  var detectCompanyPrefix = window.SNDeploymentPackager.instanceConnect.detectCompanyPrefix;
+  // ../../../tools/sn-deployment-packager/instance.js's header comment.
+  var detectCompanyPrefix = window.SNDeploymentPackager.instance.detectCompanyPrefix;
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function nowStamp() {

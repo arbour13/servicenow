@@ -103,7 +103,7 @@ existing record type is a one-place change. Both share sys_id identity, so an XM
 Fluent install describe the same records. The deploy console offers both (XML tabs, or a Fluent file
 tree with full-project/files-only + a `.zip` download via the dependency-free `zip.js`,
 which also runs in Node). Live-instance prefix detection is shared as
-`instance-connect.js`. `tools/sn-deployment-packager/build.js` is a Node CLI that runs the same
+`instance.js`. `tools/sn-deployment-packager/build.js` is a Node CLI that runs the same
 pipeline for any app and writes output straight into that app's own `apps/<app>/deploy/` folder
 (`node tools/sn-deployment-packager/build.js <app-folder> [--format=xml|fluent|both]`) — a build
 lands on disk to commit, not just a browser download.

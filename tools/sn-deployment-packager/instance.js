@@ -11,7 +11,7 @@
    (see manifest.schema.md's "deploy.manifest.js" section) - Glide Studio's own live Deploy modal
    (js/services/deploy.service.js) and the standalone deploy console (console.js) both load
    this file instead of each hand-keeping a copy. Exposes
-   window.SNDeploymentPackager.instanceConnect. */
+   window.SNDeploymentPackager.instance. */
 (function (root) {
   'use strict';
   root.SNDeploymentPackager = root.SNDeploymentPackager || {};
@@ -50,5 +50,5 @@
     });
   }
 
-  root.SNDeploymentPackager.instanceConnect = { deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix };
+  root.SNDeploymentPackager.instance = { deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix };
 })(typeof self !== 'undefined' ? self : this);
