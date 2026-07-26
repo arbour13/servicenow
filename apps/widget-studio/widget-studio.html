@@ -157,7 +157,8 @@ class Component extends DCLogic {
       ]},
       {cat:'Forms', items:[
         {type:'el',tag:'button',label:'button'},{type:'el',tag:'input',label:'input'},
-        {type:'el',tag:'select',label:'select'},{type:'el',tag:'textarea',label:'textarea'}
+        {type:'el',tag:'select',label:'select'},{type:'el',tag:'textarea',label:'textarea'},
+        {type:'checkbox',label:'checkbox'},{type:'radio',label:'radio'}
       ]},
       // "Bootstrap": these chips emit Bootstrap 3 markup/classes (panel panel-default, alert, …) that
       // any Service Portal theme already styles — distinct from the plain semantic elements above.
@@ -253,11 +254,18 @@ class Component extends DCLogic {
   // reading code in a light app (or dark) can pin the editor the other way; cycles auto → light → dark → auto.
   effectiveCodeTheme(){ return this.codeTheme==='auto' ? (this.dark?'dark':'light') : this.codeTheme; }
   cycleCodeTheme(){ const order=['auto','light','dark']; this.codeTheme=order[(order.indexOf(this.codeTheme)+1)%order.length]; this.saveUiPrefs(); this.forceUpdate(); }
-  snapshot(){ return JSON.stringify({tree:this.tree,classStyles:this.classStyles,stateStyles:this.stateStyles,responsive:this.responsive,tokens:this.tokens,sel:this.selectedId}); }
+  snapshot(){ return JSON.stringify({tree:this.tree,classStyles:this.classStyles,stateStyles:this.stateStyles,responsive:this.responsive,tokens:this.tokens,sel:this.selectedId,wname:this.wname,wid:this.wid,optionSchema:this.optionSchema,code:{client:this.code.client,server:this.code.server,link:this.code.link},instanceClass:this.instanceClass,instanceFields:this.instanceFields}); }
   pushHistory(){ const snap=this.snapshot(); const now=Date.now(); if(!this.history){ this.history=[snap]; this.histIdx=0; this._lastPush=now; return; } if(snap===this.history[this.histIdx]) { return; } if(now-this._lastPush<600){ this.history[this.histIdx]=snap; } else { this.history=this.history.slice(0,this.histIdx+1); this.history.push(snap); if(this.history.length>120) { this.history.shift(); } this.histIdx=this.history.length-1; } this._lastPush=now; }
   undo(){ if(this.history&&this.histIdx>0){ this.histIdx--; this.restoreHist(this.history[this.histIdx]); } }
   redo(){ if(this.history&&this.histIdx<this.history.length-1){ this.histIdx++; this.restoreHist(this.history[this.histIdx]); } }
-  restoreHist(snap){ const o=JSON.parse(snap); this.tree=o.tree; this.classStyles=o.classStyles||{}; this.stateStyles=o.stateStyles||{}; this.responsive=o.responsive||{md:{},sm:{},xs:{}}; if(o.tokens) { this.tokens=o.tokens; } this.multiSel=[]; this.selectedId=o.sel||'root'; this._editing=null; this._lastPush=0; this.rawSave(); this.forceUpdate(); }
+  restoreHist(snap){ const o=JSON.parse(snap); this.tree=o.tree; this.classStyles=o.classStyles||{}; this.stateStyles=o.stateStyles||{}; this.responsive=o.responsive||{md:{},sm:{},xs:{}}; if(o.tokens) { this.tokens=o.tokens; }
+    if(o.wname!=null) { this.wname=o.wname; } if(o.wid!=null) { this.wid=o.wid; }
+    if(o.optionSchema) { this.optionSchema=o.optionSchema; }
+    if(o.code) { this.code=Object.assign(this.DEFAULT_CODE(),{client:o.code.client,server:o.code.server,link:o.code.link}); }
+    if(o.instanceClass!=null) { this.instanceClass=o.instanceClass; } if(o.instanceFields) { this.instanceFields=o.instanceFields; }
+    // Drop transient inspector targets so they can't desync from the restored tree/styles.
+    this._estate='base'; this._bindPick=null; this._granOv={}; this._cScope=null; this._cScopeSig=null;
+    this.multiSel=[]; this.selectedId=o.sel||'root'; this._editing=null; this._lastPush=0; this.rawSave(); this.forceUpdate(); }
   load(){
     // Restore the auto-persisted draft if one exists (loadWidgetData resets _dirty/_savedId, so
     // re-apply the draft's after it); otherwise start from a clean default widget.
@@ -472,6 +480,20 @@ class Component extends DCLogic {
   // children — a delete is one ⌘Z away, so guarding it just adds friction.
   requestDel(id){ if(id==='root') { return; } if(!this.find(id)) { return; } this.del(id); }
   moveSib(id,dir){ const r=this.find(id); if(!r||!r.parent) { return; } const a=r.parent.children; const i=a.indexOf(r.node); const j=i+dir; if(j<0||j>=a.length) { return; } a.splice(i,1); a.splice(j,0,r.node); this.markDirty(r.parent.id); this.multiSel=[]; this.save(); this.forceUpdate(); }
+  // Tab / Shift+Tab keyboard nest: indent into the previous sibling (when that sibling accepts the node),
+  // or outdent to sit after the current parent. Same allowsChild rules as drag-nest.
+  childSpec(node){ return {tag:node.type==='el'?(node.data&&node.data.tag):undefined, type:node.type}; }
+  indentNode(id){ if(id==='root') { return; } const r=this.find(id); if(!r||!r.parent) { return; }
+    const a=r.parent.children; const i=a.indexOf(r.node); if(i<=0) { return; } const prev=a[i-1];
+    if(!this.canHaveChildren(prev)||!this.allowsChild(prev,this.childSpec(r.node))) { return; }
+    a.splice(i,1); if(!prev.children) { prev.children=[]; } prev.children.push(r.node);
+    this.markDirty(prev.id); this.markDirty(r.parent.id); this.multiSel=[]; this.save(); this.forceUpdate(); }
+  outdentNode(id){ if(id==='root') { return; } const r=this.find(id); if(!r||!r.parent||r.parent.id==='root') { return; }
+    const parent=r.parent; const gp=this.parentOfId(parent.id); if(!gp) { return; }
+    if(!this.allowsChild(gp,this.childSpec(r.node))) { return; }
+    const pa=parent.children; const pi=pa.indexOf(r.node); if(pi<0) { return; } pa.splice(pi,1);
+    const ga=gp.children; const gi=ga.indexOf(parent); ga.splice(gi+1,0,r.node);
+    this.markDirty(parent.id); this.markDirty(gp.id); this.multiSel=[]; this.save(); this.forceUpdate(); }
   // ---------- copy / paste / group duplicate / group delete (context-menu + ⌘C/⌘V/⌘D) ----------
   // Copy stores as-authored clones (ids intact) — paste is what mints fresh ids, so pasting the same
   // clipboard twice (or into two different containers) never collides.
@@ -850,7 +872,7 @@ class Component extends DCLogic {
   // inside another focusable control: a keyboard/AT trap and, for <a>, invalid HTML). `label` is included
   // (labelable/interactive), and the nav-tabs / list-group COMPONENTS are too because they render their own
   // <a> items — so e.g. a list-group dropped into an <a> would nest anchors.
-  isInteractiveChild(tag,type){ if(type&&type!=='el') { return ['button','input','select','navtabs','listgroup'].includes(type); } return ['a','button','input','select','textarea','label'].includes(tag); }
+  isInteractiveChild(tag,type){ if(type&&type!=='el') { return ['button','input','select','navtabs','listgroup','checkbox','radio'].includes(type); } return ['a','button','input','select','textarea','label'].includes(tag); }
   // Core rule: may a child of (childTag/childType) legally sit inside parentTag? Grounded in the HTML
   // content model, with <a> treated as transparent (it may wrap blocks, just no interactive descendants).
   // Permissive by default — only block nestings that genuinely break rendering, so dropping feels intuitive:
@@ -1087,8 +1109,8 @@ class Component extends DCLogic {
       }
     }
     this.multiSel=[];
-    // Selecting a different element resets the per-element editing targets alongside the state layer —
-    // the border-width side and corner-radius pickers shouldn't carry "Editing Left" over to a new element.
+    // Selecting a different element resets the state layer and binding picker. Border/radius granularity
+    // is per-node (_granOv[nodeId+kind]), so it does not need a global reset here.
     if(id!==this.selectedId){ this._estate='base'; this._bindPick=null; } this.selectedId=id; this.forceUpdate(); }
 
   componentDidMount(){ this._key=e=>{
@@ -1115,6 +1137,9 @@ class Component extends DCLogic {
       const r=this.find(this.selectedId);
       if(r&&r.node.children&&r.node.children.length){ e.preventDefault(); this.select(r.node.children[0].id); }
       return; }
+    // Tab nests into the previous sibling; Shift+Tab outdents (same allowsChild rules as drag-nest).
+    if(!this.multiSel.length && e.key==='Tab' && this.selectedId && this.selectedId!=='root'){
+      e.preventDefault(); if(e.shiftKey) { this.outdentNode(this.selectedId); } else { this.indentNode(this.selectedId); } return; }
     if((e.metaKey||e.ctrlKey)&&(e.key==='z'||e.key==='Z')){ e.preventDefault(); if(e.shiftKey) { this.redo(); } else { this.undo(); } return; }
     if((e.metaKey||e.ctrlKey)&&e.key==='y'){ e.preventDefault(); this.redo(); return; }
     if((e.key==='Delete'||e.key==='Backspace')&&this.selectedId!=='root'){ e.preventDefault(); this.deleteSelection(); }
@@ -1165,18 +1190,21 @@ class Component extends DCLogic {
   }
   GLYPH_MAP(){ return {asterisk:"2a",plus:"2b",eur:"20ac",minus:"2212",cloud:"2601",envelope:"2709",pencil:"270f",glass:"e001",music:"e002",search:"e003",heart:"e005",star:"e006","star-empty":"e007",user:"e008",film:"e009","th-large":"e010",th:"e011","th-list":"e012",ok:"e013",remove:"e014","zoom-in":"e015","zoom-out":"e016",off:"e017",signal:"e018",cog:"e019",trash:"e020",home:"e021",file:"e022",time:"e023",road:"e024","download-alt":"e025",download:"e026",upload:"e027",inbox:"e028","play-circle":"e029",repeat:"e030",refresh:"e031","list-alt":"e032",lock:"e033",flag:"e034",headphones:"e035","volume-off":"e036","volume-down":"e037","volume-up":"e038",qrcode:"e039",barcode:"e040",tag:"e041",tags:"e042",book:"e043",bookmark:"e044",print:"e045",camera:"e046",font:"e047",bold:"e048",italic:"e049","text-height":"e050","text-width":"e051","align-left":"e052","align-center":"e053","align-right":"e054","align-justify":"e055",list:"e056","indent-left":"e057","indent-right":"e058","facetime-video":"e059",picture:"e060","map-marker":"e062",adjust:"e063",tint:"e064",edit:"e065",share:"e066",check:"e067",move:"e068","step-backward":"e069","fast-backward":"e070",backward:"e071",play:"e072",pause:"e073",stop:"e074",forward:"e075","fast-forward":"e076","step-forward":"e077",eject:"e078","chevron-left":"e079","chevron-right":"e080","plus-sign":"e081","minus-sign":"e082","remove-sign":"e083","ok-sign":"e084","question-sign":"e085","info-sign":"e086",screenshot:"e087","remove-circle":"e088","ok-circle":"e089","ban-circle":"e090","arrow-left":"e091","arrow-right":"e092","arrow-up":"e093","arrow-down":"e094","share-alt":"e095","resize-full":"e096","resize-small":"e097","exclamation-sign":"e101",gift:"e102",leaf:"e103",fire:"e104","eye-open":"e105","eye-close":"e106","warning-sign":"e107",plane:"e108",calendar:"e109",random:"e110",comment:"e111",magnet:"e112","chevron-up":"e113","chevron-down":"e114",retweet:"e115","shopping-cart":"e116","folder-close":"e117","folder-open":"e118","resize-vertical":"e119","resize-horizontal":"e120",hdd:"e121",bullhorn:"e122",bell:"e123",certificate:"e124","thumbs-up":"e125","thumbs-down":"e126","hand-right":"e127","hand-left":"e128","hand-up":"e129","hand-down":"e130","circle-arrow-right":"e131","circle-arrow-left":"e132","circle-arrow-up":"e133","circle-arrow-down":"e134",globe:"e135",wrench:"e136",tasks:"e137",filter:"e138",briefcase:"e139",fullscreen:"e140",dashboard:"e141",paperclip:"e142","heart-empty":"e143",link:"e144",phone:"e145",pushpin:"e146",usd:"e148",gbp:"e149",sort:"e150","sort-by-alphabet":"e151","sort-by-alphabet-alt":"e152","sort-by-order":"e153","sort-by-order-alt":"e154","sort-by-attributes":"e155","sort-by-attributes-alt":"e156",unchecked:"e157",expand:"e158","collapse-down":"e159","collapse-up":"e160","log-in":"e161",flash:"e162","log-out":"e163","new-window":"e164",record:"e165",save:"e166",open:"e167",saved:"e168","import":"e169","export":"e170",send:"e171","floppy-disk":"e172","floppy-saved":"e173","floppy-remove":"e174","floppy-save":"e175","floppy-open":"e176","credit-card":"e177",transfer:"e178",cutlery:"e179",header:"e180",compressed:"e181",earphone:"e182","phone-alt":"e183",tower:"e184",stats:"e185","sd-video":"e186","hd-video":"e187",subtitles:"e188","sound-stereo":"e189","sound-dolby":"e190","sound-5-1":"e191","sound-6-1":"e192","sound-7-1":"e193","copyright-mark":"e194","registration-mark":"e195","cloud-download":"e197","cloud-upload":"e198","tree-conifer":"e199","tree-deciduous":"e200",cd:"e201","save-file":"e202","open-file":"e203","level-up":"e204",copy:"e205",paste:"e206",alert:"e209",equalizer:"e210",king:"e211",queen:"e212",pawn:"e213",bishop:"e214",knight:"e215","baby-formula":"e216",tent:"26fa",blackboard:"e218",bed:"e219",apple:"f8ff",erase:"e221",hourglass:"231b",lamp:"e223",duplicate:"e224","piggy-bank":"e225",scissors:"e226",btc:"e227",xbt:"e227",yen:"00a5",jpy:"00a5",ruble:"20bd",rub:"20bd",scale:"e230","ice-lolly":"e231","ice-lolly-tasted":"e232",education:"e233","option-horizontal":"e234","option-vertical":"e235","menu-hamburger":"e236","modal-window":"e237",oil:"e238",grain:"e239",sunglasses:"e240","text-size":"e241","text-color":"e242","text-background":"e243","object-align-top":"e244","object-align-bottom":"e245","object-align-horizontal":"e246","object-align-left":"e247","object-align-vertical":"e248","object-align-right":"e249","triangle-right":"e250","triangle-left":"e251","triangle-bottom":"e252","triangle-top":"e253",console:"e254",superscript:"e255",subscript:"e256","menu-left":"e257","menu-right":"e258","menu-down":"e259","menu-up":"e260"}; }
   loadMonaco(){
-    if(window.monaco || this._monLoading) { return; } this._monLoading=true;
+    if(window.monaco || this._monLoading || this._monFailed) { return; } this._monLoading=true;
     var BASE='https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/';
+    var fail=()=>{ clearTimeout(this._monLoadT); this._monLoading=false; this._monFailed=true; this.forceUpdate(); };
     var s=document.createElement('script'); s.src=BASE+'vs/loader.min.js';
     s.onload=()=>{ try{
       window.MonacoEnvironment={ getWorkerUrl:function(){ return 'data:text/javascript;charset=utf-8,'+encodeURIComponent("self.MonacoEnvironment={baseUrl:'"+BASE+"'};importScripts('"+BASE+"vs/base/worker/workerMain.js');"); } };
       window.require.config({ paths:{ vs: BASE+'vs' } });
-      window.require(['vs/editor/editor.main'], ()=>{ this.forceUpdate(); });
-    }catch(e){ this._monLoading=false; this._monFailed=true; this.forceUpdate(); } };
-    s.onerror=()=>{ this._monLoading=false; this._monFailed=true; this.forceUpdate(); };
+      // Errback + timeout: a hung AMD load must fall through to the textarea skeleton, not spin forever.
+      window.require(['vs/editor/editor.main'], ()=>{ clearTimeout(this._monLoadT); this._monLoading=false; this.forceUpdate(); }, fail);
+      clearTimeout(this._monLoadT); this._monLoadT=setTimeout(()=>{ if(!window.monaco) { fail(); } },12000);
+    }catch(e){ fail(); } };
+    s.onerror=fail;
     document.head.appendChild(s);
   }
-  componentWillUnmount(){ document.removeEventListener('keydown',this._key); if(this._winResize) { window.removeEventListener('resize',this._winResize); } if(this._beforeUnload) { window.removeEventListener('beforeunload',this._beforeUnload); } this.removeDragListeners(); clearInterval(this._cmPoll); if(this._mon){ this._mon.dispose(); this._mon=null; } }
+  componentWillUnmount(){ document.removeEventListener('keydown',this._key); if(this._winResize) { window.removeEventListener('resize',this._winResize); } if(this._beforeUnload) { window.removeEventListener('beforeunload',this._beforeUnload); } this.removeDragListeners(); clearInterval(this._cmPoll); clearTimeout(this._monLoadT); if(this._mon){ this._mon.dispose(); this._mon=null; } }
   componentDidUpdate(){ this.playFlip(); this.syncEditor(); this.syncPreview(); this.syncTokenVars(); this.measureBox(); this.measureFlexGrid(); this.positionCtxMenu(); this.positionCrumbStack(); this.measureScrollFade(); }
   // Walk-up ancestor label stack: normally grows UPWARD from the clicked label (bottom:100%, see
   // crumbAnchor). Near the top of the canvas there's no room above for it, so measure it after render and
@@ -1494,15 +1522,20 @@ class Component extends DCLogic {
     Object.keys(this.stateStyles).forEach(c=>{ const b=this.stateStyles[c]; ['::before','::after'].forEach(s=>{ const ss=b[s]; if(ss&&Object.keys(ss).length){ css+=rule('.'+c+s,this.ensureContent(ss)); } }); });
     ['md','sm','xs'].forEach(bp=>{ const r=this.responsive[bp]||{}; let inner=''; Object.keys(r).forEach(c=>{ const st=r[c]; if(st&&Object.keys(st).length){ inner+='  '+rule('.'+c,st); } }); if(inner) { css+='@media (max-width: '+this.BREAKPOINTS[bp].max+'px) {\n'+inner+'}\n'; } });
     return this.convUnit(css); }
+  // Normalize pseudo `content` for valid CSS: keywords/functions stay raw; bare text gets quoted.
+  normalizeContentValue(v){ if(v==null||v==='') { return '""'; } const s=String(v).trim(); if(!s) { return '""'; }
+    if((s.charAt(0)==='"'&&s.charAt(s.length-1)==='"')||(s.charAt(0)==="'"&&s.charAt(s.length-1)==="'")) { return s; }
+    if(/^(none|normal|open-quote|close-quote|no-open-quote|no-close-quote)$/i.test(s)) { return s; }
+    if(/^(attr|counter|counters|url|linear-gradient|radial-gradient|repeating-linear-gradient|repeating-radial-gradient|image|var)\(/i.test(s)) { return s; }
+    return '"'+s.replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"'; }
   // A pseudo-element with styling but no explicit content should still paint — default content to "".
-  ensureContent(ss){ if(ss.content!=null&&ss.content!=='') { return ss; } return Object.assign({content:'""'},ss); }
+  ensureContent(ss){ const out=Object.assign({},ss); out.content=this.normalizeContentValue(out.content); return out; }
   PSEUDO_STATES(){ return ['::before','::after']; }
   isPseudoState(s){ return typeof s==='string'&&s.indexOf('::')===0; }
   frameworkHead(fw){ const f=this.FW[fw]||this.FW.none; const links=(f.css||[]).map(u=>'<link rel="stylesheet" href="'+u+'">').join(''); const sTag='scr'+'ipt'; const scripts=(f.js||[]).map(u=>'<'+sTag+' src="'+u+'"></'+sTag+'>').join(''); return links+scripts; }
   // Build a live scope (`c`) for the Preview by running the Server then Client scripts in a
-  // sandbox, mirroring ServiceNow: server populates `data` → becomes `c.data`; the client
-  // controller runs with `this` = c. Failures are captured, never thrown, so the preview degrades
-  // gracefully. Returns the controller instance `c`.
+  // constrained Function (not a full iframe Worker sandbox — see scriptLooksHostile). Failures are
+  // captured, never thrown, so the preview degrades gracefully. Returns the controller instance `c`.
   // Instance-option defaults from the Options-tab schema, typed (boolean/integer coerced) and keyed by
   // option name — this is what {{options.NAME}} / {{c.options.NAME}} resolve to in the canvas + preview.
   optionValues(){ const o={}; (this.optionSchema||[]).forEach(op=>{ if(!op.name) { return; } let v=op.defaultValue;
@@ -1510,33 +1543,42 @@ class Component extends DCLogic {
     else if(op.type==='integer'){ v=(v===''||v==null)?'':parseInt(v,10); if(typeof v==='number'&&isNaN(v)) { v=''; } }
     else { v=(v==null)?'':v; }
     o[op.name]=v; }); return o; }
+  // Partial harden for host-page new Function eval: refuse scripts that reach for host globals.
+  // Full isolation would mean an iframe/Worker sandbox; this is a deliberate partial guard.
+  // Ignore $window / similar SN param names (word-boundary alone would false-positive on $window).
+  // No lookbehind — older JS engines reject (?<!…) at parse time and the whole app fails to load.
+  scriptLooksHostile(src){ return /(?:^|[^$\w.])(document|window|globalThis|Function|eval|XMLHttpRequest|fetch|localStorage|sessionStorage|indexedDB|importScripts|Worker)\b/.test(src||''); }
   buildPreviewScope(){
     // Inherited instance-field samples first, then custom option defaults (custom wins on name clash).
     this._pvErr=null; const c={data:{},options:Object.assign(this.instanceFieldValues(),this.optionValues(),this.previewOverrides())};
     const gs={getUserDisplayName:()=>'Abel Tuter',getUserName:()=>'abel.tuter',getUserID:()=>'62826bf03710200044e0bfc8bcbe5df1',
       getProperty:(k,d)=>d||'',getMessage:m=>m,nil:v=>v==null||v==='',info:()=>{},error:()=>{},warn:()=>{}};
-    try{ const data=c.data; const input=null, options=c.options; const $sp={};
-      new Function('data','input','options','gs','$sp','current','g_form', this.code.server||'')(data,input,options,gs,$sp,{},{}); }
-    catch(e){ this._pvErr='Server script: '+e.message; }
-    try{
+    if(this.scriptLooksHostile(this.code.server)){ this._pvErr='Server script: blocked host-access pattern (preview skipped)'; }
+    else { try{ const data=c.data; const input=null, options=c.options; const $sp={};
+      new Function('data','input','options','gs','$sp','current','g_form',
+        '"use strict"; var document=undefined,window=undefined,globalThis=undefined,Function=undefined;\n'+(this.code.server||''))(data,input,options,gs,$sp,{},{}); }
+    catch(e){ this._pvErr='Server script: '+e.message; } }
+    if(this.scriptLooksHostile(this.code.client)){ this._pvErr=(this._pvErr?this._pvErr+' · ':'')+'Client script: blocked host-access pattern (preview skipped)'; }
+    else { try{
       let ctrlFn=null; const api={get controller(){return ctrlFn;},set controller(f){ctrlFn=f;}};
       const $scope={data:c.data,$apply:f=>{try{f&&f();}catch(_){}},$on:()=>{},$watch:()=>{},$broadcast:()=>{}};
       const spUtil={get:()=>({then:()=>{}}),update:()=>{},recordWatch:()=>{}};
       const noop=()=>{}; const $timeout=f=>{try{f&&f();}catch(_){}return 0;};
       const $http={get:()=>({then:noop}),post:()=>({then:noop})};
       new Function('api','$scope','spUtil','spModal','$http','$timeout','$location','$window','i18n',
-        this.code.client||'')(api,$scope,spUtil,{open:()=>({then:noop})},$http,$timeout,{},{},{getMessage:m=>m});
+        '"use strict"; var document=undefined,window=undefined,globalThis=undefined,Function=undefined;\n'+(this.code.client||''))(api,$scope,spUtil,{open:()=>({then:noop})},$http,$timeout,{},{},{getMessage:m=>m});
       if(typeof ctrlFn==='function'){ if(c.data&&!$scope.data) { $scope.data=c.data; } ctrlFn.call(c,$scope); if($scope.data&&$scope.data!==c.data) { c.data=$scope.data; } }
       // Stash $scope itself (not just c) so the binding picker can offer anything the controller assigned
       // directly onto $scope (older `$scope.foo = …` style controllers), not just `this.foo = …` on c.
       c.__scope=$scope;
-    }catch(e){ this._pvErr=(this._pvErr?this._pvErr+' · ':'')+'Client script: '+e.message; }
+    }catch(e){ this._pvErr=(this._pvErr?this._pvErr+' · ':'')+'Client script: '+e.message; } }
     return c;
   }
   // Evaluate an Angular-ish expression against a scope map ({c, data, item, $index, …}); any error
-  // (undefined property, bad syntax) resolves to undefined rather than throwing.
+  // (undefined property, bad syntax) resolves to undefined rather than throwing. Shadows host globals
+  // inside the Function body (partial harden — not a full sandbox).
   evalIn(expr,scope){ try{ const keys=Object.keys(scope); const vals=keys.map(k=>scope[k]);
-    return new Function(...keys,'"use strict"; try{ return ('+expr+'); }catch(e){ return undefined; }')(...vals); }
+    return new Function(...keys,'"use strict"; var document=undefined,window=undefined,globalThis=undefined,Function=undefined; try{ return ('+expr+'); }catch(e){ return undefined; }')(...vals); }
     catch(e){ return undefined; } }
   fmtVal(v){ if(v==null) { return ''; } if(typeof v==='object'){ try{ return JSON.stringify(v); }catch(e){ return String(v); } } return String(v); }
   interp(str,scope){ return str.replace(/\{\{([\s\S]+?)\}\}/g,(_,ex)=>this.fmtVal(this.evalIn(ex.trim(),scope))); }
@@ -1655,52 +1697,13 @@ class Component extends DCLogic {
     const st=doc.getElementById('pv-style'); if(st && st.textContent!==css) { st.textContent=css; }
   }
   cmLang(id){ return id==='html'?'html': id==='scss'?'scss':'javascript'; }
-  autoPairAttr(){
-    const ed=this._mon, M=window.monaco; if(!ed||!M||this._cmTab!=='html') { return; }
-    const model=ed.getModel(), pos=ed.getPosition();
-    const before=model.getValueInRange({startLineNumber:pos.lineNumber,startColumn:1,endColumn:pos.column,endLineNumber:pos.lineNumber});
-    // only inside an open tag (last '<' after last '>'), and the '=' just typed follows an attribute name
-    if(before.lastIndexOf('<')<=before.lastIndexOf('>')) { return; }
-    if(!/[\w-]=$/.test(before)) { return; }
-    const after=model.getValueInRange({startLineNumber:pos.lineNumber,startColumn:pos.column,endColumn:model.getLineMaxColumn(pos.lineNumber),endLineNumber:pos.lineNumber});
-    if(after.startsWith('"')) { return; } // already quoted
-    this._monSetting=true;
-    ed.executeEdits('autopair',[{range:new M.Range(pos.lineNumber,pos.column,pos.lineNumber,pos.column),text:'""',forceMoveMarkers:true}]);
-    ed.setPosition({lineNumber:pos.lineNumber,column:pos.column+1}); // caret between quotes
-    this._monSetting=false;
-    this.onHtmlEdit(ed.getValue());
-  }
-  autoCloseTag(ch){
-    const ed=this._mon, M=window.monaco; if(!ed||!M) { return; }
-    if(ch!=='>'&&ch!=='/') { return; }
-    const model=ed.getModel(), pos=ed.getPosition();
-    const before=model.getValueInRange({startLineNumber:pos.lineNumber,startColumn:1,endColumn:pos.column,endLineNumber:pos.lineNumber});
-    if(ch==='/'){ // turn <br/ into self-closed (skip auto-close)
-      return;
-    }
-    // typed '>' — find the opening tag immediately before the caret
-    const m=before.match(/<([a-zA-Z][\w-]*)((?:[^<>]*?))>$/);
-    if(!m) { return; }
-    const tag=m[1]; const attrs=m[2]||'';
-    const VOID={area:1,base:1,br:1,col:1,embed:1,hr:1,img:1,input:1,link:1,meta:1,param:1,source:1,track:1,wbr:1};
-    if(VOID[tag.toLowerCase()]) { return; }
-    if(/\/\s*$/.test(attrs)) { return; } // already self-closing <tag/>
-    const after=model.getValueInRange({startLineNumber:pos.lineNumber,startColumn:pos.column,endColumn:model.getLineMaxColumn(pos.lineNumber),endLineNumber:pos.lineNumber});
-    if(after.trim().startsWith('</'+tag)) { return; } // already closed right here
-    const closing='</'+tag+'>';
-    this._monSetting=true;
-    ed.executeEdits('autoclose',[{range:new M.Range(pos.lineNumber,pos.column,pos.lineNumber,pos.column),text:closing,forceMoveMarkers:true}]);
-    ed.setPosition(pos); // caret stays between > and </tag>
-    this._monSetting=false;
-    const v=ed.getValue(); this.onHtmlEdit(v);
-  }
   // Place the caret on the first indented blank body line of a script tab so the user lands ready to type.
   placeScriptCaret(){ const ed=this._mon, M=window.monaco; if(!ed||!M) { return; } const id=this._cmTab; if(!['client','server','link','scss'].includes(id)) { return; }
     const m=ed.getModel(); if(!m) { return; } const n=m.getLineCount(); let line=null;
     for(let i=1;i<=n;i++){ if(/^[ \t]+$/.test(m.getLineContent(i))){ line=i; break; } }
     if(line==null){ for(let i=1;i<=n;i++){ if(m.getLineContent(i).trim()===''){ line=i; break; } } }
     if(line==null) { line=Math.max(1,n-1); }
-    if(m.getLineContent(line).length===0){ this._monSetting=true; ed.executeEdits('indent',[{range:new M.Range(line,1,line,1),text:'  '}]); this._monSetting=false; if(id!=='scss'){ this.code[id]=ed.getValue(); this.rawSave(); } }
+    if(m.getLineContent(line).length===0){ this._monSetting=true; ed.executeEdits('indent',[{range:new M.Range(line,1,line,1),text:'  '}]); this._monSetting=false; if(id!=='scss'){ this.code[id]=ed.getValue(); this.save(); } }
     ed.setPosition({lineNumber:line,column:m.getLineMaxColumn(line)}); ed.revealLineInCenterIfOutsideViewport(line); ed.focus(); }
   // Keep vs-dark's own token colors (that's the "dark modern" syntax look) — only the chrome around it
   // (background/gutter/cursor/etc.) is redefined to the app's own GitHub-dark palette (#0d1117/#161b22/
@@ -1734,7 +1737,9 @@ class Component extends DCLogic {
       this._mon=M.editor.create(host,{ value:this.panelText(id), language:lang, theme:monTheme, automaticLayout:true, minimap:{enabled:true}, fontSize:12.5, tabSize:2, insertSpaces:true, scrollBeyondLastLine:false, lineNumbersMinChars:3, padding:{top:8}, fixedOverflowWidgets:true, autoClosingBrackets:'always', autoClosingTags:true, suggestOnTriggerCharacters:true, formatOnPaste:true });
       this._cmHostEl=host; this._cmTab=id; this._monTheme=monTheme;
       this._mon.updateOptions({readOnly:id==='html'});
-      this._mon.onDidChangeModelContent((e)=>{ if(this._monSetting) { return; } const tab=this._cmTab; const v=this._mon.getValue(); if(tab==='html'){ const ch=e.changes&&e.changes.length===1?e.changes[0]:null; if(ch && ch.rangeLength===0){ if(ch.text==='>'){ setTimeout(()=>this.autoCloseTag('>'),0); } else if(ch.text==='='){ setTimeout(()=>this.autoPairAttr(),0); } } this.onHtmlEdit(v); } else { this.code[tab]=v; this.rawSave(); } });
+      // HTML tab is generated/read-only. Script edits mark dirty + undo + draft (via save()); SCSS
+      // overrides are draft-only and not part of serializeWidget.
+      this._mon.onDidChangeModelContent(()=>{ if(this._monSetting) { return; } const tab=this._cmTab; if(tab==='html') { return; } const v=this._mon.getValue(); this.code[tab]=v; if(tab==='scss'){ this.rawSave(); } else { this.save(); } });
       const relayout=()=>{ if(this._mon){ this._mon.layout(); this._mon.render(true); } };
       requestAnimationFrame(relayout); setTimeout(relayout,80); setTimeout(relayout,300);
       setTimeout(()=>this.placeScriptCaret(),120);
@@ -1933,7 +1938,8 @@ class Component extends DCLogic {
       h('span',{onClick:()=>this.removeToken(tk.id),...this.tt('Delete token'),...this.a11y(()=>this.removeToken(tk.id),{label:'Delete token '+tk.name}),style:{cursor:'pointer',color:t.faint,fontWeight:700,padding:'0 4px',flexShrink:0}},'×'));
     const addBtn=(label,type)=>h('div',{onClick:()=>this.addToken(type),style:{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 12px',fontSize:12,fontWeight:600,color:t.accent,background:'#fff',border:'1px solid '+t.border,borderRadius:7,cursor:'pointer'}},'+ '+label);
     const grp=(title,list,empty)=>h('div',{style:{marginBottom:18}}, this.section(t,title), list.length?list.map(row):h('div',{style:{fontSize:12,color:t.faint,marginBottom:8}},empty));
-    const toggle=h('div',{onClick:()=>{this.cssVarBridge=!this.cssVarBridge;this.saveUiPrefs();this.forceUpdate();},style:{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',background:'#fff',border:'1px solid '+t.border,borderRadius:8,cursor:'pointer',marginTop:6}},
+    const flipBridge=()=>{this.cssVarBridge=!this.cssVarBridge;this.saveUiPrefs();this.forceUpdate();};
+    const toggle=h('div',Object.assign({onClick:flipBridge},this.a11y(flipBridge,{label:'Also expose as CSS variables',checked:this.cssVarBridge,role:'switch'}),{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',background:'#fff',border:'1px solid '+t.border,borderRadius:8,cursor:'pointer',marginTop:6}}),
       h('div',{style:{width:34,height:20,borderRadius:10,background:this.cssVarBridge?t.accentFill:t.border,position:'relative',flexShrink:0,transition:'background .15s'}}, h('div',{style:{position:'absolute',top:2,left:this.cssVarBridge?16:2,width:16,height:16,borderRadius:'50%',background:'#fff',transition:'left .15s'}})),
       h('div',null, h('div',{style:{fontSize:12.5,fontWeight:600,color:t.text}},'Also expose as CSS variables'), h('div',{style:{fontSize:11,color:t.muted,marginTop:1}},'Adds :root { --x: #{$x} } and references var(--x) in rules')));
     const imp=h('div',{style:{marginTop:16}}, this.section(t,'Quick add — paste SCSS'),
@@ -2184,7 +2190,8 @@ class Component extends DCLogic {
       this.renderVarBridge(t));
   }
   renderVarBridge(t){ const h=React.createElement;
-    const toggle=h('div',{onClick:()=>{this.cssVarBridge=!this.cssVarBridge;this.saveUiPrefs&&this.saveUiPrefs();this.forceUpdate();},style:{display:'flex',alignItems:'center',gap:9,padding:'9px 10px',background:t.panel,border:'1px solid '+t.border,borderRadius:8,cursor:'pointer',marginBottom:12}},
+    const flipBridge=()=>{this.cssVarBridge=!this.cssVarBridge;this.saveUiPrefs&&this.saveUiPrefs();this.forceUpdate();};
+    const toggle=h('div',Object.assign({onClick:flipBridge},this.a11y(flipBridge,{label:'Also expose as CSS variables',checked:this.cssVarBridge,role:'switch'}),{style:{display:'flex',alignItems:'center',gap:9,padding:'9px 10px',background:t.panel,border:'1px solid '+t.border,borderRadius:8,cursor:'pointer',marginBottom:12}}),
       h('div',{style:{width:32,height:18,borderRadius:9,background:this.cssVarBridge?t.accentFill:t.border,position:'relative',flexShrink:0}}, h('div',{style:{position:'absolute',top:2,left:this.cssVarBridge?16:2,width:14,height:14,borderRadius:'50%',background:'#fff'}})),
       h('div',null, h('div',{style:{fontSize:12,fontWeight:600,color:t.text}},'Also expose as CSS variables'), h('div',{style:{fontSize:10.5,color:t.muted,marginTop:1}},':root { --x: #{$x} }')));
     const imp=h('div',null, h('div',{style:{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'.04em',color:t.faint,marginBottom:7}},'Paste SCSS'),
@@ -3488,7 +3495,7 @@ class Component extends DCLogic {
         if(mode==='fa') { return h('i',{className:'fa fa-'+(sel.fa||'star'),style:{...est}}); }
         if(mode==='glyph') { return h('span',{className:'glyphicon glyphicon-'+(sel.glyph||'star'),style:{...est}}); }
         return h('span',{style:{display:'inline-flex',alignItems:'center',lineHeight:0,...est}}, this.iconSvg(sel.svg||'star','1em','currentColor')); }
-      case 'html': { const raw=(node.data.html||'').trim(); if(!raw) { return h('div',{style:{minHeight:36,border:'1px dashed '+t.border,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',color:t.faint,fontSize:12,fontStyle:'italic'}},'empty HTML — edit in the inspector'); } return h('div',{style:{...est},dangerouslySetInnerHTML:{__html:node.data.html}}); }
+      case 'html': { const raw=this.sanitizeHtml(node.data.html||'').trim(); if(!raw) { return h('div',{style:{minHeight:36,border:'1px dashed '+t.border,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',color:t.faint,fontSize:12,fontStyle:'italic'}},'empty HTML — edit in the inspector'); } return h('div',{style:{...est},dangerouslySetInnerHTML:{__html:raw}}); }
       case 'card': { const cfg=this.COMPOSABLES[node.type];
         // Configurable container: fixed .card chrome around a .card-body drop slot (childrenBox). Body layout
         // defaults to the registry bodyLayout but is overridden by the card node's own styles (the layout
@@ -4471,9 +4478,9 @@ class Component extends DCLogic {
     );
   }
   htmlInspector(node,t){ const h=React.createElement; return h('div',{style:{padding:14,overflowY:'auto',flex:1,display:'flex',flexDirection:'column',scrollbarGutter:'stable'}},
-    h('div',{style:{padding:'10px 12px',background:t.accentSoft,border:'1px solid '+(this.dark?'#1f3a5f':'#bcd6f5'),borderRadius:8,fontSize:11.5,lineHeight:1.6,color:t.text,marginBottom:12}}, h('div',{style:{fontWeight:600,marginBottom:3}},'Raw HTML block'), h('span',{style:{color:t.muted}},'Type or paste any markup — Angular bindings, Bootstrap classes, custom tags. Renders here and exports verbatim.')),
+    h('div',{style:{padding:'10px 12px',background:t.accentSoft,border:'1px solid '+(this.dark?'#1f3a5f':'#bcd6f5'),borderRadius:8,fontSize:11.5,lineHeight:1.6,color:t.text,marginBottom:12}}, h('div',{style:{fontWeight:600,marginBottom:3}},'Raw HTML block'), h('span',{style:{color:t.muted}},'Type or paste markup — Angular bindings, Bootstrap classes, custom tags. Scripts, event handlers, and javascript: URLs are stripped before canvas render and export.')),
     this.lbl(t,'HTML'),
-    React.createElement('textarea',{value:node.data.html||'',spellCheck:false,onChange:e=>this.patch(node.id,n=>n.data.html=e.target.value),style:{flex:1,minHeight:260,width:'100%',border:'1px solid '+t.border,borderRadius:6,padding:'10px',fontSize:12.5,lineHeight:1.6,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace',resize:'none',whiteSpace:'pre'}})
+    React.createElement('textarea',{value:node.data.html||'',spellCheck:false,onChange:e=>this.patch(node.id,n=>{ n.data.html=e.target.value; }),onBlur:()=>this.patch(node.id,n=>{ n.data.html=this.sanitizeHtml(n.data.html||''); }),style:{flex:1,minHeight:260,width:'100%',border:'1px solid '+t.border,borderRadius:6,padding:'10px',fontSize:12.5,lineHeight:1.6,color:t.text,background:t.panel,outline:'none',fontFamily:'ui-monospace,SFMono-Regular,Menlo,monospace',resize:'none',whiteSpace:'pre'}})
   ); }
   rootInspector(t){ const h=React.createElement; return h('div',{style:{padding:14,overflowY:'auto'}},
     this.section(t,'Widget'),
@@ -5919,7 +5926,26 @@ class Component extends DCLogic {
     );
   }
   attrStr(node,exclude){ const ex=exclude||[]; return Object.entries(node.attrs||{}).filter(([k])=>ex.indexOf(k)<0).map(([k,v])=>' '+k+(v!==''?('="'+this.esc(v)+'"'):'')).join(''); }
-  styleStr(node){ const s=node.style||{}; const css=Object.entries(s).map(([k,v])=>this.kebab(k)+': '+v).join('; '); return css?(' style="'+this.convUnit(css)+'"'):''; }
+  // Escape only what breaks style="..." — keep < > so CSS like content:"<" stays valid.
+  styleEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+  styleStr(node){ const s=node.style||{}; const css=Object.entries(s).map(([k,v])=>this.kebab(k)+': '+v).join('; '); return css?(' style="'+this.styleEsc(this.convUnit(css))+'"'):''; }
+  // Strip scriptable markup from author HTML blocks before canvas render / export. Incomplete tags while
+  // typing are left alone in the inspector buffer; blur + render/export paths always sanitize.
+  sanitizeHtml(html){ try{
+    const doc=new DOMParser().parseFromString('<div id="__ws_s">'+String(html==null?'':html)+'</div>','text/html');
+    const root=doc.getElementById('__ws_s'); if(!root) { return ''; }
+    const BAD={script:1,iframe:1,object:1,embed:1,link:1,meta:1,base:1};
+    const walk=el=>{ [...el.children].forEach(ch=>{
+      const tag=ch.tagName.toLowerCase();
+      if(BAD[tag]){ ch.remove(); return; }
+      [...ch.attributes].forEach(a=>{ const n=a.name.toLowerCase();
+        if(n.indexOf('on')===0||n==='srcdoc'){ ch.removeAttribute(a.name); return; }
+        if((n==='href'||n==='src'||n==='xlink:href'||n==='action'||n==='formaction') && /^\s*javascript:/i.test(a.value||'')){ ch.removeAttribute(a.name); }
+      });
+      walk(ch);
+    }); };
+    walk(root); return root.innerHTML;
+  }catch(e){ return ''; } }
   // ---------- drawer (Preview + code panels) ----------
   usedClasses(){ const set={}; const w=n=>{ (n.classes||[]).forEach(c=>set[c]=1); (n.children||[]).forEach(w); }; (this.tree.children||[]).forEach(w); return set; }
   kebab(k){ return k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase()); }
@@ -6001,7 +6027,7 @@ class Component extends DCLogic {
         if(mode==='fa') { return pad+'<i class="fa fa-'+(sel.fa||'star')+xc+'" aria-hidden="true"></i>'; }
         if(mode==='glyph') { return pad+'<span class="glyphicon glyphicon-'+(sel.glyph||'star')+xc+'" aria-hidden="true"></span>'; }
         const d=this.iconDef(sel.svg||'star'); return pad+'<svg'+(cls.length?(' class="'+cls.join(' ')+'"'):'')+' width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d.p+'</svg>'; }
-      case 'html': return (node.data.html||'').split('\n').map(l=>pad+l).join('\n');
+      case 'html': return this.sanitizeHtml(node.data.html||'').split('\n').map(l=>pad+l).join('\n');
       case 'panel': return pad+'<div'+ca+'>'+nl+pad+'  <div class="panel-heading">'+nl+pad+'    <h2 class="panel-title">'+this.esc(node.data.heading)+'</h2>'+nl+pad+'  </div>'+nl+pad+'  <div class="panel-body">'+nl+(node.children&&node.children.length?kids(node,depth+2)+nl:nl)+pad+'  </div>'+nl+pad+'</div>';
       case 'card': return pad+'<div'+ca+'>'+nl+pad+'  <div class="card-body">'+nl+(node.children&&node.children.length?kids(node,depth+2)+nl:nl)+pad+'  </div>'+nl+pad+'</div>';
       case 'button': { const caB=(cls.length?(' class="'+cls.join(' ')+'"'):'')+this.styleStr(node)+this.attrStr(node,['type']); const tp=this.esc((node.attrs&&node.attrs.type)||'button'); const open='<button type="'+tp+'"'+caB+'>'; if(node.children&&node.children.length){ const tx=node.text?this.esc(node.text):''; return pad+open+(tx?tx+nl:nl)+kids(node,depth+1)+nl+pad+'</button>'; } return pad+open+this.esc(node.text||'')+'</button>'; }
@@ -6130,10 +6156,7 @@ class Component extends DCLogic {
     if(id==='html' && e.key==='='){ const ta=e.target; if(ta.selectionStart===ta.selectionEnd){ const before=ta.value.slice(0,ta.selectionStart); const li=before.lastIndexOf('<'); const gi=before.lastIndexOf('>'); if(li>gi){ e.preventDefault(); document.execCommand('insertText',false,'=""'); const p=ta.selectionStart-1; ta.setSelectionRange(p,p); return; } } }
     if(id==='html' && e.key==='>'){ const ta=e.target; const before=ta.value.slice(0,ta.selectionStart); const li=before.lastIndexOf('<'); if(li>=0){ const seg=before.slice(li); if(!/^<\//.test(seg) && !/\/\s*$/.test(seg) && !/>/.test(seg)){ const m=seg.match(/^<([a-zA-Z][\w-]*)/); if(m && !['img','input','br','hr','meta','link','area','base','col','embed','source','track','wbr'].includes(m[1].toLowerCase())){ const close='</'+m[1]+'>'; e.preventDefault(); document.execCommand('insertText',false,'>'+close); const p=ta.selectionStart-close.length; ta.setSelectionRange(p,p); } } } }
   }
-  onHtmlEdit(v){ this.code.html=v; this.rawSave(); this.forceUpdate(); clearTimeout(this._htmlT); this._htmlT=setTimeout(()=>{ const err=this.validateHtml(v); if(err){ this.htmlError=err; this.forceUpdate(); return; } const kids=this.parseHtmlToChildren(v); if(kids==null){ this.htmlError='Could not parse HTML.'; this.forceUpdate(); return; } this.htmlError=null; this.tree.children=kids; if(!this.find(this.selectedId)) { this.selectedId='root'; } this.pushHistory(); this.rawSave(); this.forceUpdate(); },350); }
-  validateHtml(str){ const VOID={area:1,base:1,br:1,col:1,embed:1,hr:1,img:1,input:1,link:1,meta:1,param:1,source:1,track:1,wbr:1}; const s=String(str).replace(/<!--[\s\S]*?-->/g,'').replace(/"[^"]*"/g,'""').replace(/'[^']*'/g,"''"); const re=/<(\/?)([a-zA-Z][\w-]*)([^<>]*?)(\/?)>/g; const stack=[]; let m; while((m=re.exec(s))){ const closing=m[1]==='/'; const tag=m[2].toLowerCase(); const selfClose=m[4]==='/'||VOID[tag]; if(closing){ if(!stack.length) { return 'Unexpected </'+tag+'>'; } const top=stack.pop(); if(top!==tag) { return 'Expected </'+top+'> but found </'+tag+'>'; } } else if(!selfClose){ stack.push(tag); } } if(stack.length) { return 'Unclosed <'+stack[stack.length-1]+'>'; } return null; }
-  parseHtmlToChildren(htmlStr){ try{ const doc=new DOMParser().parseFromString('<div id="__wsroot">'+htmlStr+'</div>','text/html'); let container=doc.getElementById('__wsroot'); if(!container) { return null; } const roots=[...container.children]; if(roots.length===1 && roots[0].tagName==='DIV') { container=roots[0]; } return [...container.children].map(el=>this.domToNode(el)).filter(Boolean); }catch(e){ return null; } }
-  domToNode(el){ if(!el||el.nodeType!==1) { return null; } const tag=el.tagName.toLowerCase(); const node={id:this.uid(tag),type:'el',data:{tag},classes:[...el.classList],attrs:{},style:{}}; for(const a of el.attributes){ if(a.name==='class'||a.name==='style') { continue; } node.attrs[a.name]=a.value; } const styAttr=el.getAttribute('style'); if(styAttr){ styAttr.split(';').forEach(d=>{ const i=d.indexOf(':'); if(i>0){ const k=d.slice(0,i).trim().replace(/-([a-z])/g,(_,c)=>c.toUpperCase()); const v=d.slice(i+1).trim(); if(k&&v) { node.style[k]=v; } } }); } const kids=[...el.children]; if(kids.length){ node.children=kids.map(c=>this.domToNode(c)).filter(Boolean); } else { const txt=el.textContent; if(txt && txt.trim()!=='') { node.text=txt; } if(this.CONTAINER_TAGS.includes(tag)) { node.children=[]; } } if(!Object.keys(node.attrs).length) { delete node.attrs; } if(!Object.keys(node.style).length) { delete node.style; } return node; }
+  // HTML drawer tab is generated/read-only — no HTML→tree round-trip.
 
   // ---------- option schema ----------
   OPT_TYPES(){ return ['string','boolean','integer','reference','choice','field_name','field_list','glide_list','glyphicon']; }
@@ -6169,8 +6192,8 @@ class Component extends DCLogic {
     return base; }
   // The inherited fields the author opted into (subset of the current class's available fields).
   activeInstanceFields(){ return this.INSTANCE_FIELDS(this.instanceClass).filter(f=>(this.instanceFields||[]).indexOf(f.name)>=0); }
-  addInstanceField(name){ this.instanceFields=this.instanceFields||[]; if(this.instanceFields.indexOf(name)<0) { this.instanceFields.push(name); } this._cScope=null; this._cScopeSig=null; this.forceUpdate(); }
-  removeInstanceField(name){ this.instanceFields=(this.instanceFields||[]).filter(n=>n!==name); this._cScope=null; this._cScopeSig=null; this.forceUpdate(); }
+  addInstanceField(name){ this.instanceFields=this.instanceFields||[]; if(this.instanceFields.indexOf(name)<0) { this.instanceFields.push(name); } this._cScope=null; this._cScopeSig=null; this.save(); this.forceUpdate(); }
+  removeInstanceField(name){ this.instanceFields=(this.instanceFields||[]).filter(n=>n!==name); this._cScope=null; this._cScopeSig=null; this.save(); this.forceUpdate(); }
   // Sample values for the SELECTED instance fields, keyed by options.* name (for the preview scope).
   instanceFieldValues(){ const o={}; this.activeInstanceFields().forEach(f=>{ o[f.name]=f.sample; }); return o; }
   // Preview-only overrides for option / instance-field values — layered over the defaults/samples in the
@@ -6191,13 +6214,13 @@ class Component extends DCLogic {
     {label:'Max items', name:'max_items', type:'integer', section:'data', defaultValue:'5', hint:'Maximum number of items to display.'}
   ]; }
   newOption(seed){ const o=Object.assign({id:'opt_'+(this._optSeq=(this._optSeq||0)+1),label:'',name:'',type:'string',hint:'',defaultValue:'',section:'other',referenceTable:'',choices:[],dependsOn:'',nameTouched:false},seed||{}); if(seed&&seed.name){ o.nameTouched=true; } return o; }
-  addOption(seed){ const o=this.newOption(seed); this.optionSchema.push(o); this._optExpanded=o.id; this._optJson=false; this._optCommonOpen=false; this.forceUpdate(); }
-  delOption(id){ this.optionSchema=this.optionSchema.filter(o=>o.id!==id); if(this._optExpanded===id){ this._optExpanded=null; } this.forceUpdate(); }
-  moveOption(id,dir){ const a=this.optionSchema,i=a.findIndex(o=>o.id===id),j=i+dir; if(i<0||j<0||j>=a.length){ return; } const tmp=a[i];a[i]=a[j];a[j]=tmp; this.forceUpdate(); }
-  setOpt(o,k,v){ if(k==='name'){ o.nameTouched=true; o.name=(v||'').toLowerCase().replace(/[^a-z0-9_]/g,''); } else { o[k]=v; if(k==='label'&&!o.nameTouched){ o.name=this.snakeCase(v); } } this.forceUpdate(); }
-  addChoice(o){ o.choices=o.choices||[]; o.choices.push({value:'',label:''}); this.forceUpdate(); }
-  setChoice(o,i,k,v){ o.choices[i][k]=v; this.forceUpdate(); }
-  delChoice(o,i){ o.choices.splice(i,1); this.forceUpdate(); }
+  addOption(seed){ const o=this.newOption(seed); this.optionSchema.push(o); this._optExpanded=o.id; this._optJson=false; this._optCommonOpen=false; this.save(); this.forceUpdate(); }
+  delOption(id){ this.optionSchema=this.optionSchema.filter(o=>o.id!==id); if(this._optExpanded===id){ this._optExpanded=null; } this.save(); this.forceUpdate(); }
+  moveOption(id,dir){ const a=this.optionSchema,i=a.findIndex(o=>o.id===id),j=i+dir; if(i<0||j<0||j>=a.length){ return; } const tmp=a[i];a[i]=a[j];a[j]=tmp; this.save(); this.forceUpdate(); }
+  setOpt(o,k,v){ if(k==='name'){ o.nameTouched=true; o.name=(v||'').toLowerCase().replace(/[^a-z0-9_]/g,''); } else { o[k]=v; if(k==='label'&&!o.nameTouched){ o.name=this.snakeCase(v); } } this.save(); this.forceUpdate(); }
+  addChoice(o){ o.choices=o.choices||[]; o.choices.push({value:'',label:''}); this.save(); this.forceUpdate(); }
+  setChoice(o,i,k,v){ o.choices[i][k]=v; this.save(); this.forceUpdate(); }
+  delChoice(o,i){ o.choices.splice(i,1); this.save(); this.forceUpdate(); }
   optionSchemaJson(){ return JSON.stringify((this.optionSchema||[]).map(o=>{ const e={name:o.name||'',label:o.label||'',type:o.type}; if(o.hint){ e.hint=o.hint; } if(o.defaultValue!==''&&o.defaultValue!=null){ e.default_value=o.defaultValue; } e.section=o.section||'other'; if((o.type==='reference'||o.type==='glide_list')&&o.referenceTable){ e.reference_table=o.referenceTable; } if(o.type==='choice'){ const cs=(o.choices||[]).filter(c=>c.value!==''&&c.value!=null).map(c=>({value:c.value,label:c.label||c.value})); if(cs.length){ e.choices=cs; } } if((o.type==='field_name'||o.type==='field_list')&&o.dependsOn){ e.depends_on=o.dependsOn; } return e; }),null,2); }
 
   otInput(t,val,on,ph,type){ return React.createElement('input',{type:type||'text',value:val==null?'':val,placeholder:ph||'',spellCheck:false,onChange:e=>on(e.target.value),style:{width:'100%',height:30,background:t.panel,border:'1px solid '+t.border,borderRadius:6,color:t.text,padding:'0 9px',fontSize:12.5,outline:'none',fontFamily:'inherit'}}); }
@@ -6293,7 +6316,7 @@ class Component extends DCLogic {
       ); }
     return h('div',{style:{position:'relative',minWidth:0,flexShrink:opts.flexShrink}}, trigger, menu); }
   otRow(t,label,ctl,mt){ const h=React.createElement; return h('div',{style:mt?{marginTop:11}:null}, this.lbl(t,label), ctl); }
-  otMove(t,sym,title,on,dim){ return React.createElement('div',Object.assign({onClick:dim?undefined:on},this.tt(title),{style:{width:26,height:26,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:6,border:'1px solid '+t.border,background:t.panel,color:dim?t.faint:t.muted,cursor:dim?'default':'pointer',opacity:dim?.5:1,fontSize:12,userSelect:'none'}}),sym); }
+  otMove(t,sym,title,on,dim){ return React.createElement('div',Object.assign({onClick:dim?undefined:on},this.tt(title),this.a11y(on,{label:title,disabled:!!dim}),{style:{width:26,height:26,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:6,border:'1px solid '+t.border,background:t.panel,color:dim?t.faint:t.muted,cursor:dim?'default':'pointer',opacity:dim?.5:1,fontSize:12,userSelect:'none'}}),sym); }
 
   renderChoices(t,o){ const h=React.createElement; const cs=o.choices||[];
     return h('div',{key:'choices',style:{marginTop:11}},
@@ -6302,7 +6325,7 @@ class Component extends DCLogic {
         cs.map((c,i)=>h('div',{key:i,style:{display:'flex',gap:6,alignItems:'center'}},
           h('div',{style:{flex:1,minWidth:0}}, this.otInput(t,c.value,v=>this.setChoice(o,i,'value',v),'value')),
           h('div',{style:{flex:1,minWidth:0}}, this.otInput(t,c.label,v=>this.setChoice(o,i,'label',v),'label')),
-          h('div',{onClick:()=>this.delChoice(o,i),...this.tt('Remove choice'),style:{flexShrink:0,width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',color:t.muted,cursor:'pointer',fontSize:15,border:'1px solid '+t.border,borderRadius:6,background:t.panel}},'\u00d7')
+          h('div',Object.assign({onClick:()=>this.delChoice(o,i)},this.tt('Remove choice'),this.a11y(()=>this.delChoice(o,i),{label:'Remove choice'}),{style:{flexShrink:0,width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',color:t.muted,cursor:'pointer',fontSize:15,border:'1px solid '+t.border,borderRadius:6,background:t.panel}}),'\u00d7')
         )),
         cs.length?null:h('div',{style:{fontSize:11,color:t.faint,fontStyle:'italic',padding:'2px 0'}},'No choices yet.'),
         h('div',{onClick:()=>this.addChoice(o),style:{alignSelf:'flex-start',fontSize:12,fontWeight:600,color:t.accent,cursor:'pointer',padding:'4px 2px'}},'\uff0b Add choice')
@@ -6336,13 +6359,13 @@ class Component extends DCLogic {
         h('div',{style:{fontSize:10.5,color:t.muted,fontFamily:'ui-monospace,monospace',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:2}}, (o.name||'\u2014')+'  \u00b7  '+secLabel(o.section))
       ),
       badge(o.type),
-      h('div',{onClick:e=>{e.stopPropagation();this.delOption(o.id);},style:{flexShrink:0,padding:'2px 5px',color:t.faint,cursor:'pointer',fontSize:15,fontWeight:600,userSelect:'none'},onMouseEnter:e=>{this.showTip('Delete option',e.currentTarget);e.currentTarget.style.color=this.dark?'#f85149':'#cf222e';},onMouseLeave:e=>{this.hideTip();e.currentTarget.style.color=t.faint;},onMouseDown:e=>{e.stopPropagation();this.hideTip();}},'\u00d7')
+      h('div',Object.assign({onClick:e=>{e.stopPropagation();this.delOption(o.id);}},this.a11y(()=>this.delOption(o.id),{label:'Delete option '+(o.label||o.name||'')}),this.tt('Delete option'),{style:{flexShrink:0,padding:'2px 5px',color:t.faint,cursor:'pointer',fontSize:15,fontWeight:600,userSelect:'none'},onMouseEnter:e=>{e.currentTarget.style.color=this.dark?'#f85149':'#cf222e';},onMouseLeave:e=>{e.currentTarget.style.color=t.faint;},onMouseDown:e=>{e.stopPropagation();this.hideTip();}}),'\u00d7')
     );
     const footer=h('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:14,paddingTop:11,borderTop:'1px solid '+t.borderSoft}},
       this.otMove(t,'\u2191','Move up',()=>this.moveOption(o.id,-1),idx===0),
       this.otMove(t,'\u2193','Move down',()=>this.moveOption(o.id,1),idx===total-1),
       h('div',{style:{flex:1}}),
-      h('div',{onClick:()=>this.delOption(o.id),style:{fontSize:11.5,fontWeight:600,color:this.dark?'#f85149':'#cf222e',cursor:'pointer',padding:'4px 6px'}},'Delete')
+      h('div',Object.assign({onClick:()=>this.delOption(o.id)},this.a11y(()=>this.delOption(o.id),{label:'Delete option '+(o.label||o.name||'')}),{style:{fontSize:11.5,fontWeight:600,color:this.dark?'#f85149':'#cf222e',cursor:'pointer',padding:'4px 6px'}}),'Delete')
     );
     return h('div',{key:o.id,style:{background:t.panel,border:'1px solid '+(open?t.accent:t.border),borderRadius:8,overflow:'hidden',boxShadow:open?('0 0 0 2px '+t.accentSoft):'none',transition:'border-color .15s, box-shadow .15s'}}, header,
       this.animatedBox(open, h('div',{style:{padding:'2px 12px 14px'}}, this.optionEditor(t,o), footer)));
@@ -6388,7 +6411,7 @@ class Component extends DCLogic {
     const addChip=f=>h('div',{key:f.name,onClick:()=>this.addInstanceField(f.name),...this.tt('options.'+f.name),style:{cursor:'pointer',fontSize:11,fontFamily:'ui-monospace,monospace',color:t.accent,background:t.panel,border:'1px solid '+t.border,borderRadius:6,padding:'4px 8px'}}, '+ '+f.label);
     return h('div',{style:{padding:'12px 14px',borderBottom:'1px solid '+t.border,flexShrink:0,background:t.panel}},
       h('div',{style:{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'.04em',color:t.faint,marginBottom:7}},'Instance class'),
-      this.otSelect(t, cls, this.INSTANCE_CLASSES(), v=>{ this.instanceClass=v; this._cScope=null; this._cScopeSig=null; this.forceUpdate(); }),
+      this.otSelect(t, cls, this.INSTANCE_CLASSES(), v=>{ this.instanceClass=v; this._cScope=null; this._cScopeSig=null; this.save(); this.forceUpdate(); }),
       h('div',{style:{fontSize:10.5,color:t.faint,fontFamily:'ui-monospace,monospace',marginTop:5}}, this.INSTANCE_TABLE(cls)),
       h('div',{style:{fontSize:10.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.04em',color:t.faint,margin:'12px 0 7px'}},'Instance fields · preview values'),
       active.length? h('div',{style:{display:'flex',flexDirection:'column',gap:7}}, active.map(fieldRow))
