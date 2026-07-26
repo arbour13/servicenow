@@ -74,9 +74,12 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
   controllerSrc: '...',                 // full text of the file wiring the widget's controller
   scssSrc: '...',                       // full text of the app's authored SCSS source
   sharedScss: undefined,                // optional - shared SCSS partial text (e.g. the concatenated
-                                         // contents of tools/theme-foundation/_tokens.scss). Prepended
-                                         // to scssSrc before scoping, so it lands at the TOP of the
-                                         // widget's <css> as `!default` tokens. See theme-foundation/SETUP.md.
+                                         // contents of a design-token file this app opts into via
+                                         // manifest.sharedScssPartials, below). Prepended to scssSrc
+                                         // before scoping, so it lands at the TOP of the widget's
+                                         // <css> as `!default` tokens. No app currently uses this -
+                                         // the general mechanism stays, so a future shared-token
+                                         // source can plug in without a core.js change.
   indexHtml: '...',                     // full text of the authored page markup
   providerSrcs: {                       // keyed by each providers[].file entry above
     '/angular/js/services/schema.service.js': '...',
@@ -141,7 +144,9 @@ treats a missing file (404 / load error) as "not eligible," not an error to fix.
       index: 'index.html',
     },
     serverScriptSource: undefined,      // optional inline string - omit to use the SN Deployment Packager's built-in stub
-    sharedScssPartials: undefined,      // optional array of app-root-relative paths (e.g. shared token partials)
+    sharedScssPartials: undefined,      // optional array of app-root-relative paths to shared SCSS
+                                         // partials (e.g. a design-token file); each host reads and
+                                         // concatenates them, passing the text as sources.sharedScss
     deployOptions: undefined,           // optional - see below
   };
 });

@@ -914,15 +914,15 @@
   </div>
 
   <!-- ng-show, not ng-if: this pane used to be destroyed/recreated on every Standards entry/exit,
-       and even with core-sync-attr setting data-editor-theme synchronously (so the attribute is never
+       and even with gs-sync-attr setting data-editor-theme synchronously (so the attribute is never
        actually missing on a live digest), a freshly-inserted subtree's CSS custom properties could
        still show a one-frame flash of the wrong (light) colors in dark mode - a browser rendering
        quirk on brand new nodes, not an Angular timing gap. ng-show never destroys the element; it
        just toggles display:none (zero layout cost, same as ng-if, since it's THE global .ng-hide
        rule), so there's no fresh insertion event at all when leaving Standards. (The SEPARATE
-       raw-HTML-paints-before-Angular-bootstraps gap that core-sync-attr alone doesn't cover is handled
+       raw-HTML-paints-before-Angular-bootstraps gap that gs-sync-attr alone doesn't cover is handled
        once, at the root - see the ng-cloak comment on .app above - not per-element here.) -->
-  <div class="output-pane" ng-show="vm.activeMode !== 'Settings' && vm.activeMode !== 'Standards'" core-sync-attr="'data-editor-theme'" core-sync-value="vm.editorThemeApplied">
+  <div class="output-pane" ng-show="vm.activeMode !== 'Settings' && vm.activeMode !== 'Standards'" gs-sync-attr="'data-editor-theme'" gs-sync-value="vm.editorThemeApplied">
     <div class="out-top">
       <span class="title">{{vm.outputTitle()}}</span>
       <button type="button" class="editor-theme-toggle" ng-click="vm.cycleEditorTheme()"
@@ -1037,7 +1037,7 @@
     </div>
   </div>
 
-  <div class="modal-overlay" ng-if="vm.preview.open" core-modal="vm.closePreview()" core-modal-focus="previewCloseBtn" ng-click="$event.target === $event.currentTarget && vm.closePreview()">
+  <div class="modal-overlay" ng-if="vm.preview.open" gs-modal="vm.closePreview()" gs-modal-focus="previewCloseBtn" ng-click="$event.target === $event.currentTarget && vm.closePreview()">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Record preview">
       <div class="modal-head">
         <span ng-if="vm.preview.kind !== 'stats'">Record preview - <code>{{vm.preview.table}}</code></span>
@@ -1066,7 +1066,7 @@
     </div>
   </div>
 
-  <div class="modal-overlay" ng-if="vm.confirm.open" core-modal="vm.closeConfirm()" core-modal-focus="confirmCancelBtn">
+  <div class="modal-overlay" ng-if="vm.confirm.open" gs-modal="vm.closeConfirm()" gs-modal-focus="confirmCancelBtn">
     <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
       <div class="modal-head">
         <span id="confirmTitle">{{vm.confirm.title}}</span>

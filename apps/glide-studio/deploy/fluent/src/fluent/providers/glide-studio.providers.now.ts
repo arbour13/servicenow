@@ -1,6 +1,34 @@
 import { SPAngularProvider } from '@servicenow/sdk/core'
 
 SPAngularProvider({
+    $id: Now.ID['ThemeService'],
+    name: 'ThemeService',
+    type: 'service',
+    script: Now.include('ThemeService.js'),
+})
+
+SPAngularProvider({
+    $id: Now.ID['ConfirmModalService'],
+    name: 'ConfirmModalService',
+    type: 'service',
+    script: Now.include('ConfirmModalService.js'),
+})
+
+SPAngularProvider({
+    $id: Now.ID['gsModal'],
+    name: 'gsModal',
+    type: 'directive',
+    script: Now.include('gsModal.js'),
+})
+
+SPAngularProvider({
+    $id: Now.ID['gsSyncAttr'],
+    name: 'gsSyncAttr',
+    type: 'directive',
+    script: Now.include('gsSyncAttr.js'),
+})
+
+SPAngularProvider({
     $id: Now.ID['SchemaService'],
     name: 'SchemaService',
     type: 'service',

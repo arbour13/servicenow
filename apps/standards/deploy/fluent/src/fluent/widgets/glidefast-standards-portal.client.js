@@ -5,8 +5,8 @@ api.controller = function ($scope, ThemeService, StandardsUiService) {
     // App-wide light/dark toggle (see ThemeService) - persists to localStorage and applies
     // straight to documentElement. vm.theme is a thin display mirror the template reads; syncTheme
     // refreshes it after each toggle.
-    // ThemeService is the shared Core provider; init it with this app's own key prefix so Standards
-    // keeps its independent stored theme choice ('standardsPortalTheme').
+    // Init with this app's own key prefix so Standards keeps its independent stored theme choice
+    // ('standardsPortalTheme').
     ThemeService.init('standardsPortal');
     function syncTheme() { vm.theme = ThemeService.readState().theme; }
     syncTheme();

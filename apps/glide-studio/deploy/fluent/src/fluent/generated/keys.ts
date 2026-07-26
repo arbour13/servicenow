@@ -49,6 +49,22 @@ declare global {
                         table: "sp_column"
                         id: "b2c3d4e5f60000112233445566778808"
                     }
+                    "ThemeService": {
+                        table: "sp_angular_provider"
+                        id: "b2c3d4e5f65aa2d8cc00112233"
+                    }
+                    "ConfirmModalService": {
+                        table: "sp_angular_provider"
+                        id: "b2c3d4e5f6bc325a0800112233"
+                    }
+                    "gsModal": {
+                        table: "sp_angular_provider"
+                        id: "b2c3d4e5f61150312100112233"
+                    }
+                    "gsSyncAttr": {
+                        table: "sp_angular_provider"
+                        id: "b2c3d4e5f65465683800112233"
+                    }
                     "SchemaService": {
                         table: "sp_angular_provider"
                         id: "b2c3d4e5f68301f1b400112233"

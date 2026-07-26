@@ -386,7 +386,7 @@
       '(function() {\n  /* No server-side data needed - this widget\'s logic lives entirely in its injected Angular services. */\n})();');
 
     var template = buildTemplateFromSource(sources.indexHtml, manifest.widgetScopeClass);
-    // Shared SCSS partials (e.g. tools/theme-foundation/_tokens.scss) are inlined at the TOP of the
+    // Shared SCSS partials (e.g. a design-token file an app opts into) are inlined at the TOP of the
     // widget's own <css>, before the app's rules - the host reads the files named in
     // manifest.sharedScssPartials and passes their concatenated text as sources.sharedScss. Because
     // they're `!default` token declarations (bare statements), scopeScss passes them through

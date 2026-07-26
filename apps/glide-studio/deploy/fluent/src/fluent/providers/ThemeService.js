@@ -1,16 +1,4 @@
-/* Shared light/dark theme service (Core). Handles the app-wide light/dark toggle
-   (html[data-theme]) plus an optional output-pane editor theme (auto/light/dark), both persisted to
-   localStorage and applied straight to documentElement.
-
-   Consumer apps keep INDEPENDENT stored theme preferences: each app calls
-   `ThemeService.init('<appKeyPrefix>')` once from its own controller before using the service, so
-   the localStorage keys are namespaced per app (e.g. 'glideStudio' -> 'glideStudioTheme' /
-   'glideStudioEditorTheme'). This is why the service is init-first rather than reading localStorage
-   at construction: the shared singleton doesn't know which app it's serving until that app tells it.
-
-   The controller keeps thin display mirrors (vm.theme / vm.editorTheme / vm.editorThemeApplied) that
-   it refreshes from readState() after each toggle - the template binds those directly. */
-angular.module('core').factory('ThemeService', [function () {
+[function () {
   'use strict';
 
   // The editor theme cycles auto -> light -> dark -> auto on a single button (not a 3-way direct
@@ -37,9 +25,9 @@ angular.module('core').factory('ThemeService', [function () {
   function resolveEditor() { return editorTheme === 'auto' ? appTheme : editorTheme; }
 
   var svc = {
-    // Call once per app before use, with the app's own localStorage key prefix, so each app keeps
-    // its own independent stored theme. A manual choice (stored) always wins; with no stored choice
-    // yet, default to the OS/browser's prefers-color-scheme so the app matches the system out of the box.
+    // Call once before use, with this app's own localStorage key prefix. A manual choice (stored)
+    // always wins; with no stored choice yet, default to the OS/browser's prefers-color-scheme so
+    // the app matches the system out of the box.
     init: function (keyPrefix) {
       THEME_KEY = keyPrefix + 'Theme';
       EDITOR_THEME_KEY = keyPrefix + 'EditorTheme';
@@ -65,4 +53,4 @@ angular.module('core').factory('ThemeService', [function () {
     },
   };
   return svc;
-}]);
+}]

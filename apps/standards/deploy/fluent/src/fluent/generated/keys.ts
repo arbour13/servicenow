@@ -25,6 +25,10 @@ declare global {
                         table: "sp_column"
                         id: "c7d8e9f0a10000112233440008"
                     }
+                    "ThemeService": {
+                        table: "sp_angular_provider"
+                        id: "c7d8e9f0a15aa2d8cc00112233"
+                    }
                     "StandardsService": {
                         table: "sp_angular_provider"
                         id: "c7d8e9f0a18e2cdc9f00112233"

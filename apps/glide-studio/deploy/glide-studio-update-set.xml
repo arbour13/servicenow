@@ -111,6 +111,181 @@
 </sp_column>
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
+<name>ThemeService</name>
+<type>service</type>
+<script><![CDATA[[function () {
+  'use strict';
+
+  // The editor theme cycles auto -> light -> dark -> auto on a single button (not a 3-way direct
+  // pick) - matches the sidenav's own theme toggle interaction.
+  var EDITOR_THEME_ORDER = ['auto', 'light', 'dark'];
+  var EDITOR_THEME_LABELS = { auto: 'Auto', light: 'Light', dark: 'Dark' };
+
+  var THEME_KEY, EDITOR_THEME_KEY; // set by init()
+  var appTheme, editorTheme;
+
+  function systemPrefersDark() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  function load(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  }
+  function applyApp() { document.documentElement.setAttribute('data-theme', appTheme); }
+  // "auto" isn't a real CSS value; resolve it to whichever concrete theme (light/dark) matches the
+  // app theme right now, so the output panes track the app toggle. The resolved value (never "auto")
+  // is what the template binds to the DOM.
+  function resolveEditor() { return editorTheme === 'auto' ? appTheme : editorTheme; }
+
+  var svc = {
+    // Call once before use, with this app's own localStorage key prefix. A manual choice (stored)
+    // always wins; with no stored choice yet, default to the OS/browser's prefers-color-scheme so
+    // the app matches the system out of the box.
+    init: function (keyPrefix) {
+      THEME_KEY = keyPrefix + 'Theme';
+      EDITOR_THEME_KEY = keyPrefix + 'EditorTheme';
+      appTheme = load(THEME_KEY) || (systemPrefersDark() ? 'dark' : 'light');
+      editorTheme = load(EDITOR_THEME_KEY) || 'auto';
+      applyApp();
+      return svc;
+    },
+    // A snapshot the controller mirrors onto vm after each mutation. Toggling the app theme also
+    // moves editorApplied when the editor is on "auto", so callers re-read the whole state.
+    readState: function () {
+      return { theme: appTheme, editorTheme: editorTheme, editorApplied: resolveEditor() };
+    },
+    editorLabel: function () { return EDITOR_THEME_LABELS[editorTheme]; },
+    toggleApp: function () {
+      appTheme = appTheme === 'dark' ? 'light' : 'dark';
+      save(THEME_KEY, appTheme);
+      applyApp();
+    },
+    cycleEditor: function () {
+      editorTheme = EDITOR_THEME_ORDER[(EDITOR_THEME_ORDER.indexOf(editorTheme) + 1) % EDITOR_THEME_ORDER.length];
+      save(EDITOR_THEME_KEY, editorTheme);
+    },
+  };
+  return svc;
+}]]]></script>
+<sys_id>b2c3d4e5f65aa2d8cc00112233</sys_id>
+<sys_name>ThemeService</sys_name>
+<sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
+<sys_update_name>sp_angular_provider_b2c3d4e5f65aa2d8cc00112233</sys_update_name>
+</sp_angular_provider>
+<sp_angular_provider action="INSERT_OR_UPDATE">
+<active>true</active>
+<name>ConfirmModalService</name>
+<type>service</type>
+<script><![CDATA[[function () {
+  'use strict';
+
+  var svc = {
+    confirm: { open: false, title: '', body: '', cancel: '', ok: '' },
+  };
+  var callback = null;
+
+  svc.open = function (opts, onOk) {
+    opts = opts || {};
+    svc.confirm.title = opts.title || 'Are you sure?';
+    svc.confirm.body = opts.body || '';
+    svc.confirm.cancel = opts.cancel || 'Cancel';
+    svc.confirm.ok = opts.ok || 'Confirm';
+    callback = onOk;
+    svc.confirm.open = true;
+  };
+  svc.close = function () {
+    svc.confirm.open = false;
+    callback = null;
+  };
+  svc.accept = function () {
+    var cb = callback;
+    svc.close();
+    if (cb) { cb(); }
+  };
+
+  return svc;
+}]]]></script>
+<sys_id>b2c3d4e5f6bc325a0800112233</sys_id>
+<sys_name>ConfirmModalService</sys_name>
+<sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6bc325a0800112233</sys_update_name>
+</sp_angular_provider>
+<sp_angular_provider action="INSERT_OR_UPDATE">
+<active>true</active>
+<name>gsModal</name>
+<type>directive</type>
+<script><![CDATA[['$timeout', function ($timeout) {
+  return {
+    restrict: 'A',
+    link: function (scope, element, attrs) {
+      var root = element[0];
+      var lastFocus = document.activeElement;
+
+      $timeout(function () {
+        var target = attrs.gsModalFocus ? document.getElementById(attrs.gsModalFocus) : null;
+        if (!target) { target = root.querySelector('button, textarea'); }
+        if (target && target.focus) { target.focus(); }
+      });
+
+      // Only button/textarea count as tab-stops here, matching this app's other interactive
+      // controls (gs-select, condition rows) which aren't plain form fields.
+      function focusable() {
+        return Array.prototype.slice.call(root.querySelectorAll('button, textarea'))
+          .filter(function (el) { return !el.disabled && el.offsetParent !== null; });
+      }
+      function onKeydown(e) {
+        if (e.key === 'Escape') {
+          scope.$apply(function () { scope.$eval(attrs.gsModal); });
+          return;
+        }
+        if (e.key !== 'Tab') { return; }
+        var list = focusable();
+        if (!list.length) { return; }
+        var first = list[0], last = list[list.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+      document.addEventListener('keydown', onKeydown);
+
+      scope.$on('$destroy', function () {
+        document.removeEventListener('keydown', onKeydown);
+        if (lastFocus && lastFocus.focus) { lastFocus.focus(); }
+      });
+    }
+  };
+}]]]></script>
+<sys_id>b2c3d4e5f61150312100112233</sys_id>
+<sys_name>gsModal</sys_name>
+<sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
+<sys_update_name>sp_angular_provider_b2c3d4e5f61150312100112233</sys_update_name>
+</sp_angular_provider>
+<sp_angular_provider action="INSERT_OR_UPDATE">
+<active>true</active>
+<name>gsSyncAttr</name>
+<type>directive</type>
+<script><![CDATA[function () {
+  return {
+    restrict: 'A',
+    link: function (scope, el, attrs) {
+      var name = scope.$eval(attrs.gsSyncAttr);
+      function apply(val) {
+        if (val === null || val === undefined) { el.removeAttr(name); }
+        else { el.attr(name, val); }
+      }
+      apply(scope.$eval(attrs.gsSyncValue));
+      scope.$watch(attrs.gsSyncValue, apply);
+    }
+  };
+}]]></script>
+<sys_id>b2c3d4e5f65465683800112233</sys_id>
+<sys_name>gsSyncAttr</sys_name>
+<sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
+<sys_update_name>sp_angular_provider_b2c3d4e5f65465683800112233</sys_update_name>
+</sp_angular_provider>
+<sp_angular_provider action="INSERT_OR_UPDATE">
+<active>true</active>
 <name>SchemaService</name>
 <type>service</type>
 <script><![CDATA[function () {
@@ -6325,15 +6500,15 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
   </div>
 
   <!-- ng-show, not ng-if: this pane used to be destroyed/recreated on every Standards entry/exit,
-       and even with core-sync-attr setting data-editor-theme synchronously (so the attribute is never
+       and even with gs-sync-attr setting data-editor-theme synchronously (so the attribute is never
        actually missing on a live digest), a freshly-inserted subtree's CSS custom properties could
        still show a one-frame flash of the wrong (light) colors in dark mode - a browser rendering
        quirk on brand new nodes, not an Angular timing gap. ng-show never destroys the element; it
        just toggles display:none (zero layout cost, same as ng-if, since it's THE global .ng-hide
        rule), so there's no fresh insertion event at all when leaving Standards. (The SEPARATE
-       raw-HTML-paints-before-Angular-bootstraps gap that core-sync-attr alone doesn't cover is handled
+       raw-HTML-paints-before-Angular-bootstraps gap that gs-sync-attr alone doesn't cover is handled
        once, at the root - see the ng-cloak comment on .app above - not per-element here.) -->
-  <div class="output-pane" ng-show="vm.activeMode !== 'Settings' && vm.activeMode !== 'Standards'" core-sync-attr="'data-editor-theme'" core-sync-value="vm.editorThemeApplied">
+  <div class="output-pane" ng-show="vm.activeMode !== 'Settings' && vm.activeMode !== 'Standards'" gs-sync-attr="'data-editor-theme'" gs-sync-value="vm.editorThemeApplied">
     <div class="out-top">
       <span class="title">{{vm.outputTitle()}}</span>
       <button type="button" class="editor-theme-toggle" ng-click="vm.cycleEditorTheme()"
@@ -6448,7 +6623,7 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
     </div>
   </div>
 
-  <div class="modal-overlay" ng-if="vm.preview.open" core-modal="vm.closePreview()" core-modal-focus="previewCloseBtn" ng-click="$event.target === $event.currentTarget && vm.closePreview()">
+  <div class="modal-overlay" ng-if="vm.preview.open" gs-modal="vm.closePreview()" gs-modal-focus="previewCloseBtn" ng-click="$event.target === $event.currentTarget && vm.closePreview()">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Record preview">
       <div class="modal-head">
         <span ng-if="vm.preview.kind !== 'stats'">Record preview - <code>{{vm.preview.table}}</code></span>
@@ -6477,7 +6652,7 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
     </div>
   </div>
 
-  <div class="modal-overlay" ng-if="vm.confirm.open" core-modal="vm.closeConfirm()" core-modal-focus="confirmCancelBtn">
+  <div class="modal-overlay" ng-if="vm.confirm.open" gs-modal="vm.closeConfirm()" gs-modal-focus="confirmCancelBtn">
     <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
       <div class="modal-head">
         <span id="confirmTitle">{{vm.confirm.title}}</span>

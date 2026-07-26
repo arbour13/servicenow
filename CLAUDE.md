@@ -35,44 +35,43 @@ Two top-level groups under `ServiceNow/`:
 - `apps/` — **all the applications you build** (each flat: `index.html` + `js/` + `scss/` +
   `scripts/` + `css/` + `package.json` at the app root, served relative so one `ServiceNow/`-root
   server serves them all):
-  - **Deployed AngularJS SN apps** — the conventions below apply to these: `apps/core/` (the
-    **GlideFast Core** app, Angular module `glidefastCore`: shared providers other apps inject +
-    a generic doc/wiki widget), `apps/glide-studio/`, `apps/standards/`.
+  - **Deployed AngularJS SN apps** — the conventions below apply to these: `apps/glide-studio/`,
+    `apps/standards/`.
   - **CONVENTION-EXEMPT apps** — generators / not-yet-AngularJS, until converted:
     `apps/theme-generator/`, `apps/widget-studio/`, `apps/scss-mixin-generator/`,
     `apps/delivery-methodology/`.
 - `tools/` — **build tooling**, never deployed:
   - `tools/sn-deployment-packager/` — assembles ServiceNow Update Set XML (runs in Node/browser at
     build time).
-  - `tools/theme-foundation/` — the suite's SCSS `!default` design-token source (`_tokens.scss`),
-    inlined into each widget's `<css>` at build by the SN Deployment Packager (live — `apps/core`
-    consumes it; see `tools/theme-foundation/SETUP.md` to wire up an app).
 
 **All paths are relative** — an app's own files (`js/app.module.js`, not `/js/...`) AND cross-tree
-references (Core, the SN Deployment Packager) use relative paths too: from an app at
-`apps/<app>/`, reach Core at `../core/js/…` and the SN Deployment Packager at
-`../../tools/sn-deployment-packager/…`. Relative (not absolute `/apps/core/…`)
-so an app works regardless of where the dev server is rooted — absolute paths silently 404 unless the
-server root is exactly `ServiceNow/`, which breaks the app (Angular can't load the `core` module → the
-app fails to bootstrap and shows raw `{{ }}`). Navigate to **trailing-slash** URLs
-(`/apps/glide-studio/`, not `…/index.html`) so relative paths resolve.
+references (the SN Deployment Packager) use relative paths too: from an app at `apps/<app>/`, reach
+the SN Deployment Packager at `../../tools/sn-deployment-packager/…`. Relative (not absolute
+`/tools/sn-deployment-packager/…`) so an app works regardless of where the dev server is rooted —
+absolute paths silently 404 unless the server root is exactly `ServiceNow/`, which breaks the app's
+own deploy tooling. Navigate to **trailing-slash** URLs (`/apps/glide-studio/`, not `…/index.html`)
+so relative paths resolve.
 
-## Shared code is two different problems — don't conflate them
+## Shared code
 
-1. **Build-time libraries** (`tools/sn-deployment-packager`, `tools/theme-foundation`) run on your machine to
-   *produce* an app's deployed artifacts. They never ship into ServiceNow. Framework-agnostic (plain
-   Node JS) is fine and preferred here.
-2. **Runtime shared code** — all deployed apps are AngularJS sharing ONE Service Portal Angular
-   injector per page. So shared runtime services/directives live as AngularJS providers in the
-   **Core app** (`glidefastCore` module), deployed ONCE, and consumer apps inject them **by name**.
-   Do NOT vendor or duplicate runtime code into each app. (A consumer app's dev harness lists
-   `glidefastCore` as a module dependency and loads Core's provider files locally; in the deployed
-   Service Portal, providers register into the shared injector, so by-name injection just works as
-   long as Core is installed.)
+**Build-time libraries** (`tools/sn-deployment-packager`) run on your machine to *produce* an app's
+deployed artifacts. They never ship into ServiceNow. Framework-agnostic (plain Node JS) is fine and
+preferred here.
 
-Extraction judgment (both kinds): one concern per shared module; extract only *real* duplication
-(2+ apps carrying substantively the same logic, or explicitly-known future need) — a superficially
-similar 5-20 line helper implemented differently per app is not worth a shared abstraction.
+**There is currently no shared *runtime* mechanism.** Each deployed app is fully self-contained —
+even a provider genuinely needed by more than one app (e.g. a `ThemeService` light/dark toggle) is
+vendored into every app that uses it, namespaced to that app's own localStorage key, rather than
+injected by name from a common module. (A prior "Core" app hosted shared AngularJS providers that
+consumer apps injected by name from one Service Portal page injector; it was removed 2026-07-26
+after recon showed only one small service was genuinely shared across apps, while the mechanism's
+cost — every consumer silently depending on Core being installed first, with nothing enforcing that
+order — outweighed the few lines it saved. See git history around that date if a real multi-app
+runtime-sharing need reappears, rather than reinventing it from scratch.)
+
+Extraction judgment (build-time or, if reintroduced, runtime): one concern per shared module;
+extract only *real* duplication (2+ apps carrying substantively the same logic, or explicitly-known
+future need) — a superficially similar 5-20 line helper implemented differently per app is not worth
+a shared abstraction.
 
 **Deliberately paired content — keep in sync, don't merge:**
 `apps/glide-studio/standards/glidefast-scripting-standards.md` and
@@ -120,9 +119,6 @@ path** — no vendoring:
   probing each `apps/<app>/deploy.manifest.js`; an app with no such file just doesn't show up in
   its dropdown - see "The deploy.manifest.js descriptor" below.
 
-Same idea for **runtime shared providers**: a consumer app's dev harness loads Core's provider files
-by relative path (`<script src="../core/js/services/theme.service.js">`), so nothing is copied per app.
-
 ### The `deploy.manifest.js` descriptor
 
 Every deployable app has ONE `deploy.manifest.js` at its own root - the single source of truth for
@@ -144,9 +140,12 @@ updates the same records instead of duplicating them — see `core.js`'s `derive
 ## Styling
 
 A widget's own `<css>` field is the *sole* styling carrier — there is no separate `sp_css` Include
-or Theme-variable dependency. It bundles `$token: value !default;` declarations (from
-`tools/theme-foundation`, inlined by the SN Deployment Packager) plus its own scoped rules, so it adopts whatever portal
-theme it's dropped into if that theme already defines the token, and falls back to its own bundled
-default otherwise. Never depend on a class or variable that only exists in one specific portal's
-theme (e.g. HomeSpace) — that breaks portability to any other instance/portal. The runtime light/dark
-toggle is a separate concern: a shared `ThemeService` provider in Core (`data-theme` on `<html>`).
+or Theme-variable dependency. Each app authors its own `$token: value !default;` declarations
+directly, plus its own scoped rules, so it adopts whatever portal theme it's dropped into if that
+theme already defines the token, and falls back to its own bundled default otherwise. (An app can
+also opt into a *shared* token partial via `manifest.sharedScssPartials` — see
+`tools/sn-deployment-packager/manifest.schema.md` — though no app currently uses this.) Never depend
+on a class or variable that only exists in one specific portal's theme (e.g. HomeSpace) — that
+breaks portability to any other instance/portal. The runtime light/dark toggle is a separate
+concern: each app vendors its own `ThemeService` provider (`data-theme` on `<html>`), namespaced to
+that app's own localStorage key.
