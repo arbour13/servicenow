@@ -2064,9 +2064,6 @@ class Component extends DCLogic {
       background:this.dark?'#2d333b':'#24292f',color:'#fff',boxShadow:'0 4px 14px rgba(0,0,0,.28)',
       animation:'wsFadeIn .12s ease-out'}}, body);
   }
-  // Segmented pill row. Selected = SOFT TINT (accentSoft fill + accent text + accent border), matching the
-  // approved design and the Display icon tiles — deliberately not a solid accentFill/white-text pill.
-  seg(t,opts,cur,onPick,opt){ opt=opt||{}; const h=React.createElement; return h('div',{role:'group','aria-label':opt.aria||undefined,style:{display:'flex',gap:2,background:t.segBg,border:'1px solid '+t.border,borderRadius:7,padding:2}}, opts.map(o=>{ const val=o.v!==undefined?o.v:o; const lbl=o.l!==undefined?o.l:o; const on=cur===val; return h('div',Object.assign({key:String(val),onClick:()=>onPick(val)},this.a11y(()=>onPick(val),{pressed:on}),{style:{flex:opt.fill?1:'none',textAlign:'center',cursor:'pointer',padding:opt.pad||'4px 10px',fontSize:12,borderRadius:5,whiteSpace:'nowrap',boxSizing:'border-box',color:on?t.accent:t.muted,background:on?t.accentSoft:'transparent',border:'1px solid '+(on?t.accent:'transparent'),fontWeight:on?600:500,transition:'none'}}),lbl); })); }
   // A segmented control where the selection SLIDES between equal-width options, instead of each
   // button independently swapping its own background (what seg()/the old grainSwitch/Width switcher
   // did). Every segment is the same width, so the indicator needs no DOM measurement — its position
@@ -3961,12 +3958,6 @@ class Component extends DCLogic {
   // (gl()'s bars/dots) are already unambiguous alone — the header's breakpoint switcher works the same way.
   // `aria` names the row (role="group") — Justify and Align both expose tiles labeled just
   // Start/Center/End, so without a group label the pairs are indistinguishable to a screen reader.
-  iconRow(t,opts,cur,onPick,aria){ const h=React.createElement;
-    return h('div',{role:'group','aria-label':aria||undefined,style:{display:'flex',gap:5}}, opts.map(o=>{ const on=cur===o.v;
-      return h('div',Object.assign({key:o.v,onClick:()=>onPick(o.v)},this.a11y(()=>onPick(o.v),{pressed:on,label:o.title}),this.tt(o.title),
-        {style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),
-        o.icon); }));
-  }
   // Same call signature as iconRow (items: [{v,title,icon}]) but rendered via segSlider instead of
   // independently-toggling buttons — a drop-in swap at most call sites. `solid` switches the
   // indicator to accentFill/white (for a surface already tinted accentSoft — IN PARENT — where the
@@ -3975,6 +3966,14 @@ class Component extends DCLogic {
   iconSlider(t,items,cur,onPick,aria,solid){ const idx=items.findIndex(o=>o.v===cur);
     return this.segSlider(t, items.map(o=>({v:o.v,label:o.title,tt:o.title,render:()=>o.icon})), idx<0?0:idx, onPick,
       {aria, indicatorBg:solid?t.accentFill:t.accentSoft, onColor:solid?'#fff':t.accent}); }
+  // Same call signature as seg() (items: [{v,l}]) but rendered via segSlider instead of
+  // independently-toggling buttons — a drop-in swap at most call sites. Forwards opt.pad since
+  // seg()'s callers each pick their own vertical density (6px 0 / 5px 0 / 3px 0) and segSlider's
+  // own default doesn't match all of them.
+  segTextSlider(t,opts,cur,onPick,opt){ opt=opt||{};
+    const items=opts.map(o=>{ const val=o.v!==undefined?o.v:o; const lbl=o.l!==undefined?o.l:o; return {v:val,label:String(lbl),tt:String(lbl),render:()=>lbl}; });
+    const idx=items.findIndex(o=>o.v===cur);
+    return this.segSlider(t,items,idx<0?0:idx,onPick,{aria:opt.aria,pad:opt.pad,indicatorBg:t.accentSoft,onColor:t.accent}); }
   // Flex Direction / Justify / Align / Wrap glyphs. Direction/Wrap use a 1.6 stroke to sit in the same
   // visual weight as the display icons (gl block/flex/grid, 1.5px borders); Justify/Align frames+bars are
   // enlarged to fill more of the icon box. `size` scales the whole glyph (callers render these bigger than
@@ -4541,11 +4540,11 @@ class Component extends DCLogic {
       if(node.data.tag==='img'){ els.push(h('div',{key:'src',style:{marginTop:10}}, this.lbl(t,'Image URL'), this.bindField(t,node,'src',node.data.src,v=>this.patch(node.id,n=>n.data.src=v)))); els.push(h('div',{key:'alt',style:{marginTop:10}}, this.lbl(t,'Alt text'), this.bindField(t,node,'alt',node.data.alt,v=>this.patch(node.id,n=>n.data.alt=v),{ph:'Describe the image (accessibility)'}))); }
       // ul/ol are one palette entry ("list") — this is where the user actually picks bulleted vs
       // numbered, instead of hunting for it in the generic Element tag dropdown above.
-      if(['ul','ol'].includes(node.data.tag)) { els.push(h('div',{key:'lty'}, this.lbl(t,'List style'), this.seg(t,[{v:'ul',l:'Bulleted'},{v:'ol',l:'Numbered'}],node.data.tag,v=>this.patch(node.id,n=>n.data.tag=v),{fill:true,pad:'5px 0'}))); }
+      if(['ul','ol'].includes(node.data.tag)) { els.push(h('div',{key:'lty'}, this.lbl(t,'List style'), this.segTextSlider(t,[{v:'ul',l:'Bulleted'},{v:'ol',l:'Numbered'}],node.data.tag,v=>this.patch(node.id,n=>n.data.tag=v),{pad:'5px 0'}))); }
     }
     if(['button','alert','badge','checkbox','radio'].includes(node.type)) { els.push(h('div',{key:'txt'}, this.lbl(t,'Text'), this.bindField(t,node,'text',node.text,v=>this.patch(node.id,n=>n.text=v),{default:this.factoryText(node)}))); }
     if(node.type==='el'&&node.data.bs==='panel'){ els.push(h('div',{key:'pvar',style:{marginTop:2}}, this.lbl(t,'Variant'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:4}}, ['default','primary','success','info','warning','danger'].map(v=>this.vchip(t,v,(node.data.bsVariant||'default')===v,(this.PANEL[v]||{}).hbg,()=>this.setPanelVariant(node,v)))))); }
-    if(node.type==='button'){ els.push(h('div',{key:'bv',style:{marginTop:10}}, this.lbl(t,'Variant'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:4}}, variants.map(v=>this.vchip(t,v,node.variant===v,(this.BTN[v]||{}).bg,()=>this.patch(node.id,n=>n.variant=v)))))); els.push(h('div',{key:'bs',style:{marginTop:10}}, this.lbl(t,'Size'), this.seg(t,[{v:'sm',l:'Small'},{v:'md',l:'Default'},{v:'lg',l:'Large'}],node.data.size||'md',v=>this.patch(node.id,n=>n.data.size=v),{fill:true,pad:'5px 0'}))); }
+    if(node.type==='button'){ els.push(h('div',{key:'bv',style:{marginTop:10}}, this.lbl(t,'Variant'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:4}}, variants.map(v=>this.vchip(t,v,node.variant===v,(this.BTN[v]||{}).bg,()=>this.patch(node.id,n=>n.variant=v)))))); els.push(h('div',{key:'bs',style:{marginTop:10}}, this.lbl(t,'Size'), this.segTextSlider(t,[{v:'sm',l:'Small'},{v:'md',l:'Default'},{v:'lg',l:'Large'}],node.data.size||'md',v=>this.patch(node.id,n=>n.data.size=v),{pad:'5px 0'}))); }
     if(node.type==='alert') { els.push(h('div',{key:'av',style:{marginTop:10}}, this.lbl(t,'Variant'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:4}}, ['success','info','warning','danger'].map(v=>this.vchip(t,v,node.variant===v,this.ALERT[v].bg,()=>this.patch(node.id,n=>n.variant=v)))))); }
     if(node.type==='badge') { els.push(h('div',{key:'lv',style:{marginTop:10}}, this.lbl(t,'Variant'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:4}}, Object.keys(this.LABELC).map(v=>this.vchip(t,v,node.variant===v,this.LABELC[v],()=>this.patch(node.id,n=>n.variant=v)))))); }
     if(node.type==='panel'){ els.push(h('div',{key:'ph'}, this.lbl(t,'Heading'), this.bindField(t,node,'pheading',node.data.heading,v=>this.patch(node.id,n=>n.data.heading=v),{default:'Panel title'}))); els.push(h('div',{key:'pv',style:{marginTop:10}}, this.lbl(t,'Style'), h('div',{style:{display:'flex',flexWrap:'wrap',gap:4}}, ['default','primary','success','info','warning','danger'].map(v=>this.vchip(t,v,node.variant===v,this.LABELC[v],()=>this.patch(node.id,n=>n.variant=v)))))); els.push(h('div',{key:'pbody',style:{marginTop:10,fontSize:11,color:t.faint,lineHeight:1.5}},'Drop elements into the panel body on the canvas to fill it.')); els.push(h('div',{key:'pbreak',style:{marginTop:12}}, h('div',{onClick:()=>this.breakApartPanel(node),style:{cursor:'pointer',textAlign:'center',padding:'8px 0',fontSize:12,fontWeight:600,color:t.accent,border:'1px solid '+t.border,borderRadius:6,background:t.panel}},'⤢  Break apart into elements'), h('div',{style:{fontSize:11,color:t.faint,marginTop:6,lineHeight:1.5}},'Expands into editable ',h('code',{style:{color:t.muted}},'div.panel'),' HTML (heading + body as real elements).'))); }
@@ -4958,7 +4957,7 @@ class Component extends DCLogic {
     const setColMode=v=>{ if(v===colMode) { return; } if(v==='auto') { this.setCS(node,'gridTemplateColumns',autoTemplate); } else { this.setCS(node,'gridTemplateColumns',cols.join(' ')); } };
     els.push(h('div',{key:'colhdr',style:{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'18px 0 6px'}},
       h('span',{style:{fontSize:11,fontWeight:600,color:t.muted}},'Columns'),
-      h('div',{style:{width:120}}, this.seg(t,[{v:'fixed',l:'Fixed'},{v:'auto',l:'Auto'}],colMode,setColMode,{fill:true,pad:'3px 0'}))));
+      h('div',{style:{width:120}}, this.segTextSlider(t,[{v:'fixed',l:'Fixed'},{v:'auto',l:'Auto'}],colMode,setColMode,{pad:'3px 0'}))));
     if(colMode==='fixed'){
       els.push(h('div',{key:'coltracks',style:{display:'flex',flexDirection:'column',gap:5}}, cols.map((c,i)=>trackRow(cols,i,setCols,1))));
       els.push(addBtn('+ Add column',()=>setCols(cols.concat('1fr'))));
@@ -4966,7 +4965,7 @@ class Component extends DCLogic {
       const rebuild=(mn,mx)=>this.setCS(node,'gridTemplateColumns','repeat('+autoMode+', minmax('+(mn||'0')+', '+(mx||'1fr')+'))');
       const norm=raw=>{ let v=(raw||'').trim(); if(v&&/^[0-9.]+$/.test(v)) { v=v+'px'; } return v; };
       const mmField={width:'100%',height:30,border:'1px solid '+t.border,borderRadius:6,background:t.panel,color:t.text,fontSize:12,padding:'0 9px',outline:'none',boxSizing:'border-box',fontFamily:'ui-monospace,monospace'};
-      els.push(h('div',{key:'automode'}, this.seg(t,[{v:'auto-fill',l:'Auto-fill'},{v:'auto-fit',l:'Auto-fit'}],autoMode,v=>this.setCS(node,'gridTemplateColumns','repeat('+v+', minmax('+(autoMin||'0')+', '+(autoMax||'1fr')+'))'),{fill:true,pad:'6px 0'})));
+      els.push(h('div',{key:'automode'}, this.segTextSlider(t,[{v:'auto-fill',l:'Auto-fill'},{v:'auto-fit',l:'Auto-fit'}],autoMode,v=>this.setCS(node,'gridTemplateColumns','repeat('+v+', minmax('+(autoMin||'0')+', '+(autoMax||'1fr')+'))'),{pad:'6px 0'})));
       els.push(h('div',{key:'autominmax',style:{display:'flex',gap:8,marginTop:8}},
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Min width'), h('input',{value:autoMin.replace(/px$/,''),placeholder:'200',spellCheck:false,onChange:e=>rebuild(norm(e.target.value)||'0',autoMax),style:mmField})),
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Max'), h('input',{value:autoMax==='1fr'?'':autoMax.replace(/px$/,''),placeholder:'1fr',spellCheck:false,onChange:e=>rebuild(autoMin,norm(e.target.value)||'1fr'),style:mmField}))));
@@ -4982,11 +4981,11 @@ class Component extends DCLogic {
     // own Justify/Align, and this same grid's Justify self/Align self just below); the reference
     // mockup used dropdowns here, but that was its own inconsistency with its identical flex rows.
     els.push(h('div',{key:'alignx',style:{marginTop:16}}, this.subHead(t,'Align X'),
-      this.iconRow(t,[{v:'stretch',title:'Stretch',icon:gIc('j-stretch')},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')}],jItems,v=>this.setCS(node,'justifyItems',v),'Align X')));
+      this.iconSlider(t,[{v:'stretch',title:'Stretch',icon:gIc('j-stretch')},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')}],jItems,v=>this.setCS(node,'justifyItems',v),'Align X')));
     els.push(h('div',{key:'aligny',style:{marginTop:16}}, this.subHead(t,'Align Y'),
-      this.iconRow(t,[{v:'stretch',title:'Stretch',icon:gIc('a-stretch')},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')}],aItems,v=>this.setCS(node,'alignItems',v),'Align Y')));
+      this.iconSlider(t,[{v:'stretch',title:'Stretch',icon:gIc('a-stretch')},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')}],aItems,v=>this.setCS(node,'alignItems',v),'Align Y')));
     const flow=this.csVal(node,'gridAutoFlow')||'row';
-    els.push(h('div',{key:'flow',style:{marginTop:12}}, this.lbl(t,'Auto flow'), this.seg(t,[{v:'row',l:'Row'},{v:'column',l:'Column'},{v:'dense',l:'Dense'}],flow.indexOf('dense')>=0?'dense':flow,v=>this.setCS(node,'gridAutoFlow',v),{fill:true,pad:'6px 0'})));
+    els.push(h('div',{key:'flow',style:{marginTop:12}}, this.lbl(t,'Auto flow'), this.segTextSlider(t,[{v:'row',l:'Row'},{v:'column',l:'Column'},{v:'dense',l:'Dense'}],flow.indexOf('dense')>=0?'dense':flow,v=>this.setCS(node,'gridAutoFlow',v),{pad:'6px 0'})));
     return h('div',null,els); }
   // Flex child (reference): Align self, Sizing (auto/fill/grow/shrink/fixed/custom → grow+shrink+basis), Order.
   // Both rows are icon-tiles (this.iconRow), not word pills — matches Display/Direction/Justify/Align.
@@ -5157,19 +5156,19 @@ class Component extends DCLogic {
       // "the control does nothing." Selected state always reads live from csVal(...)||<default>.
       const dir=this.csVal(node,'flexDirection')||'row';
       dyn.push(h('div',{key:'dir',style:{marginTop:16}}, this.subHead(t,'Direction'),
-        this.iconRow(t,[{v:'row',title:'Row',icon:dirIc('row')},{v:'column',title:'Column',icon:dirIc('column')},{v:'row-reverse',title:'Row reverse',icon:dirIc('row-reverse')},{v:'column-reverse',title:'Column reverse',icon:dirIc('column-reverse')}],dir,
+        this.iconSlider(t,[{v:'row',title:'Row',icon:dirIc('row')},{v:'column',title:'Column',icon:dirIc('column')},{v:'row-reverse',title:'Row reverse',icon:dirIc('row-reverse')},{v:'column-reverse',title:'Column reverse',icon:dirIc('column-reverse')}],dir,
           v=>this.flipLayout(node,()=>this.setCS(node,'flexDirection',v)),'Direction')));
       const just=this.csVal(node,'justifyContent')||'flex-start';
       dyn.push(h('div',{key:'just',style:{marginTop:16}}, this.subHead(t,'Justify'),
-        this.iconRow(t,[{v:'flex-start',title:'Start',icon:jaIc('j-flex-start')},{v:'center',title:'Center',icon:jaIc('j-center')},{v:'flex-end',title:'End',icon:jaIc('j-flex-end')},{v:'space-between',title:'Space between',icon:jaIc('j-space-between')},{v:'space-around',title:'Space around',icon:jaIc('j-space-around')}],just,
+        this.iconSlider(t,[{v:'flex-start',title:'Start',icon:jaIc('j-flex-start')},{v:'center',title:'Center',icon:jaIc('j-center')},{v:'flex-end',title:'End',icon:jaIc('j-flex-end')},{v:'space-between',title:'Space between',icon:jaIc('j-space-between')},{v:'space-around',title:'Space around',icon:jaIc('j-space-around')}],just,
           v=>this.setCS(node,'justifyContent',v),'Justify')));
       const align=this.csVal(node,'alignItems')||'stretch';
       dyn.push(h('div',{key:'align',style:{marginTop:16}}, this.subHead(t,'Align'),
-        this.iconRow(t,[{v:'flex-start',title:'Start',icon:jaIc('a-flex-start')},{v:'center',title:'Center',icon:jaIc('a-center')},{v:'flex-end',title:'End',icon:jaIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:jaIc('a-stretch')},{v:'baseline',title:'Baseline',icon:jaIc('a-baseline')}],align,
+        this.iconSlider(t,[{v:'flex-start',title:'Start',icon:jaIc('a-flex-start')},{v:'center',title:'Center',icon:jaIc('a-center')},{v:'flex-end',title:'End',icon:jaIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:jaIc('a-stretch')},{v:'baseline',title:'Baseline',icon:jaIc('a-baseline')}],align,
           v=>this.setCS(node,'alignItems',v),'Align')));
       const wrap=this.csVal(node,'flexWrap')||'nowrap';
       dyn.push(h('div',{key:'wr',style:{marginTop:16}}, this.subHead(t,'Wrap'),
-        this.iconRow(t,[{v:'nowrap',title:'No wrap',icon:dirIc('w-nowrap')},{v:'wrap',title:'Wrap',icon:dirIc('w-wrap')}],wrap,
+        this.iconSlider(t,[{v:'nowrap',title:'No wrap',icon:dirIc('w-nowrap')},{v:'wrap',title:'Wrap',icon:dirIc('w-wrap')}],wrap,
           v=>this.flipLayout(node,()=>this.setCS(node,'flexWrap',v)),'Wrap')));
       if(wrap!=='nowrap'){
         const ac=this.csVal(node,'alignContent')||'stretch';
@@ -5249,7 +5248,7 @@ class Component extends DCLogic {
       els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Children'), this.selectField(t,[['fill','Fill space'],['fit','Fit content'],['manual','Manual']],childMode,
         v=>this.setCS(node,'alignItems', v==='fill'?'stretch':(v==='fit'?'flex-start':'')))));
       els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Overflow'),
-        this.seg(t,[{v:'visible',l:'Visible'},{v:'hidden',l:'Hidden'},{v:'auto',l:'Auto'},{v:'scroll',l:'Scroll'}],this.csVal(node,'overflow')||'visible',v=>this.setCS(node,'overflow',v),{fill:true,pad:'6px 0'})));
+        this.segTextSlider(t,[{v:'visible',l:'Visible'},{v:'hidden',l:'Hidden'},{v:'auto',l:'Auto'},{v:'scroll',l:'Scroll'}],this.csVal(node,'overflow')||'visible',v=>this.setCS(node,'overflow',v),{pad:'6px 0'})));
     }
     return h('div',null,els);
   }
@@ -5584,7 +5583,7 @@ class Component extends DCLogic {
       (()=>{ const tmode=this.truncMode(node); const clampN=(this.csVal(node,'WebkitLineClamp')||'2').toString();
         return h('div',null,
           this.lbl(t,'Truncate'),
-          this.seg(t,[{v:'wrap',l:'Wrap'},{v:'ellipsis',l:'Ellipsis'},{v:'clamp',l:'Clamp'}],tmode,v=>this.setTrunc(node,v),{fill:true,pad:'6px 0'}),
+          this.segTextSlider(t,[{v:'wrap',l:'Wrap'},{v:'ellipsis',l:'Ellipsis'},{v:'clamp',l:'Clamp'}],tmode,v=>this.setTrunc(node,v),{pad:'6px 0'}),
           tmode==='clamp'?h('div',{style:{marginTop:8}}, this.lbl(t,'Max lines'), this.selectField(t,['1','2','3','4','5','6'],clampN,v=>this.setCS(node,'WebkitLineClamp',v))):null); })(),
       // Raw white-space control. Shares the whiteSpace property with the Truncate modes above
       // (Ellipsis sets nowrap; both read/write the same csVal), so the select always shows the
@@ -5642,7 +5641,7 @@ class Component extends DCLogic {
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Repeat'), this.selectField(t,[['no-repeat','No repeat'],['repeat','Repeat'],['repeat-x','Repeat X'],['repeat-y','Repeat Y']],this.csVal(node,'backgroundRepeat')||'no-repeat',v=>this.setCS(node,'backgroundRepeat',v==='no-repeat'?'':v)))));
       body.push(h('div',{key:'fb',style:{marginTop:8}}, this.colorInlineField(t,node,'backgroundColor',{noAlpha:true,placeholder:'Fallback'}))); }
     return h('div',null,
-      h('div',{style:{marginBottom:10}}, this.seg(t,[{v:'solid',l:'Solid'},{v:'gradient',l:'Gradient'},{v:'image',l:'Image'}],type,v=>this.switchBgType(node,v),{fill:true,pad:'6px 0'})),
+      h('div',{style:{marginBottom:10}}, this.segTextSlider(t,[{v:'solid',l:'Solid'},{v:'gradient',l:'Gradient'},{v:'image',l:'Image'}],type,v=>this.switchBgType(node,v),{pad:'6px 0'})),
       body); }
   // ---- Border ----
   // Border style as 4 line-preview swatches (not a <select>) — each button renders the actual rule style
@@ -5739,7 +5738,7 @@ class Component extends DCLogic {
     const axes = tab==='skew'?['x','y']:['x','y','z'];
     const setAxis=(ax,v)=>{ const o=JSON.parse(JSON.stringify(xf)); o[tab][ax]=(v.trim()===''?(tab==='scale'?'100':'0'):v.trim()); this.setCS(node,'transform',this.composeTransform(o)); };
     const axLabel={x:'X',y:'Y',z:'Z'};
-    const seg=this.seg(t,[{v:'move',l:'Move'},{v:'scale',l:'Scale'},{v:'rotate',l:'Rotate'},{v:'skew',l:'Skew'}],tab,setTab,{fill:true,pad:'6px 0'});
+    const seg=this.segTextSlider(t,[{v:'move',l:'Move'},{v:'scale',l:'Scale'},{v:'rotate',l:'Rotate'},{v:'skew',l:'Skew'}],tab,setTab,{pad:'6px 0'});
     const trans=this.parseTransitions(this.csVal(node,'transition')||'');
     const setTrans=list=>this.setCS(node,'transition', list.length?this.composeTransitions(list):'');
     const propOpts=[['all','All properties'],['opacity','Opacity'],['transform','Transform'],['background','Background'],['color','Color']];
@@ -6427,7 +6426,7 @@ class Component extends DCLogic {
     const commonMenu=this._optCommonOpen?h('div',{style:{position:'absolute',top:38,right:0,width:238,maxWidth:'calc(100vw - 24px)',zIndex:6,background:t.panel,border:'1px solid '+t.border,borderRadius:9,padding:5,boxShadow:'0 12px 30px rgba(31,35,40,.18)'}}, this.OPT_COMMON().map((c,i)=>{ const used=list.some(o=>o.name===c.name); return h('div',{key:i,onClick:()=>{ if(!used){ this.addOption(c); } },style:{padding:'7px 9px',borderRadius:6,cursor:used?'default':'pointer',opacity:used?.45:1},onMouseEnter:e=>{if(!used){ e.currentTarget.style.background=t.panel2; }},onMouseLeave:e=>e.currentTarget.style.background='transparent'}, h('div',{style:{fontSize:12.5,fontWeight:600,color:t.text}},c.label), h('div',{style:{fontSize:10.5,color:t.muted,fontFamily:'ui-monospace,monospace',marginTop:1}},c.name+' \u00b7 '+c.type+(used?' \u00b7 added':''))); })):null;
     const head=h('div',{style:{padding:'12px 14px 11px',borderBottom:'1px solid '+t.border,flexShrink:0,display:'flex',flexDirection:'column',gap:9}},
       h('div',{style:{display:'flex',alignItems:'center'}}, h('div',{style:{flex:1,fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'.04em',color:t.faint}},'Option schema'), h('span',{style:{fontSize:11,color:t.muted}},list.length+' option'+(list.length===1?'':'s'))),
-      this.seg(t,[{v:'builder',l:'Builder'},{v:'json',l:'JSON'}], this._optJson?'json':'builder', v=>{this._optJson=(v==='json');this._optCommonOpen=false;this.forceUpdate();}),
+      this.segTextSlider(t,[{v:'builder',l:'Builder'},{v:'json',l:'JSON'}], this._optJson?'json':'builder', v=>{this._optJson=(v==='json');this._optCommonOpen=false;this.forceUpdate();}),
       this._optJson?null:h('div',{style:{display:'flex',gap:7}}, h('div',{style:{flex:1}},primary('\uff0b Add option',()=>this.addOption())), h('div',{style:{position:'relative'}}, ghost(h('span',{style:{display:'inline-flex',alignItems:'center',gap:5}},'Common',this.chev('down',9)),()=>{this._optCommonOpen=!this._optCommonOpen;this.forceUpdate();}), this._optCommonOpen?h('div',{onClick:()=>{this._optCommonOpen=false;this.forceUpdate();},style:{position:'fixed',inset:0,zIndex:5}}):null, commonMenu))
     );
     let body;
@@ -6836,7 +6835,7 @@ class Component extends DCLogic {
         ),
         f.preflight?null:h('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'10px 20px',borderBottom:'1px solid '+t.border,background:t.panel2||t.segBg}},
           h('span',{style:{fontSize:12,fontWeight:600,color:t.text}},'Units'),
-          this.seg(t,[{v:'px',l:'px'},{v:'rem',l:'rem'}],this.exportUnit,v=>{this.exportUnit=v;this.forceUpdate();}),
+          this.segTextSlider(t,[{v:'px',l:'px'},{v:'rem',l:'rem'}],this.exportUnit,v=>{this.exportUnit=v;this.forceUpdate();}),
           this.exportUnit!=='px'?h('span',{style:{display:'flex',alignItems:'center',gap:6,fontSize:12,color:t.muted}},
             h('span',null,'Base font size'),
             h('input',{type:'number',min:1,value:this.exportBase,onChange:e=>{this.exportBase=parseFloat(e.target.value)||16;this.forceUpdate();},style:{width:54,height:28,border:'1px solid '+t.border,borderRadius:6,padding:'0 8px',fontSize:12,color:t.text,background:t.panel,outline:'none'}}),
