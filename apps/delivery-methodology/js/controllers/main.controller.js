@@ -12,8 +12,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  // ThemeService is the shared Core provider (see apps/core/js/services/theme.service.js) - init
-  // it with this app's own key prefix so its stored preference doesn't collide with any other
+  // Init with this app's own key prefix so its stored preference doesn't collide with any other
   // app's. vm.theme is a thin display mirror the template reads; this app has no separate
   // code-editor pane, so only the app-level theme half of the service is used.
   ThemeService.init('deliveryMethodology');

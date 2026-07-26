@@ -45,9 +45,9 @@
       angularModuleName: 'standardsPortal',
       widgetScopeClass: 'gfsp-widget',
       providers: [
+        { file: 'js/services/theme.service.js', name: 'ThemeService', type: 'service' },
         { file: 'js/services/standards.service.js', name: 'StandardsService', type: 'service' },
         { file: 'js/services/standards-ui.service.js', name: 'StandardsUiService', type: 'service' },
-        // ThemeService moved to Core - injected by name, deployed via Core, not shipped here.
       ],
       stubProviders: [],   // no Deploy modal of its own, so nothing to stub in the deployed widget
       features: {},        // no roles/groups/ACLs - see this app's own brief for why

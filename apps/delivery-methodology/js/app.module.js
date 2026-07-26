@@ -1,1 +1,1 @@
-angular.module('deliveryMethodology', ['core']);
+angular.module('deliveryMethodology', []);

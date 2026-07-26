@@ -160,7 +160,7 @@
      background takes the paler $brand-tertiary-lightest instead of the saturated band so it still
      reads as an actual light mode, while --gradient-card adopts the real mint panel-body treatment
      for card components. `data-theme` is set on <html> by toggleTheme() (self-contained here - the
-     prototype has no Angular injector to share Core's ThemeService with, unlike the deployed app). */
+     prototype has no Angular injector to share ThemeService with, unlike the deployed app). */
   :root[data-theme="light"] {
     /* "C · Teal surfaces, fixed" - the fourth palette round. Earlier rounds (see git history) put
        the tint on the wrong surface (a mint PANEL inside a white page reads as "mint everywhere in
@@ -2962,9 +2962,9 @@ document.getElementById('jargonToggle').onchange = (e) => {
   render();
 };
 
-/* Self-contained light/dark toggle - no shared Core injector here (unlike the deployed AngularJS
-   app), so state + persistence live entirely in this file. Own localStorage key so it doesn't
-   collide with the Angular app's ThemeService-namespaced key. */
+/* Self-contained light/dark toggle - no Angular injector here (unlike the deployed AngularJS app),
+   so state + persistence live entirely in this file. Own localStorage key so it doesn't collide
+   with the Angular app's ThemeService-namespaced key. */
 const THEME_KEY = 'gf_delivery_methodology_theme_v1';
 const SUN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
 const MOON_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';

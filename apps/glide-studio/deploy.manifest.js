@@ -54,6 +54,10 @@
       // One entry per file that registers an Angular provider. type: 'service' | 'directive'.
       // (MainController isn't listed here - it becomes the widget's client_script, not a provider.)
       providers: [
+        { file: 'js/services/theme.service.js', name: 'ThemeService', type: 'service' },
+        { file: 'js/services/confirm-modal.service.js', name: 'ConfirmModalService', type: 'service' },
+        { file: 'js/directives/gs-modal.directive.js', name: 'gsModal', type: 'directive' },
+        { file: 'js/directives/gs-sync-attr.directive.js', name: 'gsSyncAttr', type: 'directive' },
         { file: 'js/services/schema.service.js', name: 'SchemaService', type: 'service' },
         { file: 'js/services/codegen.service.js', name: 'CodegenService', type: 'service' },
         { file: 'js/services/aggregate.service.js', name: 'AggregateService', type: 'service' },

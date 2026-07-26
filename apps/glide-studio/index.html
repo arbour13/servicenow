@@ -42,14 +42,14 @@
      wherever the header/sidenav interpolate a value, EVERY ng-if'd modal overlay briefly painting
      full-screen regardless of its condition (confirm/deploy/preview all default closed, but "closed"
      only exists as compiled Angular behavior, not as anything the raw markup itself expresses), and
-     .output-pane showing hardcoded light colors in dark mode before core-sync-attr could run. Chasing
+     .output-pane showing hardcoded light colors in dark mode before gs-sync-attr could run. Chasing
      those one at a time (each one only surfacing once someone happened to refresh at the right
      moment) was the wrong shape of fix - anything inside this root is equally exposed to the same
      race, so the fix belongs at the root once, not per-element as each case gets separately noticed.
      [ng-cloak] (app.scss) hides the raw markup via a plain CSS rule loaded synchronously in <head>,
      long before the Angular script tag; Angular's own built-in ngCloak directive strips the
      attribute the instant its FIRST digest finishes compiling this element - by which point every
-     directive inside (ng-if, ng-show, core-sync-attr, interpolation) has ALREADY resolved correctly,
+     directive inside (ng-if, ng-show, gs-sync-attr, interpolation) has ALREADY resolved correctly,
      since Angular compiles a subtree top-down in one synchronous pass before anything repaints. -->
 <div class="app" ng-cloak ng-class="{'meta-view': vm.activeMode === 'Settings' || vm.activeMode === 'Standards'}" ng-controller="MainController as vm">
 
@@ -966,15 +966,15 @@
   </div>
 
   <!-- ng-show, not ng-if: this pane used to be destroyed/recreated on every Standards entry/exit,
-       and even with core-sync-attr setting data-editor-theme synchronously (so the attribute is never
+       and even with gs-sync-attr setting data-editor-theme synchronously (so the attribute is never
        actually missing on a live digest), a freshly-inserted subtree's CSS custom properties could
        still show a one-frame flash of the wrong (light) colors in dark mode - a browser rendering
        quirk on brand new nodes, not an Angular timing gap. ng-show never destroys the element; it
        just toggles display:none (zero layout cost, same as ng-if, since it's THE global .ng-hide
        rule), so there's no fresh insertion event at all when leaving Standards. (The SEPARATE
-       raw-HTML-paints-before-Angular-bootstraps gap that core-sync-attr alone doesn't cover is handled
+       raw-HTML-paints-before-Angular-bootstraps gap that gs-sync-attr alone doesn't cover is handled
        once, at the root - see the ng-cloak comment on .app above - not per-element here.) -->
-  <div class="output-pane" ng-show="vm.activeMode !== 'Settings' && vm.activeMode !== 'Standards'" core-sync-attr="'data-editor-theme'" core-sync-value="vm.editorThemeApplied">
+  <div class="output-pane" ng-show="vm.activeMode !== 'Settings' && vm.activeMode !== 'Standards'" gs-sync-attr="'data-editor-theme'" gs-sync-value="vm.editorThemeApplied">
     <div class="out-top">
       <span class="title">{{vm.outputTitle()}}</span>
       <button type="button" class="editor-theme-toggle" ng-click="vm.cycleEditorTheme()"
@@ -1089,7 +1089,7 @@
     </div>
   </div>
 
-  <div class="modal-overlay" ng-if="vm.preview.open" core-modal="vm.closePreview()" core-modal-focus="previewCloseBtn" ng-click="$event.target === $event.currentTarget && vm.closePreview()">
+  <div class="modal-overlay" ng-if="vm.preview.open" gs-modal="vm.closePreview()" gs-modal-focus="previewCloseBtn" ng-click="$event.target === $event.currentTarget && vm.closePreview()">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Record preview">
       <div class="modal-head">
         <span ng-if="vm.preview.kind !== 'stats'">Record preview - <code>{{vm.preview.table}}</code></span>
@@ -1118,7 +1118,7 @@
     </div>
   </div>
 
-  <div class="modal-overlay" ng-if="vm.confirm.open" core-modal="vm.closeConfirm()" core-modal-focus="confirmCancelBtn">
+  <div class="modal-overlay" ng-if="vm.confirm.open" gs-modal="vm.closeConfirm()" gs-modal-focus="confirmCancelBtn">
     <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
       <div class="modal-head">
         <span id="confirmTitle">{{vm.confirm.title}}</span>
@@ -1135,16 +1135,11 @@
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
-<!-- Core (this app's module depends on it) + the shared providers it hosts. Loaded
-     directly from /apps/core/ via the single ServiceNow-root dev server. In the deployed Service
-     Portal these register into the shared page injector from the installed Core app; this app injects
-     them by name and does NOT ship its own copies. -->
-<script src="../core/js/app.module.js"></script>
-<script src="../core/js/services/theme.service.js"></script>
-<script src="../core/js/services/confirm-modal.service.js"></script>
-<script src="../core/js/directives/core-modal.directive.js"></script>
-<script src="../core/js/directives/core-sync-attr.directive.js"></script>
 <script src="js/app.module.js"></script>
+<script src="js/services/theme.service.js"></script>
+<script src="js/services/confirm-modal.service.js"></script>
+<script src="js/directives/gs-modal.directive.js"></script>
+<script src="js/directives/gs-sync-attr.directive.js"></script>
 <script src="js/services/schema.service.js"></script>
 <script src="js/services/codegen.service.js"></script>
 <script src="js/services/aggregate.service.js"></script>
