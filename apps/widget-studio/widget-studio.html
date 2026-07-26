@@ -635,9 +635,38 @@ class Component extends DCLogic {
     if(this.device!=='lg'){ const s=c&&this.responsive[this.device]&&this.responsive[this.device][c]; return (s&&s[key])||''; }
     if(this._estate!=='base'){ const s=c&&this.stateStyles[c]&&this.stateStyles[c][this._estate]; return (s&&s[key])||''; }
     if(c) { return (this.classStyles[c]&&this.classStyles[c][key])||''; } return (node.style&&node.style[key])||''; }
-  setCS(node,key,val){ const empty=(val===''||val==null); this.markDirty(node.id);
-    if(this.INLINE_PROPS[key]){ const s=node.style||(node.style={}); if(empty) { delete s[key]; } else { s[key]=val; } this.save(); this.forceUpdate(); return; }
+  // CSS-accurate initial values for the discrete keyword pickers (seg/iconRow/select) that used to
+  // hand-roll their own `v===<default>?'':v` ternary at each call site — collapsed into one table
+  // so SET ON, the model, and the export all agree once a control is put back to its default rather
+  // than storing it forever as noise. CSS-accurate, not control-convenience-accurate: border-style's
+  // real initial is 'none', NOT the 'solid' ensureBorderStyle deliberately writes to keep per-side
+  // widths visible — 'solid' isn't the default here, so it's never touched by this table, and a
+  // literal 'none' (from the style swatches) is safe to prune since that IS what "unset" renders as.
+  // Deliberately EXCLUDES background-size/background-repeat: their existing 'cover'/'no-repeat'
+  // fallbacks are control-convenience defaults that contradict the real CSS initial values (auto/
+  // repeat) — a pre-existing mismatch worth its own fix, not something to paper over here.
+  CSS_DEFAULTS={justifyContent:'flex-start',alignItems:'stretch',justifyItems:'stretch',alignContent:'stretch',gridAutoFlow:'row',alignSelf:'auto',justifySelf:'auto',objectFit:'fill',objectPosition:'center',mixBlendMode:'normal',cursor:'auto',overflow:'visible',borderStyle:'none'};
+  // Whether the cascade BENEATH the layer setCS is about to write into already resolves to key's
+  // default — true at Base (nothing sits below it but the browser's own initial value, which IS the
+  // default by construction); at a state or breakpoint, true only if the layer(s) below either don't
+  // set the key at all (so the browser default already shows through) or explicitly set it to that
+  // same default. This is what makes pruning safe: a state/breakpoint override doesn't reset a
+  // property to its initial value when removed, it just stops existing — so deleting an override
+  // that "happens to equal the default" is ONLY correct when nothing beneath it would show through
+  // instead. States and breakpoints are mutually exclusive write targets in this app (setCS itself
+  // only reads _estate when device is 'lg'), so no combined case is needed.
+  cascadeBelowDefault(node,key,c){ const def=this.CSS_DEFAULTS[key];
+    if(this._estate!=='base'&&this.device==='lg'){ const v=(this.classStyles[c]&&this.classStyles[c][key])||''; return v===''||v===def; }
+    if(this.device!=='lg'){ const order=this.device==='xs'?['md','sm']:(this.device==='sm'?['md']:[]);
+      let v=(this.classStyles[c]&&this.classStyles[c][key])||'';
+      order.forEach(bp=>{ const r=this.responsive[bp]; if(r&&r[c]&&r[c][key]!=null) { v=r[c][key]; } });
+      return v===''||v===def; }
+    return true; }
+  setCS(node,key,val){ const rawEmpty=(val===''||val==null); this.markDirty(node.id);
+    if(this.INLINE_PROPS[key]){ const s=node.style||(node.style={}); if(rawEmpty) { delete s[key]; } else { s[key]=val; } this.save(); this.forceUpdate(); return; }
     let c=this.splitIfShared(node);
+    const isDefault=this.CSS_DEFAULTS[key]!=null&&val===this.CSS_DEFAULTS[key];
+    const empty=rawEmpty||(isDefault&&this.cascadeBelowDefault(node,key,c));
     if(this.device!=='lg'){ const r=this.responsive[this.device]; const tgt=r[c]||(r[c]={}); if(empty) { delete tgt[key]; } else { tgt[key]=val; } if(!Object.keys(tgt).length) { delete r[c]; } this.save(); this.forceUpdate(); return; }
     if(this._estate!=='base'){ const tgt=this.stBucket(c,true); if(empty) { delete tgt[key]; } else { tgt[key]=val; } if(!Object.keys(tgt).length) { delete this.stateStyles[c][this._estate]; } this.save(); this.forceUpdate(); return; }
     const tgt=this.classStyles[c]||(this.classStyles[c]={}); if(empty) { delete tgt[key]; } else { tgt[key]=val; } if(key==='display'||key==='flexDirection') { this.reflowCName(node); } this.save(); this.forceUpdate(); }
@@ -4014,7 +4043,7 @@ class Component extends DCLogic {
     const cells=[];
     for(let r=0;r<3;r++){ for(let c=0;c<3;c++){
       const on=curCol===c&&curRow===r;
-      const pick=()=>{ this.setCS(node,'justifyContent',STATES[c]==='flex-start'?'':STATES[c]); this.setCS(node,'alignItems',STATES[r]); };
+      const pick=()=>{ this.setCS(node,'justifyContent',STATES[c]); this.setCS(node,'alignItems',STATES[r]); };
       cells.push(h('div',Object.assign({key:r+'-'+c,onClick:pick},this.a11y(pick,{pressed:on,label:'Justify '+STATES[c]+', align '+STATES[r]}),
         {style:{display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}),
         on?h('div',{style:{width:12,height:2.5,borderRadius:1.5,background:t.accent}}):h('div',{style:{width:3,height:3,borderRadius:'50%',background:t.faint}})));
@@ -4025,8 +4054,8 @@ class Component extends DCLogic {
       h('div',{style:{flex:1,minWidth:0}}, this.xselect(mini+':'+node.id,t,val,values,onChange,{fontSize:11.5,height:26})));
     return h('div',{style:{display:'flex',gap:8,alignItems:'center'}}, grid,
       h('div',{style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:5}},
-        drop('Justify',jc,this.JUSTIFY_VALUES().map(v=>[v.v,v.title]),v=>this.setCS(node,'justifyContent',v==='flex-start'?'':v)),
-        drop('Align',ai,this.ALIGN_ITEMS_VALUES().map(v=>[v.v,v.title]),v=>this.setCS(node,'alignItems',v==='stretch'?'':v))));
+        drop('Justify',jc,this.JUSTIFY_VALUES().map(v=>[v.v,v.title]),v=>this.setCS(node,'justifyContent',v)),
+        drop('Align',ai,this.ALIGN_ITEMS_VALUES().map(v=>[v.v,v.title]),v=>this.setCS(node,'alignItems',v))));
   }
   // Short display label for a spacing value: the token step ('md'), a negated token ('-md'), a raw px
   // number ('16'), 'Auto' for a literal auto (margin only), or '0' when unset — Webflow shows the resting
@@ -4953,11 +4982,11 @@ class Component extends DCLogic {
     // own Justify/Align, and this same grid's Justify self/Align self just below); the reference
     // mockup used dropdowns here, but that was its own inconsistency with its identical flex rows.
     els.push(h('div',{key:'alignx',style:{marginTop:16}}, this.subHead(t,'Align X'),
-      this.iconRow(t,[{v:'stretch',title:'Stretch',icon:gIc('j-stretch')},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')}],jItems,v=>this.setCS(node,'justifyItems',v==='stretch'?'':v),'Align X')));
+      this.iconRow(t,[{v:'stretch',title:'Stretch',icon:gIc('j-stretch')},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')}],jItems,v=>this.setCS(node,'justifyItems',v),'Align X')));
     els.push(h('div',{key:'aligny',style:{marginTop:16}}, this.subHead(t,'Align Y'),
-      this.iconRow(t,[{v:'stretch',title:'Stretch',icon:gIc('a-stretch')},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')}],aItems,v=>this.setCS(node,'alignItems',v==='stretch'?'':v),'Align Y')));
+      this.iconRow(t,[{v:'stretch',title:'Stretch',icon:gIc('a-stretch')},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')}],aItems,v=>this.setCS(node,'alignItems',v),'Align Y')));
     const flow=this.csVal(node,'gridAutoFlow')||'row';
-    els.push(h('div',{key:'flow',style:{marginTop:12}}, this.lbl(t,'Auto flow'), this.seg(t,[{v:'row',l:'Row'},{v:'column',l:'Column'},{v:'dense',l:'Dense'}],flow.indexOf('dense')>=0?'dense':flow,v=>this.setCS(node,'gridAutoFlow',v==='row'?'':v),{fill:true,pad:'6px 0'})));
+    els.push(h('div',{key:'flow',style:{marginTop:12}}, this.lbl(t,'Auto flow'), this.seg(t,[{v:'row',l:'Row'},{v:'column',l:'Column'},{v:'dense',l:'Dense'}],flow.indexOf('dense')>=0?'dense':flow,v=>this.setCS(node,'gridAutoFlow',v),{fill:true,pad:'6px 0'})));
     return h('div',null,els); }
   // Flex child (reference): Align self, Sizing (auto/fill/grow/shrink/fixed/custom → grow+shrink+basis), Order.
   // Both rows are icon-tiles (this.iconRow), not word pills — matches Display/Direction/Justify/Align.
@@ -5002,7 +5031,7 @@ class Component extends DCLogic {
     const A=this.autoGlyph(), fi=n=>this.flexIcon(n,18);
     const body=h('div',null,
       this.subHead(t,'Align self',true),
-      this.iconSlider(t,[{v:'auto',title:'Auto',icon:A},{v:'flex-start',title:'Start',icon:fi('a-flex-start')},{v:'center',title:'Center',icon:fi('a-center')},{v:'flex-end',title:'End',icon:fi('a-flex-end')},{v:'stretch',title:'Stretch',icon:fi('a-stretch')}],as,v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self',true),
+      this.iconSlider(t,[{v:'auto',title:'Auto',icon:A},{v:'flex-start',title:'Start',icon:fi('a-flex-start')},{v:'center',title:'Center',icon:fi('a-center')},{v:'flex-end',title:'End',icon:fi('a-flex-end')},{v:'stretch',title:'Stretch',icon:fi('a-stretch')}],as,v=>this.setCS(node,'alignSelf',v),'Align self',true),
       h('div',{style:{marginTop:14}}, this.subHead(t,'Sizing',true),
         this.iconSlider(t,[{v:'auto',title:'Auto',icon:A},{v:'fill',title:'Fill',icon:fi('sz-fill')},{v:'grow',title:'Grow',icon:fi('sz-grow')},{v:'shrink',title:'Shrink',icon:fi('sz-shrink')},{v:'fixed',title:'Fixed',icon:fi('sz-fixed')},{v:'custom',title:'Custom',icon:fi('sz-custom')}],sizeVal,setSize,'Sizing',true),
         sizeVal==='fixed'?h('div',{style:{marginTop:8}}, this.lbl(t,'Width / height'), this.rawField(t,node,'flexBasis','auto')):null,
@@ -5144,7 +5173,7 @@ class Component extends DCLogic {
           v=>this.flipLayout(node,()=>this.setCS(node,'flexWrap',v)),'Wrap')));
       if(wrap!=='nowrap'){
         const ac=this.csVal(node,'alignContent')||'stretch';
-        dyn.push(h('div',{key:'ac',style:{marginTop:12}}, this.lbl(t,'Align content'), this.selectField(t,this.ALIGN_CONTENT_VALUES().map(v=>[v.v,v.title]),ac,v=>this.setCS(node,'alignContent',v==='stretch'?'':v))));
+        dyn.push(h('div',{key:'ac',style:{marginTop:12}}, this.lbl(t,'Align content'), this.selectField(t,this.ALIGN_CONTENT_VALUES().map(v=>[v.v,v.title]),ac,v=>this.setCS(node,'alignContent',v))));
       }
     }
     if(dispK==='grid'){
@@ -5173,9 +5202,9 @@ class Component extends DCLogic {
       // which left Grid child visually inconsistent with its Flex-child sibling section.
       const gIc=n=>this.flexIcon(n,18); const gA=this.autoGlyph();
       gridBody.push(h('div',{key:'js',style:{marginTop:10}}, this.subHead(t,'Justify self',true),
-        this.iconSlider(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('j-stretch')}],this.csVal(node,'justifySelf')||'auto',v=>this.setCS(node,'justifySelf',v==='auto'?'':v),'Justify self',true)));
+        this.iconSlider(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('j-stretch')}],this.csVal(node,'justifySelf')||'auto',v=>this.setCS(node,'justifySelf',v),'Justify self',true)));
       gridBody.push(h('div',{key:'as',style:{marginTop:14}}, this.subHead(t,'Align self',true),
-        this.iconSlider(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('a-stretch')}],this.csVal(node,'alignSelf')||'auto',v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self',true)));
+        this.iconSlider(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('a-stretch')}],this.csVal(node,'alignSelf')||'auto',v=>this.setCS(node,'alignSelf',v),'Align self',true)));
       els.push(h('div',{key:'gridwrap',style:{marginTop:20,paddingTop:16,borderTop:'1px solid '+t.border}},
         this.blockHead(t,'Grid child',{first:true,dot:this.stateEditDot(node,['gridColumnStart','gridColumnEnd','gridRowStart','gridRowEnd','justifySelf','alignSelf'],t)}),
         this.inParentBlock(parent,t,h('div',null,gridBody))));
@@ -5208,12 +5237,15 @@ class Component extends DCLogic {
       h('div',null,this.lbl(t,'Max height'),this.comboField('cf:maxHeight:'+node.id,t,node,'maxHeight',{tokens:[],ghost:'none',unsetLabel:'none'})))));
     if(node.type==='el'&&(node.data.tag==='img'||node.data.tag==='video')){
       els.push(h('div',{style:{display:'flex',gap:8,marginTop:12}},
-        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object fit'), this.selectField(t,['fill','cover','contain','none','scale-down'],this.csVal(node,'objectFit')||'fill',v=>this.setCS(node,'objectFit',v==='fill'?'':v))),
-        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object position'), this.selectField(t,['center','top','right','bottom','left'],this.csVal(node,'objectPosition')||'center',v=>this.setCS(node,'objectPosition',v==='center'?'':v)))));
+        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object fit'), this.selectField(t,['fill','cover','contain','none','scale-down'],this.csVal(node,'objectFit')||'fill',v=>this.setCS(node,'objectFit',v))),
+        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Object position'), this.selectField(t,['center','top','right','bottom','left'],this.csVal(node,'objectPosition')||'center',v=>this.setCS(node,'objectPosition',v)))));
     }
     if(this.canHaveChildren(node)){
+      // Empty reads as 'fill', matching CSS_DEFAULTS — align-items' own initial behavior in a flex
+      // container IS stretch/fill, so unset and explicitly-stretch render identically and should
+      // both show "Fill space" selected here (not "Manual" for one and "Fill space" for the other).
       const ai=this.csVal(node,'alignItems')||'';
-      const childMode = ai==='stretch'?'fill' : (ai==='flex-start'?'fit' : 'manual');
+      const childMode = (ai===''||ai==='stretch')?'fill' : (ai==='flex-start'?'fit' : 'manual');
       els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Children'), this.selectField(t,[['fill','Fill space'],['fit','Fit content'],['manual','Manual']],childMode,
         v=>this.setCS(node,'alignItems', v==='fill'?'stretch':(v==='fit'?'flex-start':'')))));
       els.push(h('div',{style:{marginTop:12}}, this.lbl(t,'Overflow'),
@@ -5684,7 +5716,7 @@ class Component extends DCLogic {
     return h('div',null,
       this.lbl(t,'Opacity'),
       this.slider(t,opacity,0,1,0.05,v=>this.setCS(node,'opacity', v>=1?'':String(v))),
-      h('div',{style:{marginTop:12}}, this.lbl(t,'Blending'), this.selectField(t,[['normal','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['difference','Difference'],['luminosity','Luminosity']],this.csVal(node,'mixBlendMode')||'normal',v=>this.setCS(node,'mixBlendMode',v==='normal'?'':v))),
+      h('div',{style:{marginTop:12}}, this.lbl(t,'Blending'), this.selectField(t,[['normal','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['difference','Difference'],['luminosity','Luminosity']],this.csVal(node,'mixBlendMode')||'normal',v=>this.setCS(node,'mixBlendMode',v))),
       this.shadowControl(node,t),
       this.subHead(t,'Filters'),
       h('div',{style:{display:'flex',flexDirection:'column',gap:11}},
@@ -5697,7 +5729,7 @@ class Component extends DCLogic {
       h('div',{style:{display:'flex',alignItems:'center',gap:10,marginTop:14}},
         this.switchCtrl(t,backdropOn,toggleBackdrop,'Apply filters to what is behind the element'),
         h('span',{style:{fontSize:12,color:t.text}},'Apply behind element')),
-      h('div',{style:{marginTop:14}}, this.lbl(t,'Cursor'), this.selectField(t,[['auto','Auto'],['pointer','Pointer'],['default','Default'],['move','Move'],['text','Text'],['grab','Grab'],['not-allowed','Not allowed']],this.csVal(node,'cursor')||'auto',v=>this.setCS(node,'cursor',v==='auto'?'':v)))
+      h('div',{style:{marginTop:14}}, this.lbl(t,'Cursor'), this.selectField(t,[['auto','Auto'],['pointer','Pointer'],['default','Default'],['move','Move'],['text','Text'],['grab','Grab'],['not-allowed','Not allowed']],this.csVal(node,'cursor')||'auto',v=>this.setCS(node,'cursor',v)))
     );
   }
   // ---- Transforms (Move/Scale/Rotate/Skew tabs) & Transitions (card list) ----
