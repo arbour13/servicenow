@@ -3938,6 +3938,14 @@ class Component extends DCLogic {
         {style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),
         o.icon); }));
   }
+  // Same call signature as iconRow (items: [{v,title,icon}]) but rendered via segSlider instead of
+  // independently-toggling buttons — a drop-in swap at most call sites. `solid` switches the
+  // indicator to accentFill/white (for a surface already tinted accentSoft — IN PARENT — where the
+  // default light accentSoft indicator would be invisible against its own background); every other
+  // caller omits it and gets the app-wide light indicator + accent text.
+  iconSlider(t,items,cur,onPick,aria,solid){ const idx=items.findIndex(o=>o.v===cur);
+    return this.segSlider(t, items.map(o=>({v:o.v,label:o.title,tt:o.title,render:()=>o.icon})), idx<0?0:idx, onPick,
+      {aria, indicatorBg:solid?t.accentFill:t.accentSoft, onColor:solid?'#fff':t.accent}); }
   // Flex Direction / Justify / Align / Wrap glyphs. Direction/Wrap use a 1.6 stroke to sit in the same
   // visual weight as the display icons (gl block/flex/grid, 1.5px borders); Justify/Align frames+bars are
   // enlarged to fill more of the icon box. `size` scales the whole glyph (callers render these bigger than
@@ -4994,9 +5002,9 @@ class Component extends DCLogic {
     const A=this.autoGlyph(), fi=n=>this.flexIcon(n,18);
     const body=h('div',null,
       this.subHead(t,'Align self',true),
-      this.iconRow(t,[{v:'auto',title:'Auto',icon:A},{v:'flex-start',title:'Start',icon:fi('a-flex-start')},{v:'center',title:'Center',icon:fi('a-center')},{v:'flex-end',title:'End',icon:fi('a-flex-end')},{v:'stretch',title:'Stretch',icon:fi('a-stretch')}],as,v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self'),
+      this.iconSlider(t,[{v:'auto',title:'Auto',icon:A},{v:'flex-start',title:'Start',icon:fi('a-flex-start')},{v:'center',title:'Center',icon:fi('a-center')},{v:'flex-end',title:'End',icon:fi('a-flex-end')},{v:'stretch',title:'Stretch',icon:fi('a-stretch')}],as,v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self',true),
       h('div',{style:{marginTop:14}}, this.subHead(t,'Sizing',true),
-        this.iconRow(t,[{v:'auto',title:'Auto',icon:A},{v:'fill',title:'Fill',icon:fi('sz-fill')},{v:'grow',title:'Grow',icon:fi('sz-grow')},{v:'shrink',title:'Shrink',icon:fi('sz-shrink')},{v:'fixed',title:'Fixed',icon:fi('sz-fixed')},{v:'custom',title:'Custom',icon:fi('sz-custom')}],sizeVal,setSize,'Sizing'),
+        this.iconSlider(t,[{v:'auto',title:'Auto',icon:A},{v:'fill',title:'Fill',icon:fi('sz-fill')},{v:'grow',title:'Grow',icon:fi('sz-grow')},{v:'shrink',title:'Shrink',icon:fi('sz-shrink')},{v:'fixed',title:'Fixed',icon:fi('sz-fixed')},{v:'custom',title:'Custom',icon:fi('sz-custom')}],sizeVal,setSize,'Sizing',true),
         sizeVal==='fixed'?h('div',{style:{marginTop:8}}, this.lbl(t,'Width / height'), this.rawField(t,node,'flexBasis','auto')):null,
         sizeVal==='custom'?h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}},
           h('div',null,this.lbl(t,'Grow'),this.rawField(t,node,'flexGrow','0')),
@@ -5165,9 +5173,9 @@ class Component extends DCLogic {
       // which left Grid child visually inconsistent with its Flex-child sibling section.
       const gIc=n=>this.flexIcon(n,18); const gA=this.autoGlyph();
       gridBody.push(h('div',{key:'js',style:{marginTop:10}}, this.subHead(t,'Justify self',true),
-        this.iconRow(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('j-stretch')}],this.csVal(node,'justifySelf')||'auto',v=>this.setCS(node,'justifySelf',v==='auto'?'':v),'Justify self')));
+        this.iconSlider(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('j-flex-start')},{v:'center',title:'Center',icon:gIc('j-center')},{v:'end',title:'End',icon:gIc('j-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('j-stretch')}],this.csVal(node,'justifySelf')||'auto',v=>this.setCS(node,'justifySelf',v==='auto'?'':v),'Justify self',true)));
       gridBody.push(h('div',{key:'as',style:{marginTop:14}}, this.subHead(t,'Align self',true),
-        this.iconRow(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('a-stretch')}],this.csVal(node,'alignSelf')||'auto',v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self')));
+        this.iconSlider(t,[{v:'auto',title:'Auto',icon:gA},{v:'start',title:'Start',icon:gIc('a-flex-start')},{v:'center',title:'Center',icon:gIc('a-center')},{v:'end',title:'End',icon:gIc('a-flex-end')},{v:'stretch',title:'Stretch',icon:gIc('a-stretch')}],this.csVal(node,'alignSelf')||'auto',v=>this.setCS(node,'alignSelf',v==='auto'?'':v),'Align self',true)));
       els.push(h('div',{key:'gridwrap',style:{marginTop:20,paddingTop:16,borderTop:'1px solid '+t.border}},
         this.blockHead(t,'Grid child',{first:true,dot:this.stateEditDot(node,['gridColumnStart','gridColumnEnd','gridRowStart','gridRowEnd','justifySelf','alignSelf'],t)}),
         this.inParentBlock(parent,t,h('div',null,gridBody))));
@@ -5249,25 +5257,31 @@ class Component extends DCLogic {
   // Which sections start open for each lead. Spacing is open for every type — it's used constantly
   // regardless of what's selected; everything else defaults closed unless it's the type's own lead.
   DEFAULT_OPEN_BY_LEAD={text:['typography','spacing'],surface:['background','border','spacing'],structure:['layout','spacing']};
-  // Same header language as blockHead (bold uppercase, border-top divider, optional dot) plus a
-  // chevron and click-to-toggle — deliberately NOT bigCard's card chrome (border/shadow/rounded
-  // corners/13px inset), which reads as a narrower, denser box sitting inside an otherwise-flat
-  // panel. opts.first drops the top border/margin, same convention as blockHead, since this can
-  // now be the very first section in the panel (whichever one the current lead promotes to top).
+  // Bold uppercase label + chevron + click-to-toggle — deliberately NOT bigCard's card chrome
+  // (border/shadow/rounded corners/13px inset), which reads as a narrower, denser box sitting
+  // inside an otherwise-flat panel. No border-top divider either (dropped — nine full-width rules
+  // was what made the panel feel chopped up; the label/chevron already separate sections on their
+  // own). opts.first drops the top margin, same convention as blockHead, for whichever section
+  // renders first (now always Layout — see designTab). The gap below the title only exists while
+  // open, so a run of collapsed sections reads as one tight list rather than paying dead space for
+  // bodies that aren't showing.
   flatSection(t,key,label,body,opts){ opts=opts||{}; const h=React.createElement;
     const open = this._inspOpen[key]!=null ? this._inspOpen[key] : (opts.defOpen!==false);
     const toggle=()=>{ this._inspOpen[key]=!open; this.forceUpdate(); };
     return h('div',null,
       h('div',Object.assign({onClick:toggle},this.a11y(toggle,{label:label+(open?' section, expanded':' section, collapsed'),pressed:open}),
-        {style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer',userSelect:'none',fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,margin:opts.first?'0 0 12px':'20px 0 12px',paddingTop:opts.first?0:16,borderTop:opts.first?'none':'1px solid '+t.border}}),
+        {style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer',userSelect:'none',fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,marginTop:opts.first?0:6,marginBottom:open?8:0,padding:'6px 0'}}),
         h('span',{style:{display:'inline-flex',color:t.faint,transition:'transform .12s',transform:open?'rotate(90deg)':'none'}},this.chev('right',10)),
         label, opts.dot||null),
       this.animatedBox(open, body));
   }
-  // Every top-level section is independently collapsible, in a FIXED canonical order — only the
-  // current lead's section(s) are promoted to the front; nothing else ever moves (see styleLead()'s
-  // comment for why this isn't the reorder-on-select that was tried and reverted: sections here are
-  // real, never duplicated, and the rest of the order is stable regardless of what's selected).
+  // Every top-level section is independently collapsible, in a FIXED canonical order that NEVER
+  // varies by what's selected — order is the map, and a map that changes can't be learned (this is
+  // the same reasoning that killed reorder-on-select `57f6dbc` and scroll-to-lead `1d08101`: the
+  // panel's write target is the CLASS, not the element, and any class can land on any element, so
+  // a `.divider` shared between an `hr` and a `p` must present identically regardless of which one
+  // you clicked). styleLead() still earns its keep through DEFAULT_OPEN_BY_LEAD — the relevant
+  // section for this type starts EXPANDED — order is the map, open state is a bookmark in it.
   designTab(node,t){ const h=React.createElement;
     const lead=this.styleLead(node);
     const openSet=this.DEFAULT_OPEN_BY_LEAD[lead];
@@ -5284,11 +5298,9 @@ class Component extends DCLogic {
       sec('transforms','Transforms & Transitions', this.transformsBlock(node,t), this.TRANSFORMS_DOT_KEYS),
       sec('position','Position', this.positionEditor(node,t), null),
     ];
-    const leadIds = lead==='text' ? ['typography'] : lead==='surface' ? ['background','border'] : [];
-    const ordered = leadIds.map(id=>canonical.find(s=>s.id===id)).concat(canonical.filter(s=>!leadIds.includes(s.id)));
     return h('div',null,
       this.layerZone(node,t),
-      ordered.map((s,i)=>h('div',{key:s.key}, this.flatSection(t,s.key,s.label,s.body,{defOpen:s.defOpen,dot:s.dot,first:i===0}))),
+      canonical.map((s,i)=>h('div',{key:s.key}, this.flatSection(t,s.key,s.label,s.body,{defOpen:s.defOpen,dot:s.dot,first:i===0}))),
       this.ledger(node,t));
   }
   // The ledger: every declaration actually SET on this class, grouped by layer — the layer you're
