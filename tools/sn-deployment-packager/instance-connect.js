@@ -1,12 +1,17 @@
-/* Browser-only helper: a Basic-Auth fetch against a live TARGET ServiceNow instance, used only to
-   detect that instance's application vendor prefix while a Deploy UI is filling in a recommended
-   scope. Network I/O, so deliberately kept OUT of the pure core.js (see that file's
-   header comment and manifest.schema.md's "Host responsibilities" - the core never touches the
-   network or filesystem itself). Shared between every browser Deploy host that opts into
-   `deployOptions.showConnection` (see manifest.schema.md's "deploy.manifest.js" section) - Glide
-   Studio's own live Deploy modal (js/services/deploy.service.js) and the standalone deploy console
-   (deploy-console.js) both load this file instead of each hand-keeping a copy. Exposes
-   window.SNDeploymentPackager.browserConnect. */
+/* Read-only connection to a live TARGET ServiceNow instance: a Basic-Auth fetch used only to detect
+   that instance's application vendor prefix while a Deploy UI is filling in a recommended scope.
+   Nothing here writes, installs, or commits anything - this package is imported by a human.
+
+   BROWSER-ONLY - there is no module.exports branch here (it needs fetch/btoa), so do NOT require()
+   this from Node; the CLI (build.js) and the app build-deploy.js scripts never touch it.
+
+   Network I/O, so deliberately kept OUT of the pure core.js (see that file's header comment and
+   manifest.schema.md's "Host responsibilities" - the core never touches the network or filesystem
+   itself). Shared between every browser Deploy host that opts into `deployOptions.showConnection`
+   (see manifest.schema.md's "deploy.manifest.js" section) - Glide Studio's own live Deploy modal
+   (js/services/deploy.service.js) and the standalone deploy console (deploy-console.js) both load
+   this file instead of each hand-keeping a copy. Exposes
+   window.SNDeploymentPackager.instanceConnect. */
 (function (root) {
   'use strict';
   root.SNDeploymentPackager = root.SNDeploymentPackager || {};
@@ -45,5 +50,5 @@
     });
   }
 
-  root.SNDeploymentPackager.browserConnect = { deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix };
+  root.SNDeploymentPackager.instanceConnect = { deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix };
 })(typeof self !== 'undefined' ? self : this);

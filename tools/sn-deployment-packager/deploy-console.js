@@ -345,7 +345,7 @@
     detectStatus.textContent = 'Detecting…';
     var conn = { instanceUrl: fldInstanceUrl.value, username: fldUsername.value, password: fldPassword.value };
     saveConn(currentFolder);
-    window.SNDeploymentPackager.browserConnect.detectCompanyPrefix(conn).then(function (code) {
+    window.SNDeploymentPackager.instanceConnect.detectCompanyPrefix(conn).then(function (code) {
       if (!code) { detectStatus.textContent = "Connected, but couldn't read a vendor prefix - set Scope by hand below."; return; }
       connState.companyCode = code;
       connState.scopeAuto = true;
