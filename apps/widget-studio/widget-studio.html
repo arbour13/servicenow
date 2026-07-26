@@ -3025,9 +3025,8 @@ class Component extends DCLogic {
       [this.makePanelPreset('default',null,[this.make('table')])]};
     return {
       base: [
-        {id:'panel', label:'Panel', hint:'Heading + body', build:()=>{
-          const txt=this.make('el','p'); txt.text='Panel content goes here.';
-          return [this.makePanelPreset('default',null,[txt])]; }},
+        {id:'panel', label:'Panel', hint:'Heading + body', build:()=>
+          [this.makePanelPreset()]},
         panelTable,
         {id:'panel-form', label:'Panel with form', hint:'Field + submit', build:()=>{
           const btn=this.make('button'); btn.text='Submit';
@@ -5621,7 +5620,12 @@ class Component extends DCLogic {
   switchBgType(node,type){ const clear=ks=>ks.forEach(k=>this.setCS(node,k,''));
     if(type==='solid'){ clear(['backgroundImage','backgroundSize','backgroundRepeat','backgroundColor']); if(/gradient/i.test(this.csVal(node,'background')||'')) { this.setCS(node,'background',''); } }
     else if(type==='gradient'){ clear(['backgroundImage','backgroundSize','backgroundRepeat','backgroundColor']); if(!/gradient/i.test(this.csVal(node,'background')||'')) { this.setCS(node,'background','linear-gradient(90deg, #1F8FFF 0%, #8250DF 100%)'); } }
-    else { this.setCS(node,'background',''); if(!/url\(/i.test(this.csVal(node,'backgroundImage')||'')) { this.setCS(node,'backgroundImage',''); } } }
+    else {
+      // Seed url("") so bgTypeOf can tell Image from Solid — an empty backgroundImage
+      // collapses back to solid (same idea as gradient seeding a default linear-gradient).
+      this.setCS(node,'background','');
+      if(!/url\(/i.test(this.csVal(node,'backgroundImage')||'')) { this.setCS(node,'backgroundImage','url("")'); }
+    } }
   parseGradient(str){ const m=(str||'').match(/^\s*linear-gradient\((.*)\)\s*$/i); if(!m) { return {angle:'90deg',stops:[{color:'#1F8FFF',pos:'0%'},{color:'#8250DF',pos:'100%'}]}; }
     const parts=this.splitCommaTop(m[1]); let angle='90deg'; let start=0;
     if(parts.length&&/deg|to\s/i.test(parts[0])){ angle=parts[0].trim(); start=1; }
@@ -5657,7 +5661,7 @@ class Component extends DCLogic {
       body.push(h('div',{key:'add',onClick:()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),...this.a11y(()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),{label:'Add color stop'}),style:{display:'flex',alignItems:'center',justifyContent:'center',marginTop:6,padding:'6px 0',border:'1px dashed '+t.border,borderRadius:6,cursor:'pointer',color:t.muted,fontSize:11.5,fontWeight:500}},'+ Add color stop'));
       body.push(h('div',{key:'angle',style:{marginTop:8}}, this.lbl(t,'Angle'), this.selectField(t,[['90deg','90°'],['0deg','0°'],['45deg','45°'],['135deg','135°'],['180deg','180°']],g.angle,v=>setG(v,g.stops)))); }
     else { // image
-      body.push(h('div',{key:'url'}, this.prefixField(t,'',this.csVal(node,'backgroundImage').replace(/^url\((['"]?)(.*)\1\)$/,'$2'),v=>{ const u=v.trim(); this.setCS(node,'backgroundImage',u?('url("'+u+'")'):''); },{placeholder:'https://…'})));
+      body.push(h('div',{key:'url'}, this.prefixField(t,'',(this.csVal(node,'backgroundImage')||'').replace(/^url\((['"]?)(.*)\1\)$/,'$2'),v=>{ const u=v.trim(); this.setCS(node,'backgroundImage',u?('url("'+u+'")'):'url("")'); },{placeholder:'https://…'})));
       body.push(h('div',{key:'sr',style:{display:'flex',gap:8,marginTop:8}},
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Size'), this.selectField(t,[['cover','Cover'],['contain','Contain'],['auto','Auto']],this.csVal(node,'backgroundSize')||'cover',v=>this.setCS(node,'backgroundSize',v==='cover'?'':v))),
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Repeat'), this.selectField(t,[['no-repeat','No repeat'],['repeat','Repeat'],['repeat-x','Repeat X'],['repeat-y','Repeat Y']],this.csVal(node,'backgroundRepeat')||'no-repeat',v=>this.setCS(node,'backgroundRepeat',v==='no-repeat'?'':v)))));
