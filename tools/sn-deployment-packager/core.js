@@ -292,6 +292,14 @@
      Sys_id derivation - deterministic per (sysIdPrefix, seed), so a NEW app never has to
      hand-maintain a literal list of sys_id constants; see this file's header comment.
 
+     A real ServiceNow sys_id is ALWAYS exactly 32 hex characters (it's a GUID column on every
+     table). stableSysId fills sysIdPrefix out to exactly 32 chars total with deterministic hash
+     digits - never fewer, never a fixed literal tail (a previous version padded with a constant
+     '00112233' suffix and stopped at 26 total for a 10-char prefix; both the short length and the
+     zero-entropy padding are fixed here). Multiple independent hash rounds (each seeded with the
+     previous round's index) are concatenated rather than repeating one 8-hex-digit hash, so two
+     different seeds under the same prefix don't start colliding once truncated to fit.
+
      manifest.sysIds is an ESCAPE HATCH for apps migrating onto this core that may already be
      imported into a live instance under hand-picked literal sys_ids (this core's predecessors -
      Glide Studio's deploy.service.js, Standards' build-deploy.js - assigned APP_SYS_ID/
@@ -302,11 +310,17 @@
      ================================================================================== */
 
   function stableSysId(sysIdPrefix, seed) {
-    var h = 0;
-    for (var i = 0; i < seed.length; i++) { h = ((h << 5) - h + seed.charCodeAt(i)) | 0; }
-    var hex = (h >>> 0).toString(16);
-    while (hex.length < 8) { hex = '0' + hex; }
-    return sysIdPrefix + hex + '00112233';
+    var needed = 32 - sysIdPrefix.length;
+    var hex = '', round = 0;
+    while (hex.length < needed) {
+      var h = 0, s = seed + ':' + round;
+      for (var i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+      var chunk = (h >>> 0).toString(16);
+      while (chunk.length < 8) { chunk = '0' + chunk; }
+      hex += chunk;
+      round++;
+    }
+    return (sysIdPrefix + hex).slice(0, 32);
   }
 
   var ACL_TABLES = ['sp_theme', 'sp_page', 'sp_container', 'sp_row', 'sp_column', 'sp_widget', 'sp_instance', 'sp_portal'];
@@ -678,13 +692,16 @@
   }
 
   // Renders one record as an XML block: CDATA-wraps `cdata` fields, self-closes `empty` fields,
-  // inserts the record model's precomputed <sys_scope> tag for `scopeTag` fields, and esc()'s
-  // everything else. Field ORDER comes straight from the model, so this reproduces exactly what
-  // the old per-table builder functions emitted.
+  // inserts the record model's precomputed <sys_scope> tag for `scopeTag` fields, drops in a
+  // caller-precomputed tag verbatim for `rawTag` fields (same idea as scopeTag, for a reference
+  // field that isn't this record's own scope - see wrapAsUpdateSet's `remote_update_set` field),
+  // and esc()'s everything else. Field ORDER comes straight from the model, so this reproduces
+  // exactly what the old per-table builder functions emitted.
   function renderXmlRecord(rec, scopeTag) {
     var lines = ['<' + rec.table + ' action="INSERT_OR_UPDATE">'];
     rec.fields.forEach(function (f) {
       if (f.scopeTag) { lines.push(scopeTag); return; }
+      if (f.rawTag) { lines.push(f.rawTag); return; }
       if (f.empty) { lines.push('<' + f.name + '/>'); return; }
       var content = f.cdata ? cdata(f.value) : esc(f.value);
       lines.push('<' + f.name + '>' + content + '</' + f.name + '>');
@@ -694,15 +711,101 @@
   }
 
   /* ==================================================================================
+     Retrieved Update Set wrapping - XML-ONLY, applied by assembleXml() below, never touched by
+     fluent.js (Fluent installs straight into an instance via the Now SDK; there is no Update Set
+     concept there at all). buildRecordModel()'s output above is a flat list of the actual records
+     a package needs (sp_widget, sys_app, ...) - that is exactly what a plain per-table XML export
+     looks like, and it is NOT what ServiceNow's Retrieved Update Set importer (System Update Sets >
+     Retrieved Update Sets > Import Update Set from XML) parses. That importer looks specifically
+     for ONE `sys_remote_update_set` header record plus one `sys_update_xml` WRAPPER record per
+     customization, where the actual record's own XML is escaped inside the wrapper's `payload`
+     field. Without this wrapping, importing the plain record list finds nothing to do.
+     ================================================================================== */
+
+  // Cosmetic label shown in ServiceNow's own Retrieved Update Set preview list (the `type` column).
+  // Not load-bearing - the platform acts on `source_table` and `payload`, not this text - but worth
+  // getting close to what a real export would show.
+  var UPDATE_XML_TYPE_LABELS = {
+    sys_app: 'Application', sys_user_role: 'User Role', sys_user_group: 'Group',
+    sys_group_has_role: 'Group has Role', sp_theme: 'Theme', sp_page: 'Page',
+    sp_container: 'Container', sp_row: 'Row', sp_column: 'Column',
+    sp_angular_provider: 'Angular Provider', sp_widget: 'Widget', sp_instance: 'Widget Instance',
+    sp_portal: 'Portal', sys_security_acl: 'Access Control', sys_security_acl_role: 'Access Control Role',
+  };
+
+  // A human-readable identifier for the wrapper's `target_name` field. Most records already carry
+  // an xmlOnly `sys_name` (added to the model specifically as a display identifier) or a real
+  // `name` field; the handful that carry neither (sp_row, sp_column, sys_group_has_role,
+  // sys_security_acl_role - pure structural/junction records with no name of their own) fall back
+  // to the app name plus this record's own model key.
+  function recordTargetName(rec, manifest) {
+    var sysName = rec.fields.filter(function (f) { return f.name === 'sys_name'; })[0];
+    if (sysName) { return sysName.value; }
+    var name = rec.fields.filter(function (f) { return f.name === 'name'; })[0];
+    if (name) { return name.value; }
+    return manifest.appName + ' (' + rec.key + ')';
+  }
+
+  // Wraps every record from buildRecordModel() into the shape described above. Returns an ordered
+  // array starting with the sys_remote_update_set header, followed by one sys_update_xml per
+  // original record (same relative order buildRecordModel produced them in).
+  function wrapAsUpdateSet(manifest, model) {
+    var setSysId = stableSysId(manifest.sysIdPrefix, 'remote_update_set');
+    var setName = manifest.appName + ' v' + (manifest.version || '1.0.0');
+    var setTag = '<remote_update_set display_value="' + esc(setName).replace(/"/g, '&quot;') + '">' + setSysId + '</remote_update_set>';
+
+    var header = { table: 'sys_remote_update_set', sysId: setSysId, key: 'remoteUpdateSet', fields: [
+      { name: 'application', value: model.ids.app },
+      { name: 'application_name', value: manifest.appName },
+      { name: 'description', empty: true },
+      { name: 'name', value: setName },
+      // origin_sys_id/remote_sys_id normally identify this set on the instance it was RETRIEVED
+      // from; this set has no such originating instance (it's generated directly, not retrieved
+      // from a live dev instance), so both self-reference this same record's own sys_id.
+      { name: 'origin_sys_id', value: setSysId },
+      { name: 'remote_sys_id', value: setSysId },
+      { name: 'state', value: 'complete' },
+      { name: 'sys_id', value: setSysId, xmlOnly: true },
+      { name: 'sys_update_name', value: 'sys_remote_update_set_' + setSysId, xmlOnly: true },
+      { name: 'update_source', empty: true },
+    ] };
+
+    var wrapped = model.records.map(function (rec) {
+      var payload = '<record_update table="' + rec.table + '">\n' + renderXmlRecord(rec, model.scopeTag) + '\n</record_update>';
+      var wrapId = stableSysId(manifest.sysIdPrefix, 'update_xml:' + rec.key);
+      return { table: 'sys_update_xml', sysId: wrapId, key: 'updateXml_' + rec.key, fields: [
+        { name: 'action', value: 'INSERT_OR_UPDATE' },
+        { name: 'application', value: model.ids.app },
+        { name: 'category', value: 'customer' },
+        { name: 'comments', empty: true },
+        { name: 'name', value: rec.table + '_' + rec.sysId },
+        { name: 'payload', value: payload, cdata: true },
+        { name: 'remote_update_set', rawTag: setTag },
+        { name: 'replace_on_upgrade', value: false },
+        { name: 'source_table', value: rec.table },
+        { name: 'sys_id', value: wrapId, xmlOnly: true },
+        { name: 'sys_update_name', value: 'sys_update_xml_' + wrapId, xmlOnly: true },
+        { name: 'target_name', value: recordTargetName(rec, manifest) },
+        { name: 'type', value: UPDATE_XML_TYPE_LABELS[rec.table] || rec.table },
+        { name: 'update_set', empty: true },
+      ] };
+    });
+
+    return [header].concat(wrapped);
+  }
+
+  /* ==================================================================================
      Top-level XML assembly. `opts.stamp` is required - this file never calls Date() itself (so
      the same manifest + same parts always produce byte-identical XML unless a host deliberately
-     wants a fresh wall-clock stamp).
+     wants a fresh wall-clock stamp). Output is wrapped as a real Retrieved Update Set (see
+     wrapAsUpdateSet's header comment) - buildRecordModel()'s own flat record list is never emitted
+     directly; that's what fluent.js's assembleFluent consumes instead, unwrapped.
      ================================================================================== */
 
   function assembleXml(manifest, parts, opts) {
     var stamp = (opts && opts.stamp) || '';
     var model = buildRecordModel(manifest, parts);
-    var body = model.records.map(function (r) { return renderXmlRecord(r, model.scopeTag); });
+    var body = wrapAsUpdateSet(manifest, model).map(function (r) { return renderXmlRecord(r, model.scopeTag); });
     return ['<?xml version="1.0" encoding="UTF-8"?>', '<unload unload_date="' + esc(stamp) + '">']
       .concat(body).concat(['</unload>']).join('\n');
   }

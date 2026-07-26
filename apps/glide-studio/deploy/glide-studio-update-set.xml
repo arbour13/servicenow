@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <unload unload_date="1.0.0 build">
+<sys_remote_update_set action="INSERT_OR_UPDATE">
+<application>b2c3d4e5f60000112233445566778801</application>
+<application_name>Glide Studio</application_name>
+<description/>
+<name>Glide Studio v1.0.0</name>
+<origin_sys_id>b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</origin_sys_id>
+<remote_sys_id>b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_sys_id>
+<state>complete</state>
+<sys_id>b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</sys_id>
+<sys_update_name>sys_remote_update_set_b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</sys_update_name>
+<update_source/>
+</sys_remote_update_set>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_app_b2c3d4e5f60000112233445566778801</name>
+<payload><![CDATA[<record_update table="sys_app">
 <sys_app action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>Glide Studio</name>
@@ -13,6 +32,23 @@
 <vendor_prefix>x_glide</vendor_prefix>
 <version>1.0.0</version>
 </sys_app>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_app</source_table>
+<sys_id>b2c3d4e5f658853ffe58853fff588540</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f658853ffe58853fff588540</sys_update_name>
+<target_name>Glide Studio</target_name>
+<type>Application</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_user_role_b2c3d4e5f6000011223344556677880c</name>
+<payload><![CDATA[<record_update table="sys_user_role">
 <sys_user_role action="INSERT_OR_UPDATE">
 <active>true</active>
 <description>Can view and use the Glide Studio tool.</description>
@@ -22,6 +58,23 @@
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sys_user_role_b2c3d4e5f6000011223344556677880c</sys_update_name>
 </sys_user_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_user_role</source_table>
+<sys_id>b2c3d4e5f693e6cb5093e6cb5193e6cb</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f693e6cb5093e6cb5193e6cb</sys_update_name>
+<target_name>glide_studio_user</target_name>
+<type>User Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_user_role_b2c3d4e5f6000011223344556677880d</name>
+<payload><![CDATA[<record_update table="sys_user_role">
 <sys_user_role action="INSERT_OR_UPDATE">
 <active>true</active>
 <description>Can edit Glide Studio's own application records (widget, page, theme, layout).</description>
@@ -31,6 +84,23 @@
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sys_user_role_b2c3d4e5f6000011223344556677880d</sys_update_name>
 </sys_user_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_user_role</source_table>
+<sys_id>b2c3d4e5f689dff40289dff40389dff4</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f689dff40289dff40389dff4</sys_update_name>
+<target_name>glide_studio_admin</target_name>
+<type>User Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_user_group_b2c3d4e5f6000011223344556677880e</name>
+<payload><![CDATA[<record_update table="sys_user_group">
 <sys_user_group action="INSERT_OR_UPDATE">
 <active>true</active>
 <description>Members can view and use the Glide Studio tool.</description>
@@ -40,6 +110,23 @@
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sys_user_group_b2c3d4e5f6000011223344556677880e</sys_update_name>
 </sys_user_group>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_user_group</source_table>
+<sys_id>b2c3d4e5f6a85ef551a85ef552a85ef5</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6a85ef551a85ef552a85ef5</sys_update_name>
+<target_name>Glide Studio Users</target_name>
+<type>Group</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_user_group_b2c3d4e5f6000011223344556677880f</name>
+<payload><![CDATA[<record_update table="sys_user_group">
 <sys_user_group action="INSERT_OR_UPDATE">
 <active>true</active>
 <description>Members can edit the Glide Studio application.</description>
@@ -49,6 +136,23 @@
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sys_user_group_b2c3d4e5f6000011223344556677880f</sys_update_name>
 </sys_user_group>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_user_group</source_table>
+<sys_id>b2c3d4e5f6718ae2df718ae2e0718ae2</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6718ae2df718ae2e0718ae2</sys_update_name>
+<target_name>Glide Studio Admins</target_name>
+<type>Group</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_group_has_role_b2c3d4e5f60000112233445566778810</name>
+<payload><![CDATA[<record_update table="sys_group_has_role">
 <sys_group_has_role action="INSERT_OR_UPDATE">
 <group>b2c3d4e5f6000011223344556677880e</group>
 <role>b2c3d4e5f6000011223344556677880c</role>
@@ -56,6 +160,23 @@
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sys_group_has_role_b2c3d4e5f60000112233445566778810</sys_update_name>
 </sys_group_has_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_group_has_role</source_table>
+<sys_id>b2c3d4e5f6f6f096e7f6f096e8f6f096</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6f6f096e7f6f096e8f6f096</sys_update_name>
+<target_name>Glide Studio (userGroupRole)</target_name>
+<type>Group has Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_group_has_role_b2c3d4e5f60000112233445566778811</name>
+<payload><![CDATA[<record_update table="sys_group_has_role">
 <sys_group_has_role action="INSERT_OR_UPDATE">
 <group>b2c3d4e5f6000011223344556677880f</group>
 <role>b2c3d4e5f6000011223344556677880d</role>
@@ -63,6 +184,23 @@
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sys_group_has_role_b2c3d4e5f60000112233445566778811</sys_update_name>
 </sys_group_has_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_group_has_role</source_table>
+<sys_id>b2c3d4e5f6462f0d75462f0d76462f0d</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6462f0d75462f0d76462f0d</sys_update_name>
+<target_name>Glide Studio (adminGroupRole)</target_name>
+<type>Group has Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_theme_b2c3d4e5f60000112233445566778803</name>
+<payload><![CDATA[<record_update table="sp_theme">
 <sp_theme action="INSERT_OR_UPDATE">
 <css_variables/>
 <name>Glide Studio Theme</name>
@@ -72,6 +210,23 @@
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sp_theme_b2c3d4e5f60000112233445566778803</sys_update_name>
 </sp_theme>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_theme</source_table>
+<sys_id>b2c3d4e5f62b21d3e62b21d3e72b21d3</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f62b21d3e62b21d3e72b21d3</sys_update_name>
+<target_name>Glide Studio Theme</target_name>
+<type>Theme</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_page_b2c3d4e5f60000112233445566778805</name>
+<payload><![CDATA[<record_update table="sp_page">
 <sp_page action="INSERT_OR_UPDATE">
 <category>custom</category>
 <id>x_glide_studio_ng_page</id>
@@ -84,6 +239,23 @@
 <sys_update_name>sp_page_b2c3d4e5f60000112233445566778805</sys_update_name>
 <title>Glide Studio</title>
 </sp_page>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_page</source_table>
+<sys_id>b2c3d4e5f6d0e49bfed0e49bffd0e49c</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6d0e49bfed0e49bffd0e49c</sys_update_name>
+<target_name>Glide Studio</target_name>
+<type>Page</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_container_b2c3d4e5f60000112233445566778806</name>
+<payload><![CDATA[<record_update table="sp_container">
 <sp_container action="INSERT_OR_UPDATE">
 <bootstrap_alt>false</bootstrap_alt>
 <name>Glide Studio</name>
@@ -94,6 +266,23 @@
 <sys_update_name>sp_container_b2c3d4e5f60000112233445566778806</sys_update_name>
 <width>container-fluid</width>
 </sp_container>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_container</source_table>
+<sys_id>b2c3d4e5f6b53ff11eb53ff11fb53ff1</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6b53ff11eb53ff11fb53ff1</sys_update_name>
+<target_name>Glide Studio</target_name>
+<type>Container</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_row_b2c3d4e5f60000112233445566778807</name>
+<payload><![CDATA[<record_update table="sp_row">
 <sp_row action="INSERT_OR_UPDATE">
 <order>100</order>
 <sp_container>b2c3d4e5f60000112233445566778806</sp_container>
@@ -101,6 +290,23 @@
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sp_row_b2c3d4e5f60000112233445566778807</sys_update_name>
 </sp_row>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_row</source_table>
+<sys_id>b2c3d4e5f65974757759747578597475</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f65974757759747578597475</sys_update_name>
+<target_name>Glide Studio (row)</target_name>
+<type>Row</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_column_b2c3d4e5f60000112233445566778808</name>
+<payload><![CDATA[<record_update table="sp_column">
 <sp_column action="INSERT_OR_UPDATE">
 <order>100</order>
 <size>12</size>
@@ -109,6 +315,23 @@
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
 <sys_update_name>sp_column_b2c3d4e5f60000112233445566778808</sys_update_name>
 </sp_column>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_column</source_table>
+<sys_id>b2c3d4e5f6d1d75cc5d1d75cc6d1d75c</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6d1d75cc5d1d75cc6d1d75c</sys_update_name>
+<target_name>Glide Studio (column)</target_name>
+<type>Column</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f63d4fdd023d4fdd033d4fdd</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>ThemeService</name>
@@ -168,12 +391,29 @@
     },
   };
   return svc;
-}]]]></script>
-<sys_id>b2c3d4e5f65aa2d8cc00112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f63d4fdd023d4fdd033d4fdd</sys_id>
 <sys_name>ThemeService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f65aa2d8cc00112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f63d4fdd023d4fdd033d4fdd</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f648756dfb48756dfc48756d</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f648756dfb48756dfc48756d</sys_update_name>
+<target_name>ThemeService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f67903ff3e7903ff3f7903ff</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>ConfirmModalService</name>
@@ -206,12 +446,29 @@
   };
 
   return svc;
-}]]]></script>
-<sys_id>b2c3d4e5f6bc325a0800112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f67903ff3e7903ff3f7903ff</sys_id>
 <sys_name>ConfirmModalService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f6bc325a0800112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f67903ff3e7903ff3f7903ff</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f63d8114253d8114263d8114</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f63d8114253d8114263d8114</sys_update_name>
+<target_name>ConfirmModalService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6fe087417fe087418fe0874</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>gsModal</name>
@@ -255,12 +512,29 @@
       });
     }
   };
-}]]]></script>
-<sys_id>b2c3d4e5f61150312100112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6fe087417fe087418fe0874</sys_id>
 <sys_name>gsModal</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f61150312100112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6fe087417fe087418fe0874</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6e7086b7ee7086b7fe7086b</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6e7086b7ee7086b7fe7086b</sys_update_name>
+<target_name>gsModal</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6d0ac416ed0ac416fd0ac41</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>gsSyncAttr</name>
@@ -278,12 +552,29 @@
       scope.$watch(attrs.gsSyncValue, apply);
     }
   };
-}]]></script>
-<sys_id>b2c3d4e5f65465683800112233</sys_id>
+}]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6d0ac416ed0ac416fd0ac41</sys_id>
 <sys_name>gsSyncAttr</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f65465683800112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6d0ac416ed0ac416fd0ac41</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f643c3bca743c3bca843c3bc</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f643c3bca743c3bca843c3bc</sys_update_name>
+<target_name>gsSyncAttr</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6ca4c5beaca4c5bebca4c5b</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>SchemaService</name>
@@ -444,12 +735,29 @@
     fieldType: fieldType,
     fieldRefTable: fieldRefTable,
   };
-}]]></script>
-<sys_id>b2c3d4e5f68301f1b400112233</sys_id>
+}]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6ca4c5beaca4c5bebca4c5b</sys_id>
 <sys_name>SchemaService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f68301f1b400112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6ca4c5beaca4c5bebca4c5b</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f623d8ea1123d8ea1223d8ea</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f623d8ea1123d8ea1223d8ea</sys_update_name>
+<target_name>SchemaService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f68dc635c88dc635c98dc635</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>CodegenService</name>
@@ -763,12 +1071,29 @@
     genGlideRecord: genGlideRecord,
     highlight: highlight,
   };
-}]]></script>
-<sys_id>b2c3d4e5f68c44ab1200112233</sys_id>
+}]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f68dc635c88dc635c98dc635</sys_id>
 <sys_name>CodegenService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f68c44ab1200112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f68dc635c88dc635c98dc635</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f665cb6c8165cb6c8265cb6c</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f665cb6c8165cb6c8265cb6c</sys_update_name>
+<target_name>CodegenService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f664c9d9cc64c9d9cd64c9d9</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>AggregateService</name>
@@ -908,12 +1233,29 @@
     deriveAggFnParams: deriveAggFnParams,
     genGlideAggregate: genGlideAggregate,
   };
-}]]]></script>
-<sys_id>b2c3d4e5f60929801600112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f664c9d9cc64c9d9cd64c9d9</sys_id>
 <sys_name>AggregateService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f60929801600112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f664c9d9cc64c9d9cd64c9d9</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6505c4645505c4646505c46</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6505c4645505c4646505c46</sys_update_name>
+<target_name>AggregateService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f617c6f64b17c6f64c17c6f6</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>AjaxService</name>
@@ -978,12 +1320,29 @@
     deriveAjaxFnParams: deriveAjaxFnParams,
     deriveAjaxVar: deriveAjaxVar,
   };
-}]]]></script>
-<sys_id>b2c3d4e5f6ad71b05500112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f617c6f64b17c6f64c17c6f6</sys_id>
 <sys_name>AjaxService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f6ad71b05500112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f617c6f64b17c6f64c17c6f6</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6079ee232079ee233079ee2</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6079ee232079ee233079ee2</sys_update_name>
+<target_name>AjaxService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6205fd30f205fd310205fd3</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>EncoderService</name>
@@ -1250,12 +1609,29 @@
     detectRelativeDatePreset: detectRelativeDatePreset,
     isRangeKey: isRangeKey,
   };
-}]]></script>
-<sys_id>b2c3d4e5f6ed62ee1900112233</sys_id>
+}]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6205fd30f205fd310205fd3</sys_id>
 <sys_name>EncoderService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f6ed62ee1900112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6205fd30f205fd310205fd3</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6f86509c8f86509c9f86509</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6f86509c8f86509c9f86509</sys_update_name>
+<target_name>EncoderService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6eb8c47eeeb8c47efeb8c47</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>ScriptIncludeService</name>
@@ -1801,12 +2177,29 @@
     derivePascal: derivePascal,
     ajaxClassName: ajaxClassName,
   };
-}]]]></script>
-<sys_id>b2c3d4e5f6bc950eb800112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6eb8c47eeeb8c47efeb8c47</sys_id>
 <sys_name>ScriptIncludeService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f6bc950eb800112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6eb8c47eeeb8c47efeb8c47</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6b6b1cfe7b6b1cfe8b6b1cf</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6b6b1cfe7b6b1cfe8b6b1cf</sys_update_name>
+<target_name>ScriptIncludeService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f650964fa850964fa950964f</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>GlideQueryService</name>
@@ -1924,12 +2317,29 @@
     deriveGqFnParams: deriveGqFnParams,
     genGlideQuery: genGlideQuery,
   };
-}]]]></script>
-<sys_id>b2c3d4e5f68e11bcf200112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f650964fa850964fa950964f</sys_id>
 <sys_name>GlideQueryService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f68e11bcf200112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f650964fa850964fa950964f</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6d751724fd7517250d75172</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6d751724fd7517250d75172</sys_update_name>
+<target_name>GlideQueryService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6b6683815b6683816b66838</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>StandardsService</name>
@@ -2214,12 +2624,29 @@
   return {
     DOC: DOC,
   };
-}]]></script>
-<sys_id>b2c3d4e5f68e2cdc9f00112233</sys_id>
+}]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6b6683815b6683816b66838</sys_id>
 <sys_name>StandardsService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f68e2cdc9f00112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6b6683815b6683816b66838</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6a1faa48ea1faa48fa1faa4</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6a1faa48ea1faa48fa1faa4</sys_update_name>
+<target_name>StandardsService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f600e9d2c300e9d2c400e9d2</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>ExampleCallService</name>
@@ -2658,12 +3085,29 @@
       buildSiExampleCall: buildSiExampleCall,
     };
   }
-]]]></script>
-<sys_id>b2c3d4e5f6c0114acd00112233</sys_id>
+]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f600e9d2c300e9d2c400e9d2</sys_id>
 <sys_name>ExampleCallService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f6c0114acd00112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f600e9d2c300e9d2c400e9d2</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6519304fc519304fd519304</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6519304fc519304fd519304</sys_update_name>
+<target_name>ExampleCallService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f69eac374d9eac374e9eac37</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>ConnectionService</name>
@@ -2729,12 +3173,29 @@
     testConnection: testConnection,
     formatConnError: formatConnError,
   };
-}]]]></script>
-<sys_id>b2c3d4e5f6175749d700112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f69eac374d9eac374e9eac37</sys_id>
 <sys_name>ConnectionService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f6175749d700112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f69eac374d9eac374e9eac37</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6256759f4256759f5256759</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6256759f4256759f5256759</sys_update_name>
+<target_name>ConnectionService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6c1fd4e99c1fd4e9ac1fd4e</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>ConnectionUiService</name>
@@ -2834,12 +3295,29 @@
   }
 
   return svc;
-}]]]></script>
-<sys_id>b2c3d4e5f6e25dc42300112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6c1fd4e99c1fd4e9ac1fd4e</sys_id>
 <sys_name>ConnectionUiService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f6e25dc42300112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6c1fd4e99c1fd4e9ac1fd4e</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6867a6380867a6381867a63</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6867a6380867a6381867a63</sys_update_name>
+<target_name>ConnectionUiService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6b2b25cdeb2b25cdfb2b25c</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>SchemaLiveService</name>
@@ -3048,12 +3526,29 @@
     previewRecords: previewRecords,
     previewAggregate: previewAggregate,
   };
-}]]]></script>
-<sys_id>b2c3d4e5f60b1b9fa800112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6b2b25cdeb2b25cdfb2b25c</sys_id>
 <sys_name>SchemaLiveService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f60b1b9fa800112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6b2b25cdeb2b25cdfb2b25c</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6396d7f85396d7f86396d7f</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6396d7f85396d7f86396d7f</sys_update_name>
+<target_name>SchemaLiveService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f68626bff68626bff78626bf</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>SchemaUiService</name>
@@ -3141,12 +3636,29 @@
 
     return svc;
   }
-]]]></script>
-<sys_id>b2c3d4e5f60dfde8c000112233</sys_id>
+]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f68626bff68626bff78626bf</sys_id>
 <sys_name>SchemaUiService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f60dfde8c000112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f68626bff68626bff78626bf</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f6aec8605daec8605eaec860</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6aec8605daec8605eaec860</sys_update_name>
+<target_name>SchemaUiService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f62215ffaf2215ffb02215ff</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>PreviewUiService</name>
@@ -3235,12 +3747,29 @@
 
     return svc;
   }
-]]]></script>
-<sys_id>b2c3d4e5f6b1fbc2b900112233</sys_id>
+]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f62215ffaf2215ffb02215ff</sys_id>
 <sys_name>PreviewUiService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f6b1fbc2b900112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f62215ffaf2215ffb02215ff</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f60da86c280da86c290da86c</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f60da86c280da86c290da86c</sys_update_name>
+<target_name>PreviewUiService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6dabc3d61dabc3d62dabc3d</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>StandardsUiService</name>
@@ -3453,12 +3982,29 @@
     setupScrollSpy: setupScrollSpy,
     teardownScrollSpy: teardownScrollSpy,
   };
-}]]]></script>
-<sys_id>b2c3d4e5f6fa19c4eb00112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6dabc3d61dabc3d62dabc3d</sys_id>
 <sys_name>StandardsUiService</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f6fa19c4eb00112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6dabc3d61dabc3d62dabc3d</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f62b656f9a2b656f9b2b656f</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f62b656f9a2b656f9b2b656f</sys_update_name>
+<target_name>StandardsUiService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f62f2ab23e2f2ab23f2f2ab2</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>gsSelect</name>
@@ -3672,12 +4218,29 @@ document.addEventListener('scroll', function (e) {
   var root = angular.element(document.querySelector('[ng-controller]')).scope();
   if (root) { root.$applyAsync(function () {}); }
 }, true);
-]]></script>
-<sys_id>b2c3d4e5f62269cd0800112233</sys_id>
+]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f62f2ab23e2f2ab23f2f2ab2</sys_id>
 <sys_name>gsSelect</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f62269cd0800112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f62f2ab23e2f2ab23f2f2ab2</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f66629a7b76629a7b86629a7</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f66629a7b76629a7b86629a7</sys_update_name>
+<target_name>gsSelect</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_b2c3d4e5f6f4076ab9f4076abaf4076a</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>gsConditionGroups</name>
@@ -3924,12 +4487,29 @@ document.addEventListener('scroll', function (e) {
       };
     },
   };
-}]]]></script>
-<sys_id>b2c3d4e5f69280684300112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>b2c3d4e5f6f4076ab9f4076abaf4076a</sys_id>
 <sys_name>gsConditionGroups</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sp_angular_provider_b2c3d4e5f69280684300112233</sys_update_name>
+<sys_update_name>sp_angular_provider_b2c3d4e5f6f4076ab9f4076abaf4076a</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>b2c3d4e5f67ac28d607ac28d617ac28d</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f67ac28d607ac28d617ac28d</sys_update_name>
+<target_name>gsConditionGroups</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_widget_b2c3d4e5f60000112233445566778802</name>
+<payload><![CDATA[<record_update table="sp_widget">
 <sp_widget action="INSERT_OR_UPDATE">
 <category>custom</category>
 <client_script><![CDATA[api.controller = function ($scope, $sce, $timeout, SchemaService, CodegenService, AggregateService, AjaxService, EncoderService, ScriptIncludeService, GlideQueryService, ExampleCallService, SchemaLiveService, ThemeService, SchemaUiService, ConnectionUiService, ConfirmModalService, PreviewUiService, StandardsUiService) {
@@ -4968,7 +5548,7 @@ document.addEventListener('scroll', function (e) {
         });
       });
     };
-  };]]></client_script>
+  };]]]]><![CDATA[></client_script>
 <controller_as>vm</controller_as>
 <css><![CDATA[/* Glide Studio's visual identity: navy brand accent, card-based layout, light/dark theming.
 
@@ -5564,20 +6144,20 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
   background: #221c0f; border: 1px solid #4d3f1c; border-radius: var(--radius-sm);
   color: #fde68a; font-size: 12px; line-height: 1.5;
 }.gsb-widget .stub-card { padding: var(--sp-xxl); text-align: center; color: var(--muted); font-size: 13px; }// No inline <code> styling here on purpose - every <code> in this app (hint text like// `try/catch`, the Settings page's `{{vm.pageOrigin}}`, ...) renders as plain browser-default// monospace text. An earlier pass here added a chip look (background/padding/border-radius, plus// a --inline-code-bg theme token and a .modal-head-specific override) - removed, not needed.
-]]></css>
+]]]]><![CDATA[></css>
 <demo_data/>
 <description>Glide Studio (AngularJS rebuild) - visual builder for ServiceNow GlideRecord, GlideAjax, GlideAggregate, Script Include, and Encoded Query scripts.</description>
 <has_preview>true</has_preview>
 <id>x_glide_studio_ng_widget</id>
 <internal>false</internal>
-<link><![CDATA[]]></link>
+<link><![CDATA[]]]]><![CDATA[></link>
 <name>Glide Studio</name>
 <option_schema/>
 <public>false</public>
 <roles/>
 <script><![CDATA[(function() {
   /* Server logic lives in the injected Angular services (ConnectionService/SchemaLiveService) - this widget needs no server-side data of its own. */
-})();]]></script>
+})();]]]]><![CDATA[></script>
 <servicenow>false</servicenow>
 <sys_class_name>sp_widget</sys_class_name>
 <sys_id>b2c3d4e5f60000112233445566778802</sys_id>
@@ -6667,8 +7247,25 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
   </div>
 
 </div>
-</div>]]></template>
+</div>]]]]><![CDATA[></template>
 </sp_widget>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_widget</source_table>
+<sys_id>b2c3d4e5f6a399e033a399e034a399e0</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6a399e033a399e034a399e0</sys_update_name>
+<target_name>Glide Studio</target_name>
+<type>Widget</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_instance_b2c3d4e5f60000112233445566778809</name>
+<payload><![CDATA[<record_update table="sp_instance">
 <sp_instance action="INSERT_OR_UPDATE">
 <order>100</order>
 <sp_column>b2c3d4e5f60000112233445566778808</sp_column>
@@ -6680,6 +7277,23 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <sys_update_name>sp_instance_b2c3d4e5f60000112233445566778809</sys_update_name>
 <title>Glide Studio</title>
 </sp_instance>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_instance</source_table>
+<sys_id>b2c3d4e5f66cc2c0046cc2c0056cc2c0</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f66cc2c0046cc2c0056cc2c0</sys_update_name>
+<target_name>Glide Studio</target_name>
+<type>Widget Instance</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sp_portal_b2c3d4e5f60000112233445566778804</name>
+<payload><![CDATA[<record_update table="sp_portal">
 <sp_portal action="INSERT_OR_UPDATE">
 <default>false</default>
 <homepage>b2c3d4e5f60000112233445566778805</homepage>
@@ -6691,6 +7305,23 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <title>Glide Studio</title>
 <url_suffix>glide-studio-ng</url_suffix>
 </sp_portal>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_portal</source_table>
+<sys_id>b2c3d4e5f62270245b2270245c227024</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f62270245b2270245c227024</sys_update_name>
+<target_name>Glide Studio</target_name>
+<type>Portal</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_b2c3d4e5f6618b9d6d618b9d6e618b9d</name>
+<payload><![CDATA[<record_update table="sys_security_acl">
 <sys_security_acl action="INSERT_OR_UPDATE">
 <active>true</active>
 <admin_overrides>false</admin_overrides>
@@ -6698,12 +7329,29 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <description>Lets glide_studio_admin edit sp_theme records that belong to this application.</description>
 <name>sp_theme</name>
 <operation>write</operation>
-<sys_id>b2c3d4e5f64119b7f700112233</sys_id>
+<sys_id>b2c3d4e5f6618b9d6d618b9d6e618b9d</sys_id>
 <sys_name>sp_theme.write</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_b2c3d4e5f64119b7f700112233</sys_update_name>
+<sys_update_name>sys_security_acl_b2c3d4e5f6618b9d6d618b9d6e618b9d</sys_update_name>
 <type>record</type>
 </sys_security_acl>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl</source_table>
+<sys_id>b2c3d4e5f633b5caab33b5caac33b5ca</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f633b5caab33b5caac33b5ca</sys_update_name>
+<target_name>sp_theme.write</target_name>
+<type>Access Control</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_b2c3d4e5f6e46f2fb7e46f2fb8e46f2f</name>
+<payload><![CDATA[<record_update table="sys_security_acl">
 <sys_security_acl action="INSERT_OR_UPDATE">
 <active>true</active>
 <admin_overrides>false</admin_overrides>
@@ -6711,12 +7359,29 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <description>Lets glide_studio_admin edit sp_page records that belong to this application.</description>
 <name>sp_page</name>
 <operation>write</operation>
-<sys_id>b2c3d4e5f6fb7154c100112233</sys_id>
+<sys_id>b2c3d4e5f6e46f2fb7e46f2fb8e46f2f</sys_id>
 <sys_name>sp_page.write</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_b2c3d4e5f6fb7154c100112233</sys_update_name>
+<sys_update_name>sys_security_acl_b2c3d4e5f6e46f2fb7e46f2fb8e46f2f</sys_update_name>
 <type>record</type>
 </sys_security_acl>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl</source_table>
+<sys_id>b2c3d4e5f6344438993444389a344438</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6344438993444389a344438</sys_update_name>
+<target_name>sp_page.write</target_name>
+<type>Access Control</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_b2c3d4e5f639d5cb2539d5cb2639d5cb</name>
+<payload><![CDATA[<record_update table="sys_security_acl">
 <sys_security_acl action="INSERT_OR_UPDATE">
 <active>true</active>
 <admin_overrides>false</admin_overrides>
@@ -6724,12 +7389,29 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <description>Lets glide_studio_admin edit sp_container records that belong to this application.</description>
 <name>sp_container</name>
 <operation>write</operation>
-<sys_id>b2c3d4e5f6eb03f3af00112233</sys_id>
+<sys_id>b2c3d4e5f639d5cb2539d5cb2639d5cb</sys_id>
 <sys_name>sp_container.write</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_b2c3d4e5f6eb03f3af00112233</sys_update_name>
+<sys_update_name>sys_security_acl_b2c3d4e5f639d5cb2539d5cb2639d5cb</sys_update_name>
 <type>record</type>
 </sys_security_acl>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl</source_table>
+<sys_id>b2c3d4e5f6d1c0fd63d1c0fd64d1c0fd</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6d1c0fd63d1c0fd64d1c0fd</sys_update_name>
+<target_name>sp_container.write</target_name>
+<type>Access Control</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_b2c3d4e5f650bc803e50bc803f50bc80</name>
+<payload><![CDATA[<record_update table="sys_security_acl">
 <sys_security_acl action="INSERT_OR_UPDATE">
 <active>true</active>
 <admin_overrides>false</admin_overrides>
@@ -6737,12 +7419,29 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <description>Lets glide_studio_admin edit sp_row records that belong to this application.</description>
 <name>sp_row</name>
 <operation>write</operation>
-<sys_id>b2c3d4e5f67a171b0800112233</sys_id>
+<sys_id>b2c3d4e5f650bc803e50bc803f50bc80</sys_id>
 <sys_name>sp_row.write</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_b2c3d4e5f67a171b0800112233</sys_update_name>
+<sys_update_name>sys_security_acl_b2c3d4e5f650bc803e50bc803f50bc80</sys_update_name>
 <type>record</type>
 </sys_security_acl>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl</source_table>
+<sys_id>b2c3d4e5f67db1597c7db1597d7db159</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f67db1597c7db1597d7db159</sys_update_name>
+<target_name>sp_row.write</target_name>
+<type>Access Control</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_b2c3d4e5f66aa36ebe6aa36ebf6aa36e</name>
+<payload><![CDATA[<record_update table="sys_security_acl">
 <sys_security_acl action="INSERT_OR_UPDATE">
 <active>true</active>
 <admin_overrides>false</admin_overrides>
@@ -6750,12 +7449,29 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <description>Lets glide_studio_admin edit sp_column records that belong to this application.</description>
 <name>sp_column</name>
 <operation>write</operation>
-<sys_id>b2c3d4e5f645e7a98800112233</sys_id>
+<sys_id>b2c3d4e5f66aa36ebe6aa36ebf6aa36e</sys_id>
 <sys_name>sp_column.write</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_b2c3d4e5f645e7a98800112233</sys_update_name>
+<sys_update_name>sys_security_acl_b2c3d4e5f66aa36ebe6aa36ebf6aa36e</sys_update_name>
 <type>record</type>
 </sys_security_acl>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl</source_table>
+<sys_id>b2c3d4e5f6dbc23ea0dbc23ea1dbc23e</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6dbc23ea0dbc23ea1dbc23e</sys_update_name>
+<target_name>sp_column.write</target_name>
+<type>Access Control</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_b2c3d4e5f6c77a8b2cc77a8b2dc77a8b</name>
+<payload><![CDATA[<record_update table="sys_security_acl">
 <sys_security_acl action="INSERT_OR_UPDATE">
 <active>true</active>
 <admin_overrides>false</admin_overrides>
@@ -6763,12 +7479,29 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <description>Lets glide_studio_admin edit sp_widget records that belong to this application.</description>
 <name>sp_widget</name>
 <operation>write</operation>
-<sys_id>b2c3d4e5f6b117097600112233</sys_id>
+<sys_id>b2c3d4e5f6c77a8b2cc77a8b2dc77a8b</sys_id>
 <sys_name>sp_widget.write</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_b2c3d4e5f6b117097600112233</sys_update_name>
+<sys_update_name>sys_security_acl_b2c3d4e5f6c77a8b2cc77a8b2dc77a8b</sys_update_name>
 <type>record</type>
 </sys_security_acl>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl</source_table>
+<sys_id>b2c3d4e5f6ad84c20ead84c20fad84c2</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6ad84c20ead84c20fad84c2</sys_update_name>
+<target_name>sp_widget.write</target_name>
+<type>Access Control</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_b2c3d4e5f609e2e43d09e2e43e09e2e4</name>
+<payload><![CDATA[<record_update table="sys_security_acl">
 <sys_security_acl action="INSERT_OR_UPDATE">
 <active>true</active>
 <admin_overrides>false</admin_overrides>
@@ -6776,12 +7509,29 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <description>Lets glide_studio_admin edit sp_instance records that belong to this application.</description>
 <name>sp_instance</name>
 <operation>write</operation>
-<sys_id>b2c3d4e5f6853472c700112233</sys_id>
+<sys_id>b2c3d4e5f609e2e43d09e2e43e09e2e4</sys_id>
 <sys_name>sp_instance.write</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_b2c3d4e5f6853472c700112233</sys_update_name>
+<sys_update_name>sys_security_acl_b2c3d4e5f609e2e43d09e2e43e09e2e4</sys_update_name>
 <type>record</type>
 </sys_security_acl>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl</source_table>
+<sys_id>b2c3d4e5f6a77c971fa77c9720a77c97</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6a77c971fa77c9720a77c97</sys_update_name>
+<target_name>sp_instance.write</target_name>
+<type>Access Control</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_b2c3d4e5f6abc27b54abc27b55abc27b</name>
+<payload><![CDATA[<record_update table="sys_security_acl">
 <sys_security_acl action="INSERT_OR_UPDATE">
 <active>true</active>
 <admin_overrides>false</admin_overrides>
@@ -6789,66 +7539,212 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gsb-widget {
 <description>Lets glide_studio_admin edit sp_portal records that belong to this application.</description>
 <name>sp_portal</name>
 <operation>write</operation>
-<sys_id>b2c3d4e5f6d36ce39e00112233</sys_id>
+<sys_id>b2c3d4e5f6abc27b54abc27b55abc27b</sys_id>
 <sys_name>sp_portal.write</sys_name>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_b2c3d4e5f6d36ce39e00112233</sys_update_name>
+<sys_update_name>sys_security_acl_b2c3d4e5f6abc27b54abc27b55abc27b</sys_update_name>
 <type>record</type>
 </sys_security_acl>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl</source_table>
+<sys_id>b2c3d4e5f62c5b06362c5b06372c5b06</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f62c5b06362c5b06372c5b06</sys_update_name>
+<target_name>sp_portal.write</target_name>
+<type>Access Control</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_b2c3d4e5f69c63f3749c63f3759c63f3</name>
+<payload><![CDATA[<record_update table="sys_security_acl_role">
 <sys_security_acl_role action="INSERT_OR_UPDATE">
-<sys_security_acl>b2c3d4e5f64119b7f700112233</sys_security_acl>
+<sys_security_acl>b2c3d4e5f6618b9d6d618b9d6e618b9d</sys_security_acl>
 <sys_user_role>b2c3d4e5f6000011223344556677880d</sys_user_role>
-<sys_id>b2c3d4e5f6784de3be00112233</sys_id>
+<sys_id>b2c3d4e5f69c63f3749c63f3759c63f3</sys_id>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_role_b2c3d4e5f6784de3be00112233</sys_update_name>
+<sys_update_name>sys_security_acl_role_b2c3d4e5f69c63f3749c63f3759c63f3</sys_update_name>
 </sys_security_acl_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl_role</source_table>
+<sys_id>b2c3d4e5f6e8a5e338e8a5e339e8a5e3</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6e8a5e338e8a5e339e8a5e3</sys_update_name>
+<target_name>Glide Studio (acl_role_sp_theme)</target_name>
+<type>Access Control Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_b2c3d4e5f611323f6a11323f6b11323f</name>
+<payload><![CDATA[<record_update table="sys_security_acl_role">
 <sys_security_acl_role action="INSERT_OR_UPDATE">
-<sys_security_acl>b2c3d4e5f6fb7154c100112233</sys_security_acl>
+<sys_security_acl>b2c3d4e5f6e46f2fb7e46f2fb8e46f2f</sys_security_acl>
 <sys_user_role>b2c3d4e5f6000011223344556677880d</sys_user_role>
-<sys_id>b2c3d4e5f6290ab53400112233</sys_id>
+<sys_id>b2c3d4e5f611323f6a11323f6b11323f</sys_id>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_role_b2c3d4e5f6290ab53400112233</sys_update_name>
+<sys_update_name>sys_security_acl_role_b2c3d4e5f611323f6a11323f6b11323f</sys_update_name>
 </sys_security_acl_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl_role</source_table>
+<sys_id>b2c3d4e5f631d85a6c31d85a6d31d85a</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f631d85a6c31d85a6d31d85a</sys_update_name>
+<target_name>Glide Studio (acl_role_sp_page)</target_name>
+<type>Access Control Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_b2c3d4e5f6666998bc666998bd666998</name>
+<payload><![CDATA[<record_update table="sys_security_acl_role">
 <sys_security_acl_role action="INSERT_OR_UPDATE">
-<sys_security_acl>b2c3d4e5f6eb03f3af00112233</sys_security_acl>
+<sys_security_acl>b2c3d4e5f639d5cb2539d5cb2639d5cb</sys_security_acl>
 <sys_user_role>b2c3d4e5f6000011223344556677880d</sys_user_role>
-<sys_id>b2c3d4e5f6588c3b0600112233</sys_id>
+<sys_id>b2c3d4e5f6666998bc666998bd666998</sys_id>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_role_b2c3d4e5f6588c3b0600112233</sys_update_name>
+<sys_update_name>sys_security_acl_role_b2c3d4e5f6666998bc666998bd666998</sys_update_name>
 </sys_security_acl_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl_role</source_table>
+<sys_id>b2c3d4e5f6e8a80770e8a80771e8a807</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6e8a80770e8a80771e8a807</sys_update_name>
+<target_name>Glide Studio (acl_role_sp_container)</target_name>
+<type>Access Control Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_b2c3d4e5f6b7152b43b7152b44b7152b</name>
+<payload><![CDATA[<record_update table="sys_security_acl_role">
 <sys_security_acl_role action="INSERT_OR_UPDATE">
-<sys_security_acl>b2c3d4e5f67a171b0800112233</sys_security_acl>
+<sys_security_acl>b2c3d4e5f650bc803e50bc803f50bc80</sys_security_acl>
 <sys_user_role>b2c3d4e5f6000011223344556677880d</sys_user_role>
-<sys_id>b2c3d4e5f66238c34d00112233</sys_id>
+<sys_id>b2c3d4e5f6b7152b43b7152b44b7152b</sys_id>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_role_b2c3d4e5f66238c34d00112233</sys_update_name>
+<sys_update_name>sys_security_acl_role_b2c3d4e5f6b7152b43b7152b44b7152b</sys_update_name>
 </sys_security_acl_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl_role</source_table>
+<sys_id>b2c3d4e5f6e8f83149e8f8314ae8f831</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6e8f83149e8f8314ae8f831</sys_update_name>
+<target_name>Glide Studio (acl_role_sp_row)</target_name>
+<type>Access Control Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_b2c3d4e5f6d8bf4cc3d8bf4cc4d8bf4c</name>
+<payload><![CDATA[<record_update table="sys_security_acl_role">
 <sys_security_acl_role action="INSERT_OR_UPDATE">
-<sys_security_acl>b2c3d4e5f645e7a98800112233</sys_security_acl>
+<sys_security_acl>b2c3d4e5f66aa36ebe6aa36ebf6aa36e</sys_security_acl>
 <sys_user_role>b2c3d4e5f6000011223344556677880d</sys_user_role>
-<sys_id>b2c3d4e5f6a2fd44cd00112233</sys_id>
+<sys_id>b2c3d4e5f6d8bf4cc3d8bf4cc4d8bf4c</sys_id>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_role_b2c3d4e5f6a2fd44cd00112233</sys_update_name>
+<sys_update_name>sys_security_acl_role_b2c3d4e5f6d8bf4cc3d8bf4cc4d8bf4c</sys_update_name>
 </sys_security_acl_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl_role</source_table>
+<sys_id>b2c3d4e5f6c4d537b3c4d537b4c4d537</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6c4d537b3c4d537b4c4d537</sys_update_name>
+<target_name>Glide Studio (acl_role_sp_column)</target_name>
+<type>Access Control Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_b2c3d4e5f66daec5156daec5166daec5</name>
+<payload><![CDATA[<record_update table="sys_security_acl_role">
 <sys_security_acl_role action="INSERT_OR_UPDATE">
-<sys_security_acl>b2c3d4e5f6b117097600112233</sys_security_acl>
+<sys_security_acl>b2c3d4e5f6c77a8b2cc77a8b2dc77a8b</sys_security_acl>
 <sys_user_role>b2c3d4e5f6000011223344556677880d</sys_user_role>
-<sys_id>b2c3d4e5f68fb2a99f00112233</sys_id>
+<sys_id>b2c3d4e5f66daec5156daec5166daec5</sys_id>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_role_b2c3d4e5f68fb2a99f00112233</sys_update_name>
+<sys_update_name>sys_security_acl_role_b2c3d4e5f66daec5156daec5166daec5</sys_update_name>
 </sys_security_acl_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl_role</source_table>
+<sys_id>b2c3d4e5f69697bb219697bb229697bb</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f69697bb219697bb229697bb</sys_update_name>
+<target_name>Glide Studio (acl_role_sp_widget)</target_name>
+<type>Access Control Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_b2c3d4e5f668986ea468986ea568986e</name>
+<payload><![CDATA[<record_update table="sys_security_acl_role">
 <sys_security_acl_role action="INSERT_OR_UPDATE">
-<sys_security_acl>b2c3d4e5f6853472c700112233</sys_security_acl>
+<sys_security_acl>b2c3d4e5f609e2e43d09e2e43e09e2e4</sys_security_acl>
 <sys_user_role>b2c3d4e5f6000011223344556677880d</sys_user_role>
-<sys_id>b2c3d4e5f67cc76aee00112233</sys_id>
+<sys_id>b2c3d4e5f668986ea468986ea568986e</sys_id>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_role_b2c3d4e5f67cc76aee00112233</sys_update_name>
+<sys_update_name>sys_security_acl_role_b2c3d4e5f668986ea468986ea568986e</sys_update_name>
 </sys_security_acl_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl_role</source_table>
+<sys_id>b2c3d4e5f697b5977297b5977397b597</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f697b5977297b5977397b597</sys_update_name>
+<target_name>Glide Studio (acl_role_sp_instance)</target_name>
+<type>Access Control Role</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>b2c3d4e5f60000112233445566778801</application>
+<category>customer</category>
+<comments/>
+<name>sys_security_acl_role_b2c3d4e5f6ed1eadeded1eadeeed1ead</name>
+<payload><![CDATA[<record_update table="sys_security_acl_role">
 <sys_security_acl_role action="INSERT_OR_UPDATE">
-<sys_security_acl>b2c3d4e5f6d36ce39e00112233</sys_security_acl>
+<sys_security_acl>b2c3d4e5f6abc27b54abc27b55abc27b</sys_security_acl>
 <sys_user_role>b2c3d4e5f6000011223344556677880d</sys_user_role>
-<sys_id>b2c3d4e5f6df36e87700112233</sys_id>
+<sys_id>b2c3d4e5f6ed1eadeded1eadeeed1ead</sys_id>
 <sys_scope display_value="Glide Studio">b2c3d4e5f60000112233445566778801</sys_scope>
-<sys_update_name>sys_security_acl_role_b2c3d4e5f6df36e87700112233</sys_update_name>
+<sys_update_name>sys_security_acl_role_b2c3d4e5f6ed1eadeded1eadeeed1ead</sys_update_name>
 </sys_security_acl_role>
+</record_update>]]></payload>
+<remote_update_set display_value="Glide Studio v1.0.0">b2c3d4e5f67ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_security_acl_role</source_table>
+<sys_id>b2c3d4e5f6156dff49156dff4a156dff</sys_id>
+<sys_update_name>sys_update_xml_b2c3d4e5f6156dff49156dff4a156dff</sys_update_name>
+<target_name>Glide Studio (acl_role_sp_portal)</target_name>
+<type>Access Control Role</type>
+<update_set/>
+</sys_update_xml>
 </unload>

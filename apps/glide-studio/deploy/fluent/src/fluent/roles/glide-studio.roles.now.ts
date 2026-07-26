@@ -174,7 +174,7 @@ Record({
     $id: Now.ID['acl_role_sp_theme'],
     table: 'sys_security_acl_role',
     data: {
-        sys_security_acl: 'b2c3d4e5f64119b7f700112233',
+        sys_security_acl: 'b2c3d4e5f6618b9d6d618b9d6e618b9d',
         sys_user_role: 'b2c3d4e5f6000011223344556677880d',
     },
 })
@@ -183,7 +183,7 @@ Record({
     $id: Now.ID['acl_role_sp_page'],
     table: 'sys_security_acl_role',
     data: {
-        sys_security_acl: 'b2c3d4e5f6fb7154c100112233',
+        sys_security_acl: 'b2c3d4e5f6e46f2fb7e46f2fb8e46f2f',
         sys_user_role: 'b2c3d4e5f6000011223344556677880d',
     },
 })
@@ -192,7 +192,7 @@ Record({
     $id: Now.ID['acl_role_sp_container'],
     table: 'sys_security_acl_role',
     data: {
-        sys_security_acl: 'b2c3d4e5f6eb03f3af00112233',
+        sys_security_acl: 'b2c3d4e5f639d5cb2539d5cb2639d5cb',
         sys_user_role: 'b2c3d4e5f6000011223344556677880d',
     },
 })
@@ -201,7 +201,7 @@ Record({
     $id: Now.ID['acl_role_sp_row'],
     table: 'sys_security_acl_role',
     data: {
-        sys_security_acl: 'b2c3d4e5f67a171b0800112233',
+        sys_security_acl: 'b2c3d4e5f650bc803e50bc803f50bc80',
         sys_user_role: 'b2c3d4e5f6000011223344556677880d',
     },
 })
@@ -210,7 +210,7 @@ Record({
     $id: Now.ID['acl_role_sp_column'],
     table: 'sys_security_acl_role',
     data: {
-        sys_security_acl: 'b2c3d4e5f645e7a98800112233',
+        sys_security_acl: 'b2c3d4e5f66aa36ebe6aa36ebf6aa36e',
         sys_user_role: 'b2c3d4e5f6000011223344556677880d',
     },
 })
@@ -219,7 +219,7 @@ Record({
     $id: Now.ID['acl_role_sp_widget'],
     table: 'sys_security_acl_role',
     data: {
-        sys_security_acl: 'b2c3d4e5f6b117097600112233',
+        sys_security_acl: 'b2c3d4e5f6c77a8b2cc77a8b2dc77a8b',
         sys_user_role: 'b2c3d4e5f6000011223344556677880d',
     },
 })
@@ -228,7 +228,7 @@ Record({
     $id: Now.ID['acl_role_sp_instance'],
     table: 'sys_security_acl_role',
     data: {
-        sys_security_acl: 'b2c3d4e5f6853472c700112233',
+        sys_security_acl: 'b2c3d4e5f609e2e43d09e2e43e09e2e4',
         sys_user_role: 'b2c3d4e5f6000011223344556677880d',
     },
 })
@@ -237,7 +237,7 @@ Record({
     $id: Now.ID['acl_role_sp_portal'],
     table: 'sys_security_acl_role',
     data: {
-        sys_security_acl: 'b2c3d4e5f6d36ce39e00112233',
+        sys_security_acl: 'b2c3d4e5f6abc27b54abc27b55abc27b',
         sys_user_role: 'b2c3d4e5f6000011223344556677880d',
     },
 })

@@ -27,15 +27,15 @@ declare global {
                     }
                     "ThemeService": {
                         table: "sp_angular_provider"
-                        id: "c7d8e9f0a15aa2d8cc00112233"
+                        id: "c7d8e9f0a13d4fdd023d4fdd033d4fdd"
                     }
                     "StandardsService": {
                         table: "sp_angular_provider"
-                        id: "c7d8e9f0a18e2cdc9f00112233"
+                        id: "c7d8e9f0a1b6683815b6683816b66838"
                     }
                     "StandardsUiService": {
                         table: "sp_angular_provider"
-                        id: "c7d8e9f0a1fa19c4eb00112233"
+                        id: "c7d8e9f0a1dabc3d61dabc3d62dabc3d"
                     }
                     "widget": {
                         table: "sp_widget"

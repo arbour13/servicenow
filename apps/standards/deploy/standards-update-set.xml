@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <unload unload_date="1.0.0 build">
+<sys_remote_update_set action="INSERT_OR_UPDATE">
+<application>c7d8e9f0a10000112233440001</application>
+<application_name>GlideFast Standards Portal</application_name>
+<description/>
+<name>GlideFast Standards Portal v1.0.0</name>
+<origin_sys_id>c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</origin_sys_id>
+<remote_sys_id>c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_sys_id>
+<state>complete</state>
+<sys_id>c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</sys_id>
+<sys_update_name>sys_remote_update_set_c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</sys_update_name>
+<update_source/>
+</sys_remote_update_set>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sys_app_c7d8e9f0a10000112233440001</name>
+<payload><![CDATA[<record_update table="sys_app">
 <sys_app action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>GlideFast Standards Portal</name>
@@ -13,6 +32,23 @@
 <vendor_prefix>x_gfsp</vendor_prefix>
 <version>1.0.0</version>
 </sys_app>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sys_app</source_table>
+<sys_id>c7d8e9f0a158853ffe58853fff588540</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a158853ffe58853fff588540</sys_update_name>
+<target_name>GlideFast Standards Portal</target_name>
+<type>Application</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_theme_c7d8e9f0a10000112233440003</name>
+<payload><![CDATA[<record_update table="sp_theme">
 <sp_theme action="INSERT_OR_UPDATE">
 <css_variables/>
 <name>GlideFast Standards Portal Theme</name>
@@ -22,6 +58,23 @@
 <sys_scope display_value="GlideFast Standards Portal">c7d8e9f0a10000112233440001</sys_scope>
 <sys_update_name>sp_theme_c7d8e9f0a10000112233440003</sys_update_name>
 </sp_theme>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_theme</source_table>
+<sys_id>c7d8e9f0a12b21d3e62b21d3e72b21d3</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a12b21d3e62b21d3e72b21d3</sys_update_name>
+<target_name>GlideFast Standards Portal Theme</target_name>
+<type>Theme</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_page_c7d8e9f0a10000112233440005</name>
+<payload><![CDATA[<record_update table="sp_page">
 <sp_page action="INSERT_OR_UPDATE">
 <category>custom</category>
 <id>x_gfsp_standards_page</id>
@@ -34,6 +87,23 @@
 <sys_update_name>sp_page_c7d8e9f0a10000112233440005</sys_update_name>
 <title>GlideFast Standards Portal</title>
 </sp_page>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_page</source_table>
+<sys_id>c7d8e9f0a1d0e49bfed0e49bffd0e49c</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a1d0e49bfed0e49bffd0e49c</sys_update_name>
+<target_name>GlideFast Standards Portal</target_name>
+<type>Page</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_container_c7d8e9f0a10000112233440006</name>
+<payload><![CDATA[<record_update table="sp_container">
 <sp_container action="INSERT_OR_UPDATE">
 <bootstrap_alt>false</bootstrap_alt>
 <name>GlideFast Standards Portal</name>
@@ -44,6 +114,23 @@
 <sys_update_name>sp_container_c7d8e9f0a10000112233440006</sys_update_name>
 <width>container-fluid</width>
 </sp_container>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_container</source_table>
+<sys_id>c7d8e9f0a1b53ff11eb53ff11fb53ff1</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a1b53ff11eb53ff11fb53ff1</sys_update_name>
+<target_name>GlideFast Standards Portal</target_name>
+<type>Container</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_row_c7d8e9f0a10000112233440007</name>
+<payload><![CDATA[<record_update table="sp_row">
 <sp_row action="INSERT_OR_UPDATE">
 <order>100</order>
 <sp_container>c7d8e9f0a10000112233440006</sp_container>
@@ -51,6 +138,23 @@
 <sys_scope display_value="GlideFast Standards Portal">c7d8e9f0a10000112233440001</sys_scope>
 <sys_update_name>sp_row_c7d8e9f0a10000112233440007</sys_update_name>
 </sp_row>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_row</source_table>
+<sys_id>c7d8e9f0a15974757759747578597475</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a15974757759747578597475</sys_update_name>
+<target_name>GlideFast Standards Portal (row)</target_name>
+<type>Row</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_column_c7d8e9f0a10000112233440008</name>
+<payload><![CDATA[<record_update table="sp_column">
 <sp_column action="INSERT_OR_UPDATE">
 <order>100</order>
 <size>12</size>
@@ -59,6 +163,23 @@
 <sys_scope display_value="GlideFast Standards Portal">c7d8e9f0a10000112233440001</sys_scope>
 <sys_update_name>sp_column_c7d8e9f0a10000112233440008</sys_update_name>
 </sp_column>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_column</source_table>
+<sys_id>c7d8e9f0a1d1d75cc5d1d75cc6d1d75c</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a1d1d75cc5d1d75cc6d1d75c</sys_update_name>
+<target_name>GlideFast Standards Portal (column)</target_name>
+<type>Column</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_c7d8e9f0a13d4fdd023d4fdd033d4fdd</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>ThemeService</name>
@@ -99,12 +220,29 @@
     },
   };
   return svc;
-}]]]></script>
-<sys_id>c7d8e9f0a15aa2d8cc00112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>c7d8e9f0a13d4fdd023d4fdd033d4fdd</sys_id>
 <sys_name>ThemeService</sys_name>
 <sys_scope display_value="GlideFast Standards Portal">c7d8e9f0a10000112233440001</sys_scope>
-<sys_update_name>sp_angular_provider_c7d8e9f0a15aa2d8cc00112233</sys_update_name>
+<sys_update_name>sp_angular_provider_c7d8e9f0a13d4fdd023d4fdd033d4fdd</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>c7d8e9f0a148756dfb48756dfc48756d</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a148756dfb48756dfc48756d</sys_update_name>
+<target_name>ThemeService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_c7d8e9f0a1b6683815b6683816b66838</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>StandardsService</name>
@@ -389,12 +527,29 @@
   return {
     DOC: DOC,
   };
-}]]></script>
-<sys_id>c7d8e9f0a18e2cdc9f00112233</sys_id>
+}]]]]><![CDATA[></script>
+<sys_id>c7d8e9f0a1b6683815b6683816b66838</sys_id>
 <sys_name>StandardsService</sys_name>
 <sys_scope display_value="GlideFast Standards Portal">c7d8e9f0a10000112233440001</sys_scope>
-<sys_update_name>sp_angular_provider_c7d8e9f0a18e2cdc9f00112233</sys_update_name>
+<sys_update_name>sp_angular_provider_c7d8e9f0a1b6683815b6683816b66838</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>c7d8e9f0a1a1faa48ea1faa48fa1faa4</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a1a1faa48ea1faa48fa1faa4</sys_update_name>
+<target_name>StandardsService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_angular_provider_c7d8e9f0a1dabc3d61dabc3d62dabc3d</name>
+<payload><![CDATA[<record_update table="sp_angular_provider">
 <sp_angular_provider action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>StandardsUiService</name>
@@ -607,12 +762,29 @@
     setupScrollSpy: setupScrollSpy,
     teardownScrollSpy: teardownScrollSpy,
   };
-}]]]></script>
-<sys_id>c7d8e9f0a1fa19c4eb00112233</sys_id>
+}]]]]]><![CDATA[></script>
+<sys_id>c7d8e9f0a1dabc3d61dabc3d62dabc3d</sys_id>
 <sys_name>StandardsUiService</sys_name>
 <sys_scope display_value="GlideFast Standards Portal">c7d8e9f0a10000112233440001</sys_scope>
-<sys_update_name>sp_angular_provider_c7d8e9f0a1fa19c4eb00112233</sys_update_name>
+<sys_update_name>sp_angular_provider_c7d8e9f0a1dabc3d61dabc3d62dabc3d</sys_update_name>
 </sp_angular_provider>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_angular_provider</source_table>
+<sys_id>c7d8e9f0a12b656f9a2b656f9b2b656f</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a12b656f9a2b656f9b2b656f</sys_update_name>
+<target_name>StandardsUiService</target_name>
+<type>Angular Provider</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_widget_c7d8e9f0a10000112233440002</name>
+<payload><![CDATA[<record_update table="sp_widget">
 <sp_widget action="INSERT_OR_UPDATE">
 <category>custom</category>
 <client_script><![CDATA[api.controller = function ($scope, ThemeService, StandardsUiService) {
@@ -691,7 +863,7 @@
     // The sticky rail's scroll-spy runs for the app's whole lifetime - there is no other page to
     // leave it for, so unlike a multi-page app's mode-driven setup/teardown, this fires once.
     StandardsUiService.setupScrollSpy(function (id) { if (vm.stdView === 'reading') { vm.activeStdId = id; } });
-  },;]]></client_script>
+  },;]]]]><![CDATA[></client_script>
 <controller_as>vm</controller_as>
 <css><![CDATA[/* GlideFast Standards Portal - visual identity: card-based layout, light/dark theming, and
    Standards-page (.std-*) treatment, trimmed to only what this standalone doc viewer needs (no
@@ -926,20 +1098,20 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gfsp-widget {
   0% { background: var(--accent-soft); box-shadow: 0 0 0 6px var(--accent-soft); }
   100% { background: transparent; box-shadow: 0 0 0 6px transparent; }
 }.gfsp-widget .std-flash { animation: stdFlash 1.5s ease-out; border-radius: var(--radius-sm); }
-]]></css>
+]]]]><![CDATA[></css>
 <demo_data/>
 <description>GlideFast Standards Portal - hosts the GlideFast scripting best-practices reference document.</description>
 <has_preview>true</has_preview>
 <id>x_gfsp_standards_widget</id>
 <internal>false</internal>
-<link><![CDATA[]]></link>
+<link><![CDATA[]]]]><![CDATA[></link>
 <name>GlideFast Standards Portal</name>
 <option_schema/>
 <public>false</public>
 <roles/>
 <script><![CDATA[(function() {
   /* No server-side data needed - the document and its UI mechanics all live in the injected Angular services. */
-})();]]></script>
+})();]]]]><![CDATA[></script>
 <servicenow>false</servicenow>
 <sys_class_name>sp_widget</sys_class_name>
 <sys_id>c7d8e9f0a10000112233440002</sys_id>
@@ -1097,8 +1269,25 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gfsp-widget {
   </div>
 
 </div>
-</div>]]></template>
+</div>]]]]><![CDATA[></template>
 </sp_widget>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_widget</source_table>
+<sys_id>c7d8e9f0a1a399e033a399e034a399e0</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a1a399e033a399e034a399e0</sys_update_name>
+<target_name>GlideFast Standards Portal</target_name>
+<type>Widget</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_instance_c7d8e9f0a10000112233440009</name>
+<payload><![CDATA[<record_update table="sp_instance">
 <sp_instance action="INSERT_OR_UPDATE">
 <order>100</order>
 <sp_column>c7d8e9f0a10000112233440008</sp_column>
@@ -1110,6 +1299,23 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gfsp-widget {
 <sys_update_name>sp_instance_c7d8e9f0a10000112233440009</sys_update_name>
 <title>GlideFast Standards Portal</title>
 </sp_instance>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_instance</source_table>
+<sys_id>c7d8e9f0a16cc2c0046cc2c0056cc2c0</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a16cc2c0046cc2c0056cc2c0</sys_update_name>
+<target_name>GlideFast Standards Portal</target_name>
+<type>Widget Instance</type>
+<update_set/>
+</sys_update_xml>
+<sys_update_xml action="INSERT_OR_UPDATE">
+<action>INSERT_OR_UPDATE</action>
+<application>c7d8e9f0a10000112233440001</application>
+<category>customer</category>
+<comments/>
+<name>sp_portal_c7d8e9f0a10000112233440004</name>
+<payload><![CDATA[<record_update table="sp_portal">
 <sp_portal action="INSERT_OR_UPDATE">
 <default>false</default>
 <homepage>c7d8e9f0a10000112233440005</homepage>
@@ -1121,4 +1327,14 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;.gfsp-widget {
 <title>GlideFast Standards Portal</title>
 <url_suffix>glidefast-standards</url_suffix>
 </sp_portal>
+</record_update>]]></payload>
+<remote_update_set display_value="GlideFast Standards Portal v1.0.0">c7d8e9f0a17ce7e77b7ce7e77c7ce7e7</remote_update_set>
+<replace_on_upgrade>false</replace_on_upgrade>
+<source_table>sp_portal</source_table>
+<sys_id>c7d8e9f0a12270245b2270245c227024</sys_id>
+<sys_update_name>sys_update_xml_c7d8e9f0a12270245b2270245c227024</sys_update_name>
+<target_name>GlideFast Standards Portal</target_name>
+<type>Portal</type>
+<update_set/>
+</sys_update_xml>
 </unload>

@@ -188,7 +188,7 @@ Fluent output. Add further `deployOptions` fields here if a future Deploy-UI tog
 genuinely per-app (don't add one speculatively).
 
 The browser key (`root.SNAppManifests['<app-folder-name>']`) is keyed by the app's own folder name
-under `apps/` (e.g. `'core'`, `'glide-studio'`) - the same name the deploy console uses to probe for
+under `apps/` (e.g. `'glide-studio'`, `'standards'`) - the same name the deploy console uses to probe for
 it, so no separate registry has to map folder → key.
 
 ## Two output targets, one shared record model
@@ -200,9 +200,18 @@ plus a marker (`cdata: true` for a long script/template/css body, `empty: true` 
 tag, `scopeTag: true` for the `<sys_scope>` tag itself, `xmlOnly: true` for bookkeeping fields only
 XML needs). Two thin emitters walk this SAME model:
 
-- `core.js`'s **`assembleXml(manifest, parts, opts)`** → one Update Set `<unload>` string
-  (the classic import-an-XML path). `renderXmlRecord` CDATA-wraps `cdata` fields and self-closes
-  `empty` ones; field order comes straight from the model.
+- `core.js`'s **`assembleXml(manifest, parts, opts)`** → one Retrieved Update Set `<unload>`
+  string, importable via **System Update Sets → Retrieved Update Sets → Import Update Set from
+  XML**. `buildRecordModel`'s flat record list is NOT emitted directly (that would be a plain
+  per-table XML export, which the Retrieved Update Set importer doesn't recognize as anything to
+  do) - `wrapAsUpdateSet()` wraps it first: one `sys_remote_update_set` header record, then one
+  `sys_update_xml` per model record, each carrying that record's own rendered XML (from the SAME
+  `renderXmlRecord` used before) escaped inside a `<record_update table="...">...</record_update>`
+  `payload` CDATA. `renderXmlRecord` CDATA-wraps `cdata` fields (nesting safely under the payload's
+  own CDATA - `cdata()`'s `]]>` escaping handles arbitrary nesting depth) and self-closes `empty`
+  ones; field order comes straight from the model. `wrapAsUpdateSet` runs XML-only, inside
+  `assembleXml` - `fluent.js` never sees it, since Fluent installs directly via the Now SDK with no
+  Update Set concept at all.
 - `fluent.js`'s **`assembleFluent(manifest, parts, opts)`** → a **file-map**
   (`{ 'relative/path': 'contents' }`) making up a ServiceNow **Now SDK / Fluent** TypeScript project.
   `opts.mode` is `'project'` (full runnable project: `package.json`, `now.config.json`,
