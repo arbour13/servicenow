@@ -17,9 +17,12 @@
     margin: 0; padding: 32px; background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
-  h1 { font-size: 20px; margin: 0 0 4px; max-width: var(--content-width); }
-  .subtitle { color: var(--text-muted); margin: 0 0 28px; font-size: 14px; max-width: var(--content-width); }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; max-width: var(--content-width); }
+  /* Centers the whole page's content as one block, rather than centering each piece separately -
+     keeps every child's own margin shorthand (h1/.subtitle/.panel) untouched. */
+  .page { max-width: var(--content-width); margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-muted); margin: 0 0 28px; font-size: 14px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
   label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 6px; }
   select, input[type="text"] {
     width: 100%; padding: 9px 10px; background: #0e1626; border: 1px solid var(--border); border-radius: 6px;
@@ -66,6 +69,8 @@
 </style>
 </head>
 <body>
+
+<div class="page">
 
 <h1>ServiceNow Deployment Packager</h1>
 <p class="subtitle">Build, preview, and download a ServiceNow Update Set for any app in this suite - outside any single app's own dev harness. Only apps with a <code>deploy.manifest.js</code> are deployable.</p>
@@ -146,6 +151,8 @@
       <button type="button" class="action-btn" id="downloadBtn">Download</button>
     </div>
   </div>
+</div>
+
 </div>
 
 <script src="core.js"></script>
