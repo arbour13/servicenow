@@ -256,7 +256,7 @@ class Component extends DCLogic {
   redo(){ if(this.history&&this.histIdx<this.history.length-1){ this.histIdx++; this.restoreHist(this.history[this.histIdx]); } }
   restoreHist(snap){ const o=JSON.parse(snap); this.tree=o.tree; this.classStyles=o.classStyles||{}; this.stateStyles=o.stateStyles||{}; this.responsive=o.responsive||{md:{},sm:{},xs:{}}; if(o.tokens) { this.tokens=o.tokens; }
     if(o.wname!=null) { this.wname=o.wname; } if(o.wid!=null) { this.wid=o.wid; }
-    if(o.optionSchema) { this.optionSchema=o.optionSchema; }
+    if(o.optionSchema) { this.optionSchema=o.optionSchema; this.syncOptSeq(); }
     if(o.code) { this.code=Object.assign(this.DEFAULT_CODE(),{client:o.code.client,server:o.code.server,link:o.code.link}); }
     if(o.instanceClass!=null) { this.instanceClass=o.instanceClass; } if(o.instanceFields) { this.instanceFields=o.instanceFields; }
     // Drop transient inspector targets so they can't desync from the restored tree/styles.
@@ -292,6 +292,11 @@ class Component extends DCLogic {
   DEFAULT_CODE(){ return {client:"api.controller = function () {\n  var c = this;\n\n  \n};",server:"(function () {\n  \n})();",link:"function link(scope, element, attrs, controller) {\n  \n}"}; }
   serializeWidget(){ return {wname:this.wname,wid:this.wid,tree:this.tree,classStyles:this.classStyles,stateStyles:this.stateStyles,responsive:this.responsive,tokens:this.tokens,optionSchema:this.optionSchema,code:{client:this.code.client,server:this.code.server,link:this.code.link},uidc:this.uidc,instanceClass:this.instanceClass,instanceFields:this.instanceFields}; }
   maxUid(){ let mx=0; const walk=n=>{ if(n&&typeof n.id==='string'){ const m=n.id.match(/_(\d+)$/); if(m) { mx=Math.max(mx,+m[1]); } } (n&&n.children||[]).forEach(walk); }; walk(this.tree); return mx; }
+  // Option ids are minted as opt_${++_optSeq}. The counter lives only in memory, so any path that
+  // restores optionSchema from disk/draft/undo must bump it past the highest existing suffix —
+  // otherwise a refresh resets _optSeq to 0 and the next addOption collides; delOption then wipes
+  // every option that shares the colliding id.
+  syncOptSeq(){ let mx=this._optSeq||0; (this.optionSchema||[]).forEach(o=>{ if(o&&typeof o.id==='string'){ const m=o.id.match(/^opt_(\d+)$/); if(m) { mx=Math.max(mx,+m[1]); } } }); this._optSeq=mx; }
   loadWidgetData(d){ d=d||{};
     this.wname=d.wname||'Untitled'; this.wid=d.wid||'untitled';
     this.tree=d.tree||{id:'root',type:'root',classes:[],data:{tag:'div'},children:[]};
@@ -299,6 +304,7 @@ class Component extends DCLogic {
     this.responsive=d.responsive||{md:{},sm:{},xs:{}};
     this.tokens=d.tokens||this.parseVars(this.DEFAULT_VARS());
     this.optionSchema=d.optionSchema||[];
+    this.syncOptSeq();
     this.code=Object.assign(this.DEFAULT_CODE(), d.code||{});
     this.uidc=d.uidc||(this.maxUid()+1);
     this.migrateLegacyPresets();   // after uidc, so the nodes it mints can't reuse an existing id
@@ -2154,7 +2160,7 @@ class Component extends DCLogic {
         h('div',{'aria-hidden':'true',style:Object.assign({position:'absolute',top:0,bottom:0,borderRadius:opts.indicatorRadius!=null?opts.indicatorRadius:4,background:opts.indicatorBg||t.accentFill,transition:slide,zIndex:0},indicatorStyle)}),
         items.map((it,i)=>{ const on=i===curIdx; const go=()=>onPick(it.v,i);
           return h('div',Object.assign({key:String(it.v)},{onClick:go},this.a11y(go,{pressed:on,label:it.label}),it.tt?this.tt(it.tt):{},
-            {style:Object.assign({position:'relative',zIndex:1,padding:opts.pad||'4px 9px',boxSizing:'border-box',borderRadius:opts.radius!=null?opts.radius:6,cursor:on?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:on?(opts.onColor||'#fff'):t.muted},itemStyle)}),
+            {style:Object.assign({position:'relative',zIndex:1,padding:opts.pad||'4px 9px',boxSizing:'border-box',borderRadius:opts.radius!=null?opts.radius:6,cursor:on?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12.5,color:on?(opts.onColor||'#fff'):t.muted},itemStyle)}),
             it.render(on)); })
       )
     );
@@ -4014,6 +4020,15 @@ class Component extends DCLogic {
   // Quiet sub-section label used INSIDE a bigCard (Layout/Spacing/Size, Background/Typography/…) — one
   // notch lighter than section()'s bold uppercase treatment, since the card header now carries that role.
   subHead(t,label,first){ return React.createElement('div',{style:{fontSize:11,fontWeight:600,color:t.muted,margin:first?'0 0 8px':'18px 0 8px'}},label); }
+  // Nested field band used inside Style-tab sections (same chrome as spaceBand / insetBand): bordered
+  // surface, uppercase title, optional trailing control. Stacks with marginTop:8 so Typography /
+  // Background / Effects / Transforms match Spacing/Size density instead of ad-hoc marginTop rows.
+  inspBand(t,title,body,opts){ opts=opts||{}; const h=React.createElement;
+    return h('div',{style:{border:'1px solid '+t.border,borderRadius:8,background:opts.bg||t.panel,padding:8,marginTop:opts.first?0:8}},
+      title?h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}},
+        h('span',{style:{fontSize:9.5,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:t.text}},title),
+        opts.trail||null):null,
+      body); }
   // The bold uppercase divider between the top-level blocks inside a bigCard (Layout, Flex/Grid
   // child, Typography, Background, Border, Effects, Transforms & Transitions) — was 8 near-
   // identical hand-rolled style objects (5 with a trailing stateEditDot, 3 without); now one helper
@@ -5500,8 +5515,9 @@ class Component extends DCLogic {
     const setTok=name=>this.setCS(node,'boxShadow','var(--'+name+')');
     const goManual=()=>this.setCS(node,'boxShadow',this.composeShadow(tk?this.parseShadow(tk.value):(cur?s:{x:'0',y:'4',blur:'16',spread:'0',color:'#000000',alpha:25,inset:false})));
     const setS=(k,v)=>this.setCS(node,'boxShadow',this.composeShadow(Object.assign({},s,{[k]:v})));
+    // Label lives on the Effects inspBand that wraps this control — keep the body label-free so the
+    // band title isn't duplicated.
     return h('div',null,
-      this.lbl(t,'Box shadow'),
       h('div',{style:{display:'flex',gap:4}},
         shadowToks.map(tok=>{ const short=tok.name.replace(/^box-shadow-/,''); const on=!manual&&cur==='var(--'+tok.name+')';
           return h('button',Object.assign({key:tok.id,onClick:()=>setTok(tok.name)},this.tt(tok.value),{style:{flex:'1 1 0',minWidth:0,height:28,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:600,fontFamily:'ui-monospace,monospace',borderRadius:6,cursor:'pointer',boxSizing:'border-box',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.panel,color:on?t.accent:t.muted}}),short); }),
@@ -5541,8 +5557,8 @@ class Component extends DCLogic {
         h('span',{style:{fontSize:10,color:t.faint,flex:'0 0 auto'}},label),
         h('input',{value:err!=null?err:v,spellCheck:false,onChange:e=>commit(e.target.value),onBlur:()=>{ if(err!=null) { delete this._tsErr[key]; this.forceUpdate(); } },style:{flex:1,minWidth:0,border:'none',background:'none',color:err!=null?this.errClr():t.text,fontSize:12,outline:'none'}})); };
     const cErr=this._tsErr[ek('color')], aErr=this._tsErr[ek('alpha')];
+    // Label lives on the Typography inspBand that wraps this control.
     return h('div',null,
-      this.lbl(t,'Text shadow'),
       h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}},
         num('X','x',x,v=>write(v,y,blur,color,alpha),true), num('Y','y',y,v=>write(x,v,blur,color,alpha),true), num('Blur','blur',blur,v=>write(x,y,v,color,alpha),false)),
       h('div',{style:{display:'flex',alignItems:'center',gap:7,height:30,border:'1px solid '+(cErr!=null?this.errClr():t.border),borderRadius:6,padding:'0 8px',background:t.panel,marginTop:6}},
@@ -5568,34 +5584,35 @@ class Component extends DCLogic {
     const styleTile=(on,glyph,title,onClick,extra)=>h('div',Object.assign({onClick},this.tt(title),this.a11y(onClick,{pressed:on,label:title}),{style:Object.assign({flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',fontSize:13,fontWeight:600,border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted},extra||{})}),glyph);
     const alignTile=o=>{ const on=ta===o.v; const pick=()=>this.setCS(node,'textAlign',o.v==='left'?'':o.v); return h('div',Object.assign({key:o.v,onClick:pick},this.tt(o.title),this.a11y(pick,{pressed:on,label:o.title}),{style:{flex:1,height:30,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:7,cursor:'pointer',border:'1px solid '+(on?t.accent:t.border),background:on?t.accentSoft:t.segBg,color:on?t.accent:t.muted}}),o.icon); };
     const caseTile=(g,v,title)=>styleTile(tform===v,g,title,()=>this.setCS(node,'textTransform',tform===v?'':v),{fontSize:12});
+    const tmode=this.truncMode(node); const clampN=(this.csVal(node,'WebkitLineClamp')||'2').toString();
     return h('div',null,
-      h('div',{style:{marginBottom:8}}, this.selectField(t,famOpts,this.csVal(node,'fontFamily')||'',v=>this.setCS(node,'fontFamily',v))),
-      h('div',{style:{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:8}},
-        this.selectField(t,wOpts,w,v=>this.setCS(node,'fontWeight',v)),
-        this.prefixField(t,'',fs,v=>{ const x=v.trim(); this.setCS(node,'fontSize',x===''?'':(/^[0-9.]+$/.test(x)?x+'px':x)); },{unit:'px',placeholder:'16'})),
-      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}},
-        this.prefixField(t,'LH',lh,v=>this.setCS(node,'lineHeight',v.trim()),{placeholder:'1.5'}),
-        this.prefixField(t,'LS',ls,v=>{ const x=v.trim(); this.setCS(node,'letterSpacing',x===''?'':(/^[-0-9.]+$/.test(x)?x+'px':x)); },{placeholder:'0'})),
-      h('div',{style:{marginTop:8}}, this.colorInlineField(t,node,'color',{placeholder:'#1F2328',noAlpha:true,noToken:true})),
-      h('div',{style:{display:'flex',gap:5,marginTop:8}},
-        h('div',{role:'group','aria-label':'Text align',style:{display:'flex',gap:4,flex:1}}, taOpts.map(alignTile)),
-        h('div',{role:'group','aria-label':'Text style',style:{display:'flex',gap:4,flex:1}},
-          styleTile(fst==='italic','I','Italic',()=>this.setCS(node,'fontStyle',fst==='italic'?'':'italic'),{fontStyle:'italic'}),
-          styleTile(/underline/.test(deco),'U','Underline',()=>this.toggleDeco(node,'underline'),{textDecoration:'underline'}),
-          styleTile(/line-through/.test(deco),'S','Strikethrough',()=>this.toggleDeco(node,'line-through'),{textDecoration:'line-through'}))),
-      h('div',{role:'group','aria-label':'Text case',style:{display:'flex',gap:4,marginTop:8}},
-        caseTile('AG','uppercase','Uppercase'), caseTile('ag','lowercase','Lowercase'), caseTile('Ag','capitalize','Capitalize')),
-      this.textShadowEditor(node,t),
-      (()=>{ const tmode=this.truncMode(node); const clampN=(this.csVal(node,'WebkitLineClamp')||'2').toString();
-        return h('div',null,
-          this.lbl(t,'Truncate'),
-          this.segTextSlider(t,[{v:'wrap',l:'Wrap'},{v:'ellipsis',l:'Ellipsis'},{v:'clamp',l:'Clamp'}],tmode,v=>this.setTrunc(node,v),{pad:'6px 0'}),
-          tmode==='clamp'?h('div',{style:{marginTop:8}}, this.lbl(t,'Max lines'), this.selectField(t,['1','2','3','4','5','6'],clampN,v=>this.setCS(node,'WebkitLineClamp',v))):null); })(),
-      // Raw white-space control. Shares the whiteSpace property with the Truncate modes above
-      // (Ellipsis sets nowrap; both read/write the same csVal), so the select always shows the
-      // real current value rather than pretending to be an independent axis.
-      h('div',{style:{marginTop:8}}, this.lbl(t,'White space'),
-        this.xselect('ws:'+node.id,t,this.csVal(node,'whiteSpace')||'',[['','Default'],['normal','normal'],['nowrap','nowrap'],['pre','pre'],['pre-wrap','pre-wrap'],['pre-line','pre-line']],v=>this.setCS(node,'whiteSpace',v),{mono:true}))); }
+      this.inspBand(t,'Face', h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+        this.selectField(t,famOpts,this.csVal(node,'fontFamily')||'',v=>this.setCS(node,'fontFamily',v)),
+        h('div',{style:{display:'grid',gridTemplateColumns:'1.4fr 1fr',gap:8}},
+          this.selectField(t,wOpts,w,v=>this.setCS(node,'fontWeight',v)),
+          this.prefixField(t,'',fs,v=>{ const x=v.trim(); this.setCS(node,'fontSize',x===''?'':(/^[0-9.]+$/.test(x)?x+'px':x)); },{unit:'px',placeholder:'16'}))), {first:true}),
+      this.inspBand(t,'Metrics', h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+        h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}},
+          this.prefixField(t,'LH',lh,v=>this.setCS(node,'lineHeight',v.trim()),{placeholder:'1.5'}),
+          this.prefixField(t,'LS',ls,v=>{ const x=v.trim(); this.setCS(node,'letterSpacing',x===''?'':(/^[-0-9.]+$/.test(x)?x+'px':x)); },{placeholder:'0'})),
+        this.colorInlineField(t,node,'color',{placeholder:'#1F2328',noAlpha:true,noToken:true}))),
+      this.inspBand(t,'Emphasis', h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+        h('div',{style:{display:'flex',gap:5}},
+          h('div',{role:'group','aria-label':'Text align',style:{display:'flex',gap:4,flex:1}}, taOpts.map(alignTile)),
+          h('div',{role:'group','aria-label':'Text style',style:{display:'flex',gap:4,flex:1}},
+            styleTile(fst==='italic','I','Italic',()=>this.setCS(node,'fontStyle',fst==='italic'?'':'italic'),{fontStyle:'italic'}),
+            styleTile(/underline/.test(deco),'U','Underline',()=>this.toggleDeco(node,'underline'),{textDecoration:'underline'}),
+            styleTile(/line-through/.test(deco),'S','Strikethrough',()=>this.toggleDeco(node,'line-through'),{textDecoration:'line-through'}))),
+        h('div',{role:'group','aria-label':'Text case',style:{display:'flex',gap:4}},
+          caseTile('AG','uppercase','Uppercase'), caseTile('ag','lowercase','Lowercase'), caseTile('Ag','capitalize','Capitalize')))),
+      this.inspBand(t,'Text shadow', this.textShadowEditor(node,t)),
+      this.inspBand(t,'Truncate', h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+        this.segTextSlider(t,[{v:'wrap',l:'Wrap'},{v:'ellipsis',l:'Ellipsis'},{v:'clamp',l:'Clamp'}],tmode,v=>this.setTrunc(node,v),{pad:'6px 0'}),
+        tmode==='clamp'?h('div',null, this.lbl(t,'Max lines'), this.selectField(t,['1','2','3','4','5','6'],clampN,v=>this.setCS(node,'WebkitLineClamp',v))):null,
+        // Raw white-space control. Shares the whiteSpace property with Truncate modes above
+        // (Ellipsis sets nowrap); the select always shows the real current value.
+        h('div',null, this.lbl(t,'White space'),
+          this.xselect('ws:'+node.id,t,this.csVal(node,'whiteSpace')||'',[['','Default'],['normal','normal'],['nowrap','nowrap'],['pre','pre'],['pre-wrap','pre-wrap'],['pre-line','pre-line']],v=>this.setCS(node,'whiteSpace',v),{mono:true}))))); }
   // ---- Background ----
   bgTypeOf(node){ const bg=(this.csVal(node,'background')||''); const bgi=(this.csVal(node,'backgroundImage')||'');
     if(/gradient/i.test(bg)||/gradient/i.test(bgi)) { return 'gradient'; }
@@ -5618,9 +5635,8 @@ class Component extends DCLogic {
       const setG=(angle,stops)=>this.setCS(node,'background',this.composeGradient(angle,stops));
       const swatch=c=>({width:16,height:16,borderRadius:4,border:'1px solid '+t.border,flex:'0 0 auto',background:this.isColor(c)?c:'transparent'});
       // Each stop's color/position validate before writing (same cssAccepts check as every other
-      // field in the panel) — previously these were the one raw, unchecked pair left in the whole
-      // Background block. No per-node key fits an array index, so errors are tracked in a small
-      // local map keyed by stop index instead of the shared fieldErr (which is keyed by node+prop).
+      // field in the panel). Errors tracked in a local map keyed by stop index — no per-node key
+      // fits an array index (shared fieldErr is keyed by node+prop).
       this._gradErr=this._gradErr||{};
       const gErrKey=(i,f)=>node.id+'|'+i+'|'+f;
       body.push(h('div',{key:'preview',style:{height:34,borderRadius:6,border:'1px solid '+t.border,background:this.composeGradient(g.angle,g.stops)}}));
@@ -5641,14 +5657,15 @@ class Component extends DCLogic {
       body.push(h('div',{key:'add',onClick:()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),...this.a11y(()=>setG(g.angle,g.stops.concat({color:'#22C55E',pos:'50%'})),{label:'Add color stop'}),style:{display:'flex',alignItems:'center',justifyContent:'center',marginTop:6,padding:'6px 0',border:'1px dashed '+t.border,borderRadius:6,cursor:'pointer',color:t.muted,fontSize:11.5,fontWeight:500}},'+ Add color stop'));
       body.push(h('div',{key:'angle',style:{marginTop:8}}, this.lbl(t,'Angle'), this.selectField(t,[['90deg','90°'],['0deg','0°'],['45deg','45°'],['135deg','135°'],['180deg','180°']],g.angle,v=>setG(v,g.stops)))); }
     else { // image
-      body.push(h('div',{key:'url',style:{marginTop:0}}, this.prefixField(t,'',this.csVal(node,'backgroundImage').replace(/^url\((['"]?)(.*)\1\)$/,'$2'),v=>{ const u=v.trim(); this.setCS(node,'backgroundImage',u?('url("'+u+'")'):''); },{placeholder:'https://…'})));
+      body.push(h('div',{key:'url'}, this.prefixField(t,'',this.csVal(node,'backgroundImage').replace(/^url\((['"]?)(.*)\1\)$/,'$2'),v=>{ const u=v.trim(); this.setCS(node,'backgroundImage',u?('url("'+u+'")'):''); },{placeholder:'https://…'})));
       body.push(h('div',{key:'sr',style:{display:'flex',gap:8,marginTop:8}},
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Size'), this.selectField(t,[['cover','Cover'],['contain','Contain'],['auto','Auto']],this.csVal(node,'backgroundSize')||'cover',v=>this.setCS(node,'backgroundSize',v==='cover'?'':v))),
         h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Repeat'), this.selectField(t,[['no-repeat','No repeat'],['repeat','Repeat'],['repeat-x','Repeat X'],['repeat-y','Repeat Y']],this.csVal(node,'backgroundRepeat')||'no-repeat',v=>this.setCS(node,'backgroundRepeat',v==='no-repeat'?'':v)))));
       body.push(h('div',{key:'fb',style:{marginTop:8}}, this.colorInlineField(t,node,'backgroundColor',{noAlpha:true,placeholder:'Fallback'}))); }
+    const modeTitle=type==='solid'?'Solid':(type==='gradient'?'Gradient':'Image');
     return h('div',null,
-      h('div',{style:{marginBottom:10}}, this.segTextSlider(t,[{v:'solid',l:'Solid'},{v:'gradient',l:'Gradient'},{v:'image',l:'Image'}],type,v=>this.switchBgType(node,v),{pad:'6px 0'})),
-      body); }
+      this.inspBand(t,'Mode', this.segTextSlider(t,[{v:'solid',l:'Solid'},{v:'gradient',l:'Gradient'},{v:'image',l:'Image'}],type,v=>this.switchBgType(node,v),{pad:'6px 0'}), {first:true}),
+      this.inspBand(t,modeTitle, h('div',null, body))); }
   // ---- Border ----
   // Border style as 4 line-preview swatches (not a <select>) — each button renders the actual rule style
   // so you're picking by how the border will look, not reading a word.
@@ -5719,22 +5736,22 @@ class Component extends DCLogic {
     const setFilterValue=(type,v)=>{ const map=Object.assign({},activeMap,{[type]:v}); setFilterMap(composeFromMap(map)); };
     const toggleBackdrop=()=>{ const cur=this.csVal(node,fprop)||''; this.setCS(node,fprop,''); this.setCS(node, backdropOn?'filter':'backdropFilter', cur); };
     return h('div',null,
-      this.lbl(t,'Opacity'),
-      this.slider(t,opacity,0,1,0.05,v=>this.setCS(node,'opacity', v>=1?'':String(v))),
-      h('div',{style:{marginTop:12}}, this.lbl(t,'Blending'), this.selectField(t,[['normal','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['difference','Difference'],['luminosity','Luminosity']],this.csVal(node,'mixBlendMode')||'normal',v=>this.setCS(node,'mixBlendMode',v))),
-      this.shadowControl(node,t),
-      this.subHead(t,'Filters'),
-      h('div',{style:{display:'flex',flexDirection:'column',gap:11}},
+      this.inspBand(t,'Opacity & blend', h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+        this.lbl(t,'Opacity'),
+        this.slider(t,opacity,0,1,0.05,v=>this.setCS(node,'opacity', v>=1?'':String(v))),
+        h('div',null, this.lbl(t,'Blending'), this.selectField(t,[['normal','Normal'],['multiply','Multiply'],['screen','Screen'],['overlay','Overlay'],['darken','Darken'],['lighten','Lighten'],['difference','Difference'],['luminosity','Luminosity']],this.csVal(node,'mixBlendMode')||'normal',v=>this.setCS(node,'mixBlendMode',v)))), {first:true}),
+      this.inspBand(t,'Box shadow', this.shadowControl(node,t)),
+      this.inspBand(t,'Filters', h('div',{style:{display:'flex',flexDirection:'column',gap:10}},
         order.map(type=>{ const m=meta[type]; const on=activeMap[type]!=null; const val=on?activeMap[type]:defaults[type];
           return h('div',{key:type,style:{display:'flex',alignItems:'center',gap:10}},
             this.switchCtrl(t,on,()=>toggleFilter(type),'Toggle '+m.label),
             h('span',{style:{fontSize:12,color:on?t.text:t.muted,width:74,flex:'0 0 auto'}},m.label),
             h('input',{type:'range',min:m.min,max:m.max,step:m.step,value:val,disabled:!on,onChange:e=>setFilterValue(type,parseFloat(e.target.value)),style:{flex:1,minWidth:0,accentColor:t.accent,cursor:on?'pointer':'default',opacity:on?1:0.35}}),
-            h('span',{style:{width:46,textAlign:'right',fontSize:11,fontFamily:'ui-monospace,monospace',color:on?t.muted:t.faint,flex:'0 0 auto'}},val+m.unit)); })),
-      h('div',{style:{display:'flex',alignItems:'center',gap:10,marginTop:14}},
-        this.switchCtrl(t,backdropOn,toggleBackdrop,'Apply filters to what is behind the element'),
-        h('span',{style:{fontSize:12,color:t.text}},'Apply behind element')),
-      h('div',{style:{marginTop:14}}, this.lbl(t,'Cursor'), this.selectField(t,[['auto','Auto'],['pointer','Pointer'],['default','Default'],['move','Move'],['text','Text'],['grab','Grab'],['not-allowed','Not allowed']],this.csVal(node,'cursor')||'auto',v=>this.setCS(node,'cursor',v)))
+            h('span',{style:{width:46,textAlign:'right',fontSize:11,fontFamily:'ui-monospace,monospace',color:on?t.muted:t.faint,flex:'0 0 auto'}},val+m.unit)); }),
+        h('div',{style:{display:'flex',alignItems:'center',gap:10}},
+          this.switchCtrl(t,backdropOn,toggleBackdrop,'Apply filters to what is behind the element'),
+          h('span',{style:{fontSize:12,color:t.text}},'Apply behind element')))),
+      this.inspBand(t,'Cursor', this.selectField(t,[['auto','Auto'],['pointer','Pointer'],['default','Default'],['move','Move'],['text','Text'],['grab','Grab'],['not-allowed','Not allowed']],this.csVal(node,'cursor')||'auto',v=>this.setCS(node,'cursor',v)))
     );
   }
   // ---- Transforms (Move/Scale/Rotate/Skew tabs) & Transitions (card list) ----
@@ -5757,20 +5774,24 @@ class Component extends DCLogic {
       return h('div',{style:{display:'flex',alignItems:'center',gap:4,height:30,border:'1px solid '+(err!=null?this.errClr():t.border),borderRadius:6,padding:'0 6px',background:t.panel,minWidth:0}},
         h('input',{value:err!=null?err:v,spellCheck:false,onChange:e=>commit(e.target.value),onBlur:()=>{ if(err!=null) { delete this._transErr[key]; this.forceUpdate(); } },style:{flex:1,minWidth:0,border:'none',background:'none',color:err!=null?this.errClr():t.text,fontSize:11,outline:'none'}}),
         h('span',{style:{fontSize:9,color:t.faint}},'ms')); };
+    const addTrans=()=>setTrans(trans.concat({prop:'all',dur:'200',ease:'ease',delay:'0'}));
+    const addBtn=h('button',Object.assign({onClick:addTrans},this.tt('Add transition'),this.a11y(addTrans,{label:'Add transition'}),{style:{width:22,height:20,display:'flex',alignItems:'center',justifyContent:'center',background:t.segBg,border:'1px solid '+t.border,borderRadius:5,color:t.muted,cursor:'pointer',fontSize:14,lineHeight:1}}),'+');
     return h('div',null,
-      h('div',{style:{marginBottom:10}}, seg),
-      h('div',{style:{display:'grid',gridTemplateColumns:axes.map(()=>'1fr').join(' '),gap:8}}, axes.map(ax=>this.prefixField(t,axLabel[ax],xf[tab][ax],v=>setAxis(ax,v)))),
-      h('div',{style:{display:'flex',gap:8,marginTop:8}},
-        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Origin'), this.selectField(t,[['','Center'],['top left','Top left'],['top','Top'],['bottom','Bottom'],['left','Left'],['right','Right']],this.csVal(node,'transformOrigin')||'',v=>this.setCS(node,'transformOrigin',v))),
-        h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Perspective'), this.prefixField(t,'',(this.csVal(node,'perspective')||'').replace(/px$/,''),v=>{ const x=v.trim(); this.setCS(node,'perspective',x===''?'':(/^[0-9.]+$/.test(x)?x+'px':x)); },{placeholder:'none',unit:'px'}))),
-      h('div',{style:{height:1,background:t.border,margin:'14px 0 12px'}}),
-      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}, h('span',{style:{fontSize:11,fontWeight:600,color:t.muted}},'Transitions'),
-        h('button',Object.assign({onClick:()=>setTrans(trans.concat({prop:'all',dur:'200',ease:'ease',delay:'0'}))},this.tt('Add transition'),{style:{width:22,height:20,display:'flex',alignItems:'center',justifyContent:'center',background:t.segBg,border:'1px solid '+t.border,borderRadius:5,color:t.muted,cursor:'pointer',fontSize:14,lineHeight:1}}),'+')),
-      h('div',{style:{display:'flex',flexDirection:'column',gap:8}}, trans.map((x,i)=>{ const set=(k,v)=>{ const ns=trans.slice(); ns[i]=Object.assign({},ns[i],{[k]:v}); setTrans(ns); };
-        return h('div',{key:i,style:{background:t.segBg,border:'1px solid '+t.border,borderRadius:7,padding:8,display:'flex',flexDirection:'column',gap:6}},
-          h('div',{style:{display:'flex',alignItems:'center',gap:6}}, h('div',{style:{flex:1,minWidth:0}}, this.selectField(t,propOpts,x.prop,v=>set('prop',v))), h('span',{onClick:()=>{ const ns=trans.slice(); ns.splice(i,1); setTrans(ns); },style:{cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint}},'×')),
-          h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1.2fr 1fr',gap:6}}, msField(node.id+'|trans'+i+'|dur',x.dur,v=>set('dur',v.replace('ms',''))), this.selectField(t,easeOpts,x.ease,v=>set('ease',v)), msField(node.id+'|trans'+i+'|delay',x.delay,v=>set('delay',v.replace('ms','')))));
-      }))
+      this.inspBand(t,'Transform', h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+        seg,
+        h('div',{style:{display:'grid',gridTemplateColumns:axes.map(()=>'1fr').join(' '),gap:8}}, axes.map(ax=>this.prefixField(t,axLabel[ax],xf[tab][ax],v=>setAxis(ax,v)))),
+        h('div',{style:{display:'flex',gap:8}},
+          h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Origin'), this.selectField(t,[['','Center'],['top left','Top left'],['top','Top'],['bottom','Bottom'],['left','Left'],['right','Right']],this.csVal(node,'transformOrigin')||'',v=>this.setCS(node,'transformOrigin',v))),
+          h('div',{style:{flex:1,minWidth:0}}, this.lbl(t,'Perspective'), this.prefixField(t,'',(this.csVal(node,'perspective')||'').replace(/px$/,''),v=>{ const x=v.trim(); this.setCS(node,'perspective',x===''?'':(/^[0-9.]+$/.test(x)?x+'px':x)); },{placeholder:'none',unit:'px'})))), {first:true}),
+      this.inspBand(t,'Transitions',
+        h('div',{style:{display:'flex',flexDirection:'column',gap:6}},
+          trans.length?null:h('div',{style:{fontSize:11,color:t.faint}},'No transitions yet'),
+          trans.map((x,i)=>{ const set=(k,v)=>{ const ns=trans.slice(); ns[i]=Object.assign({},ns[i],{[k]:v}); setTrans(ns); };
+            return h('div',{key:i,style:{display:'flex',flexDirection:'column',gap:6,paddingBottom:i<trans.length-1?6:0,borderBottom:i<trans.length-1?('1px solid '+t.border):'none'}},
+              h('div',{style:{display:'flex',alignItems:'center',gap:6}}, h('div',{style:{flex:1,minWidth:0}}, this.selectField(t,propOpts,x.prop,v=>set('prop',v))), h('span',{onClick:()=>{ const ns=trans.slice(); ns.splice(i,1); setTrans(ns); },...this.a11y(()=>{ const ns=trans.slice(); ns.splice(i,1); setTrans(ns); },{label:'Remove transition '+(i+1)}),style:{cursor:'pointer',fontWeight:700,fontSize:15,color:t.faint}},'×')),
+              h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1.2fr 1fr',gap:6}}, msField(node.id+'|trans'+i+'|dur',x.dur,v=>set('dur',v.replace('ms',''))), this.selectField(t,easeOpts,x.ease,v=>set('ease',v)), msField(node.id+'|trans'+i+'|delay',x.delay,v=>set('delay',v.replace('ms','')))));
+          })),
+        {trail:addBtn})
     );
   }
   attrSuggest(node){ const base=['id','title','aria-label','ng-if','ng-show','data-attr']; const tg=node.type==='el'?node.data.tag:node.type; const m={a:['href','target','ng-click'],button:['type','ng-click','ng-disabled'],img:['src','alt','width'],input:['name','type','placeholder','ng-model'],select:['name','ng-model'],textarea:['name','ng-model'],form:['name','ng-submit'],label:['for']}; return (m[tg]||[]).concat(base); }
