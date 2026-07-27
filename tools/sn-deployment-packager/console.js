@@ -111,6 +111,8 @@
   var sysIdSummary = document.getElementById('sysIdSummary');
   var copyBtn = document.getElementById('copyBtn');
   var downloadBtn = document.getElementById('downloadBtn');
+  var publishBtn = document.getElementById('publishBtn');
+  var publishStatus = document.getElementById('publishStatus');
   var formatXmlBtn = document.getElementById('formatXmlBtn');
   var formatFluentBtn = document.getElementById('formatFluentBtn');
   var fluentControls = document.getElementById('fluentControls');
@@ -134,6 +136,9 @@
   // code, kept around purely for display/reference (runDetectAndLookup always re-detects fresh
   // rather than trusting a stale value across app switches or repeat clicks).
   var companyCode = '';
+  // 'unknown' (no successful lookup yet this selection) | 'found' | 'not-found' - drives the
+  // Publish/Update button's label and visibility. Reset on every app selection.
+  var installedLookupState = 'unknown';
 
   function connStorageKey(folder) { return 'snDeployConsole_conn_' + folder; }
   function loadSavedConn(folder) {
@@ -254,6 +259,7 @@
     fluentControls.style.display = next === 'fluent' ? '' : 'none';
     downloadBtn.textContent = next === 'fluent' ? 'Download .zip' : 'Download';
     if (next === 'xml') { rebuildXmlTab(); setActiveTab(activeTab); } else { rebuildFluent(); }
+    updatePublishButton();
   }
 
   function setFluentMode(next) {
@@ -269,6 +275,9 @@
     overridesSection.style.display = 'none';
     connectionSection.style.display = 'none';
     currentParts = null;
+    installedLookupState = 'unknown';
+    publishStatus.textContent = '';
+    updatePublishButton();
     if (!folder) { setStatus(buildStatus, '', false); return; }
 
     currentFolder = folder;
@@ -307,6 +316,7 @@
       tabsSection.style.display = '';
       if (format === 'xml') { rebuildXmlTab(); setActiveTab('xml'); } else { rebuildFluent(); }
       setStatus(buildStatus, 'Built ' + descriptor.manifest.appName + ' successfully.', false);
+      updatePublishButton();
 
       // A saved connection with all three fields already filled means we can check the target
       // instance for an existing install right away, instead of waiting for a manual "Detect
@@ -353,14 +363,66 @@
           fldScope.value = installed.scope;
           fldVersion.value = core.bumpPatchVersion(installed.version);
           detectStatus.textContent = 'Found existing install (v' + installed.version + ') - next version ' + fldVersion.value + '.';
+          installedLookupState = 'found';
         } else {
           fldScope.value = core.deriveScopePrefix(code);
           detectStatus.textContent = 'Prefix detected: x_' + code + ' - no existing install found; finish the scope yourself.';
+          installedLookupState = 'not-found';
         }
+        updatePublishButton();
         rebuildOutput();
       });
     }).catch(function (e) {
       detectStatus.textContent = 'Connection failed: ' + ((e && e.message) || e);
+    });
+  }
+
+  // Publish/Update button label + visibility - only meaningful for XML output on an app with a
+  // live connection panel; Fluent has no Update Set concept, and there's nothing to publish before
+  // a connection is even configured for this app.
+  function updatePublishButton() {
+    var descriptor = currentFolder && eligibleApps[currentFolder];
+    var eligible = !!(currentParts && format === 'xml' && descriptor && descriptor.deployOptions && descriptor.deployOptions.showConnection);
+    publishBtn.style.display = eligible ? '' : 'none';
+    publishBtn.textContent = installedLookupState === 'found' ? 'Update Application' : 'Publish Application';
+  }
+
+  // Publishes the CURRENT XML output straight onto the target instance's Retrieved Update Sets via
+  // the Table API (core.js's wrapAsUpdateSet + recordToApiFields, instance.js's publishUpdateSet) -
+  // an in-place replacement for "download the .xml, then upload it by hand" in that one screen.
+  // Deliberately does NOT commit - see instance.js's header comment for why; the status message
+  // below always says so explicitly, so this never reads as "fully deployed."
+  function onPublishClick() {
+    if (!currentParts) { return; }
+    if (!fldInstanceUrl.value.trim() || !fldUsername.value.trim() || !fldPassword.value) {
+      publishStatus.textContent = 'Enter the target instance URL, username, and password first.';
+      return;
+    }
+    if (!fldScope.value.trim() || /_$/.test(fldScope.value.trim())) {
+      publishStatus.textContent = 'Scope looks incomplete (' + (fldScope.value || 'empty') + ') - finish it before publishing.';
+      return;
+    }
+    var manifest = manifestFromFields();
+    var model = core.buildRecordModel(manifest, currentParts.parts);
+    var records = core.wrapAsUpdateSet(manifest, model).map(function (rec) {
+      return { table: rec.table, sysId: rec.sysId, apiFields: core.recordToApiFields(rec) };
+    });
+    var conn = { instanceUrl: fldInstanceUrl.value, username: fldUsername.value, password: fldPassword.value };
+    var folder = currentFolder;
+    saveConn(folder);
+    publishBtn.disabled = true;
+    publishStatus.textContent = 'Publishing ' + records.length + ' records…';
+    window.SNDeploymentPackager.instance.publishUpdateSet(conn, records).then(function (written) {
+      publishBtn.disabled = false;
+      if (folder !== currentFolder) { return; }
+      publishStatus.textContent = 'Published ' + written.length + ' records to Retrieved Update Sets on the target instance - ' +
+        'go there to preview and commit it (not done automatically - see instance.js for why).';
+      runDetectAndLookup(); // refresh found/not-found so the button relabels correctly next time
+    }).catch(function (e) {
+      publishBtn.disabled = false;
+      if (folder !== currentFolder) { return; }
+      var count = (e && e.written && e.written.length) || 0;
+      publishStatus.textContent = 'Publish failed after ' + count + ' of ' + records.length + ' records: ' + ((e && e.message) || e);
     });
   }
 
@@ -369,6 +431,7 @@
   fldScope.addEventListener('input', rebuildOutput);
   fldVersion.addEventListener('input', rebuildOutput);
   detectPrefixBtn.addEventListener('click', runDetectAndLookup);
+  publishBtn.addEventListener('click', onPublishClick);
   [fldInstanceUrl, fldUsername, fldPassword].forEach(function (el) {
     el.addEventListener('input', function () { saveConn(currentFolder); });
   });

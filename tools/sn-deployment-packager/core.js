@@ -458,7 +458,9 @@
   function buildRecordModel(manifest, parts) {
     var ids = deriveSysIds(manifest);
     var scopeTag = '<sys_scope display_value="' + esc(manifest.appName).replace(/"/g, '&quot;') + '">' + ids.app + '</sys_scope>';
-    var SC = { name: 'sys_scope', scopeTag: true, xmlOnly: true }; // reusable <sys_scope> sentinel
+    // `value` alongside the display-decorated `scopeTag` marker is for a non-XML consumer (a live
+    // Table API write - see recordToApiFields) that needs the plain sys_id, not the XML markup.
+    var SC = { name: 'sys_scope', scopeTag: true, xmlOnly: true, value: ids.app }; // reusable <sys_scope> sentinel
     var records = [];
 
     records.push({ table: 'sys_app', sysId: ids.app, key: 'app', fields: [
@@ -807,7 +809,7 @@
         { name: 'comments', empty: true },
         { name: 'name', value: rec.table + '_' + rec.sysId },
         { name: 'payload', value: payload, cdata: true },
-        { name: 'remote_update_set', rawTag: setTag },
+        { name: 'remote_update_set', rawTag: setTag, value: setSysId },
         { name: 'replace_on_upgrade', value: false },
         { name: 'source_table', value: rec.table },
         { name: 'sys_id', value: wrapId, xmlOnly: true },
@@ -819,6 +821,20 @@
     });
 
     return [header].concat(wrapped);
+  }
+
+  // Converts one record's fields into a plain {fieldName: value} object for a live Table API write
+  // (POST/PATCH) - the non-XML counterpart to renderXmlRecord, used to publish an Update Set
+  // straight onto an instance instead of producing a file a human uploads by hand. No CDATA/esc()
+  // needed - a JSON request body handles any string content natively, unlike embedding text inside
+  // an XML document. `scopeTag`/`rawTag` fields carry their real value alongside their
+  // display-decorated XML markup (see buildRecordModel/wrapAsUpdateSet) for exactly this consumer.
+  function recordToApiFields(rec) {
+    var obj = {};
+    rec.fields.forEach(function (f) {
+      obj[f.name] = f.empty ? '' : (f.value == null ? '' : f.value);
+    });
+    return obj;
   }
 
   /* ==================================================================================
@@ -851,9 +867,13 @@
     deriveScope: deriveScope, deriveScopePrefix: deriveScopePrefix, bumpPatchVersion: bumpPatchVersion,
     scopeSlug: scopeSlug, deriveVendorPrefix: deriveVendorPrefix, SCOPE_MAX: SCOPE_MAX,
     // assembly - buildRecordModel is the shared source of truth both assembleXml (below) and
-    // fluent.js's assembleFluent consume; renderXmlRecord is exposed for hosts that
-    // want to inspect/override a single record's XML.
+    // fluent.js's assembleFluent consume; renderXmlRecord is exposed for hosts that want to
+    // inspect/override a single record's XML. wrapAsUpdateSet/recordToApiFields are exposed for a
+    // host that wants to publish an Update Set straight onto a live instance (see instance.js's
+    // publishUpdateSet) instead of producing a file - same record wrapping assembleXml uses
+    // internally, just serialized as plain field objects instead of XML text.
     buildParts: buildParts, buildRecordModel: buildRecordModel, renderXmlRecord: renderXmlRecord, assembleXml: assembleXml,
+    wrapAsUpdateSet: wrapAsUpdateSet, recordToApiFields: recordToApiFields,
     ACL_TABLES: ACL_TABLES,
   };
 });

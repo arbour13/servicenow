@@ -104,15 +104,24 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
 
 - **Fetching** every source file (`fetch()` vs `fs.readFileSync`).
 - **The deploy modal UI** (browser-only) - option form, connection fields, theming, copy/download.
-  There's no single generic UI file; each host implements its own (e.g. Glide Studio's own Deploy
-  modal). `tools/sn-deployment-packager/index.html` is a shared instance of this host that
-  works across every app with a `deploy.manifest.js` (see above), instead of each app growing its
-  own copy - use it when you want to build/preview/download a package outside of any one app's own
-  dev harness.
-- **Live-instance connection** - `deployFetch`/`detectCompanyPrefix`/`getInstalledApp`-style calls
-  (network I/O). Shared between browser hosts as `tools/sn-deployment-packager/instance.js`
-  (`window.SNDeploymentPackager.instance`) rather than each one keeping its own copy - load it
-  via `<script src>` for any app with `deployOptions.showConnection: true`.
+  `tools/sn-deployment-packager/index.html` is the one such host in this suite - build/preview/
+  download (or, for an app with `deployOptions.showConnection: true`, publish - see below) a
+  package outside of any one app's own dev harness. A future app-specific Deploy UI would follow the
+  same pattern rather than duplicating it.
+- **Live-instance connection** - `deployFetch`/`detectCompanyPrefix`/`getInstalledApp`/
+  `publishUpdateSet`-style calls (network I/O). Shared between browser hosts as
+  `tools/sn-deployment-packager/instance.js` (`window.SNDeploymentPackager.instance`) rather than
+  each one keeping its own copy - load it via `<script src>` for any app with
+  `deployOptions.showConnection: true`.
+  - `publishUpdateSet(conn, records)` **writes** to the target instance - the one thing here that
+    does. It POSTs/PATCHes `core.js`'s `wrapAsUpdateSet` output (each record's fields run through
+    `recordToApiFields`) directly via the Table API, landing the Update Set in the target's own
+    Retrieved Update Sets list - a real replacement for downloading the XML and uploading it by
+    hand. It deliberately does **not** commit: ServiceNow's real Commit action is an internal
+    GlideAjax-callable script tied to a logged-in browser session, not a stable, externally-callable
+    REST endpoint the way Table API is, so it isn't something this can reliably automate the way the
+    publish step itself can be. Committing stays a manual step in the target instance's own UI -
+    also the last chance to review the diff before it actually applies.
 - **Code formatting** (js-beautify or equivalent) - pass it in as `opts.formatFn`.
 - **The timestamp** - pass it in as `opts.stamp`.
 

@@ -1,7 +1,14 @@
-/* Read-only connection to a live TARGET ServiceNow instance: Basic-Auth fetches used to detect that
-   instance's application vendor prefix and to look up whether an app is already installed there, so
-   a Deploy UI can prefill a recommended scope and the next version instead of guessing. Nothing
-   here writes, installs, or commits anything - this package is imported by a human.
+/* Connection to a live TARGET ServiceNow instance: Basic-Auth calls used to detect that instance's
+   application vendor prefix, look up whether an app is already installed there, and (see
+   publishUpdateSet below) publish a built Update Set straight onto it via the Table API.
+
+   publishUpdateSet is the one thing here that WRITES - everything else is read-only. It stops at
+   landing the Update Set in the target's own Retrieved Update Sets list; it does NOT commit it.
+   ServiceNow's real Commit action is an internal GlideAjax-callable script tied to a logged-in
+   browser session (CSRF tokens, session-specific plumbing) - not a stable, documented REST endpoint
+   the way Table API is - so it isn't something this tool can reliably automate the way the reads
+   and the publish-write below are. Committing stays a manual step in the target instance's own UI,
+   which is also the last chance to review the diff before it actually applies.
 
    BROWSER-ONLY - there is no module.exports branch here (it needs fetch/btoa), so do NOT require()
    this from Node; the CLI (build.js) and the app build-deploy.js scripts never touch it.
@@ -21,12 +28,17 @@
   // instance-hosted branch ignores whatever `conn` it's given and always calls same-origin; the
   // deploy target is deliberately allowed to differ from both an app's own Settings connection AND
   // the instance this tool happens to be running on.
+  function connBase(conn) {
+    return {
+      base: ((conn && conn.instanceUrl) || '').trim().replace(/\/$/, ''),
+      authHeader: 'Basic ' + btoa(((conn && conn.username) || '').trim() + ':' + ((conn && conn.password) || '')),
+    };
+  }
+
   function deployFetch(path, params, conn) {
-    var base = ((conn && conn.instanceUrl) || '').trim().replace(/\/$/, '');
-    var user = ((conn && conn.username) || '').trim();
-    var pass = (conn && conn.password) || '';
+    var c = connBase(conn);
     var qs = params ? '?' + new URLSearchParams(params).toString() : '';
-    return fetch(base + path + qs, { headers: { 'Authorization': 'Basic ' + btoa(user + ':' + pass), 'Accept': 'application/json' } })
+    return fetch(c.base + path + qs, { headers: { 'Authorization': c.authHeader, 'Accept': 'application/json' } })
       .then(function (r) {
         if (!r.ok) { var e = new Error('HTTP ' + r.status + ' ' + r.statusText); e.httpStatus = r.status; throw e; }
         return r.json();
@@ -68,5 +80,61 @@
     }).catch(function () { return null; });
   }
 
-  root.SNDeploymentPackager.instance = { deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix, getInstalledApp: getInstalledApp };
+  // Inserts or updates ONE record via the Table API, keyed by an explicit sys_id. Existence is
+  // checked with a plain GET first rather than relying on POST-with-a-preset-sys_id as an upsert -
+  // that behavior isn't consistent enough across ServiceNow versions to trust for a write path -
+  // then PATCHes (already there) or POSTs (fresh) accordingly.
+  function writeRecord(conn, table, sysId, fields) {
+    var c = connBase(conn);
+    return deployFetch('/api/now/table/' + table, {
+      sysparm_query: 'sys_id=' + sysId, sysparm_fields: 'sys_id', sysparm_limit: '1',
+    }, conn).then(function (rows) { return !!(rows && rows[0]); }).then(function (exists) {
+      var url = c.base + '/api/now/table/' + table + (exists ? '/' + sysId : '');
+      return fetch(url, {
+        method: exists ? 'PATCH' : 'POST',
+        headers: { 'Authorization': c.authHeader, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      }).then(function (r) {
+        if (!r.ok) {
+          return r.text().then(function (t) {
+            var e = new Error('HTTP ' + r.status + ' writing ' + table + ': ' + t.slice(0, 300));
+            e.httpStatus = r.status;
+            throw e;
+          });
+        }
+        return r.json().then(function (json) { return { table: table, sysId: sysId, action: exists ? 'updated' : 'inserted', result: json.result }; });
+      });
+    });
+  }
+
+  // Publishes an already-built Update Set record list (core.js's wrapAsUpdateSet output, each
+  // record's fields already run through core.js's recordToApiFields) straight onto the target
+  // instance's Retrieved Update Sets via the Table API - the header (sys_remote_update_set) first,
+  // since every sys_update_xml wrapper references it, then each wrapper in order. Writes happen ONE
+  // AT A TIME sequentially, not in parallel, so a failure partway through stops immediately with a
+  // clear count of what actually landed, rather than firing the rest out of order regardless.
+  //
+  // Deliberately stops here - does NOT commit. See this file's header comment for why: ServiceNow's
+  // real Commit action isn't a stable, externally-callable REST endpoint the way Table API is.
+  // Resolves to the list of {table, sysId, action, result} writes that succeeded before either
+  // finishing or throwing - a caller can report partial progress either way.
+  function publishUpdateSet(conn, records) {
+    var written = [];
+    return records.reduce(function (chain, rec) {
+      return chain.then(function () {
+        return writeRecord(conn, rec.table, rec.sysId, rec.apiFields).then(function (result) {
+          written.push(result);
+          return written;
+        });
+      });
+    }, Promise.resolve(written)).catch(function (e) {
+      e.written = written;
+      throw e;
+    });
+  }
+
+  root.SNDeploymentPackager.instance = {
+    deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix, getInstalledApp: getInstalledApp,
+    writeRecord: writeRecord, publishUpdateSet: publishUpdateSet,
+  };
 })(typeof self !== 'undefined' ? self : this);
