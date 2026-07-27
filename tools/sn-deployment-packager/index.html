@@ -5,100 +5,489 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ServiceNow Deployment Packager</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23054b80'/%3E%3Ctext x='16' y='23' font-family='Arial,Helvetica,sans-serif' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3ED%3C/text%3E%3C/svg%3E">
+<script>
+  // Apply theme before paint (same approach as Glide Studio). Palette tokens below are copied
+  // from apps/glide-studio/scss/app.scss so this console reads as the same family.
+  (function () {
+    var stored = null;
+    try { stored = localStorage.getItem('snDeployConsole_theme'); } catch (e) {}
+    var theme = (stored === 'light' || stored === 'dark')
+      ? stored
+      : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0b1220; --panel: #121b2e; --border: #24304a; --text: #e6ebf5; --text-muted: #93a1bd;
-    --accent: #4d8fe0; --accent-hover: #6ba3e8; --danger: #e0685f; --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    /* One width for every block on the page - heading, subtitle and all panels align to this. */
+  /* Glide Studio light tokens (apps/glide-studio/scss/app.scss $gs-*). */
+  :root, html[data-theme="light"] {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --panel-alt: #fbfbfd;
+    --border: #e2e5ea;
+    --border-strong: #d2d6dd;
+    --text: #1c2128;
+    --muted: #6b7280;
+    --faint: #9aa1ab;
+    --accent: #054b80;
+    --accent-hover: #043a63;
+    --accent-soft: #e6eef5;
+    --accent-soft-hover: #d6e6f2;
+    --accent-border: #b3cae0;
+    --accent-fill: #054b80;
+    --accent-fill-hover: #043a63;
+    --danger: #dc2626;
+    --danger-soft: #fdecec;
+    --radius: 10px;
+    --radius-sm: 7px;
+    --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+    --ctrl-h: 34px;
+    --sp-sm: 8px;
+    --sp-md: 12px;
+    --sp-lg: 16px;
+    --sp-xl: 20px;
+    --sp-xxl: 24px;
+    --font: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
     --content-width: 900px;
+    --chevron: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5L6 7.5L9 4.5' stroke='%236b7280' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   }
+  /* Glide Studio dark tokens. */
+  html[data-theme="dark"] {
+    --bg: #10131a;
+    --panel: #1a1f29;
+    --panel-alt: #20262f;
+    --border: #2a3040;
+    --border-strong: #3b4353;
+    --text: #e7ebf2;
+    --muted: #9aa3b6;
+    --faint: #6b7385;
+    --accent: #5b9fe0;
+    --accent-hover: #7ab3ea;
+    --accent-soft: rgba(91, 159, 224, 0.16);
+    --accent-soft-hover: rgba(91, 159, 224, 0.28);
+    --accent-border: rgba(91, 159, 224, 0.4);
+    --accent-fill: #2f6f9e;
+    --accent-fill-hover: #3a80b3;
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.14);
+    --shadow: 0 1px 2px rgba(0,0,0,.24), 0 1px 3px rgba(0,0,0,.32);
+    --chevron: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5L6 7.5L9 4.5' stroke='%239aa3b6' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  }
+
   * { box-sizing: border-box; }
   body {
-    margin: 0; padding: 32px; background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    margin: 0; padding: var(--sp-xxl) var(--sp-xl);
+    background: var(--bg); color: var(--text);
+    font-family: var(--font);
+    font-size: 13.5px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
   }
-  /* Centers the whole page's content as one block, rather than centering each piece separately -
-     keeps every child's own margin shorthand (h1/.subtitle/.panel) untouched. */
   .page { max-width: var(--content-width); margin: 0 auto; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  .subtitle { color: var(--text-muted); margin: 0 0 28px; font-size: 14px; }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
-  label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 6px; }
-  select, input[type="text"] {
-    width: 100%; padding: 9px 10px; background: #0e1626; border: 1px solid var(--border); border-radius: 6px;
-    color: var(--text); font-size: 14px;
+
+  .page-header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-lg);
+    margin-bottom: var(--sp-xxl);
   }
-  /* Custom chevron via appearance:none + an SVG data-URI background-image - the same technique
-     every other app in the suite uses to restyle a native <select> past its OS-drawn dropdown
-     arrow (glide-studio's app.scss, delivery-methodology's app.scss, theme-generator's own
-     stylesheet). A CSS custom property can't be interpolated into a data-URI, so the chevron color
-     below is a literal hex matching --text-muted rather than var(--text-muted). */
+  .brand {
+    display: flex; align-items: flex-start; gap: var(--sp-md); min-width: 0;
+  }
+  .brand-logo {
+    flex-shrink: 0; width: 36px; height: 36px; border-radius: 9px;
+    background: var(--accent-fill); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px; letter-spacing: -0.02em;
+  }
+  .brand-text { min-width: 0; }
+  h1 {
+    font-size: 18px; font-weight: 650; margin: 0 0 4px;
+    letter-spacing: -0.01em; color: var(--text);
+  }
+  .subtitle { color: var(--muted); margin: 0; font-size: 13px; line-height: 1.5; font-weight: 400; }
+  .subtitle code {
+    font-family: var(--mono); font-size: 0.92em;
+    background: var(--panel-alt); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px;
+  }
+
+  .theme-toggle {
+    flex-shrink: 0; width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    background: var(--panel); color: var(--muted); cursor: pointer; padding: 0;
+    transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
+  }
+  .theme-toggle:hover { color: var(--text); background: var(--accent-soft); border-color: var(--accent-border); }
+  .theme-toggle .icon-sun { display: none; }
+  html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+  html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: var(--sp-xl); margin-bottom: var(--sp-lg);
+  }
+  label {
+    display: block; font-size: 11.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  select, input[type="text"], input[type="password"] {
+    width: 100%; height: var(--ctrl-h); padding: 0 var(--sp-md);
+    background: var(--panel); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    color: var(--text); font: inherit; font-size: 13px;
+    transition: border-color .12s, box-shadow .12s;
+  }
   select {
     appearance: none; -webkit-appearance: none; -moz-appearance: none;
-    cursor: pointer; padding-right: 30px; transition: border-color .12s;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5L6 7.5L9 4.5' stroke='%2393a1bd' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    cursor: pointer; padding-right: 30px;
+    background-image: var(--chevron);
     background-repeat: no-repeat;
     background-position: right 10px center;
   }
-  select:hover:not(:disabled) { border-color: var(--text-muted); }
-  select:focus-visible { border-color: var(--accent); outline: none; }
+  select:hover:not(:disabled) { border-color: var(--muted); }
+  /* One shared focus treatment for every control (Glide Studio's soft accent halo). */
+  select:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  .output-editor:focus-within,
+  button:focus-visible,
+  .scope-compound:focus-within,
+  .fmt-btn:focus-visible,
+  .theme-toggle:focus-visible,
+  .password-toggle:focus-visible,
+  .icon-btn:focus-visible,
+  .modal-close:focus-visible,
+  .modal-btn:focus-visible,
+  button.action-btn:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
   select:disabled { opacity: .5; cursor: default; }
-  .status { margin-top: 10px; font-size: 13px; color: var(--text-muted); min-height: 16px; }
+
+  .password-wrap { position: relative; height: var(--ctrl-h); }
+  .password-wrap input { height: 100%; padding-right: 40px; width: 100%; }
+  .password-toggle {
+    position: absolute; top: 3px; right: 3px; bottom: 3px;
+    width: 28px; /* matches remaining height: ctrl-h 34px − 3px − 3px */
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid transparent; background: transparent; color: var(--muted); cursor: pointer; padding: 0;
+    border-radius: calc(var(--radius-sm) - 2px);
+  }
+  .password-toggle:hover { color: var(--text); background: var(--accent-soft); }
+  .password-toggle .icon-eye-off { display: none; }
+  .password-wrap.is-visible .icon-eye { display: none; }
+  .password-wrap.is-visible .icon-eye-off { display: block; }
+
+  .status { margin-top: 10px; font-size: 12.5px; color: var(--muted); min-height: 0; }
+  .status:empty { display: none; margin: 0; min-height: 0; }
   .status-error { color: var(--danger); }
-  .ineligible-note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
-  .hint { font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
-  #connectionSection label:first-child { margin-bottom: 8px; }
-  .grid3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+  .hint { font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+  .output-hint { font-size: 12.5px; color: var(--muted); margin: 0 0 var(--sp-md); line-height: 1.5; }
+  .output-hint ol {
+    margin: 8px 0 0; padding-left: 1.25em;
+  }
+  .output-hint li { margin: 3px 0; }
+  .output-hint code {
+    font-family: var(--mono); font-size: 0.92em;
+    background: var(--panel-alt); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px;
+  }
+  .output-hint a { color: var(--accent); }
+
+  input.field-error {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px var(--danger-soft);
+  }
+  .field-status { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 16px; }
+  .field-status.field-status-error { color: var(--danger); }
+
+  #connectionSection > label:first-child { margin-bottom: 8px; }
+  .grid3 { display: grid; grid-template-columns: 1.4fr 1.8fr 0.8fr; gap: var(--sp-md); }
   .field + .field { margin-top: 14px; }
   .grid3 .field + .field { margin-top: 0; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-  .tab-btn {
-    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
-    padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
+
+  /* Scope = locked instance prefix + editable app slug, visually one control. */
+  .scope-compound {
+    display: flex; align-items: stretch;
+    height: var(--ctrl-h);
+    border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    background: var(--panel); overflow: hidden;
+    transition: border-color .12s, box-shadow .12s;
   }
-  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .format-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
-  .format-toggle .fmt-btn { border: none; border-radius: 0; }
+  .scope-compound.field-error {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px var(--danger-soft);
+  }
+  .scope-compound.field-error:focus-within {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px var(--danger-soft);
+  }
+  .scope-compound input {
+    height: 100%; border: none; border-radius: 0; box-shadow: none;
+    background: transparent; color: var(--text);
+  }
+  /* Inner inputs don't carry their own ring - the compound wrapper does. */
+  .scope-compound input:focus-visible {
+    outline: none; border: none; box-shadow: none;
+  }
+  .scope-compound .scope-prefix {
+    flex: 0 0 auto; width: auto; min-width: 0;
+    padding-left: var(--sp-md); padding-right: 0;
+    font-family: var(--mono); font-size: 13px;
+  }
+  /* Auto-set / locked prefix reads as placeholder text, not as typed content.
+     Keep the same transparent background as the sibling name field (the compound shell is the surface). */
+  .scope-compound .scope-prefix:read-only,
+  .scope-compound .scope-name:read-only {
+    cursor: default; color: var(--faint); background: transparent;
+  }
+  .scope-compound .scope-name {
+    flex: 1 1 auto; min-width: 4ch;
+    padding-left: 0; padding-right: var(--sp-md);
+    font-family: var(--mono); font-size: 13px;
+  }
+
+  .conn-actions {
+    margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .saved-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: end;
+    margin-bottom: 14px;
+  }
+  .panel-intro {
+    margin: 0 0 14px; color: var(--muted); font-size: 12.5px; line-height: 1.5;
+  }
+  .field-hint {
+    margin: 6px 0 0; color: var(--faint); font-size: 12px; line-height: 1.45;
+  }
+  .field-hint code {
+    font-family: var(--mono); font-size: 0.92em;
+    background: var(--panel-alt); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px; color: var(--muted);
+  }
+  input[type="text"]:read-only,
+  input[type="password"]:read-only {
+    color: var(--muted); background: var(--panel-alt); cursor: default;
+  }
+  button.action-btn.secondary {
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  button.action-btn.secondary:hover:not(:disabled) {
+    background: var(--accent-soft); border-color: var(--accent-border);
+  }
+  button.action-btn.secondary[hidden] { display: none; }  .icon-btn {
+    width: var(--ctrl-h); height: var(--ctrl-h); padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    background: var(--panel); color: var(--muted); cursor: pointer;
+    transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
+  }
+  .icon-btn:hover:not(:disabled) {
+    color: var(--text); background: var(--accent-soft); border-color: var(--accent-border);
+  }
+  .icon-btn:disabled { opacity: .45; cursor: default; }
+  .icon-btn.danger:hover:not(:disabled) {
+    color: var(--danger); background: var(--danger-soft); border-color: var(--danger);
+  }
+  .tip-host {
+    display: inline-flex; align-items: center; justify-content: center;
+    vertical-align: middle;
+  }
+
+  /* Floating tooltip - replaces native title (faster, themed, works on disabled controls via .tip-host). */
+  .ui-tip {
+    position: fixed; z-index: 300; max-width: 260px;
+    padding: 6px 10px; border-radius: 7px;
+    background: #1c2128; color: #f4f5f7; border: 1px solid #333a49;
+    font-family: var(--font); font-size: 11.5px; font-weight: 500; line-height: 1.4;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+    pointer-events: none; opacity: 0; transform: translateY(2px);
+    transition: opacity .12s ease, transform .12s ease;
+    white-space: normal; text-align: center;
+  }
+  html[data-theme="dark"] .ui-tip {
+    background: #0f1219; color: #e6e9ef; border-color: #2c3242;
+  }
+  .ui-tip.is-visible { opacity: 1; transform: translateY(0); }
+  .ui-tip[hidden] { display: none; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10, 12, 18, .55);
+    display: flex; align-items: center; justify-content: center;
+    padding: var(--sp-xxl);
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal {
+    width: min(420px, 100%);
+    background: var(--panel); border: 1px solid var(--border-strong);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md);
+    padding: var(--sp-lg) var(--sp-xl); border-bottom: 1px solid var(--border);
+    font-weight: 650; font-size: 13.5px; color: var(--text);
+  }
+  .modal-close {
+    width: 28px; height: 28px; padding: 0; border: 1px solid transparent;
+    border-radius: var(--radius-sm); background: transparent; color: var(--muted);
+    cursor: pointer; font-size: 16px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { color: var(--text); background: var(--accent-soft); }
+  .modal-hint {
+    margin: var(--sp-md) var(--sp-xl) 0; color: var(--muted);
+    font-size: 12.5px; line-height: 1.55;
+  }
+  .modal-field {
+    margin: var(--sp-md) var(--sp-xl) 0;
+  }
+  .modal-field label {
+    display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--muted);
+  }
+  .modal-actions {
+    display: flex; gap: var(--sp-sm); justify-content: flex-end;
+    padding: var(--sp-lg) var(--sp-xl) var(--sp-xl);
+  }
+  .modal-btn {
+    height: 32px; padding: 0 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong); background: var(--panel);
+    color: var(--text); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .modal-btn:hover { background: var(--accent-soft); border-color: var(--accent-border); }
+  .modal-btn.primary {
+    background: var(--accent-fill); border-color: var(--accent-fill); color: #fff;
+  }
+  .modal-btn.primary:hover { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); }
+  .modal-btn.danger {
+    background: var(--danger); border-color: var(--danger); color: #fff;
+  }
+  .modal-btn.danger:hover { filter: brightness(.92); }
+  .modal-btn[hidden] { display: none; }
+
+  .format-row {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md);
+    margin-bottom: var(--sp-md);
+  }
+  .format-toggle {
+    display: inline-flex; margin: 0; background: transparent; gap: 0;
+  }
+  .format-toggle .fmt-btn {
+    border-radius: 0;
+  }
+  .format-toggle .fmt-btn:first-child {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  }
+  .format-toggle .fmt-btn:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-left: -1px;
+  }
   .fmt-btn {
-    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
-    padding: 7px 16px; font-size: 13px; cursor: pointer;
+    position: relative;
+    background: var(--panel-alt); border: 1px solid var(--border-strong); color: var(--muted);
+    padding: 7px 14px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    transition: background .12s, color .12s, border-color .12s, box-shadow .12s, z-index 0s;
   }
-  .fmt-btn.active { background: var(--accent); color: #fff; }
-  .fluent-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-  .fmt-toggle-inline { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .fmt-toggle-inline .fmt-btn { border: none; border-radius: 0; padding: 6px 12px; }
-  #fluentFileSelect { flex: 1; min-width: 240px; padding: 7px 10px; background: #0e1626; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12.5px; font-family: var(--mono); }
-  textarea#outputArea {
-    width: 100%; height: 420px; background: #0a1120; border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text); font-family: var(--mono); font-size: 12.5px; padding: 14px; resize: vertical;
+  .fmt-btn.active {
+    background: var(--accent-fill); border-color: var(--accent); color: #fff; z-index: 1;
   }
-  .output-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-  #sysIdSummary { font-size: 12px; color: var(--text-muted); }
+  .fluent-controls {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-bottom: var(--sp-md);
+  }
+  .fluent-controls .field { width: 100%; }
+  .fluent-controls .field + .field { margin-top: 0; }
+  #fluentFileSelect {
+    width: 100%;
+    font-family: var(--mono); font-size: 12.5px;
+  }
+
+  .output-wrap { position: relative; }
+  .output-editor {
+    width: 100%; height: 420px;
+    background: var(--panel-alt); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .output-editor .monaco-editor,
+  .output-editor .monaco-editor-background,
+  .output-editor .margin { background: transparent !important; }
+  .output-fallback {
+    width: 100%; height: 420px; padding: var(--sp-md); margin: 0;
+    background: var(--panel-alt); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    color: var(--text); font-family: var(--mono); font-size: 12px; line-height: 1.55;
+    resize: vertical; display: block; box-sizing: border-box;
+  }
+  .output-editor[hidden],
+  .output-fallback[hidden] { display: none !important; }
+  .output-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: var(--sp-md); gap: var(--sp-md); flex-wrap: wrap;
+  }
+  .output-action-btns {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto;
+  }
+  #sysIdSummary { font-size: 12px; color: var(--muted); }
+
   button.action-btn {
-    background: var(--accent); border: none; color: #fff; padding: 8px 16px; border-radius: 6px;
-    font-size: 13px; font-weight: 600; cursor: pointer;
+    background: var(--accent-fill); border: 1px solid transparent; color: #fff;
+    height: var(--ctrl-h); padding: 0 14px; border-radius: var(--radius-sm);
+    font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .12s, border-color .12s, box-shadow .12s;
   }
-  button.action-btn:hover { background: var(--accent-hover); }
-  button.action-btn + button.action-btn { margin-left: 8px; }
+  button.action-btn svg { flex-shrink: 0; }
+  button.action-btn:hover:not(:disabled) { background: var(--accent-fill-hover); }
+  button.action-btn:disabled { opacity: .55; cursor: default; }
+  .tip-host[hidden] { display: none; }
 </style>
 </head>
 <body>
 
 <div class="page">
 
-<h1>ServiceNow Deployment Packager</h1>
-<p class="subtitle">Build, preview, and download a ServiceNow Update Set for any app in this suite - outside any single app's own dev harness. Only apps with a <code>deploy.manifest.js</code> are deployable.</p>
+<div class="page-header">
+  <div class="brand">
+    <div class="brand-logo" aria-hidden="true">D</div>
+    <div class="brand-text">
+      <h1>ServiceNow Deployment Packager</h1>
+      <p class="subtitle">Package any suite app that has a <code>deploy.manifest.js</code> as an Update Set XML or a Fluent project.</p>
+    </div>
+  </div>
+  <button type="button" class="theme-toggle" id="themeToggleBtn" data-tip="Switch to dark mode" aria-label="Toggle light/dark mode">
+    <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+  </button>
+</div>
 
 <div class="panel">
   <label for="appSelect">App</label>
   <select id="appSelect" disabled></select>
   <div id="discoveryStatus" class="status">Checking apps…</div>
-  <div id="ineligibleNote" class="ineligible-note"></div>
   <div id="buildStatus" class="status"></div>
 </div>
 
 <div class="panel" id="connectionSection" style="display:none;">
-  <label>Deploy target instance <span class="hint">— for detecting the target's vendor prefix, so Scope can be recommended to match it</span></label>
+  <p class="panel-intro">Choose a saved connection to fill credentials, or New connection to type them. Connect detects the vendor prefix and whether this app is already installed.</p>
+  <div class="saved-row">
+    <div class="field">
+      <label for="savedInstanceSelect">Saved connection</label>
+      <select id="savedInstanceSelect">
+        <option value="">New connection…</option>
+      </select>
+    </div>
+    <span class="tip-host" id="removeInstanceTip" data-tip="Choose a saved connection to remove">
+      <button type="button" class="icon-btn danger" id="removeInstanceBtn" aria-label="Remove saved connection" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+    </span>
+  </div>
+  <label for="fldInstanceUrl">Instance URL</label>
   <input type="text" id="fldInstanceUrl" autocomplete="off" placeholder="https://devXXXXX.service-now.com">
   <div class="grid3" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
     <div class="field">
@@ -107,13 +496,24 @@
     </div>
     <div class="field">
       <label for="fldPassword">Password</label>
-      <input type="text" id="fldPassword" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true">
+      <div class="password-wrap" id="passwordWrap">
+        <input type="password" id="fldPassword" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true">
+        <button type="button" class="password-toggle" id="togglePasswordBtn" data-tip="Show password" aria-label="Show password" aria-pressed="false">
+          <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
     </div>
   </div>
-  <div style="margin-top: 10px; display:flex; align-items:center; gap:10px;">
-    <button type="button" class="action-btn" id="detectPrefixBtn">Detect prefix</button>
+  <div class="conn-actions">
+    <button type="button" class="action-btn" id="connectBtn" data-tip="Connect to detect the vendor prefix and check for an existing install">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8z"/></svg>
+      Connect
+    </button>
+    <button type="button" class="action-btn secondary" id="saveInstanceBtn" data-tip="Save these credentials as a new connection">Save for later</button>
     <span id="detectStatus" class="status" style="margin:0;"></span>
   </div>
+  <p class="field-hint" id="connectionHint">To add a saved connection, leave New connection selected, fill in the fields, then click Save for later.</p>
 </div>
 
 <div class="panel" id="overridesSection" style="display:none;">
@@ -123,52 +523,80 @@
       <input type="text" id="fldAppName" autocomplete="off">
     </div>
     <div class="field">
-      <label for="fldScope">Scope</label>
-      <input type="text" id="fldScope" autocomplete="off" maxlength="18">
+      <label for="fldScopeName">App ID</label>
+      <div class="scope-compound" id="scopeCompound">
+        <input type="text" id="fldScopePrefix" class="scope-prefix" autocomplete="off" spellcheck="false" aria-label="App ID prefix" data-tip="Vendor prefix (x_company_)">
+        <input type="text" id="fldScopeName" class="scope-name" autocomplete="off" spellcheck="false" aria-label="App ID name" data-tip="App name portion of the App ID">
+      </div>
+      <div id="scopeStatus" class="field-status"></div>
     </div>
     <div class="field">
-      <label for="fldVersion">Version</label>
+      <label for="fldVersion">App Version</label>
       <input type="text" id="fldVersion" autocomplete="off">
     </div>
   </div>
 </div>
 
-<div class="panel" id="tabsSection" style="display:none;">
-  <div class="format-toggle">
-    <button type="button" class="fmt-btn active" id="formatXmlBtn">Update Set XML</button>
-    <button type="button" class="fmt-btn" id="formatFluentBtn">Fluent (Now SDK)</button>
+<div class="panel" id="outputSection" style="display:none;">
+  <div class="format-row">
+    <div class="format-toggle">
+      <button type="button" class="fmt-btn active" id="formatXmlBtn">Update Set XML</button>
+      <button type="button" class="fmt-btn" id="formatFluentBtn">Fluent project</button>
+    </div>
   </div>
 
-  <div class="tabs" id="xmlTabs">
-    <button type="button" class="tab-btn active" data-tab="xml">Package XML</button>
-    <button type="button" class="tab-btn" data-tab="template">Template</button>
-    <button type="button" class="tab-btn" data-tab="client">Client</button>
-    <button type="button" class="tab-btn" data-tab="server">Server</button>
-    <button type="button" class="tab-btn" data-tab="services">Services</button>
-    <button type="button" class="tab-btn" data-tab="css">CSS</button>
-    <button type="button" class="tab-btn" data-tab="link">Link</button>
-  </div>
+  <div class="output-hint" id="outputHint"></div>
 
   <div class="fluent-controls" id="fluentControls" style="display:none;">
-    <div class="fmt-toggle-inline">
-      <button type="button" class="fmt-btn active" id="fluentProjectBtn">Full project</button>
-      <button type="button" class="fmt-btn" id="fluentFilesBtn">Fluent files only</button>
+    <div class="field">
+      <label for="fluentFileSelect">Preview file</label>
+      <select id="fluentFileSelect"></select>
     </div>
-    <select id="fluentFileSelect" aria-label="Generated file"></select>
+    <p class="field-hint" id="fluentZipNote">The zip is a full Now SDK project (<code>package.json</code>, <code>now.config.json</code>, and <code>src/fluent/**</code>). A README is included in the zip.</p>
   </div>
 
-  <textarea id="outputArea" readonly spellcheck="false"></textarea>
+  <div class="output-wrap">
+    <div id="outputEditor" class="output-editor" role="textbox" aria-label="Package output" aria-readonly="true"></div>
+    <textarea id="outputFallback" class="output-fallback" readonly spellcheck="false" hidden></textarea>
+  </div>
   <div class="output-actions">
     <span id="sysIdSummary"></span>
-    <div>
-      <button type="button" class="action-btn" id="publishBtn" style="display:none;">Publish Application</button>
-      <button type="button" class="action-btn" id="copyBtn">Copy</button>
-      <button type="button" class="action-btn" id="downloadBtn">Download</button>
+    <div class="output-action-btns">
+      <span class="tip-host" id="downloadBtnTip" data-tip="Download the Update Set as XML">
+        <button type="button" class="action-btn secondary" id="downloadBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span id="downloadBtnLabel">Download Update Set</span>
+        </button>
+      </span>
+      <span class="tip-host" id="uploadBtnTip">
+        <button type="button" class="action-btn" id="uploadBtn" style="display:none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload Update Set
+        </button>
+      </span>
     </div>
   </div>
-  <div id="publishStatus" class="status" style="margin-top:8px;"></div>
+  <div id="uploadStatus" class="status" style="margin-top:8px;"></div>
 </div>
 
+</div>
+
+<div class="modal-overlay" id="modalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <span id="modalTitle">Dialog</span>
+      <button type="button" class="modal-close" id="modalCloseBtn" data-tip="Close" aria-label="Close">✕</button>
+    </div>
+    <p class="modal-hint" id="modalBody"></p>
+    <div class="modal-field" id="modalFieldWrap" hidden>
+      <label for="modalInput" id="modalInputLabel">Name</label>
+      <input type="text" id="modalInput" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn" id="modalCancelBtn">Cancel</button>
+      <button type="button" class="modal-btn primary" id="modalConfirmBtn">OK</button>
+    </div>
+  </div>
 </div>
 
 <script src="core.js"></script>

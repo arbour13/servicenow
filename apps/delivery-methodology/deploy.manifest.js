@@ -12,10 +12,10 @@
    SCOPE: ONE WIDGET, deliberately, for now. The recorded plan (2026-07-24) is a four-widget split -
    one per main view: Journey, RACI, Reference, What's New. That is still the plan; it is NOT
    abandoned. It is blocked on APP restructuring, not on packaging: this app is currently a single
-   MainController with internal view switching (vm.view === 'journey' | 'raci' | 'reference' |
+   MainController with internal view switching (c.view === 'journey' | 'raci' | 'reference' |
    'whatsnew'), and four widgets would need four controllers, four templates, and a shared state
    service - separate widgets don't share an Angular scope, so cross-view navigation that works
-   today as a plain function call (vm.jumpTo, RACI row -> that sub-phase in Journey) becomes
+   today as a plain function call (c.jumpTo, RACI row -> that sub-phase in Journey) becomes
    cross-widget communication that doesn't exist yet.
    The packager is the smaller half of that problem: core.js's deriveSysIds() has a single
    hardcoded 'widget' seed and buildRecordModel pushes exactly one sp_widget + one sp_instance, so
@@ -58,6 +58,8 @@
 
       angularModuleName: 'deliveryMethodology',
       widgetScopeClass: 'dm-widget',
+      // Service Portal's platform default. Template + controller bind as `c.` (not `vm.`).
+      controllerAs: 'c',
 
       // One entry per file that REGISTERS an Angular provider. Note what's absent:
       // - js/app.module.js only declares the module (angular.module('deliveryMethodology', [])),

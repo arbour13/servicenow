@@ -536,7 +536,7 @@
   border-color: var(--teal);
   background: var(--teal-wash);
 }/* Structure editor - a plain, direct-mutation-then-save panel (no working-copy/snapshot like
-   vm.editSp's content editor above it): there's no per-field changelog to diff for a tree shape
+   c.editSp's content editor above it): there's no per-field changelog to diff for a tree shape
    edit, just phase/sub-phase add/rename/reorder/delete, saved immediately on every change. */.dm-widget .struct-toolbar {
   margin: 4px 0 20px;
   padding: 18px 20px;
@@ -680,7 +680,7 @@
   line-height: 1.25;
   color: var(--on-accent-ink);
 }/* Unlike fcard-name/fcard-sid, this text ONLY ever renders on a stub (no-content) card - see the
-   ng-if="!vm.hasContent(s)" gate in index.html - which never gets the fixed-dark gradient-card
+   ng-if="!c.hasContent(s)" gate in index.html - which never gets the fixed-dark gradient-card
    background (only :not(.on) applies here; the .on+stub case is covered by
    .fcard.on .fcard-meta above), so this one tracks theme rather than using --on-accent-faint. */.dm-widget .fcard .fcard-meta {
   font-size: 11px;

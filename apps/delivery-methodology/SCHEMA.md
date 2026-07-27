@@ -265,7 +265,7 @@ describe order of magnitude, not a precise projection.
 
 ## Structure-editing operations against this schema
 
-(`vm.addPhase`/`renamePhase`/`movePhase`/`deletePhase` and the sub-phase equivalents,
+(`c.addPhase`/`renamePhase`/`movePhase`/`deletePhase` and the sub-phase equivalents,
 `js/controllers/main.controller.js`)
 
 - **Add** — one `insert` (any `type`, with the right `parent`).

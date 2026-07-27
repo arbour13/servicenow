@@ -80,6 +80,19 @@
     }).catch(function () { return null; });
   }
 
+  // Looks up whether ANY application/scope already uses this scope string on the target instance.
+  // Resolves to {sys_id, scope, name} if taken, or null if free. Rejects on network/auth failure so
+  // callers can fail closed when uniqueness must be guaranteed (e.g. before upload).
+  function getScopeOccupant(conn, scope) {
+    var s = String(scope || '').trim();
+    if (!s) { return Promise.resolve(null); }
+    return deployFetch('/api/now/table/sys_scope', {
+      sysparm_query: 'scope=' + s, sysparm_fields: 'sys_id,scope,name', sysparm_limit: '1',
+    }, conn).then(function (rows) {
+      return (rows && rows[0]) || null;
+    });
+  }
+
   // Inserts or updates ONE record via the Table API, keyed by an explicit sys_id. Existence is
   // checked with a plain GET first rather than relying on POST-with-a-preset-sys_id as an upsert -
   // that behavior isn't consistent enough across ServiceNow versions to trust for a write path -
@@ -135,6 +148,6 @@
 
   root.SNDeploymentPackager.instance = {
     deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix, getInstalledApp: getInstalledApp,
-    writeRecord: writeRecord, publishUpdateSet: publishUpdateSet,
+    getScopeOccupant: getScopeOccupant, writeRecord: writeRecord, publishUpdateSet: publishUpdateSet,
   };
 })(typeof self !== 'undefined' ? self : this);

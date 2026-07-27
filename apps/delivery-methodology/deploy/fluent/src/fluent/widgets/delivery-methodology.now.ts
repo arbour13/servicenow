@@ -5,7 +5,7 @@ SPWidget({
     name: 'Delivery Methodology',
     id: 'x_dlvry_method_widget',
     description: 'Delivery Methodology - the GlideFast delivery journey: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.',
-    controllerAs: 'vm',
+    controllerAs: 'c',
     hasPreview: true,
     category: 'custom',
     clientScript: Now.include('delivery-methodology.client.js'),

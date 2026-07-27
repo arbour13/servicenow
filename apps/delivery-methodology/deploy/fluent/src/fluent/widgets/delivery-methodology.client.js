@@ -1,6 +1,6 @@
 api.controller = function (DataService, $sce, $timeout, ThemeService) {
   'use strict';
-  var vm = this;
+  var c = this;
 
   function escapeHtml(s) {
     return String(s == null ? '' : s)
@@ -9,7 +9,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   }
 
   // Init with this app's own key prefix so its stored preference doesn't collide with any other
-  // app's. vm.theme is a thin display mirror the template reads; this app has no separate
+  // app's. c.theme is a thin display mirror the template reads; this app has no separate
   // code-editor pane, so only the app-level theme half of the service is used.
   ThemeService.init('deliveryMethodology');
 
@@ -26,22 +26,22 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
      already is. No-op in this harness, where .dm-widget doesn't exist. */
   function stampWidgetTheme() {
     var w = document.querySelector('.dm-widget');
-    if (w) { w.setAttribute('data-theme', vm.theme); }
+    if (w) { w.setAttribute('data-theme', c.theme); }
   }
   function syncTheme() {
-    vm.theme = ThemeService.readState().theme;
+    c.theme = ThemeService.readState().theme;
     $timeout(stampWidgetTheme, 0);
   }
   syncTheme();
-  vm.toggleTheme = function () { ThemeService.toggleApp(); syncTheme(); };
+  c.toggleTheme = function () { ThemeService.toggleApp(); syncTheme(); };
 
-  vm.toast = { show: false, msg: '' };
+  c.toast = { show: false, msg: '' };
   var toastTimer = null;
   function showToast(msg) {
-    vm.toast.msg = msg;
-    vm.toast.show = true;
+    c.toast.msg = msg;
+    c.toast.show = true;
     if (toastTimer) { $timeout.cancel(toastTimer); }
-    toastTimer = $timeout(function () { vm.toast.show = false; }, 2200);
+    toastTimer = $timeout(function () { c.toast.show = false; }, 2200);
   }
 
   // CSS var references (not literal hexes) so every inline style="--nc/--pc: ..." binding and
@@ -63,7 +63,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   };
   // Cached once per icon key, not per sub-phase or per call: $sce.trustAsHtml() returns a new
   // wrapper object every invocation, and binding that directly into ng-bind-html from a
-  // ng-repeat has the exact same infinite-digest problem as vm.loc below - a fresh, non-equal
+  // ng-repeat has the exact same infinite-digest problem as c.loc below - a fresh, non-equal
   // reference every digest never lets the watch settle.
   var ICON_HTML = {};
   Object.keys(SUBPHASE_ICONS).forEach(function (k) { ICON_HTML[k] = $sce.trustAsHtml(SUBPHASE_ICONS[k]); });
@@ -82,35 +82,35 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     return 'doc';
   }
 
-  vm.raciLetters = ['R', 'A', 'C', 'I'];
-  vm.raciNames = { R: 'Responsible', A: 'Accountable', C: 'Consulted', I: 'Informed' };
-  vm.raciTip = function (letters) {
+  c.raciLetters = ['R', 'A', 'C', 'I'];
+  c.raciNames = { R: 'Responsible', A: 'Accountable', C: 'Consulted', I: 'Informed' };
+  c.raciTip = function (letters) {
     if (!letters || !letters.length) { return ''; }
-    return letters.map(function (l) { return vm.raciNames[l]; }).join(' / ');
+    return letters.map(function (l) { return c.raciNames[l]; }).join(' / ');
   };
-  vm.raciHex = { R: '#01cc52', A: '#e5c20b', C: '#3ec2f8', I: '#bdc2cb' };
+  c.raciHex = { R: '#01cc52', A: '#e5c20b', C: '#3ec2f8', I: '#bdc2cb' };
 
   /* ================= Jargon term highlighting + tooltip engine =================
      Ported from the prototype's withJargon()/wireTooltips(). Two independent pieces:
      - jargonHtml(text): wraps glossary terms (IPKT, RTM, SOW, ...) in a `.jargon-term` span
-       carrying data-tip-name/data-tip, memoized per (text, vm.showJargon) so the same
+       carrying data-tip-name/data-tip, memoized per (text, c.showJargon) so the same
        $sce.trustAsHtml-wrapped value is returned on repeat calls - a fresh trusted-html object
        every digest is the same infinite-digest trap as ICON_HTML above.
-     - the tip itself (vm.tip) is driven by event delegation on the app root (see
-       vm.tipMouseOver/Out in index.html) rather than per-element ng-mouseenter directives,
+     - the tip itself (c.tip) is driven by event delegation on the app root (see
+       c.tipMouseOver/Out in index.html) rather than per-element ng-mouseenter directives,
        because jargon-term spans are raw DOM inserted via ng-bind-html and were never compiled by
        Angular - a single delegated listener picks up data-tip attributes regardless of whether
        Angular or ng-bind-html's raw innerHTML produced them. */
   var JARGON = {};
-  vm.showJargon = false;
+  c.showJargon = false;
   var jargonCache = {};
   function jargonHtml(text) {
     if (!text) { return $sce.trustAsHtml(''); }
-    var key = (vm.showJargon ? '1' : '0') + '|' + text;
+    var key = (c.showJargon ? '1' : '0') + '|' + text;
     if (jargonCache[key]) { return jargonCache[key]; }
     var html = escapeHtml(text);
     var terms = Object.keys(JARGON);
-    if (vm.showJargon && terms.length) {
+    if (c.showJargon && terms.length) {
       var re = new RegExp('\\b(' + terms.map(function (t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')\\b', 'g');
       html = html.replace(re, function (m) {
         return '<span class="jargon-term" data-tip-name="' + escapeHtml(m) + '" data-tip="' + escapeHtml(JARGON[m]) + '">' + escapeHtml(m) + '</span>';
@@ -120,7 +120,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     jargonCache[key] = trusted;
     return trusted;
   }
-  vm.jargonHtml = jargonHtml;
+  c.jargonHtml = jargonHtml;
 
   // Shows after a short hover delay (skips tooltips for elements the cursor just passes over on
   // its way somewhere else) and, once shown, sits anchored to the hovered element rather than
@@ -130,7 +130,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   // something else, so they show immediately with no delay.
   var TIP_DELAY_MS = 400;
   var tipDelay = null;
-  vm.tip = { show: false, name: '', text: '', x: 0, y: 0 };
+  c.tip = { show: false, name: '', text: '', x: 0, y: 0 };
   function positionTipNear(el) {
     var tipEl = document.getElementById('dm-tip');
     if (!tipEl) { return; }
@@ -142,16 +142,16 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     if (y < 8) { y = r.bottom + pad; }
     if (x < 8) { x = 8; }
     if (x + tr.width > window.innerWidth - 8) { x = window.innerWidth - tr.width - 8; }
-    vm.tip.x = x;
-    vm.tip.y = y;
+    c.tip.x = x;
+    c.tip.y = y;
   }
   function showTip(el) {
-    vm.tip.name = el.getAttribute('data-tip-name') || '';
-    vm.tip.text = el.getAttribute('data-tip') || '';
-    vm.tip.show = true;
+    c.tip.name = el.getAttribute('data-tip-name') || '';
+    c.tip.text = el.getAttribute('data-tip') || '';
+    c.tip.show = true;
     $timeout(function () { positionTipNear(el); }, 0);
   }
-  vm.tipMouseOver = function ($event) {
+  c.tipMouseOver = function ($event) {
     var el = $event.target.closest && $event.target.closest('[data-tip]');
     if (!el) { return; }
     if (tipDelay) { $timeout.cancel(tipDelay); tipDelay = null; }
@@ -161,38 +161,38 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       tipDelay = $timeout(function () { showTip(el); }, TIP_DELAY_MS);
     }
   };
-  vm.tipMouseOut = function ($event) {
+  c.tipMouseOut = function ($event) {
     var el = $event.target.closest && $event.target.closest('[data-tip]');
     if (el) {
       if (tipDelay) { $timeout.cancel(tipDelay); tipDelay = null; }
-      vm.tip.show = false;
+      c.tip.show = false;
     }
   };
   // Clicking a data-tip element (edit-pencil, a reorder/delete button, the theme toggle...) very
   // often re-renders the DOM it's sitting in (ng-if swaps the whole panel to the edit view, a row
   // gets removed, etc.) - the element mouseout was hovering never fires because it's gone, not
   // moved away from, so the tooltip is otherwise left showing, stuck, over whatever's now there.
-  vm.dismissTip = function () {
+  c.dismissTip = function () {
     if (tipDelay) { $timeout.cancel(tipDelay); tipDelay = null; }
-    vm.tip.show = false;
+    c.tip.show = false;
   };
 
-  vm.loading = true;
-  vm.jobTitles = [];
-  vm.methodologies = [];
-  vm.methodologyId = null;
-  vm.subPhaseId = null;
-  // vm.loc (not a vm.currentLoc() function) is deliberate: findSubPhase() below builds a fresh
+  c.loading = true;
+  c.jobTitles = [];
+  c.methodologies = [];
+  c.methodologyId = null;
+  c.subPhaseId = null;
+  // c.loc (not a c.currentLoc() function) is deliberate: findSubPhase() below builds a fresh
   // {meth, phase, phaseIndex, sp} wrapper object on every call, so binding it directly into the
-  // template as a function call (ng-if="vm.currentLoc()") never reference-equals its previous
+  // template as a function call (ng-if="c.currentLoc()") never reference-equals its previous
   // value and Angular's digest never stabilizes - $rootScope:infdig after 10 iterations. Compute
   // it once per actual navigation instead, into a plain property the template just reads.
-  vm.loc = null;
+  c.loc = null;
   function refreshLoc() {
-    vm.loc = vm.findSubPhase(vm.subPhaseId);
-    if (vm.loc) {
-      vm.loc.loeRows = computeLoeRows(vm.loc.sp);
-      vm.loc.taskTableRoles = taskTableRoles(vm.loc.sp);
+    c.loc = c.findSubPhase(c.subPhaseId);
+    if (c.loc) {
+      c.loc.loeRows = computeLoeRows(c.loc.sp);
+      c.loc.taskTableRoles = taskTableRoles(c.loc.sp);
     }
   }
 
@@ -220,25 +220,25 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   }
 
   DataService.getData().then(function (d) {
-    vm.jobTitles = d.jobTitles;
-    vm.methodologies = d.methodologies;
-    backfillParticipants(vm.methodologies);
+    c.jobTitles = d.jobTitles;
+    c.methodologies = d.methodologies;
+    backfillParticipants(c.methodologies);
     seedIdCounters();
     JARGON = d.jargon || {};
-    vm.methodologyId = vm.methodologies[0].id;
-    vm.subPhaseId = firstContentSubPhase(curMeth());
+    c.methodologyId = c.methodologies[0].id;
+    c.subPhaseId = firstContentSubPhase(curMeth());
     refreshLoc();
     refreshWhatsNew();
     refreshJobAids();
-    vm.loading = false;
+    c.loading = false;
   });
 
   function curMeth() {
-    return vm.methodologies.find(function (m) { return m.id === vm.methodologyId; });
+    return c.methodologies.find(function (m) { return m.id === c.methodologyId; });
   }
   // Guarded against structure editing leaving a phase (or every phase) with zero sub-phases -
-  // returns null rather than throwing; callers (vm.subPhaseId = ...) already tolerate a null
-  // location (vm.loc stays null, and every template block that reads it is ng-if="vm.loc"-gated).
+  // returns null rather than throwing; callers (c.subPhaseId = ...) already tolerate a null
+  // location (c.loc stays null, and every template block that reads it is ng-if="c.loc"-gated).
   function firstContentSubPhase(meth) {
     for (var i = 0; i < meth.phases.length; i++) {
       var found = meth.phases[i].subPhases.find(hasContent);
@@ -259,23 +259,23 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       || (sp.comments && sp.comments.length) || (sp.meetings && sp.meetings.length)
       || (sp.inputs && sp.inputs.length) || (sp.deliverables && sp.deliverables.length));
   }
-  vm.hasContent = hasContent;
+  c.hasContent = hasContent;
 
-  vm.jobTitleById = function (id) {
-    return vm.jobTitles.find(function (r) { return r.id === id; });
+  c.jobTitleById = function (id) {
+    return c.jobTitles.find(function (r) { return r.id === id; });
   };
   // A CSS var reference (not a literal hex) so the inline style="--c: ..." bindings that consume
   // this stay theme-aware - var(--ink-soft) is itself resolved live wherever --c is actually used
   // (color: var(--c)), tracking whichever theme is active rather than freezing the dark-mode hex.
-  vm.jobTitleColor = function (id) {
-    var jt = vm.jobTitleById(id);
+  c.jobTitleColor = function (id) {
+    var jt = c.jobTitleById(id);
     return (jt && jt.external) ? 'var(--ink-soft)' : 'var(--ink-soft)';
   };
   // Fixed display order for job titles everywhere a set of them is shown - anything not listed
   // here (e.g. GRS-only titles) sorts after, in whatever order it was found. External
   // participants (e.g. Customer) always sort to the very end, ahead of that fallback order.
   var JOB_TITLE_ORDER = ['em', 'bpc', 'arch', 'tc', 'ux'];
-  vm.sortJobTitleIds = function (ids) {
+  c.sortJobTitleIds = function (ids) {
     return ids.slice().sort(function (a, b) {
       var ea = isExternalJobTitle(a), eb = isExternalJobTitle(b);
       if (ea !== eb) { return ea ? 1 : -1; }
@@ -283,11 +283,11 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     });
   };
-  function isExternalJobTitle(id) { var jt = vm.jobTitleById(id); return !!(jt && jt.external); }
+  function isExternalJobTitle(id) { var jt = c.jobTitleById(id); return !!(jt && jt.external); }
 
-  vm.findSubPhase = function (id) {
-    for (var mi = 0; mi < vm.methodologies.length; mi++) {
-      var m = vm.methodologies[mi];
+  c.findSubPhase = function (id) {
+    for (var mi = 0; mi < c.methodologies.length; mi++) {
+      var m = c.methodologies[mi];
       for (var pi = 0; pi < m.phases.length; pi++) {
         var sp = m.phases[pi].subPhases.find(function (x) { return x.id === id; });
         if (sp) { return { meth: m, phase: m.phases[pi], phaseIndex: pi, sp: sp }; }
@@ -298,17 +298,17 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   // Participants is now a deliberate, user-picked roster (sp.participants, an id array) rather
   // than something inferred from task RACI - this is the read accessor everywhere that roster is
   // displayed (read view legend/RACI table, edit mode's picker + downstream availability lists).
-  vm.participantsOf = function (sp) {
-    return vm.sortJobTitleIds(sp.participants || []).map(vm.jobTitleById).filter(Boolean);
+  c.participantsOf = function (sp) {
+    return c.sortJobTitleIds(sp.participants || []).map(c.jobTitleById).filter(Boolean);
   };
   // The read-view RACI task table's column set: participants PLUS any job title still holding a
   // RACI letter on a task after being removed from the roster - same "leave it in place, flag it,
   // never silently drop" contract idleParticipants/taskRoleOrphan already use in edit mode. Without
   // this, de-selecting a participant that still has RACI here made their letters vanish from the
   // read table (while the RACI grid view kept showing them) with no trace anything was hidden.
-  // Returns plain objects (never the shared vm.jobTitles record itself) so the .orphan flag can't
-  // leak into other call sites. Precomputed into vm.loc.taskTableRoles by refreshLoc(), NOT called
-  // as a function from the template - same fresh-array-every-call $rootScope:infdig risk as vm.loc
+  // Returns plain objects (never the shared c.jobTitles record itself) so the .orphan flag can't
+  // leak into other call sites. Precomputed into c.loc.taskTableRoles by refreshLoc(), NOT called
+  // as a function from the template - same fresh-array-every-call $rootScope:infdig risk as c.loc
   // and computeLoeRows above (verified independently by hitting the actual error).
   function taskTableRoles(sp) {
     var partIds = sp.participants || [];
@@ -316,181 +316,181 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     (sp.tasks || []).forEach(function (t) {
       Object.keys(t.raci || {}).forEach(function (id) { if (allIds.indexOf(id) < 0) { allIds.push(id); } });
     });
-    return vm.sortJobTitleIds(allIds).map(function (id) {
-      var jt = vm.jobTitleById(id);
+    return c.sortJobTitleIds(allIds).map(function (id) {
+      var jt = c.jobTitleById(id);
       if (!jt) { return null; }
       return { id: jt.id, abbr: jt.abbr, name: jt.name, description: jt.description, external: jt.external, orphan: partIds.indexOf(id) < 0 };
     }).filter(Boolean);
   };
-  vm.participantOn = function (id) { return (vm.editSp.participants || []).indexOf(id) >= 0; };
-  vm.toggleParticipant = function (id) {
-    if (!vm.editSp.participants) { vm.editSp.participants = []; }
-    var i = vm.editSp.participants.indexOf(id);
-    if (i >= 0) { vm.editSp.participants.splice(i, 1); } else { vm.editSp.participants.push(id); }
+  c.participantOn = function (id) { return (c.editSp.participants || []).indexOf(id) >= 0; };
+  c.toggleParticipant = function (id) {
+    if (!c.editSp.participants) { c.editSp.participants = []; }
+    var i = c.editSp.participants.indexOf(id);
+    if (i >= 0) { c.editSp.participants.splice(i, 1); } else { c.editSp.participants.push(id); }
   };
   // Participants selected above but not actually given a RACI letter on any task yet - called out
   // in the picker so an editor notices a name they added and then never followed through on.
-  vm.idleParticipants = function () {
+  c.idleParticipants = function () {
     var used = {};
-    (vm.editSp.tasks || []).forEach(function (t) {
+    (c.editSp.tasks || []).forEach(function (t) {
       Object.keys(t.raci || {}).forEach(function (id) { if (t.raci[id] && t.raci[id].length) { used[id] = true; } });
     });
-    return vm.participantsOf(vm.editSp).filter(function (r) { return !used[r.id]; });
+    return c.participantsOf(c.editSp).filter(function (r) { return !used[r.id]; });
   };
-  vm.unreadCount = function (sp) {
+  c.unreadCount = function (sp) {
     return (sp.changelog || []).filter(function (c) { return !c.read; }).length;
   };
 
-  vm.curMeth = curMeth;
-  vm.phaseIndexOfSub = function (subId) {
+  c.curMeth = curMeth;
+  c.phaseIndexOfSub = function (subId) {
     var m = curMeth();
     for (var i = 0; i < m.phases.length; i++) {
       if (m.phases[i].subPhases.some(function (s) { return s.id === subId; })) { return i; }
     }
     return 0;
   };
-  vm.activePhaseIndex = function () { return vm.phaseIndexOfSub(vm.subPhaseId); };
-  vm.activeColor = function () { return PHASE_COLORS[vm.activePhaseIndex() % PHASE_COLORS.length]; };
-  vm.phaseColor = function (i) { return PHASE_COLORS[i % PHASE_COLORS.length]; };
-  vm.phaseHasUnread = function (p) { return p.subPhases.some(function (s) { return vm.unreadCount(s) > 0; }); };
-  vm.subPhaseIconPaths = function (name) { return ICON_HTML[subPhaseIconKey(name)]; };
+  c.activePhaseIndex = function () { return c.phaseIndexOfSub(c.subPhaseId); };
+  c.activeColor = function () { return PHASE_COLORS[c.activePhaseIndex() % PHASE_COLORS.length]; };
+  c.phaseColor = function (i) { return PHASE_COLORS[i % PHASE_COLORS.length]; };
+  c.phaseHasUnread = function (p) { return p.subPhases.some(function (s) { return c.unreadCount(s) > 0; }); };
+  c.subPhaseIconPaths = function (name) { return ICON_HTML[subPhaseIconKey(name)]; };
 
   // read/unread - a single global flag per changelog entry, matching the prototype's current
   // data model exactly. Phase 3's per-user Acknowledgement design (see the mockup) replaces this
   // once real GlideRecord data + logged-in users exist - nothing to fake here against mock data.
   function unreadEntries(sp) { return (sp.changelog || []).filter(function (c) { return !c.read; }); }
-  vm.unreadEntries = unreadEntries;
+  c.unreadEntries = unreadEntries;
   function markRead(sp) {
     var entries = unreadEntries(sp);
     entries.forEach(function (c) { c.read = true; });
     refreshWhatsNew();
-    if (entries.length) { DataService.saveData(vm.methodologies); }
+    if (entries.length) { DataService.saveData(c.methodologies); }
     return entries;
   }
   // Entries just marked read by the most recent openSubPhase - the read-panel shows these once,
   // in a "What changed" banner, so a change you hadn't seen yet doesn't just silently vanish from
   // the unread badge with no trace of what it was.
-  vm.justRead = [];
-  vm.anyUnread = function () {
-    return vm.methodologies.some(function (m) { return m.phases.some(function (p) { return p.subPhases.some(function (s) { return unreadEntries(s).length > 0; }); }); });
+  c.justRead = [];
+  c.anyUnread = function () {
+    return c.methodologies.some(function (m) { return m.phases.some(function (p) { return p.subPhases.some(function (s) { return unreadEntries(s).length > 0; }); }); });
   };
 
-  vm.view = 'journey';
-  vm.setView = function (v) {
-    if (vm.editMode) { showToast('Finish editing first'); return; }
-    vm.view = v;
+  c.view = 'journey';
+  c.setView = function (v) {
+    if (c.editMode) { showToast('Finish editing first'); return; }
+    c.view = v;
     if (v === 'raci') { refreshRg(); }
-    if (v !== 'search') { vm.searchQuery = ''; vm.searchResultsList = []; }
+    if (v !== 'search') { c.searchQuery = ''; c.searchResultsList = []; }
   };
-  vm.showMethSwitch = function () { return vm.view === 'journey' || vm.view === 'raci'; };
-  vm.pageTitle = function () {
-    if (vm.view === 'raci') { return 'Who does what'; }
-    if (vm.view === 'whatsnew') { return "What's New"; }
-    if (vm.view === 'search') { return 'Search'; }
-    if (vm.view === 'reference') { return 'Reference'; }
+  c.showMethSwitch = function () { return c.view === 'journey' || c.view === 'raci'; };
+  c.pageTitle = function () {
+    if (c.view === 'raci') { return 'Who does what'; }
+    if (c.view === 'whatsnew') { return "What's New"; }
+    if (c.view === 'search') { return 'Search'; }
+    if (c.view === 'reference') { return 'Reference'; }
     return 'The Delivery Journey';
   };
-  vm.pageSub = function () {
-    if (vm.view === 'raci') { return 'Every task and every job title in ' + vm.curMeth().name + '. Focus a column to see one role across the whole engagement, or open a task row for its full context.'; }
-    if (vm.view === 'whatsnew') { return 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.'; }
-    if (vm.view === 'search') { return 'Results for “' + (vm.searchQuery || '').trim() + '” across every methodology.'; }
-    if (vm.view === 'reference') { return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.'; }
+  c.pageSub = function () {
+    if (c.view === 'raci') { return 'Every task and every job title in ' + c.curMeth().name + '. Focus a column to see one role across the whole engagement, or open a task row for its full context.'; }
+    if (c.view === 'whatsnew') { return 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.'; }
+    if (c.view === 'search') { return 'Results for “' + (c.searchQuery || '').trim() + '” across every methodology.'; }
+    if (c.view === 'reference') { return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.'; }
     return 'Follow the engagement phase by phase. Select a sub-phase to read it in full.';
   };
 
-  vm.switchMethodology = function (id) {
-    if (vm.editMode) { showToast('Finish editing first'); return; }
-    vm.methodologyId = id;
-    vm.openSubPhase(firstContentSubPhase(curMeth()));
-    if (vm.view === 'raci') { refreshRg(); }
+  c.switchMethodology = function (id) {
+    if (c.editMode) { showToast('Finish editing first'); return; }
+    c.methodologyId = id;
+    c.openSubPhase(firstContentSubPhase(curMeth()));
+    if (c.view === 'raci') { refreshRg(); }
   };
-  vm.selectPhase = function (phaseIndex) {
-    if (vm.editMode) { return; }
+  c.selectPhase = function (phaseIndex) {
+    if (c.editMode) { return; }
     var p = curMeth().phases[phaseIndex];
     if (!p.subPhases.length) { return; } // structure editing can leave a phase empty - nothing to open
     var written = p.subPhases.find(hasContent);
-    vm.openSubPhase((written || p.subPhases[0]).id);
+    c.openSubPhase((written || p.subPhases[0]).id);
   };
-  vm.openSubPhase = function (id) {
-    if (vm.editMode) { return; }
-    vm.subPhaseId = id;
+  c.openSubPhase = function (id) {
+    if (c.editMode) { return; }
+    c.subPhaseId = id;
     refreshLoc();
-    vm.justRead = markRead(vm.loc.sp);
+    c.justRead = markRead(c.loc.sp);
   };
   // Used by RACI / What's New / Search results, which can point at a sub-phase in the OTHER
   // methodology - switches methodology first if needed, then opens + marks read, then returns to
   // the Journey view so the destination is actually visible.
-  vm.jumpTo = function (subId, methId) {
-    if (vm.editMode) { return; }
-    if (methId && methId !== vm.methodologyId) { vm.methodologyId = methId; }
-    vm.view = 'journey';
-    vm.searchQuery = '';
-    vm.searchResultsList = [];
-    vm.openSubPhase(subId);
+  c.jumpTo = function (subId, methId) {
+    if (c.editMode) { return; }
+    if (methId && methId !== c.methodologyId) { c.methodologyId = methId; }
+    c.view = 'journey';
+    c.searchQuery = '';
+    c.searchResultsList = [];
+    c.openSubPhase(subId);
   };
 
   /* ================= Structure editing (phases + sub-phases) =================
      Add/rename/delete/reorder, direct-mutation-then-save (no working-copy/snapshot pattern like
-     vm.editSp above - there's no per-field changelog to diff here, just a tree shape edit). Every
+     c.editSp above - there's no per-field changelog to diff here, just a tree shape edit). Every
      mutation below is followed by recomputeSids() (position IS the sid) and DataService.saveData()
      (persists the whole tree - see the service's own comment on why that's fine to do every time).
      UI entry point (the "Edit structure" toggle button) is pulled for now - flip this back to true
      to bring it back. Every function below stays fully wired and working either way. */
-  vm.structureEditUiEnabled = false;
-  vm.structureEditMode = false;
-  vm.toggleStructureEdit = function () {
-    if (vm.editMode) { showToast('Finish editing first'); return; }
-    vm.structureEditMode = !vm.structureEditMode;
+  c.structureEditUiEnabled = false;
+  c.structureEditMode = false;
+  c.toggleStructureEdit = function () {
+    if (c.editMode) { showToast('Finish editing first'); return; }
+    c.structureEditMode = !c.structureEditMode;
   };
-  vm.renamePhase = function (phase) {
-    DataService.saveData(vm.methodologies);
+  c.renamePhase = function (phase) {
+    DataService.saveData(c.methodologies);
   };
-  vm.renameSubPhase = function (sp) {
-    DataService.saveData(vm.methodologies);
+  c.renameSubPhase = function (sp) {
+    DataService.saveData(c.methodologies);
   };
-  vm.addPhase = function () {
+  c.addPhase = function () {
     var m = curMeth();
     var phase = { id: 'phase' + (phaseSeq++), name: 'New Phase', order: m.phases.length + 1, subPhases: [] };
     m.phases.push(phase);
     rgEnsureActivePhases();
-    vm.rgActivePhases[phase.id] = true;
-    DataService.saveData(vm.methodologies);
+    c.rgActivePhases[phase.id] = true;
+    DataService.saveData(c.methodologies);
   };
   // Lands the editor directly in the new sub-phase's content edit panel (enterEdit) rather than
   // just creating a stub and leaving the user to find and open it - selectPhase deliberately skips
   // unwritten sub-phases, so without this the one just created would be effectively invisible.
-  vm.addSubPhase = function (phaseIndex) {
+  c.addSubPhase = function (phaseIndex) {
     var m = curMeth();
     var p = m.phases[phaseIndex];
     var sp = DataService.blankSubPhase('subphase' + (subPhaseSeq++), '', 'New Sub-Phase', p.subPhases.length + 1);
     sp.changelog.push({ id: 'c' + (changelogSeq++), ts: TODAY, text: 'Sub-phase created', read: false });
     p.subPhases.push(sp);
     recomputeSids(m);
-    DataService.saveData(vm.methodologies);
-    vm.structureEditMode = false;
-    vm.subPhaseId = sp.id;
+    DataService.saveData(c.methodologies);
+    c.structureEditMode = false;
+    c.subPhaseId = sp.id;
     refreshLoc();
-    vm.justRead = markRead(vm.loc.sp);
-    vm.enterEdit();
+    c.justRead = markRead(c.loc.sp);
+    c.enterEdit();
   };
-  vm.movePhase = function (index, dir) {
+  c.movePhase = function (index, dir) {
     var m = curMeth();
     var j = dir === 'up' ? index - 1 : index + 1;
     if (j < 0 || j >= m.phases.length) { return; }
     var tmp = m.phases[index]; m.phases[index] = m.phases[j]; m.phases[j] = tmp;
     recomputeSids(m);
-    DataService.saveData(vm.methodologies);
+    DataService.saveData(c.methodologies);
   };
-  vm.moveSubPhase = function (phaseIndex, index, dir) {
+  c.moveSubPhase = function (phaseIndex, index, dir) {
     var m = curMeth();
     var arr = m.phases[phaseIndex].subPhases;
     var j = dir === 'up' ? index - 1 : index + 1;
     if (j < 0 || j >= arr.length) { return; }
     var tmp = arr[index]; arr[index] = arr[j]; arr[j] = tmp;
     recomputeSids(m);
-    DataService.saveData(vm.methodologies);
+    DataService.saveData(c.methodologies);
   };
-  vm.deletePhase = function (index) {
+  c.deletePhase = function (index) {
     var m = curMeth();
     if (m.phases.length <= 1) { showToast('A methodology needs at least one phase'); return; }
     var phase = m.phases[index];
@@ -498,39 +498,39 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     var removedIds = phase.subPhases.map(function (s) { return s.id; });
     m.phases.splice(index, 1);
     recomputeSids(m);
-    delete vm.rgActivePhases[phase.id];
-    if (removedIds.indexOf(vm.subPhaseId) >= 0) {
-      vm.subPhaseId = firstContentSubPhase(m);
+    delete c.rgActivePhases[phase.id];
+    if (removedIds.indexOf(c.subPhaseId) >= 0) {
+      c.subPhaseId = firstContentSubPhase(m);
       refreshLoc();
     }
-    DataService.saveData(vm.methodologies);
+    DataService.saveData(c.methodologies);
     refreshWhatsNew();
-    if (vm.view === 'raci') { refreshRg(); }
+    if (c.view === 'raci') { refreshRg(); }
   };
-  vm.deleteSubPhase = function (phaseIndex, index) {
+  c.deleteSubPhase = function (phaseIndex, index) {
     var m = curMeth();
     var arr = m.phases[phaseIndex].subPhases;
     if (arr.length <= 1) { showToast('A phase needs at least one sub-phase'); return; }
     var sp = arr[index];
     if (!window.confirm('Delete sub-phase “' + sp.name + '”? This cannot be undone.')) { return; }
-    var wasOpen = sp.id === vm.subPhaseId;
+    var wasOpen = sp.id === c.subPhaseId;
     arr.splice(index, 1);
     recomputeSids(m);
     if (wasOpen) {
       // Land on the sibling that slid into this position, or the previous one if this was last.
       var next = arr[index] || arr[index - 1];
-      vm.subPhaseId = next ? next.id : firstContentSubPhase(m);
+      c.subPhaseId = next ? next.id : firstContentSubPhase(m);
       refreshLoc();
     }
-    DataService.saveData(vm.methodologies);
+    DataService.saveData(c.methodologies);
     refreshWhatsNew();
-    if (vm.view === 'raci') { refreshRg(); }
+    if (c.view === 'raci') { refreshRg(); }
   };
 
   // Level of effort - one row for "all participants", or one row per role in byRole mode; only
   // rows with actual text render (mirrors loeReadHtml's filter in the prototype). Computed once
-  // into vm.loc.loeRows by refreshLoc() below, NOT called as a function from the template - same
-  // fresh-object-every-call problem as vm.loc itself (see the comment up top).
+  // into c.loc.loeRows by refreshLoc() below, NOT called as a function from the template - same
+  // fresh-object-every-call problem as c.loc itself (see the comment up top).
   // Returns { mode, rows } rather than a flat row list - the two modes render as genuinely
   // different layouts (a single inline .loe-all summary vs. a .loe2 grid of per-role rows with
   // color-coded abbreviations), matching the prototype's loeReadHtml.
@@ -541,30 +541,30 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       if (!v.text && !v.billable && !v.optional) { return { mode: 'all', rows: [] }; }
       return { mode: 'all', rows: [{ label: 'All participants', text: v.text, billable: v.billable, optional: v.optional }] };
     }
-    var rows = vm.sortJobTitleIds(Object.keys(loe.roles || {}))
-      .map(vm.jobTitleById).filter(Boolean)
+    var rows = c.sortJobTitleIds(Object.keys(loe.roles || {}))
+      .map(c.jobTitleById).filter(Boolean)
       .filter(function (r) { return loe.roles[r.id] && loe.roles[r.id].text; })
-      .map(function (r) { var v = loe.roles[r.id]; return { label: r.abbr, name: r.name, description: r.description, text: v.text, billable: v.billable, optional: v.optional, color: vm.jobTitleColor(r.id) }; });
+      .map(function (r) { var v = loe.roles[r.id]; return { label: r.abbr, name: r.name, description: r.description, text: v.text, billable: v.billable, optional: v.optional, color: c.jobTitleColor(r.id) }; });
     return { mode: 'roles', rows: rows };
   }
 
-  vm.meetingDisplay = function (m) {
-    var scheduledBy = m.scheduledBy ? vm.jobTitleById(m.scheduledBy) : null;
-    var ledBy = m.ledBy ? vm.jobTitleById(m.ledBy) : null;
+  c.meetingDisplay = function (m) {
+    var scheduledBy = m.scheduledBy ? c.jobTitleById(m.scheduledBy) : null;
+    var ledBy = m.ledBy ? c.jobTitleById(m.ledBy) : null;
     var bits = [];
     if (scheduledBy) { bits.push('Scheduled by ' + scheduledBy.abbr); }
     if (ledBy) { bits.push('Led by ' + ledBy.abbr); }
     return { name: m.name, meta: bits.join(' · '), external: m.external };
   };
 
-  vm.jobAidScope = function (t, j) {
+  c.jobAidScope = function (t, j) {
     if (!j.roles || !j.roles.length) { return []; }
-    return vm.sortJobTitleIds(j.roles).map(vm.jobTitleById).filter(Boolean);
+    return c.sortJobTitleIds(j.roles).map(c.jobTitleById).filter(Boolean);
   };
 
   /* ================= Edit mode =================
-     Editing happens on a working COPY (vm.editSp), not the live sub-phase - Cancel just discards
-     it, Save diffs it against a second copy taken at entry (vm.editSnapshot) to auto-generate the
+     Editing happens on a working COPY (c.editSp), not the live sub-phase - Cancel just discards
+     it, Save diffs it against a second copy taken at entry (c.editSnapshot) to auto-generate the
      changelog, then replaces the real sub-phase in place. This is the Angular-native equivalent
      of the prototype's live-edit-plus-snapshot-revert approach: two-way ng-model binding makes
      editing a plain object trivial, so there's no need to mutate live data just to get that. */
@@ -587,7 +587,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     return isNaN(n) ? 0 : n;
   }
   function seedIdCounters() {
-    vm.methodologies.forEach(function (m) {
+    c.methodologies.forEach(function (m) {
       m.phases.forEach(function (p) {
         phaseSeq = Math.max(phaseSeq, idNum('phase', p.id) + 1);
         p.subPhases.forEach(function (s) {
@@ -609,24 +609,24 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   }
   function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
-  vm.editMode = false;
-  vm.editSp = null;
-  vm.editSnapshot = null;
-  vm.tmpLoeRole = '';
-  vm.tmpAddJt = {};
+  c.editMode = false;
+  c.editSp = null;
+  c.editSnapshot = null;
+  c.tmpLoeRole = '';
+  c.tmpAddJt = {};
 
-  vm.enterEdit = function () {
-    if (vm.structureEditMode) { return; }
-    vm.editSnapshot = deepClone(vm.loc.sp);
-    vm.editSp = deepClone(vm.loc.sp);
-    vm.tmpLoeRole = '';
-    vm.tmpAddJt = {};
-    vm.editMode = true;
+  c.enterEdit = function () {
+    if (c.structureEditMode) { return; }
+    c.editSnapshot = deepClone(c.loc.sp);
+    c.editSp = deepClone(c.loc.sp);
+    c.tmpLoeRole = '';
+    c.tmpAddJt = {};
+    c.editMode = true;
   };
-  vm.cancelEdit = function () {
-    vm.editMode = false;
-    vm.editSp = null;
-    vm.editSnapshot = null;
+  c.cancelEdit = function () {
+    c.editMode = false;
+    c.editSp = null;
+    c.editSnapshot = null;
     showToast('Edit cancelled - changes reverted');
   };
   // A job aid's roles list is only meaningful when it's a SUBSET of the task's current RACI
@@ -635,7 +635,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   // back to [] (= "all roles") so it doesn't silently drift into a stale, no-longer-partial list.
   function collapseJobAidRoles(sp) {
     (sp.tasks || []).forEach(function (t) {
-      var roleIds = vm.sortJobTitleIds(Object.keys(t.raci || {}));
+      var roleIds = c.sortJobTitleIds(Object.keys(t.raci || {}));
       (t.jobAids || []).forEach(function (j) {
         if (Array.isArray(j.roles) && j.roles.length && roleIds.length && roleIds.every(function (rid) { return j.roles.indexOf(rid) >= 0; })) {
           j.roles = [];
@@ -643,25 +643,25 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       });
     });
   }
-  vm.saveEdit = function () {
-    collapseJobAidRoles(vm.editSp);
-    var changes = describeChanges(vm.editSnapshot, vm.editSp);
+  c.saveEdit = function () {
+    collapseJobAidRoles(c.editSp);
+    var changes = describeChanges(c.editSnapshot, c.editSp);
     var entries = [];
     if (changes.length) {
-      if (!vm.editSp.changelog) { vm.editSp.changelog = []; }
+      if (!c.editSp.changelog) { c.editSp.changelog = []; }
       entries = changes.map(function (text) { return { id: 'c' + (changelogSeq++), ts: TODAY, text: text, read: false }; });
-      vm.editSp.changelog.unshift.apply(vm.editSp.changelog, entries);
+      c.editSp.changelog.unshift.apply(c.editSp.changelog, entries);
     }
-    var idx = vm.loc.phase.subPhases.findIndex(function (s) { return s.id === vm.editSp.id; });
-    vm.loc.phase.subPhases[idx] = vm.editSp;
-    vm.editMode = false;
-    vm.editSp = null;
-    vm.editSnapshot = null;
-    vm.justRead = entries;
+    var idx = c.loc.phase.subPhases.findIndex(function (s) { return s.id === c.editSp.id; });
+    c.loc.phase.subPhases[idx] = c.editSp;
+    c.editMode = false;
+    c.editSp = null;
+    c.editSnapshot = null;
+    c.justRead = entries;
     refreshLoc();
     refreshWhatsNew();
     refreshJobAids();
-    DataService.saveData(vm.methodologies);
+    DataService.saveData(c.methodologies);
     showToast(changes.length ? ('Saved - ' + changes.length + ' change' + (changes.length > 1 ? 's' : '') + ' detected and logged automatically') : 'Saved - no changes detected');
   };
 
@@ -701,7 +701,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     ids.forEach(function (id) {
       var b = (before[id] || []).join(''), a = (after[id] || []).join('');
       if (b === a) { return; }
-      var jt = vm.jobTitleById(id), abbr = jt ? jt.abbr : id;
+      var jt = c.jobTitleById(id), abbr = jt ? jt.abbr : id;
       if (!b) { out.push('RACI added on “' + taskLabel + '”: ' + abbr + ' (' + a + ')'); }
       else if (!a) { out.push('RACI removed on “' + taskLabel + '”: ' + abbr); }
       else { out.push('RACI changed on “' + taskLabel + '”: ' + abbr + ' ' + b + ' → ' + a); }
@@ -729,7 +729,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
         // isn't a user-authored change. Only log it once real text exists on either side; a
         // flag-only difference on an otherwise-empty row is noise, not content.
         if (!(b && b.text) && !(a && a.text)) { return; }
-        var jt = vm.jobTitleById(id);
+        var jt = c.jobTitleById(id);
         out.push('Level of effort updated for ' + (jt ? jt.abbr : id));
       });
     }
@@ -737,8 +737,8 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   }
   function meetingLabel(m) {
     var parts = [];
-    var sb = m.scheduledBy && vm.jobTitleById(m.scheduledBy);
-    var lb = m.ledBy && vm.jobTitleById(m.ledBy);
+    var sb = m.scheduledBy && c.jobTitleById(m.scheduledBy);
+    var lb = m.ledBy && c.jobTitleById(m.ledBy);
     if (sb) { parts.push('scheduled by ' + sb.abbr); }
     if (lb) { parts.push('led by ' + lb.abbr); }
     return parts.length ? parts.join(', ') : 'meeting';
@@ -760,10 +760,10 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     before = before || []; after = after || [];
     var out = [];
     after.filter(function (id) { return before.indexOf(id) < 0; }).forEach(function (id) {
-      var jt = vm.jobTitleById(id); out.push('Participant added: ' + (jt ? jt.abbr : id));
+      var jt = c.jobTitleById(id); out.push('Participant added: ' + (jt ? jt.abbr : id));
     });
     before.filter(function (id) { return after.indexOf(id) < 0; }).forEach(function (id) {
-      var jt = vm.jobTitleById(id); out.push('Participant removed: ' + (jt ? jt.abbr : id));
+      var jt = c.jobTitleById(id); out.push('Participant removed: ' + (jt ? jt.abbr : id));
     });
     return out;
   }
@@ -794,10 +794,10 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   }
 
   // ---- list fields: comments / inputs / deliverables (plain string arrays) ----
-  vm.addListItem = function (kind) { vm.editSp[kind].push(''); };
-  vm.removeListItem = function (kind, i) { vm.editSp[kind].splice(i, 1); };
-  vm.moveListItem = function (kind, i, dir) {
-    var arr = vm.editSp[kind];
+  c.addListItem = function (kind) { c.editSp[kind].push(''); };
+  c.removeListItem = function (kind, i) { c.editSp[kind].splice(i, 1); };
+  c.moveListItem = function (kind, i, dir) {
+    var arr = c.editSp[kind];
     var j = dir === 'up' ? i - 1 : i + 1;
     if (j < 0 || j >= arr.length) { return; }
     var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
@@ -814,30 +814,30 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     var d = LOE_ROLE_DEFAULTS[roleId] || { billable: false, optional: false };
     return { text: '', billable: d.billable, optional: d.optional };
   }
-  vm.setLoeMode = function (mode) {
-    vm.editSp.levelOfEffort.mode = mode;
-    if (mode === 'byRole' && !Object.keys(vm.editSp.levelOfEffort.roles || {}).length) {
-      if (!vm.editSp.levelOfEffort.roles) { vm.editSp.levelOfEffort.roles = {}; }
-      vm.participantsOf(vm.editSp).filter(function (r) { return !r.external; }).forEach(function (r) {
-        vm.editSp.levelOfEffort.roles[r.id] = defaultLoeEntry(r.id);
+  c.setLoeMode = function (mode) {
+    c.editSp.levelOfEffort.mode = mode;
+    if (mode === 'byRole' && !Object.keys(c.editSp.levelOfEffort.roles || {}).length) {
+      if (!c.editSp.levelOfEffort.roles) { c.editSp.levelOfEffort.roles = {}; }
+      c.participantsOf(c.editSp).filter(function (r) { return !r.external; }).forEach(function (r) {
+        c.editSp.levelOfEffort.roles[r.id] = defaultLoeEntry(r.id);
       });
     }
   };
   // Only sub-phase participants are offered here - matches taskAvailableRoles below and the
   // meeting scheduled/led-by pickers, all three now scoped to the same explicit roster instead of
   // the full job title list.
-  vm.loeAvailableRoles = function () {
-    var used = Object.keys(vm.editSp.levelOfEffort.roles || {});
-    return vm.participantsOf(vm.editSp).filter(function (r) { return !r.external && used.indexOf(r.id) < 0; });
+  c.loeAvailableRoles = function () {
+    var used = Object.keys(c.editSp.levelOfEffort.roles || {});
+    return c.participantsOf(c.editSp).filter(function (r) { return !r.external && used.indexOf(r.id) < 0; });
   };
-  vm.addLoeRole = function () {
-    if (!vm.tmpLoeRole) { return; }
-    if (!vm.editSp.levelOfEffort.roles) { vm.editSp.levelOfEffort.roles = {}; }
-    vm.editSp.levelOfEffort.roles[vm.tmpLoeRole] = defaultLoeEntry(vm.tmpLoeRole);
-    vm.tmpLoeRole = '';
+  c.addLoeRole = function () {
+    if (!c.tmpLoeRole) { return; }
+    if (!c.editSp.levelOfEffort.roles) { c.editSp.levelOfEffort.roles = {}; }
+    c.editSp.levelOfEffort.roles[c.tmpLoeRole] = defaultLoeEntry(c.tmpLoeRole);
+    c.tmpLoeRole = '';
   };
-  vm.removeLoeRole = function (roleId) { delete vm.editSp.levelOfEffort.roles[roleId]; };
-  vm.setLoeFlag = function (entry, val) {
+  c.removeLoeRole = function (roleId) { delete c.editSp.levelOfEffort.roles[roleId]; };
+  c.setLoeFlag = function (entry, val) {
     if (val === 'optional') { entry.optional = true; entry.billable = false; }
     else if (val === 'mandatory') { entry.optional = false; }
     else if (val === 'billable' && !entry.optional) { entry.billable = true; }
@@ -845,103 +845,103 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   };
   // True once a role that had a per-role LOE row stops being a participant (removed after the
   // fact) - the row itself is left alone (data isn't silently dropped), just flagged.
-  vm.loeRoleOrphan = function (roleId) { return (vm.editSp.participants || []).indexOf(roleId) < 0; };
-  vm.loeRoleRows = function () {
-    return vm.sortJobTitleIds(Object.keys(vm.editSp.levelOfEffort.roles || {})).map(vm.jobTitleById).filter(Boolean);
+  c.loeRoleOrphan = function (roleId) { return (c.editSp.participants || []).indexOf(roleId) < 0; };
+  c.loeRoleRows = function () {
+    return c.sortJobTitleIds(Object.keys(c.editSp.levelOfEffort.roles || {})).map(c.jobTitleById).filter(Boolean);
   };
 
   // ---- meetings ----
-  vm.addMeeting = function () { vm.editSp.meetings.push({ id: 'mt' + (meetingSeq++), name: '', scheduledBy: '', ledBy: '', external: false }); };
-  vm.removeMeeting = function (i) { vm.editSp.meetings.splice(i, 1); };
-  vm.moveMeeting = function (i, dir) {
-    var arr = vm.editSp.meetings;
+  c.addMeeting = function () { c.editSp.meetings.push({ id: 'mt' + (meetingSeq++), name: '', scheduledBy: '', ledBy: '', external: false }); };
+  c.removeMeeting = function (i) { c.editSp.meetings.splice(i, 1); };
+  c.moveMeeting = function (i, dir) {
+    var arr = c.editSp.meetings;
     var j = dir === 'up' ? i - 1 : i + 1;
     if (j < 0 || j >= arr.length) { return; }
     var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
   };
-  vm.internalRoles = function () {
-    return vm.participantsOf(vm.editSp).filter(function (r) { return !r.external; });
+  c.internalRoles = function () {
+    return c.participantsOf(c.editSp).filter(function (r) { return !r.external; });
   };
   // Assignment (a task RACI letter, an LOE row, meeting scheduled/led-by) referencing a job title
   // that's since been unselected from Participants above - left in place rather than silently
   // dropped, but flagged wherever it's shown so it doesn't read as a live option.
-  vm.meetingPersonOrphan = function (roleId) {
-    return !!roleId && (vm.editSp.participants || []).indexOf(roleId) < 0;
+  c.meetingPersonOrphan = function (roleId) {
+    return !!roleId && (c.editSp.participants || []).indexOf(roleId) < 0;
   };
 
   // ---- tasks ----
-  vm.addTask = function () { vm.editSp.tasks.push({ id: 't' + (taskSeq++), order: vm.editSp.tasks.length + 1, text: '', jobAids: [], raci: {} }); };
-  vm.removeTask = function (i) { vm.editSp.tasks.splice(i, 1); };
-  vm.moveTask = function (i, dir) {
-    var arr = vm.editSp.tasks;
+  c.addTask = function () { c.editSp.tasks.push({ id: 't' + (taskSeq++), order: c.editSp.tasks.length + 1, text: '', jobAids: [], raci: {} }); };
+  c.removeTask = function (i) { c.editSp.tasks.splice(i, 1); };
+  c.moveTask = function (i, dir) {
+    var arr = c.editSp.tasks;
     var j = dir === 'up' ? i - 1 : i + 1;
     if (j < 0 || j >= arr.length) { return; }
     var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
     arr.forEach(function (t, k) { t.order = k + 1; });
   };
-  vm.taskRaciRoles = function (t) { return vm.sortJobTitleIds(Object.keys(t.raci || {})).map(vm.jobTitleById).filter(Boolean); };
-  vm.taskRoleOrphan = function (roleId) { return (vm.editSp.participants || []).indexOf(roleId) < 0; };
+  c.taskRaciRoles = function (t) { return c.sortJobTitleIds(Object.keys(t.raci || {})).map(c.jobTitleById).filter(Boolean); };
+  c.taskRoleOrphan = function (roleId) { return (c.editSp.participants || []).indexOf(roleId) < 0; };
   var CORE_TEAM = ['em', 'bpc', 'arch', 'tc'];
-  vm.taskAvailableRoles = function (t) {
+  c.taskAvailableRoles = function (t) {
     var used = Object.keys(t.raci || {});
-    return vm.participantsOf(vm.editSp).filter(function (r) { return used.indexOf(r.id) < 0; });
+    return c.participantsOf(c.editSp).filter(function (r) { return used.indexOf(r.id) < 0; });
   };
-  vm.taskCoreTeamMissing = function (t) {
+  c.taskCoreTeamMissing = function (t) {
     var used = Object.keys(t.raci || {});
-    var participating = vm.editSp.participants || [];
+    var participating = c.editSp.participants || [];
     return CORE_TEAM.some(function (id) { return participating.indexOf(id) >= 0 && used.indexOf(id) < 0; });
   };
-  vm.toggleRaci = function (t, roleId, letter) {
+  c.toggleRaci = function (t, roleId, letter) {
     var arr = t.raci[roleId] || (t.raci[roleId] = []);
     var i = arr.indexOf(letter);
-    if (i >= 0) { arr.splice(i, 1); } else { arr.push(letter); arr.sort(function (a, b) { return vm.raciLetters.indexOf(a) - vm.raciLetters.indexOf(b); }); }
+    if (i >= 0) { arr.splice(i, 1); } else { arr.push(letter); arr.sort(function (a, b) { return c.raciLetters.indexOf(a) - c.raciLetters.indexOf(b); }); }
   };
-  vm.removeTaskRole = function (t, roleId) { delete t.raci[roleId]; };
-  vm.addTaskRole = function (t, roleId) {
+  c.removeTaskRole = function (t, roleId) { delete t.raci[roleId]; };
+  c.addTaskRole = function (t, roleId) {
     if (!roleId) { return; }
     if (roleId === '__core__') {
-      var participating = vm.editSp.participants || [];
+      var participating = c.editSp.participants || [];
       CORE_TEAM.forEach(function (id) { if (participating.indexOf(id) >= 0 && !t.raci[id]) { t.raci[id] = []; } });
       return;
     }
     if (!t.raci[roleId]) { t.raci[roleId] = []; }
   };
-  vm.addJobAid = function (t) { if (!Array.isArray(t.jobAids)) { t.jobAids = []; } t.jobAids.push({ id: 'ja' + (jaSeq++), url: '', roles: [] }); };
-  vm.removeJobAid = function (t, i) { t.jobAids.splice(i, 1); };
+  c.addJobAid = function (t) { if (!Array.isArray(t.jobAids)) { t.jobAids = []; } t.jobAids.push({ id: 'ja' + (jaSeq++), url: '', roles: [] }); };
+  c.removeJobAid = function (t, i) { t.jobAids.splice(i, 1); };
   // toggle relative to the DISPLAYED state (all roles selected when j.roles is empty), not the
   // raw array - clicking one role while "all" is showing should exclude just that one, not
   // collapse the scope down to only the one clicked. Collapses back to [] ("all") if every role
   // ends up selected again.
-  vm.toggleJobAidRole = function (t, j, roleId) {
-    var roleIds = vm.sortJobTitleIds(Object.keys(t.raci || {}));
+  c.toggleJobAidRole = function (t, j, roleId) {
+    var roleIds = c.sortJobTitleIds(Object.keys(t.raci || {}));
     var arr = (j.roles && j.roles.length) ? j.roles.slice() : roleIds.slice();
     var i = arr.indexOf(roleId);
     if (i >= 0) { arr.splice(i, 1); } else { arr.push(roleId); }
     j.roles = (roleIds.length && roleIds.every(function (r) { return arr.indexOf(r) >= 0; })) ? [] : arr;
   };
-  vm.jobAidRoleOn = function (t, j, roleId) {
+  c.jobAidRoleOn = function (t, j, roleId) {
     return !j.roles || !j.roles.length || j.roles.indexOf(roleId) >= 0;
   };
 
   /* ================= RACI grid =================
-     Same rule as vm.loc up top: vm.rg is a plain property, recomputed by refreshRg() on every
+     Same rule as c.loc up top: c.rg is a plain property, recomputed by refreshRg() on every
      state change, NEVER a function called from the template. rgGroups()/rgCounts() etc. used to
      do exactly that (verified independently - not just by analogy - by hitting the actual
      $rootScope:infdig error), each building a fresh object/array per call. */
-  vm.raciMode = 'grid';
-  vm.rgActivePhases = null;
-  vm.rgFocusJob = null;
-  vm.rgHoverCol = null;
-  vm.rgOpenRow = null;
-  vm.rg = { ids: [], counts: {}, groups: [], byRoleGroups: [] };
+  c.raciMode = 'grid';
+  c.rgActivePhases = null;
+  c.rgFocusJob = null;
+  c.rgHoverCol = null;
+  c.rgOpenRow = null;
+  c.rg = { ids: [], counts: {}, groups: [], byRoleGroups: [] };
 
   // Keyed by phase ID, not name - a name key meant renaming a phase silently reset its RACI filter
   // (the old name's entry just went stale) and two same-named phases would collapse into one chip.
   function rgEnsureActivePhases() {
     var ids = curMeth().phases.map(function (p) { return p.id; });
-    if (!vm.rgActivePhases || Object.keys(vm.rgActivePhases).some(function (id) { return ids.indexOf(id) < 0; })) {
-      vm.rgActivePhases = {};
-      ids.forEach(function (id) { vm.rgActivePhases[id] = true; });
+    if (!c.rgActivePhases || Object.keys(c.rgActivePhases).some(function (id) { return ids.indexOf(id) < 0; })) {
+      c.rgActivePhases = {};
+      ids.forEach(function (id) { c.rgActivePhases[id] = true; });
     }
   }
   function refreshRg() {
@@ -950,64 +950,64 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     curMeth().phases.forEach(function (p) { p.subPhases.forEach(function (s) {
       if (hasContent(s)) { s.tasks.forEach(function (t) { Object.keys(t.raci || {}).forEach(function (id) { if (ids.indexOf(id) < 0) { ids.push(id); } }); }); }
     }); });
-    ids = vm.sortJobTitleIds(ids);
+    ids = c.sortJobTitleIds(ids);
     // By Role mode always shows *someone's* tasks rather than an empty "no job titles" state -
     // auto-focus the first job title the first time this mode is opened, and re-validate the
     // focus any time it becomes stale (e.g. after switching methodology to one where that id
     // has no tasks).
-    if (vm.raciMode === 'byrole' && (!vm.rgFocusJob || ids.indexOf(vm.rgFocusJob) < 0)) {
-      vm.rgFocusJob = ids[0] || null;
+    if (c.raciMode === 'byrole' && (!c.rgFocusJob || ids.indexOf(c.rgFocusJob) < 0)) {
+      c.rgFocusJob = ids[0] || null;
     }
 
     var counts = {};
     curMeth().phases.forEach(function (p) {
-      if (!vm.rgActivePhases[p.id]) { return; }
+      if (!c.rgActivePhases[p.id]) { return; }
       p.subPhases.forEach(function (s) { if (hasContent(s)) { s.tasks.forEach(function (t) { Object.keys(t.raci || {}).forEach(function (id) { counts[id] = (counts[id] || 0) + t.raci[id].length; }); }); } });
     });
 
     var groups = [];
     var byRoleGroups = [];
     curMeth().phases.forEach(function (p, pi) {
-      if (!vm.rgActivePhases[p.id]) { return; }
+      if (!c.rgActivePhases[p.id]) { return; }
       var color = PHASE_COLORS[pi % PHASE_COLORS.length];
       p.subPhases.filter(hasContent).forEach(function (s) {
-        var rows = vm.rgFocusJob ? s.tasks.filter(function (t) { return t.raci[vm.rgFocusJob]; }) : s.tasks;
+        var rows = c.rgFocusJob ? s.tasks.filter(function (t) { return t.raci[c.rgFocusJob]; }) : s.tasks;
         if (rows.length) {
           groups.push({ phase: p, sp: s, color: color, rows: rows.map(function (t) {
-            // exRaci precomputed here, once, NOT via a vm.rgTaskExRaci(row.task) call from the
+            // exRaci precomputed here, once, NOT via a c.rgTaskExRaci(row.task) call from the
             // template - ng-repeat over a fresh array/fresh objects returned by a function call
-            // is the exact same infinite-digest problem as vm.loc, hit again and independently
+            // is the exact same infinite-digest problem as c.loc, hit again and independently
             // verified here (the expand-row detail panel triggered $rootScope:infdig).
-            var exRaci = vm.sortJobTitleIds(Object.keys(t.raci || {})).map(function (id) {
-              var jt = vm.jobTitleById(id);
-              return { abbr: jt.abbr, name: jt.name, description: jt.description, text: t.raci[id].map(function (l) { return vm.raciNames[l]; }).join(', ') };
+            var exRaci = c.sortJobTitleIds(Object.keys(t.raci || {})).map(function (id) {
+              var jt = c.jobTitleById(id);
+              return { abbr: jt.abbr, name: jt.name, description: jt.description, text: t.raci[id].map(function (l) { return c.raciNames[l]; }).join(', ') };
             });
             return { task: t, key: s.id + ':' + t.id, exRaci: exRaci };
           }) });
         }
-        if (vm.rgFocusJob) {
-          var matched = s.tasks.filter(function (t) { return t.raci[vm.rgFocusJob]; });
+        if (c.rgFocusJob) {
+          var matched = s.tasks.filter(function (t) { return t.raci[c.rgFocusJob]; });
           if (matched.length) { byRoleGroups.push({ phase: p, sp: s, color: color, tasks: matched }); }
         }
       });
     });
-    vm.rg = { ids: ids, counts: counts, groups: groups, byRoleGroups: byRoleGroups };
+    c.rg = { ids: ids, counts: counts, groups: groups, byRoleGroups: byRoleGroups };
   }
-  vm.rgTogglePhase = function (id) { rgEnsureActivePhases(); vm.rgActivePhases[id] = !vm.rgActivePhases[id]; refreshRg(); };
-  vm.rgToggleCol = function (id) { vm.rgFocusJob = (vm.rgFocusJob === id) ? null : id; refreshRg(); };
-  vm.rgClearFocus = function () { vm.rgFocusJob = null; refreshRg(); };
-  vm.rgSetMode = function (mode) { vm.raciMode = mode; refreshRg(); };
-  vm.rgSelectByRole = function (id) { vm.rgFocusJob = id; refreshRg(); };
-  vm.rgToggleRow = function (rowKey) { vm.rgOpenRow = (vm.rgOpenRow === rowKey) ? null : rowKey; };
+  c.rgTogglePhase = function (id) { rgEnsureActivePhases(); c.rgActivePhases[id] = !c.rgActivePhases[id]; refreshRg(); };
+  c.rgToggleCol = function (id) { c.rgFocusJob = (c.rgFocusJob === id) ? null : id; refreshRg(); };
+  c.rgClearFocus = function () { c.rgFocusJob = null; refreshRg(); };
+  c.rgSetMode = function (mode) { c.raciMode = mode; refreshRg(); };
+  c.rgSelectByRole = function (id) { c.rgFocusJob = id; refreshRg(); };
+  c.rgToggleRow = function (rowKey) { c.rgOpenRow = (c.rgOpenRow === rowKey) ? null : rowKey; };
 
   /* ================= What's New =================
-     vm.whatsNew is a stable property, recomputed by refreshWhatsNew() whenever read/unread state
+     c.whatsNew is a stable property, recomputed by refreshWhatsNew() whenever read/unread state
      actually changes (load, openSubPhase's markRead, saveEdit's new entries) - NOT a function
-     bound into ng-repeat. Same fresh-array-of-fresh-objects trap as vm.loc/vm.rg above. */
-  vm.whatsNew = [];
+     bound into ng-repeat. Same fresh-array-of-fresh-objects trap as c.loc/c.rg above. */
+  c.whatsNew = [];
   function refreshWhatsNew() {
     var items = [];
-    vm.methodologies.forEach(function (m) {
+    c.methodologies.forEach(function (m) {
       m.phases.forEach(function (p, pi) {
         p.subPhases.forEach(function (s) {
           unreadEntries(s).forEach(function (entry) { items.push({ m: m, p: p, pi: pi, s: s, entry: entry, color: PHASE_COLORS[pi % PHASE_COLORS.length] }); });
@@ -1015,35 +1015,35 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       });
     });
     items.sort(function (a, b) { return Date.parse(b.entry.ts) - Date.parse(a.entry.ts); });
-    vm.whatsNew = items;
+    c.whatsNew = items;
   }
-  vm.fmtDate = function (d) {
+  c.fmtDate = function (d) {
     var parts = String(d).split('-');
     if (parts.length !== 3) { return d; }
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[+parts[1] - 1] + ' ' + (+parts[2]) + ', ' + parts[0];
   };
-  vm.daysAgo = function (dateStr) { return Math.round((Date.parse(TODAY) - Date.parse(dateStr)) / 86400000); };
+  c.daysAgo = function (dateStr) { return Math.round((Date.parse(TODAY) - Date.parse(dateStr)) / 86400000); };
 
   /* ================= Reference =================
-     vm.jobAids - same treatment; only changes when tasks/job aids are edited (saveEdit). */
-  vm.jobAids = [];
+     c.jobAids - same treatment; only changes when tasks/job aids are edited (saveEdit). */
+  c.jobAids = [];
   function refreshJobAids() {
     var aids = [];
-    vm.methodologies.forEach(function (m) { m.phases.forEach(function (p) { p.subPhases.forEach(function (s) {
+    c.methodologies.forEach(function (m) { m.phases.forEach(function (p) { p.subPhases.forEach(function (s) {
       (s.tasks || []).forEach(function (t) { (t.jobAids || []).forEach(function (j) {
-        if (j.url) { aids.push({ m: m, p: p, s: s, t: t, j: j, scope: vm.jobAidScope(t, j) }); }
+        if (j.url) { aids.push({ m: m, p: p, s: s, t: t, j: j, scope: c.jobAidScope(t, j) }); }
       }); });
     }); }); });
-    vm.jobAids = aids;
+    c.jobAids = aids;
   }
 
   /* ================= Search =================
-     vm.searchResultsList - computed on demand by vm.runSearch() (wired to ng-change on the
+     c.searchResultsList - computed on demand by c.runSearch() (wired to ng-change on the
      search input), not on every digest - same reasoning as above, plus there's no reason to
      re-scan every sub-phase's text on every digest when the query hasn't changed. */
   // $sce.trustAsHtml is safe to call here (unlike the ICON_HTML/jargon cases above) because
-  // vm.searchResultsList is only rebuilt by vm.runSearch(), not recomputed every digest - each
+  // c.searchResultsList is only rebuilt by c.runSearch(), not recomputed every digest - each
   // result's snippetHtml is trusted exactly once per search, not once per digest cycle.
   function makeSnippet(hay, q) {
     var clean = hay.replace(/\n+/g, ' · ');
@@ -1055,25 +1055,25 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     return $sce.trustAsHtml(html);
   }
 
-  vm.searchQuery = '';
-  vm.searchResultsList = [];
-  vm.runSearch = function () {
-    var trimmed = (vm.searchQuery || '').trim();
+  c.searchQuery = '';
+  c.searchResultsList = [];
+  c.runSearch = function () {
+    var trimmed = (c.searchQuery || '').trim();
     if (trimmed.length >= 1) {
-      if (vm.editMode) { showToast('Finish editing first'); return; }
-      vm.view = 'search';
-    } else if (vm.view === 'search') {
-      vm.view = 'journey';
+      if (c.editMode) { showToast('Finish editing first'); return; }
+      c.view = 'search';
+    } else if (c.view === 'search') {
+      c.view = 'journey';
     }
     var q = trimmed.toLowerCase();
-    if (q.length < 2) { vm.searchResultsList = []; return; }
+    if (q.length < 2) { c.searchResultsList = []; return; }
     var results = [];
-    vm.methodologies.forEach(function (m) { m.phases.forEach(function (p) { p.subPhases.forEach(function (s) {
+    c.methodologies.forEach(function (m) { m.phases.forEach(function (p) { p.subPhases.forEach(function (s) {
       var hay = [s.name, s.overview, s.objective].concat(s.comments || [], s.inputs || [], s.deliverables || [], (s.tasks || []).map(function (t) { return t.text; })).join('  ');
       if (hay.toLowerCase().indexOf(q) >= 0) {
         results.push({ m: m, p: p, s: s, snippetHtml: makeSnippet(hay, q) });
       }
     }); }); });
-    vm.searchResultsList = results;
+    c.searchResultsList = results;
   };
 };

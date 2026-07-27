@@ -635,7 +635,9 @@
     records.push({ table: 'sp_widget', sysId: ids.widget, key: 'widget', fields: [
       { name: 'category', value: 'custom' },
       { name: 'client_script', value: parts.clientScript, cdata: true },
-      { name: 'controller_as', value: 'vm' },
+      // Default 'vm' matches apps already shipped with that alias (Glide Studio, Standards).
+      // Service Portal's platform default is 'c' - apps that prefer that set manifest.controllerAs.
+      { name: 'controller_as', value: manifest.controllerAs || 'vm' },
       { name: 'css', value: parts.css, cdata: true },
       { name: 'demo_data', empty: true },
       { name: 'description', value: manifest.shortDescription || manifest.appName },
@@ -729,11 +731,11 @@
   function renderXmlRecord(rec, scopeTag) {
     var lines = ['<' + rec.table + ' action="INSERT_OR_UPDATE">'];
     rec.fields.forEach(function (f) {
-      if (f.scopeTag) { lines.push(scopeTag); return; }
-      if (f.rawTag) { lines.push(f.rawTag); return; }
-      if (f.empty) { lines.push('<' + f.name + '/>'); return; }
+      if (f.scopeTag) { lines.push('  ' + scopeTag); return; }
+      if (f.rawTag) { lines.push('  ' + f.rawTag); return; }
+      if (f.empty) { lines.push('  <' + f.name + '/>'); return; }
       var content = f.cdata ? cdata(f.value) : esc(f.value);
-      lines.push('<' + f.name + '>' + content + '</' + f.name + '>');
+      lines.push('  <' + f.name + '>' + content + '</' + f.name + '>');
     });
     lines.push('</' + rec.table + '>');
     return lines.join('\n');
@@ -848,7 +850,11 @@
   function assembleXml(manifest, parts, opts) {
     var stamp = (opts && opts.stamp) || '';
     var model = buildRecordModel(manifest, parts);
-    var body = wrapAsUpdateSet(manifest, model).map(function (r) { return renderXmlRecord(r, model.scopeTag); });
+    var body = wrapAsUpdateSet(manifest, model).map(function (r) {
+      return renderXmlRecord(r, model.scopeTag).split('\n').map(function (line) {
+        return '  ' + line;
+      }).join('\n');
+    });
     return ['<?xml version="1.0" encoding="UTF-8"?>', '<unload unload_date="' + esc(stamp) + '">']
       .concat(body).concat(['</unload>']).join('\n');
   }

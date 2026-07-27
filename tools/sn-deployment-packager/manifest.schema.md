@@ -1,8 +1,8 @@
 # Manifest schema
 
 `core.js` takes two inputs per build: a **manifest** (this app's static
-identity/config — the only thing that lives in the app) and **sources** (already-fetched
-source text — fetching is the host's job, never the core's). This file documents both, plus
+identity/config - the only thing that lives in the app) and **sources** (already-fetched
+source text - fetching is the host's job, never the core's). This file documents both, plus
 the small `opts` bag `buildParts`/`assembleXml` take.
 
 ## manifest
@@ -30,6 +30,10 @@ the small `opts` bag `buildParts`/`assembleXml` take.
   angularModuleName: 'glideStudio',     // required - the angular.module(...) name in source
   widgetScopeClass: 'gsb-widget',       // required - CSS wrapper class scopeScss() scopes under,
                                          // and the class the widget template is wrapped in
+  controllerAs: 'vm',                   // optional - sp_widget.controller_as / SPWidget.controllerAs.
+                                         // Defaults to 'vm' (what Glide Studio + Standards already
+                                         // ship). Service Portal's platform default is 'c'; set
+                                         // that here if the template/controller use `c.` bindings.
 
   // one entry per file that registers an Angular provider (MainController is NOT listed here -
   // it becomes the widget's client_script via `controllerFile` below, not a provider)
@@ -104,10 +108,11 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
 
 - **Fetching** every source file (`fetch()` vs `fs.readFileSync`).
 - **The deploy modal UI** (browser-only) - option form, connection fields, theming, copy/download.
-  `tools/sn-deployment-packager/index.html` is the one such host in this suite - build/preview/
-  download (or, for an app with `deployOptions.showConnection: true`, publish - see below) a
-  package outside of any one app's own dev harness. A future app-specific Deploy UI would follow the
-  same pattern rather than duplicating it.
+  `tools/sn-deployment-packager/index.html` is the one such host in this suite - build/download/
+  upload (or, for an app with `deployOptions.showConnection: true`, upload straight to Retrieved
+  Update Sets - see below) a package outside of any one app's own dev harness. Review app source in
+  VS Code and the app's local harness; this host only packages. A future app-specific Deploy UI
+  would follow the same pattern rather than duplicating it.
 - **Live-instance connection** - `deployFetch`/`detectCompanyPrefix`/`getInstalledApp`/
   `publishUpdateSet`-style calls (network I/O). Shared between browser hosts as
   `tools/sn-deployment-packager/instance.js` (`window.SNDeploymentPackager.instance`) rather than
@@ -117,15 +122,16 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
     does. It POSTs/PATCHes `core.js`'s `wrapAsUpdateSet` output (each record's fields run through
     `recordToApiFields`) directly via the Table API, landing the Update Set in the target's own
     Retrieved Update Sets list - a real replacement for downloading the XML and uploading it by
-    hand. It deliberately does **not** commit: ServiceNow's real Commit action is an internal
-    GlideAjax-callable script tied to a logged-in browser session, not a stable, externally-callable
-    REST endpoint the way Table API is, so it isn't something this can reliably automate the way the
-    publish step itself can be. Committing stays a manual step in the target instance's own UI -
-    also the last chance to review the diff before it actually applies.
+    hand. The console's **Upload Update Set** button drives this and then opens the Retrieved
+    Update Set form in a new tab. It deliberately does **not** commit: ServiceNow's real Commit
+    action is an internal GlideAjax-callable script tied to a logged-in browser session, not a
+    stable, externally-callable REST endpoint the way Table API is, so it isn't something this can
+    reliably automate the way the upload step itself can be. Committing stays a manual step in the
+    target instance's own UI - also the last chance to review the diff before it actually applies.
 - **Code formatting** (js-beautify or equivalent) - pass it in as `opts.formatFn`.
 - **The timestamp** - pass it in as `opts.stamp`.
 
-## `deploy.manifest.js` — the per-app descriptor file
+## `deploy.manifest.js` - the per-app descriptor file
 
 Every deployable app declares ONE `deploy.manifest.js` at its own root (`apps/<app>/deploy.manifest.js`)
 - a UMD file, same pattern as `core.js`, so it loads unchanged via `require()` in Node
@@ -161,7 +167,7 @@ treats a missing file (404 / load error) as "not eligible," not an error to fix.
 });
 ```
 
-### `deployOptions` — per-app Deploy UI configuration
+### `deployOptions` - per-app Deploy UI configuration
 
 Optional. Controls what a Deploy UI (a live modal, or the standalone deploy console) shows for
 THIS app, since not every app's manifest needs the same fields:
