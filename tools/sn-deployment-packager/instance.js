@@ -1,16 +1,17 @@
-/* Read-only connection to a live TARGET ServiceNow instance: a Basic-Auth fetch used only to detect
-   that instance's application vendor prefix while a Deploy UI is filling in a recommended scope.
-   Nothing here writes, installs, or commits anything - this package is imported by a human.
+/* Read-only connection to a live TARGET ServiceNow instance: Basic-Auth fetches used to detect that
+   instance's application vendor prefix and to look up whether an app is already installed there, so
+   a Deploy UI can prefill a recommended scope and the next version instead of guessing. Nothing
+   here writes, installs, or commits anything - this package is imported by a human.
 
    BROWSER-ONLY - there is no module.exports branch here (it needs fetch/btoa), so do NOT require()
    this from Node; the CLI (build.js) and the app build-deploy.js scripts never touch it.
 
    Network I/O, so deliberately kept OUT of the pure core.js (see that file's header comment and
    manifest.schema.md's "Host responsibilities" - the core never touches the network or filesystem
-   itself). Shared between every browser Deploy host that opts into `deployOptions.showConnection`
-   (see manifest.schema.md's "deploy.manifest.js" section) - Glide Studio's own live Deploy modal
-   (js/services/deploy.service.js) and the standalone deploy console (console.js) both load
-   this file instead of each hand-keeping a copy. Exposes
+   itself). Loaded by the standalone deploy console (console.js) for any app with
+   `deployOptions.showConnection: true` (see manifest.schema.md's "deploy.manifest.js" section) -
+   kept as its own shared file rather than folded into console.js so any OTHER future browser Deploy
+   host can load it the same way instead of keeping its own copy. Exposes
    window.SNDeploymentPackager.instance. */
 (function (root) {
   'use strict';
@@ -50,5 +51,22 @@
     });
   }
 
-  root.SNDeploymentPackager.instance = { deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix };
+  // Looks up whether THIS app already exists on the target instance, keyed by its own deterministic
+  // sys_id (see core.js's deriveSysIds/stableSysId - independent of scope/company code, since
+  // sysIdPrefix is a fixed per-app constant in that app's own deploy.manifest.js). That's what makes
+  // this a reliable "is it already there" check regardless of what scope it was actually installed
+  // under: a Deploy UI can prefill the REAL installed scope/name and suggest the next version, so
+  // redeploying updates the same app instead of the scope silently drifting on every rebuild.
+  // Resolves to {sys_id, name, version, scope} if found, or null if not (a fresh first-time deploy,
+  // OR a lookup failure - bad creds/network error - since a caller treats both the same way: fall
+  // back to a bare scope prefix rather than guessing).
+  function getInstalledApp(conn, appSysId) {
+    return deployFetch('/api/now/table/sys_app', {
+      sysparm_query: 'sys_id=' + appSysId, sysparm_fields: 'sys_id,name,version,scope', sysparm_limit: '1',
+    }, conn).then(function (rows) {
+      return (rows && rows[0]) || null;
+    }).catch(function () { return null; });
+  }
+
+  root.SNDeploymentPackager.instance = { deployFetch: deployFetch, detectCompanyPrefix: detectCompanyPrefix, getInstalledApp: getInstalledApp };
 })(typeof self !== 'undefined' ? self : this);

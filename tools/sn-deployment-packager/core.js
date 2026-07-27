@@ -363,15 +363,38 @@
   function scopeSlug(s) {
     return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'app';
   }
-  function deriveScope(appName, companyCode) {
+  // Just the "x_<companycode>_" portion - a starting point the user finishes typing themselves, NOT
+  // a full scope. A Deploy UI should offer this (not deriveScope() below) when it has no record of
+  // an app already installed under some specific scope on the target instance - guessing a full
+  // scope from whatever text happens to be in an "App name" field produces a DIFFERENT scope than
+  // last time the moment that text changes, which silently creates a second app instead of updating
+  // the first. Detecting an existing install's real scope (see instance.js's getInstalledApp) and
+  // holding it fixed across redeploys is the only case where a full scope should be auto-set.
+  function deriveScopePrefix(companyCode) {
     var code = String(companyCode || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    var prefix = 'x_' + (code ? code + '_' : '');
+    return 'x_' + (code ? code + '_' : '');
+  }
+  // Combines a scope prefix with a slugged app name into one full scope. Kept for a caller that
+  // genuinely wants a fresh, one-shot scope suggestion (e.g. a first-ever deploy with no target
+  // instance to check against yet) - the standalone deploy console itself no longer calls this on
+  // every "App name" keystroke, for the reason in deriveScopePrefix's comment above.
+  function deriveScope(appName, companyCode) {
+    var prefix = deriveScopePrefix(companyCode);
     var room = Math.max(1, SCOPE_MAX - prefix.length);
     var appId = scopeSlug(appName).slice(0, room).replace(/_+$/, '') || scopeSlug(appName).slice(0, room) || 'app';
     return (prefix + appId).slice(0, SCOPE_MAX);
   }
   function deriveVendorPrefix(scope) {
     return String(scope || '').split('_').slice(0, 2).join('_');
+  }
+  // Suggests a next version after finding an already-installed app - bumps the patch component of
+  // an "x.y.z" version. Anything else (a version string that isn't three dot-separated integers) is
+  // returned UNCHANGED rather than guessed at - a caller/host still shows it, but leaves deciding
+  // the next version to whoever's driving the redeploy.
+  function bumpPatchVersion(version) {
+    var parts = String(version || '').split('.');
+    if (parts.length !== 3 || !parts.every(function (p) { return /^\d+$/.test(p); })) { return version; }
+    return parts[0] + '.' + parts[1] + '.' + (parseInt(parts[2], 10) + 1);
   }
 
   /* ==================================================================================
@@ -441,7 +464,11 @@
     records.push({ table: 'sys_app', sysId: ids.app, key: 'app', fields: [
       { name: 'active', value: true },
       { name: 'name', value: manifest.appName },
-      { name: 'private', value: true },
+      // Public, not private: a private scoped app can't be published to a ServiceNow Application
+      // Repository at all (that's a prerequisite the platform enforces, not just a default) - since
+      // that's the whole point of a real "install this in other instances like a true application"
+      // path, this ships public from the start rather than something you'd have to remember to flip.
+      { name: 'private', value: false },
       { name: 'scope', value: manifest.scope },
       { name: 'short_description', value: manifest.shortDescription || manifest.appName },
       { name: 'sys_id', value: ids.app, xmlOnly: true },
@@ -821,7 +848,8 @@
     scopeScss: scopeScss, extractDefaultVariables: extractDefaultVariables,
     // sys_id / scope
     stableSysId: stableSysId, deriveSysIds: deriveSysIds,
-    deriveScope: deriveScope, scopeSlug: scopeSlug, deriveVendorPrefix: deriveVendorPrefix, SCOPE_MAX: SCOPE_MAX,
+    deriveScope: deriveScope, deriveScopePrefix: deriveScopePrefix, bumpPatchVersion: bumpPatchVersion,
+    scopeSlug: scopeSlug, deriveVendorPrefix: deriveVendorPrefix, SCOPE_MAX: SCOPE_MAX,
     // assembly - buildRecordModel is the shared source of truth both assembleXml (below) and
     // fluent.js's assembleFluent consume; renderXmlRecord is exposed for hosts that
     // want to inspect/override a single record's XML.

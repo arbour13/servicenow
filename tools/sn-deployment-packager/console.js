@@ -130,10 +130,10 @@
   var fluentFiles = {};        // { path: contents } for the current Fluent build
   var fluentActivePath = '';   // which generated file the textarea is showing
 
-  // Only meaningful for apps with deployOptions.showConnection - scopeAuto tracks whether Scope
-  // should keep recomputing from App name/detected company code (true until the user edits Scope
-  // by hand, mirroring Glide Studio's own Deploy modal - see deploy-modal.service.js).
-  var connState = { scopeAuto: true, companyCode: '' };
+  // Only meaningful for apps with deployOptions.showConnection - the most recently detected company
+  // code, kept around purely for display/reference (runDetectAndLookup always re-detects fresh
+  // rather than trusting a stale value across app switches or repeat clicks).
+  var companyCode = '';
 
   function connStorageKey(folder) { return 'snDeployConsole_conn_' + folder; }
   function loadSavedConn(folder) {
@@ -275,15 +275,16 @@
     var descriptor = eligibleApps[folder];
     setStatus(buildStatus, 'Fetching sources for ' + descriptor.manifest.appName + '…', false);
 
-    connState = { scopeAuto: true, companyCode: '' };
+    companyCode = '';
     detectStatus.textContent = '';
     var showConnection = !!(descriptor.deployOptions && descriptor.deployOptions.showConnection);
     connectionSection.style.display = showConnection ? '' : 'none';
+    var savedConn = null;
     if (showConnection) {
-      var saved = loadSavedConn(folder);
-      fldInstanceUrl.value = (saved && saved.instanceUrl) || '';
-      fldUsername.value = (saved && saved.username) || '';
-      fldPassword.value = (saved && saved.password) || '';
+      savedConn = loadSavedConn(folder);
+      fldInstanceUrl.value = (savedConn && savedConn.instanceUrl) || '';
+      fldUsername.value = (savedConn && savedConn.username) || '';
+      fldPassword.value = (savedConn && savedConn.password) || '';
     }
 
     loadSources(folder, descriptor).then(function (sources) {
@@ -306,60 +307,68 @@
       tabsSection.style.display = '';
       if (format === 'xml') { rebuildXmlTab(); setActiveTab('xml'); } else { rebuildFluent(); }
       setStatus(buildStatus, 'Built ' + descriptor.manifest.appName + ' successfully.', false);
+
+      // A saved connection with all three fields already filled means we can check the target
+      // instance for an existing install right away, instead of waiting for a manual "Detect
+      // prefix" click - see runDetectAndLookup's own comment for what this sets.
+      if (savedConn && savedConn.instanceUrl && savedConn.username && savedConn.password) {
+        runDetectAndLookup();
+      }
     }).catch(function (err) {
       setStatus(buildStatus, 'Build failed: ' + err.message, true);
     });
   }
 
-  function currentlyShowsConnection() {
-    var descriptor = currentFolder && eligibleApps[currentFolder];
-    return !!(descriptor && descriptor.deployOptions && descriptor.deployOptions.showConnection);
-  }
-
-  function recommendedScope() {
-    return core.deriveScope(fldAppName.value, connState.companyCode);
-  }
-
-  function onAppNameInput() {
-    if (currentlyShowsConnection() && connState.scopeAuto) {
-      fldScope.value = recommendedScope();
-    }
-    rebuildOutput();
-  }
-
-  function onScopeInput() {
-    if (currentlyShowsConnection()) {
-      connState.scopeAuto = false; // the user has taken manual control
-    }
-    rebuildOutput();
-  }
-
-  function onDetectPrefix() {
+  // Detects the target instance's company prefix, then looks up whether THIS app already exists
+  // there (by its own deterministic sys_id - see instance.js's getInstalledApp) so Scope/App
+  // name/Version get set from the REAL installed record rather than guessed:
+  //   - found:      Scope/App name become the actual installed values (so a redeploy updates the
+  //                 SAME app instead of drifting to a new scope), Version is bumped from the
+  //                 installed version as a starting suggestion.
+  //   - not found:  Scope becomes just the bare "x_<companycode>_" prefix - NOT combined with any
+  //                 app name guess (see deriveScopePrefix's own comment for why) - left for the user
+  //                 to finish typing themselves; App name/Version are untouched.
+  // Runs both from the "Detect prefix" button AND automatically once per app selection when a
+  // saved connection already has all three fields (see onAppSelected).
+  function runDetectAndLookup() {
     if (!fldInstanceUrl.value.trim() || !fldUsername.value.trim() || !fldPassword.value) {
       detectStatus.textContent = 'Enter the target instance URL, username, and password first.';
       return;
     }
     detectStatus.textContent = 'Detecting…';
     var conn = { instanceUrl: fldInstanceUrl.value, username: fldUsername.value, password: fldPassword.value };
-    saveConn(currentFolder);
-    window.SNDeploymentPackager.instance.detectCompanyPrefix(conn).then(function (code) {
+    var folder = currentFolder;
+    saveConn(folder);
+    var instanceApi = window.SNDeploymentPackager.instance;
+    instanceApi.detectCompanyPrefix(conn).then(function (code) {
+      if (folder !== currentFolder) { return; } // the user switched apps while this was in flight
       if (!code) { detectStatus.textContent = "Connected, but couldn't read a vendor prefix - set Scope by hand below."; return; }
-      connState.companyCode = code;
-      connState.scopeAuto = true;
-      fldScope.value = recommendedScope();
-      var truncated = recommendedScope().length >= core.SCOPE_MAX;
-      detectStatus.textContent = 'Prefix detected: x_' + code + (truncated ? ' (app name shortened to fit 18 chars)' : '');
-      rebuildOutput();
+      companyCode = code;
+      var descriptor = eligibleApps[folder];
+      var ids = core.deriveSysIds(descriptor.manifest);
+      return instanceApi.getInstalledApp(conn, ids.app).then(function (installed) {
+        if (folder !== currentFolder) { return; }
+        if (installed) {
+          fldAppName.value = installed.name;
+          fldScope.value = installed.scope;
+          fldVersion.value = core.bumpPatchVersion(installed.version);
+          detectStatus.textContent = 'Found existing install (v' + installed.version + ') - next version ' + fldVersion.value + '.';
+        } else {
+          fldScope.value = core.deriveScopePrefix(code);
+          detectStatus.textContent = 'Prefix detected: x_' + code + ' - no existing install found; finish the scope yourself.';
+        }
+        rebuildOutput();
+      });
     }).catch(function (e) {
       detectStatus.textContent = 'Connection failed: ' + ((e && e.message) || e);
     });
   }
 
   appSelect.addEventListener('change', onAppSelected);
-  fldAppName.addEventListener('input', onAppNameInput);
-  fldScope.addEventListener('input', onScopeInput);
+  fldAppName.addEventListener('input', rebuildOutput);
+  fldScope.addEventListener('input', rebuildOutput);
   fldVersion.addEventListener('input', rebuildOutput);
-  detectPrefixBtn.addEventListener('click', onDetectPrefix);
+  detectPrefixBtn.addEventListener('click', runDetectAndLookup);
   [fldInstanceUrl, fldUsername, fldPassword].forEach(function (el) {
     el.addEventListener('input', function () { saveConn(currentFolder); });
   });

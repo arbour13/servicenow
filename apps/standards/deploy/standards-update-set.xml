@@ -22,7 +22,7 @@
 <sys_app action="INSERT_OR_UPDATE">
 <active>true</active>
 <name>GlideFast Standards Portal</name>
-<private>true</private>
+<private>false</private>
 <scope>x_gfsp_standards</scope>
 <short_description>GlideFast Standards Portal - hosts the GlideFast scripting best-practices reference document.</short_description>
 <sys_id>c7d8e9f0a10000112233440001</sys_id>

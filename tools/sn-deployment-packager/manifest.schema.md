@@ -109,8 +109,8 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
   works across every app with a `deploy.manifest.js` (see above), instead of each app growing its
   own copy - use it when you want to build/preview/download a package outside of any one app's own
   dev harness.
-- **Live-instance connection** - `deployFetch`/`detectCompanyPrefix`-style calls (network I/O).
-  Shared between browser hosts as `tools/sn-deployment-packager/instance.js`
+- **Live-instance connection** - `deployFetch`/`detectCompanyPrefix`/`getInstalledApp`-style calls
+  (network I/O). Shared between browser hosts as `tools/sn-deployment-packager/instance.js`
   (`window.SNDeploymentPackager.instance`) rather than each one keeping its own copy - load it
   via `<script src>` for any app with `deployOptions.showConnection: true`.
 - **Code formatting** (js-beautify or equivalent) - pass it in as `opts.formatFn`.
@@ -160,11 +160,18 @@ THIS app, since not every app's manifest needs the same fields:
 ```js
 deployOptions: {
   // Show the "Deploy target instance" panel (Instance URL / Username / Password / Detect Prefix
-  // button) - a live Basic-Auth call (see instance.js) that reads the target
-  // instance's vendor prefix and recomputes a recommended Scope from it. Only meaningful for an
-  // app whose scope should vary per target instance (today: Glide Studio). Omit/false for an app
-  // with a fixed scope (Core, Standards) - App name/Scope/Version stay plain editable fields with
-  // no connection UI. Default: false.
+  // button) - live Basic-Auth calls (see instance.js) that read the target instance's vendor
+  // prefix AND look up whether this app is already installed there (by its own deterministic
+  // sys_id - independent of scope/company code). If a saved connection already has all three
+  // fields filled in, this runs automatically on app selection, no button click needed. Found an
+  // existing install: App name/Scope become the REAL installed values (so redeploying updates the
+  // same app instead of drifting to a new scope every time), Version is bumped from the installed
+  // one as a starting suggestion. Nothing found: Scope becomes just the bare "x_<companycode>_"
+  // prefix (via core.js's deriveScopePrefix - deliberately NOT combined with any app-name guess,
+  // see that function's own comment for why), left for whoever's deploying to finish typing.
+  // Only meaningful for an app whose scope should vary per target instance (today: Glide Studio).
+  // Omit/false for an app with a fixed scope (Standards) - App name/Scope/Version stay plain
+  // editable fields with no connection UI. Default: false.
   showConnection: true,
 
 }
