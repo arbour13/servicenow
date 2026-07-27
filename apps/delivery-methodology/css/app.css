@@ -1,4 +1,3 @@
-@charset "UTF-8";
 /* Ported verbatim from the standalone prototype's <style> block, so this reads as a faithful
    1:1 port rather than a fresh restyle.
    Written as valid plain CSS (a subset of SCSS) - no $variables/nesting used yet, so
@@ -122,7 +121,7 @@
    for card components. `data-theme` is set on <html> by ThemeService.toggleApp() (Core's shared
    provider) - see js/app.module.js's `core` module dependency and the inline pre-paint script in
    index.html. */
-:root[data-theme=light] {
+:root[data-theme="light"] {
   /* "C · Teal surfaces, fixed" - the fourth palette round. Earlier rounds (see git history) put
      the tint on the wrong surface (a mint PANEL inside a white page reads as "mint everywhere in
      a box", not "white content in a tinted environment"), used $border-tertiary #c5dce7 directly
@@ -132,33 +131,33 @@
      near-page tint - each confirmed against the real rendered app, not just contrast math. */
   --paper: #cfeef5;
   --surface: linear-gradient(160deg, #ffffff 0%, #f2fafc 100%);
-  --surface-flat: #ffffff; /* $background-primary */
-  --surface-2: #e6f5f9; /* replaces $border-tertiary #c5dce7 - same role, no longer muddy */
+  --surface-flat: #ffffff;       /* $background-primary */
+  --surface-2: #e6f5f9;          /* replaces $border-tertiary #c5dce7 - same role, no longer muddy */
   --navy: #cfeef5;
   --navy-2: #ffffff;
-  --ink: #0a2136; /* $text-primary - the theme's canonical on-light text */
-  --ink-soft: #013c56; /* $text-secondary */
+  --ink: #0a2136;                /* $text-primary - the theme's canonical on-light text */
+  --ink-soft: #013c56;           /* $text-secondary */
   --ink-2: var(--ink-soft);
-  --ink-faint: #4e6270; /* >=4.5:1 verified against every surface below, incl. the card fill */
+  --ink-faint: #4e6270;          /* >=4.5:1 verified against every surface below, incl. the card fill */
   /* $border-tertiary's role split (see the base :root comment above --hs-border-tertiary) still
      applies - decoupled from --ink-soft because ink-soft is dark navy in light mode and would be
      invisible paired with itself as a .btn:hover fill. Re-solved for the tinted page: navy text
      on this fill is still 10.37:1. */
   --hs-border-tertiary: #a5d6e2;
-  --line: rgba(1, 60, 86, .40); /* tuned alpha, not a flat token - solved to match dark's own
-   line-vs-page separation ratio (2.569:1) rather than guessed */
+  --line: rgba(1, 60, 86, .40);       /* tuned alpha, not a flat token - solved to match dark's own
+                                         line-vs-page separation ratio (2.569:1) rather than guessed */
   --line-soft: rgba(1, 60, 86, .18);
   --wash-rgb: 10, 33, 54;
-  --card-line: #a5d6e2; /* .fcard's existing 1px border box - see --card-line comment
-    on the base :root; only visible once its colour isn't transparent */
+  --card-line: #a5d6e2;           /* .fcard's existing 1px border box - see --card-line comment
+                                      on the base :root; only visible once its colour isn't transparent */
   --hs-teal: #008365;
-  --teal: #005c63; /* darker than the mid-palette version - a tinted page eats
-    contrast margin, verified >=4.5:1 on every surface below */
+  --teal: #005c63;               /* darker than the mid-palette version - a tinted page eats
+                                     contrast margin, verified >=4.5:1 on every surface below */
   /* The brand gradient darkened so it stops glowing on a pale page (the "too flashy" feedback).
      First stop is literally --p1, so it stays in-palette. White on the stops: 6.01 / 6.81. */
   --gradient-pill: linear-gradient(90deg, #006e76 0%, #1c5f8f 100%);
   --gradient-pill-hover: linear-gradient(90deg, #00838d 0%, #226fa6 100%);
-  --on-gradient-ink: #ffffff; /* NOT --text-on-primary - see the base :root comment */
+  --on-gradient-ink: #ffffff;    /* NOT --text-on-primary - see the base :root comment */
   --chip-on-bg: var(--surface-2);
   /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb), kept as four distinct
      hues on purpose - these are the task table's only colour signal (role colours were removed
@@ -202,7 +201,7 @@
 /* select.edit-in's dropdown-arrow stroke is baked into a data-URI background-image (can't take a
    CSS var), so its dark-mode stroke color (#c5dce7, matching --ink-soft) needs its own light-mode
    copy here instead of staying stuck light-on-light once the select's own background goes pale. */
-:root[data-theme=light] select.edit-in {
+:root[data-theme="light"] select.edit-in {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23013c56' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
 
@@ -212,17 +211,17 @@
    artificial divider. .ref-raci-card / .ref-aid stay on --surface-2 instead: both carry a --teal
    link (job-aid link, crumb link) that fails contrast on mint (2.5:1), the same reason the RACI
    table/LOE pills/meeting badges stay flat white - see the --r-*-text comment above. */
-:root[data-theme=light] .whatsnew-item,
-:root[data-theme=light] .search-result,
-:root[data-theme=light] .metacard {
+:root[data-theme="light"] .whatsnew-item,
+:root[data-theme="light"] .search-result,
+:root[data-theme="light"] .metacard {
   background: var(--gradient-card);
 }
 
 /* --ink-faint fails on the mint fill (2.69:1) - these are the only --ink-faint text spots inside
    the three components above, so they alone need the on-accent-safe faint token. */
-:root[data-theme=light] .whatsnew-item .wn-date,
-:root[data-theme=light] .search-result .sr-loc,
-:root[data-theme=light] .metacard .section-label {
+:root[data-theme="light"] .whatsnew-item .wn-date,
+:root[data-theme="light"] .search-result .sr-loc,
+:root[data-theme="light"] .metacard .section-label {
   color: var(--on-accent-faint);
 }
 
@@ -275,17 +274,57 @@ button {
   margin-bottom: 18px;
 }
 
+.nav-history {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-flat);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
+}
+
+.nav-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nav-btn:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .pagehdr-top .views {
   margin-bottom: 0;
 }
 
-/* Groups the toggle and search together as one flex child of .pagehdr-top, so
-   justify-content: space-between pins the PAIR to the right edge - the toggle sits flush against
-   search rather than floating at its own independent distance from it. */
+/* Right-side chrome: history, search, theme. space-between pins this cluster opposite the tabs. */
 .hdr-search-group {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* Keep history + search + theme above the results overlay so they never move and remain usable. */
+.app.search-active .hdr-search-group {
+  position: relative;
+  z-index: 190;
 }
 
 .hsearch {
@@ -323,6 +362,105 @@ button {
   stroke: var(--ink-faint);
   fill: none;
   stroke-width: 2;
+}
+
+/* Fixed search results modal - does not affect header layout (theme toggle + search stay put). */
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 24px;
+  background: rgba(4, 19, 31, 0.55);
+  box-sizing: border-box;
+}
+
+.search-modal {
+  width: min(560px, 100%);
+  max-height: min(640px, 76vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-flat);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.search-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-soft, var(--line));
+  flex-shrink: 0;
+}
+
+.search-modal-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-modal-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.search-modal-close:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.search-modal-body {
+  padding: 10px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.hsearch-empty {
+  margin: 0;
+  padding: 28px 16px;
+  font-size: 13.5px;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.search-modal-body .search-result {
+  margin-bottom: 6px;
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+.search-modal-body .search-result:last-child {
+  margin-bottom: 0;
+}
+
+:root[data-theme="light"] .search-overlay {
+  background: rgba(10, 33, 54, 0.35);
+}
+
+:root[data-theme="light"] .search-modal-body .search-result {
+  background: #ffffff;
+  border-color: var(--line);
 }
 
 /* .edit-pencil shares this treatment with .theme-toggle - the user asked for the two to "interact
@@ -366,7 +504,7 @@ button {
   font-weight: 800;
   font-size: 27px;
   letter-spacing: -0.015em;
-  margin: 0 0 4px;
+  margin: 0 0 5px;
   color: var(--ink);
 }
 
@@ -378,16 +516,18 @@ button {
   line-height: 1.5;
 }
 
-.pagehdr-title-row {
+/* Reading aid - lives with the content it affects (sub-phase panel / reference doc), not the page title. */
+.sp-header-actions {
   display: flex;
   align-items: center;
-  gap: 26px;
-  flex-wrap: wrap;
-  margin-bottom: 5px;
+  gap: 14px;
+  flex-shrink: 0;
 }
 
-.pagehdr-title-row h1 {
-  margin-bottom: 0;
+.refdoc-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 16px;
 }
 
 .loe-billable-toggle {
@@ -867,12 +1007,70 @@ button {
   flex-shrink: 0;
 }
 
+.fcard .fcard-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -2px -4px 0 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--on-accent-soft);
+  cursor: pointer;
+  opacity: 0.85;
+  flex-shrink: 0;
+  transition: opacity 0.12s, color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.fcard:hover .fcard-edit,
+.fcard.on .fcard-edit,
+.fcard .fcard-edit:focus-visible {
+  opacity: 1;
+}
+
+.fcard .fcard-edit:hover,
+.fcard .fcard-edit:focus-visible {
+  color: var(--teal);
+  border-color: var(--teal);
+  background: var(--surface-flat);
+}
+
+.fcard.stub:not(.on) .fcard-edit {
+  color: var(--ink-faint);
+}
+
+.fcard .fcard-edit svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.fcard .fcard-edit:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .fcard .fcard-icon svg {
   width: 16px;
   height: 16px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fcard .fcard-icon svg * {
+  fill: none;
+  stroke: inherit;
+  stroke-width: inherit;
+  stroke-linecap: inherit;
+  stroke-linejoin: inherit;
 }
 
 .fcard .fcard-sid {
@@ -1101,6 +1299,26 @@ h1.sp-title {
   filter: blur(2.5px) saturate(0.7);
   pointer-events: none;
   transition: filter 0.2s, opacity 0.2s;
+}
+
+/* Same treatment as edit mode: blur the page behind search. History + search + theme stay
+   sharp via .hdr-search-group's raised z-index. */
+.app.search-active .views,
+.app.search-active .pagehdr-title,
+.app.search-active .pagehdr-controls,
+.app.search-active .main > *:not(.pagehdr) {
+  opacity: 0.5;
+  filter: blur(2.5px) saturate(0.7);
+  pointer-events: none;
+  transition: filter 0.2s, opacity 0.2s;
+}
+
+.app.search-active .search-overlay {
+  background: rgba(4, 19, 31, 0.28);
+}
+
+:root[data-theme="light"] .app.search-active .search-overlay {
+  background: rgba(10, 33, 54, 0.18);
 }
 
 h4.sec {
@@ -2506,6 +2724,12 @@ select.edit-in option {
 .vtab svg {
   width: 15px;
   height: 15px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .vtab.on {

@@ -238,14 +238,41 @@
   gap: 14px;
   flex-wrap: wrap;
   margin-bottom: 18px;
+}.dm-widget .nav-history {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}.dm-widget .nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-flat);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
+}.dm-widget .nav-btn svg {
+  width: 16px;
+  height: 16px;
+}.dm-widget .nav-btn:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--surface-2);
+}.dm-widget .nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }.dm-widget .pagehdr-top .views {
   margin-bottom: 0;
-}/* Groups the toggle and search together as one flex child of .pagehdr-top, so
-   justify-content: space-between pins the PAIR to the right edge - the toggle sits flush against
-   search rather than floating at its own independent distance from it. */.dm-widget .hdr-search-group {
+}/* Right-side chrome: history, search, theme. space-between pins this cluster opposite the tabs. */.dm-widget .hdr-search-group {
   display: flex;
   align-items: center;
   gap: 10px;
+}/* Keep history + search + theme above the results overlay so they never move and remain usable. */.dm-widget .app.search-active .hdr-search-group {
+  position: relative;
+  z-index: 190;
 }.dm-widget .hsearch {
   position: relative;
 }.dm-widget .hsearch input {
@@ -273,6 +300,80 @@
   stroke: var(--ink-faint);
   fill: none;
   stroke-width: 2;
+}/* Fixed search results modal - does not affect header layout (theme toggle + search stay put). */.dm-widget .search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 24px;
+  background: rgba(4, 19, 31, 0.55);
+  box-sizing: border-box;
+}.dm-widget .search-modal {
+  width: min(560px, 100%);
+  max-height: min(640px, 76vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-flat);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}.dm-widget .search-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-soft, var(--line));
+  flex-shrink: 0;
+}.dm-widget .search-modal-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}.dm-widget .search-modal-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}.dm-widget .search-modal-close:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}.dm-widget .search-modal-body {
+  padding: 10px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}.dm-widget .hsearch-empty {
+  margin: 0;
+  padding: 28px 16px;
+  font-size: 13.5px;
+  color: var(--ink-faint);
+  text-align: center;
+}.dm-widget .search-modal-body .search-result {
+  margin-bottom: 6px;
+  background: var(--surface-2);
+  box-shadow: none;
+}.dm-widget .search-modal-body .search-result:last-child {
+  margin-bottom: 0;
+}.dm-widget[data-theme="light"] .search-overlay {
+  background: rgba(10, 33, 54, 0.35);
+}.dm-widget[data-theme="light"] .search-modal-body .search-result {
+  background: #ffffff;
+  border-color: var(--line);
 }/* .edit-pencil shares this treatment with .theme-toggle - the user asked for the two to "interact
    like" each other, so it's one factored rule rather than duplicated declarations. */.dm-widget .theme-toggle, .dm-widget .edit-pencil {
   display: inline-flex;
@@ -301,7 +402,7 @@
   font-weight: 800;
   font-size: 27px;
   letter-spacing: -0.015em;
-  margin: 0 0 4px;
+  margin: 0 0 5px;
   color: var(--ink);
 }.dm-widget .pg-sub {
   margin: 0;
@@ -309,14 +410,15 @@
   font-size: 13.5px;
   max-width: 66ch;
   line-height: 1.5;
-}.dm-widget .pagehdr-title-row {
+}/* Reading aid - lives with the content it affects (sub-phase panel / reference doc), not the page title. */.dm-widget .sp-header-actions {
   display: flex;
   align-items: center;
-  gap: 26px;
-  flex-wrap: wrap;
-  margin-bottom: 5px;
-}.dm-widget .pagehdr-title-row h1 {
-  margin-bottom: 0;
+  gap: 14px;
+  flex-shrink: 0;
+}.dm-widget .refdoc-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 16px;
 }.dm-widget .loe-billable-toggle {
   display: inline-flex;
   align-items: center;
@@ -661,12 +763,53 @@
   background: color-mix(in srgb, var(--pc) 22%, transparent);
   color: var(--pc);
   flex-shrink: 0;
+}.dm-widget .fcard .fcard-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -2px -4px 0 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--on-accent-soft);
+  cursor: pointer;
+  opacity: 0.85;
+  flex-shrink: 0;
+  transition: opacity 0.12s, color 0.12s, border-color 0.12s, background 0.12s;
+}.dm-widget .fcard:hover .fcard-edit, .dm-widget .fcard.on .fcard-edit, .dm-widget .fcard .fcard-edit:focus-visible {
+  opacity: 1;
+}.dm-widget .fcard .fcard-edit:hover, .dm-widget .fcard .fcard-edit:focus-visible {
+  color: var(--teal);
+  border-color: var(--teal);
+  background: var(--surface-flat);
+}.dm-widget .fcard.stub:not(.on) .fcard-edit {
+  color: var(--ink-faint);
+}.dm-widget .fcard .fcard-edit svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}.dm-widget .fcard .fcard-edit:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }.dm-widget .fcard .fcard-icon svg {
   width: 16px;
   height: 16px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}.dm-widget .fcard .fcard-icon svg * {
+  fill: none;
+  stroke: inherit;
+  stroke-width: inherit;
+  stroke-linecap: inherit;
+  stroke-linejoin: inherit;
 }.dm-widget .fcard .fcard-sid {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -840,6 +983,16 @@
   filter: blur(2.5px) saturate(0.7);
   pointer-events: none;
   transition: filter 0.2s, opacity 0.2s;
+}/* Same treatment as edit mode: blur the page behind search. History + search + theme stay
+   sharp via .hdr-search-group's raised z-index. */.dm-widget .app.search-active .views, .dm-widget .app.search-active .pagehdr-title, .dm-widget .app.search-active .pagehdr-controls, .dm-widget .app.search-active .main > *:not(.pagehdr) {
+  opacity: 0.5;
+  filter: blur(2.5px) saturate(0.7);
+  pointer-events: none;
+  transition: filter 0.2s, opacity 0.2s;
+}.dm-widget .app.search-active .search-overlay {
+  background: rgba(4, 19, 31, 0.28);
+}.dm-widget[data-theme="light"] .app.search-active .search-overlay {
+  background: rgba(10, 33, 54, 0.18);
 }.dm-widget h4.sec {
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -1850,6 +2003,12 @@
 }.dm-widget .vtab svg {
   width: 15px;
   height: 15px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }.dm-widget .vtab.on {
   background: var(--surface-2);
   color: var(--ink);

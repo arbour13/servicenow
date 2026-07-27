@@ -5,10 +5,6 @@ declare global {
         namespace Internal {
             interface Keys extends KeysRegistry {
                 explicit: {
-                    "theme": {
-                        table: "sp_theme"
-                        id: "a4b5c6d7e8af8d2ebfaf8d2ec0af8d2e"
-                    }
                     "page": {
                         table: "sp_page"
                         id: "a4b5c6d7e8c4a60205c4a60206c4a602"
@@ -40,10 +36,6 @@ declare global {
                     "instance": {
                         table: "sp_instance"
                         id: "a4b5c6d7e835c3ca8b35c3ca8c35c3ca"
-                    }
-                    "portal": {
-                        table: "sp_portal"
-                        id: "a4b5c6d7e82b7024a22b7024a32b7024"
                     }
                 }
             }

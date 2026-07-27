@@ -17,7 +17,11 @@ the small `opts` bag `buildParts`/`assembleXml` take.
   vendorPrefix: 'x_glide_studio',       // optional - derived from scope if omitted
   version: '1.0.0',                     // optional - defaults to '1.0.0'
   shortDescription: '...',              // optional - defaults to appName
-  urlSuffix: 'glide-studio-ng',         // required - the portal's url_suffix
+  urlSuffix: 'glide-studio-ng',         // required when features.portal is on; also seeds page/widget
+                                         // id (hyphens→underscores) unless pageId/widgetId set
+  pageId: undefined,                     // optional - sp_page.id / sys_name
+  pageTitle: undefined,                  // optional - sp_page.title + "{title} - Container 1"
+  widgetId: undefined,                   // optional - sp_widget.id (default: same as pageId)
 
   // --- sys_id derivation (see core.js header comment) ---
   // A short, distinctive string unique to THIS app, so its derived sys_ids never collide with
@@ -50,8 +54,13 @@ the small `opts` bag `buildParts`/`assembleXml` take.
   // satisfies) but still need an empty stub so AngularJS's injector resolves at instantiation.
   stubProviders: ['DeployModalService'],  // optional, defaults to []
 
-  // --- opt-in superset layer ---
-  features: { roles: true },              // optional, defaults to {} (no roles/groups/ACLs)
+  // --- opt-in / opt-out layers ---
+  features: {
+    roles: true,       // optional, defaults to {} (no roles/groups/ACLs when omitted/false)
+    // portal + theme default ON when omitted. Set false to ship widget+page without scaffolding
+    // a dedicated Service Portal / theme (drop the page into an existing portal instead).
+    // portal: false, theme: false,
+  },
   roles: {                                // required if features.roles is true
     userRoleName: 'glide_studio_user', adminRoleName: 'glide_studio_admin',
     userGroupName: 'Glide Studio Users', adminGroupName: 'Glide Studio Admins',
@@ -143,12 +152,17 @@ manifest is ever hand-copied into a second place.
 An app with no `deploy.manifest.js` is simply not deployable by any host - the deploy console
 treats a missing file (404 / load error) as "not eligible," not an error to fix.
 
+Set `deployable: false` on the descriptor to keep the manifest on disk (for reference or a future
+re-enable) while hiding the app from the deploy console and rejecting it from `build.js`. Omit the
+key or set `true` to stay deployable (default).
+
 ```js
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) { module.exports = factory(); }
   else { root.SNAppManifests = root.SNAppManifests || {}; root.SNAppManifests['<app-folder-name>'] = factory(); }
 })(typeof self !== 'undefined' ? self : this, function () {
   return {
+    deployable: true,                   // optional - default true; false = keep file, packager skips
     manifest: { /* the manifest object documented above, unchanged shape */ },
     // Every path below is relative to THIS FILE'S OWN FOLDER (the app root) - a generic host
     // resolves them uniformly: fs.readFileSync(path.join(appRoot, p)) in Node,

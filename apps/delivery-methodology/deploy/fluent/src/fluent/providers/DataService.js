@@ -44,8 +44,8 @@
   function task(id, order, text, raci, jobAids) {
     return { id: id, order: order, text: text, raci: raci, jobAids: jobAids || [] };
   }
-  function blankSubPhase(id, sid, name, order) {
-    return { id: id, sid: sid, name: name, order: order, changelog: [], overview: '', objective: '', participants: [], comments: [], inputs: [], deliverables: [], tasks: [], meetings: [], levelOfEffort: { mode: 'all', all: {}, roles: {} } };
+  function blankSubPhase(id, sid, name, order, icon) {
+    return { id: id, sid: sid, name: name, order: order, icon: icon || 'doc', changelog: [], overview: '', objective: '', participants: [], comments: [], inputs: [], deliverables: [], tasks: [], meetings: [], levelOfEffort: { mode: 'all', all: {}, roles: {} } };
   }
 
   var METHODOLOGIES = [
@@ -55,7 +55,7 @@
         {
           id: 'd2-initiate', name: 'Initiate', order: 1,
           subPhases: [
-            Object.assign(blankSubPhase('d2-1-1', '1.1', 'Pre-IPKT', 1), {
+            Object.assign(blankSubPhase('d2-1-1', '1.1', 'Pre-IPKT', 1, 'inbox'), {
               changelog: [
                 { id: 'c1', ts: '2026-07-14', text: 'Input added: “ROM”', read: false },
                 { id: 'c2', ts: '2026-07-14', text: 'Task edited: “Review SOW inputs”', read: false }
@@ -72,16 +72,16 @@
                 task('d2-1-1-t3', 3, 'Review and/or consult with AE / other Delivery personnel regarding previous / concurrent projects / GRSs conducted with the client', { arch: ['R'], em: ['R'], bpc: ['R'], tc: ['R'] })
               ]
             }),
-            blankSubPhase('d2-1-2', '1.2', 'IPKT', 2),
-            blankSubPhase('d2-1-3', '1.3', 'Customer Pre-Kickoff', 3),
-            blankSubPhase('d2-1-4', '1.4', 'Get to Know the Team', 4),
-            blankSubPhase('d2-1-5', '1.5', 'Kickoff', 5)
+            blankSubPhase('d2-1-2', '1.2', 'IPKT', 2, 'exchange'),
+            blankSubPhase('d2-1-3', '1.3', 'Customer Pre-Kickoff', 3, 'door'),
+            blankSubPhase('d2-1-4', '1.4', 'Get to Know the Team', 4, 'users'),
+            blankSubPhase('d2-1-5', '1.5', 'Kickoff', 5, 'flag')
           ]
         },
         {
           id: 'd2-plan', name: 'Plan', order: 2,
           subPhases: [
-            Object.assign(blankSubPhase('d2-2-1', '2.1', 'Pre-Workshop Planning', 1), {
+            Object.assign(blankSubPhase('d2-2-1', '2.1', 'Pre-Workshop Planning', 1, 'clipboard'), {
               changelog: [{ id: 'c3', ts: '2026-07-10', text: 'Task added: “Prepare Demo instance”', read: false }],
               overview: 'At this phase, we are getting our customer team ready for a successful and efficient start of the project. Most of the steps are internal readiness activities, but coordination is needed while interfacing with the client.',
               objective: 'The primary objective of this stage is to ensure all logistics are cared for on our end, customer expectations are fully aligned, and we maximize the time and effort during the actual workshops, once they begin. This is our first big effort with the customer, and we need to show up prepared, aligned and productive.',
@@ -97,17 +97,17 @@
                 task('d2-2-1-t4', 4, 'Prepare Demo instance', { em: ['I'], bpc: ['C'], arch: ['A', 'R'], tc: ['C'] }, [{ id: 'ja-d221t4-1', url: '#', roles: [] }, { id: 'ja-d221t4-2', url: '#', roles: ['arch'] }])
               ]
             }),
-            blankSubPhase('d2-2-2', '2.2', 'Customer Workshops', 2),
-            blankSubPhase('d2-2-3', '2.3', 'Post Workshop', 3),
-            blankSubPhase('d2-2-4', '2.4', 'Scope Rebalancing', 4),
-            blankSubPhase('d2-2-5', '2.5', 'Refinement & Sprint Planning', 5),
-            blankSubPhase('d2-2-6', '2.6', 'Sprint Planning with Customer', 6)
+            blankSubPhase('d2-2-2', '2.2', 'Customer Workshops', 2, 'presentation'),
+            blankSubPhase('d2-2-3', '2.3', 'Post Workshop', 3, 'archive'),
+            blankSubPhase('d2-2-4', '2.4', 'Scope Rebalancing', 4, 'scales'),
+            blankSubPhase('d2-2-5', '2.5', 'Refinement & Sprint Planning', 5, 'list'),
+            blankSubPhase('d2-2-6', '2.6', 'Sprint Planning with Customer', 6, 'calendar')
           ]
         },
         {
           id: 'd2-execute', name: 'Execute', order: 3,
           subPhases: [
-            Object.assign(blankSubPhase('d2-3-1', '3.1', 'Build Activities', 1), {
+            Object.assign(blankSubPhase('d2-3-1', '3.1', 'Build Activities', 1, 'code'), {
               overview: 'This phase is where we execute high quality development and code configurations within the ServiceNow platform. We do this iteratively and incrementally, ensuring that the output evolves in alignment with the plans set forth with the customer, prior.',
               objective: 'The objective of the development phase is to build upon the user stories established and create a working ServiceNow platform environment that will help customer meet their stated business objectives, in the timeline set forth.',
               levelOfEffort: { mode: 'all', all: { text: 'As Defined', billable: true }, roles: {} },
@@ -119,13 +119,13 @@
                 task('d2-3-1-t3', 3, 'User story refining and unblocking', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d231t3-1', url: '#', roles: [] }])
               ]
             }),
-            blankSubPhase('d2-3-2', '3.2', 'Build Validation and UAT Readiness', 2)
+            blankSubPhase('d2-3-2', '3.2', 'Build Validation and UAT Readiness', 2, 'flask')
           ]
         },
         {
           id: 'd2-deliver', name: 'Deliver', order: 4,
           subPhases: [
-            Object.assign(blankSubPhase('d2-4-1', '4.1', 'UAT', 1), {
+            Object.assign(blankSubPhase('d2-4-1', '4.1', 'UAT', 1, 'shield'), {
               overview: 'The User Acceptance Testing (UAT) is a phase in our overall engagement in which the software/configuration built by GlideFast is tested in “real world” environments with representatives of the personas who will be using ServiceNow simulating their future use and accepting the work performed based on the requirements.',
               objective: 'The primary objective of UAT is to ensure the ServiceNow code we delivered can perform required tasks in “real world” scenarios, based on the battery of tests built prior. Furthermore, to ensure that defects, if any, are worked on and resolved satisfactorily.',
               levelOfEffort: { mode: 'all', all: { text: 'As Defined', billable: true }, roles: {} },
@@ -139,16 +139,16 @@
                 task('d2-4-1-t3', 3, 'Prioritize and address defects thru resolution', { em: ['C'], bpc: ['C'], arch: ['R'], tc: ['R'], customer: ['I'] })
               ]
             }),
-            blankSubPhase('d2-4-2', '4.2', 'Go Live Preparedness', 2),
-            blankSubPhase('d2-4-3', '4.3', 'Customer Signoff & Go Live Readiness', 3),
-            blankSubPhase('d2-4-4', '4.4', 'Deploy', 4),
-            blankSubPhase('d2-4-5', '4.5', 'Hypercare', 5)
+            blankSubPhase('d2-4-2', '4.2', 'Go Live Preparedness', 2, 'rocket'),
+            blankSubPhase('d2-4-3', '4.3', 'Customer Signoff & Go Live Readiness', 3, 'stamp'),
+            blankSubPhase('d2-4-4', '4.4', 'Deploy', 4, 'cloud'),
+            blankSubPhase('d2-4-5', '4.5', 'Hypercare', 5, 'lifebuoy')
           ]
         },
         {
           id: 'd2-close', name: 'Close', order: 5,
           subPhases: [
-            Object.assign(blankSubPhase('d2-5-1', '5.1', 'Internal Closure Meeting', 1), {
+            Object.assign(blankSubPhase('d2-5-1', '5.1', 'Internal Closure Meeting', 1, 'briefcase'), {
               overview: 'This is the phase in the journey where we prepare for the customer official closure meeting, discuss lessons learned, and care for any internal logistics necessary and associated with the closure of the engagement.',
               objective: 'The primary objective of this step is to capture all learnings from the engagement for the purpose of internal improvement and closely align on what is expected at the customer closure meeting.',
               levelOfEffort: { mode: 'byRole', all: {}, roles: { em: { text: '1 hour', billable: true }, bpc: { text: '1 hour', billable: true }, arch: { text: '1 hour', billable: true }, tc: { text: '1 hour', billable: true }, sa: { text: '1 hour', billable: false }, es: { text: '1 hour', billable: false, optional: true }, mktg: { text: '1 hour', billable: false }, ae: { text: '1 hour', billable: false } } },
@@ -160,8 +160,8 @@
                 task('d2-5-1-t2', 2, 'Confirms customer equipment return process and facilitates with each GlideFast team member', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] })
               ]
             }),
-            blankSubPhase('d2-5-2', '5.2', 'Customer Retrospective', 2),
-            blankSubPhase('d2-5-3', '5.3', 'Customer Closure Meeting', 3)
+            blankSubPhase('d2-5-2', '5.2', 'Customer Retrospective', 2, 'refresh'),
+            blankSubPhase('d2-5-3', '5.3', 'Customer Closure Meeting', 3, 'check')
           ]
         }
       ]
@@ -172,7 +172,7 @@
         {
           id: 'grs-initiate', name: 'Initiate', order: 1,
           subPhases: [
-            Object.assign(blankSubPhase('grs-1-2', '1.2', 'IPKT', 1), {
+            Object.assign(blankSubPhase('grs-1-2', '1.2', 'IPKT', 1, 'exchange'), {
               overview: 'At this phase, the GRS engagement is confirmed. The Account Executive has moved the opportunity in the Customer Relations Management (CRM) system to “Closed Won” and we are just about ready to meet the client and commence the GRS engagement. The heart of this step is the completion and live review of the IPKT document (and supporting documents) which serves as the transition phase.',
               objective: 'The primary objective of this step is to obtain knowledge from the sales team that negotiated the merits of the client engagement. A proper “handoff” will help ensure we come across as One company, remove any seams in the transition to Delivery and address any insights, risks and actions that we must take prior to meeting the client for the first time.',
               levelOfEffort: { mode: 'all', all: { text: '1 hour', billable: true }, roles: {} },
@@ -182,12 +182,12 @@
               meetings: [{ id: 'mt4', scheduledBy: 'ae', ledBy: 'arch', external: false }],
               tasks: [task('grs-1-2-t1', 1, 'Complete and live-review the IPKT document with the sales team', { arch: ['A', 'R'], tc: ['A', 'R'], ae: ['C'] })]
             }),
-            blankSubPhase('grs-1-3', '1.3', 'Team Touchpoint', 2),
-            blankSubPhase('grs-1-4', '1.4', 'Kickoff', 3)
+            blankSubPhase('grs-1-3', '1.3', 'Team Touchpoint', 2, 'message'),
+            blankSubPhase('grs-1-4', '1.4', 'Kickoff', 3, 'flag')
           ]
         },
-        { id: 'grs-lifecycle', name: 'Lifecycle Check-ins', order: 2, subPhases: [blankSubPhase('grs-2-1', '2.1', 'Periodic Check-in', 1)] },
-        { id: 'grs-closure', name: 'Closure', order: 3, subPhases: [blankSubPhase('grs-3-1', '3.1', 'Closure', 1)] }
+        { id: 'grs-lifecycle', name: 'Lifecycle Check-ins', order: 2, subPhases: [blankSubPhase('grs-2-1', '2.1', 'Periodic Check-in', 1, 'calendar')] },
+        { id: 'grs-closure', name: 'Closure', order: 3, subPhases: [blankSubPhase('grs-3-1', '3.1', 'Closure', 1, 'check')] }
       ]
     }
   ];
@@ -204,12 +204,33 @@
 
   function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
+  // Keeps authored sp.icon in sync for known seed ids when loading from localStorage
+  // (storage may predate the icon field, or hold an older keyword-fallback value).
+  function applySeedIcons(methodologies) {
+    var iconById = {};
+    METHODOLOGIES.forEach(function (m) {
+      m.phases.forEach(function (p) {
+        p.subPhases.forEach(function (s) { if (s.icon) { iconById[s.id] = s.icon; } });
+      });
+    });
+    methodologies.forEach(function (m) {
+      m.phases.forEach(function (p) {
+        p.subPhases.forEach(function (s) {
+          if (iconById[s.id]) { s.icon = iconById[s.id]; }
+          else if (!s.icon) { s.icon = 'doc'; }
+        });
+      });
+    });
+  }
+
   return {
     getData: function () {
       var stored = loadStoredMethodologies();
+      var methodologies = stored ? deepClone(stored) : deepClone(METHODOLOGIES);
+      applySeedIcons(methodologies);
       return $q.resolve({
         jobTitles: deepClone(JOB_TITLES),
-        methodologies: stored ? deepClone(stored) : deepClone(METHODOLOGIES),
+        methodologies: methodologies,
         jargon: deepClone(JARGON)
       });
     },

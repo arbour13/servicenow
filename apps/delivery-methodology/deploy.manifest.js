@@ -1,13 +1,13 @@
 /* Delivery Methodology's deployment descriptor - the single source of truth for its deployment
    manifest, read by the shared tooling: the standalone deploy console
-   (tools/sn-deployment-packager/deploy-console.html, which loads this as a <script src> like any
+   (tools/sn-deployment-packager/index.html, which loads this as a <script src> like any
    other provider file) and the Node build.js CLI
    (`node tools/sn-deployment-packager/build.js delivery-methodology`, which require()s it - the UMD
    wrapper below is what makes both hosts work off the one file). See
    ../../tools/sn-deployment-packager/manifest.schema.md's "deploy.manifest.js" section for the
    contract. Every path below is relative to this file's own folder (apps/delivery-methodology/).
    This app has no build-deploy.js of its own and doesn't need one - both deploy hosts read this
-   manifest directly.
+   manifest directly. Operator how-to: ../../tools/sn-deployment-packager/README.md.
 
    SCOPE: ONE WIDGET, deliberately, for now. The recorded plan (2026-07-24) is a four-widget split -
    one per main view: Journey, RACI, Reference, What's New. That is still the plan; it is NOT
@@ -35,6 +35,10 @@
 
   return {
     manifest: {
+      // SN app / portal / widget display name. In-UI page title stays "Delivery 2.0" (controller
+      // pageTitle) - that brand is chrome only, not the scoped-app name. Scope / urlSuffix / folder
+      // stay as delivery-methodology tech identity so renaming display text does not mint a second
+      // scoped app on redeploy.
       appName: 'Delivery Methodology',
 
       // Fixed fallback only. This app derives its real scope per target instance (see
@@ -45,7 +49,10 @@
       scope: 'x_dlvry_method',
       version: '1.0.0',
       urlSuffix: 'delivery-methodology',
-      shortDescription: 'Delivery Methodology - the GlideFast delivery journey: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.',
+      // SP page/widget id slug (hyphens→underscores from urlSuffix by default). Page title is the
+      // in-portal display brand; appName stays the scoped-app / widget name.
+      pageTitle: 'Delivery 2.0',
+      shortDescription: 'GlideFast delivery methodology: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.',
 
       // Distinctive 10-char prefix so this app's derived sys_ids never collide with another app's
       // in the same instance. Deliberately different from Glide Studio's b2c3d4e5f6 and Standards'
@@ -78,10 +85,10 @@
       // real and used by the deployed widget.
       stubProviders: [],
 
-      // No roles/groups/ACLs. This is an internal reference document - it needs no access tier of
-      // its own beyond whatever the host portal already enforces. Matches Standards' decision;
-      // Glide Studio is the only app in the suite that opts into the roles layer.
-      features: {},
+      // No roles/groups/ACLs. No own portal/theme - this widget drops onto an existing host portal
+      // page (or the packaged sp_page is wired into one manually). Glide Studio / Standards still
+      // ship the portal scaffold; this app does not.
+      features: { portal: false, theme: false },
     },
 
     files: {

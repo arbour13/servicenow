@@ -325,6 +325,12 @@
 
   var ACL_TABLES = ['sp_theme', 'sp_page', 'sp_container', 'sp_row', 'sp_column', 'sp_widget', 'sp_instance', 'sp_portal'];
 
+  // features.theme / features.portal default ON (omitted = true). Set false to ship a widget+page
+  // package that drops into an existing portal instead of scaffolding its own.
+  function featureOn(manifest, name) {
+    return !(manifest.features && manifest.features[name] === false);
+  }
+
   function deriveSysIds(manifest) {
     var p = manifest.sysIdPrefix;
     var ids = {
@@ -537,22 +543,32 @@
       ] });
     }
 
-    // No css_variables of its own - see this file's header comment. Still emitted because
-    // sp_portal requires a <theme> reference; this is just the portal-scaffold theme, not the
-    // token carrier.
-    records.push({ table: 'sp_theme', sysId: ids.theme, key: 'theme', fields: [
-      { name: 'css_variables', empty: true },
-      { name: 'name', value: manifest.appName + ' Theme' },
-      { name: 'navbar_fixed', value: true },
-      { name: 'sys_id', value: ids.theme, xmlOnly: true },
-      { name: 'sys_name', value: manifest.appName + ' Theme', xmlOnly: true },
-      SC,
-      { name: 'sys_update_name', value: 'sp_theme_' + ids.theme, xmlOnly: true },
-    ] });
+    // Scaffold theme - only when features.theme is on (default). Needed so sp_portal can reference
+    // a theme; not the token carrier (widget CSS is). Apps that drop into an existing portal set
+    // features.theme: false (and usually features.portal: false with it).
+    if (featureOn(manifest, 'theme')) {
+      records.push({ table: 'sp_theme', sysId: ids.theme, key: 'theme', fields: [
+        { name: 'css_variables', empty: true },
+        { name: 'name', value: manifest.appName + ' Theme' },
+        { name: 'navbar_fixed', value: true },
+        { name: 'sys_id', value: ids.theme, xmlOnly: true },
+        { name: 'sys_name', value: manifest.appName + ' Theme', xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sp_theme_' + ids.theme, xmlOnly: true },
+      ] });
+    }
 
     // Page tree. <roles> on the page is what actually gates it (server-side, before the page ever
     // renders); a manifest without features.roles ships this blank, same as before.
-    var pageId = manifest.scope + '_page';
+    // Naming matches real Service Portal Update Set exports: page id/sys_name are the SP page id
+    // (urlSuffix with '_' or manifest.pageId), title is the display title, container is
+    // "{title} - Container 1", row/column sys_name is the order digit.
+    var pageId = manifest.pageId || (manifest.urlSuffix
+      ? String(manifest.urlSuffix).replace(/-/g, '_')
+      : (manifest.scope + '_page'));
+    var pageTitle = manifest.pageTitle || manifest.appName;
+    var layoutOrder = '1';
+    var containerName = pageTitle + ' - Container 1';
     var pageRolesTag = (manifest.features && manifest.features.roles) ? ids.userRole : '';
     records.push({ table: 'sp_page', sysId: ids.page, key: 'page', fields: [
       { name: 'category', value: 'custom' },
@@ -561,33 +577,36 @@
       { name: 'roles', value: pageRolesTag },
       { name: 'short_description', value: manifest.appName + ' page' },
       { name: 'sys_id', value: ids.page, xmlOnly: true },
-      { name: 'sys_name', value: manifest.appName, xmlOnly: true },
+      { name: 'sys_name', value: pageId, xmlOnly: true },
       SC,
       { name: 'sys_update_name', value: 'sp_page_' + ids.page, xmlOnly: true },
-      { name: 'title', value: manifest.appName },
+      { name: 'title', value: pageTitle },
     ] });
     records.push({ table: 'sp_container', sysId: ids.container, key: 'container', fields: [
       { name: 'bootstrap_alt', value: 'false' },
-      { name: 'name', value: manifest.appName },
-      { name: 'order', value: '100' },
+      { name: 'name', value: containerName },
+      { name: 'order', value: layoutOrder },
       { name: 'sp_page', value: ids.page },
       { name: 'sys_id', value: ids.container, xmlOnly: true },
+      { name: 'sys_name', value: containerName, xmlOnly: true },
       SC,
       { name: 'sys_update_name', value: 'sp_container_' + ids.container, xmlOnly: true },
       { name: 'width', value: 'container-fluid' },
     ] });
     records.push({ table: 'sp_row', sysId: ids.row, key: 'row', fields: [
-      { name: 'order', value: '100' },
+      { name: 'order', value: layoutOrder },
       { name: 'sp_container', value: ids.container },
       { name: 'sys_id', value: ids.row, xmlOnly: true },
+      { name: 'sys_name', value: layoutOrder, xmlOnly: true },
       SC,
       { name: 'sys_update_name', value: 'sp_row_' + ids.row, xmlOnly: true },
     ] });
     records.push({ table: 'sp_column', sysId: ids.column, key: 'column', fields: [
-      { name: 'order', value: '100' },
+      { name: 'order', value: layoutOrder },
       { name: 'size', value: '12' },
       { name: 'sp_row', value: ids.row },
       { name: 'sys_id', value: ids.column, xmlOnly: true },
+      { name: 'sys_name', value: layoutOrder, xmlOnly: true },
       SC,
       { name: 'sys_update_name', value: 'sp_column_' + ids.column, xmlOnly: true },
     ] });
@@ -630,8 +649,9 @@
       ] });
     });
 
-    // The widget.
-    var widgetId = manifest.scope + '_widget';
+    // The widget. id defaults to the page id (real SP exports often share that slug); override
+    // with manifest.widgetId. name/sys_name stay the application display name.
+    var widgetId = manifest.widgetId || pageId;
     records.push({ table: 'sp_widget', sysId: ids.widget, key: 'widget', fields: [
       { name: 'category', value: 'custom' },
       { name: 'client_script', value: parts.clientScript, cdata: true },
@@ -660,28 +680,30 @@
     ] });
 
     records.push({ table: 'sp_instance', sysId: ids.instance, key: 'instance', fields: [
-      { name: 'order', value: 100 },
+      { name: 'order', value: 1 },
       { name: 'sp_column', value: ids.column },
       { name: 'sp_widget', value: ids.widget },
       { name: 'sys_class_name', value: 'sp_instance', xmlOnly: true },
       { name: 'sys_id', value: ids.instance, xmlOnly: true },
-      { name: 'sys_name', value: manifest.appName, xmlOnly: true },
+      // No instance title - real SP exports leave Target name blank when untitled.
       SC,
       { name: 'sys_update_name', value: 'sp_instance_' + ids.instance, xmlOnly: true },
-      { name: 'title', value: manifest.appName },
+      { name: 'title', empty: true },
     ] });
 
-    records.push({ table: 'sp_portal', sysId: ids.portal, key: 'portal', fields: [
-      { name: 'default', value: false },
-      { name: 'homepage', value: ids.page },
-      { name: 'sys_id', value: ids.portal, xmlOnly: true },
-      { name: 'sys_name', value: manifest.appName, xmlOnly: true },
-      SC,
-      { name: 'sys_update_name', value: 'sp_portal_' + ids.portal, xmlOnly: true },
-      { name: 'theme', value: ids.theme },
-      { name: 'title', value: manifest.appName },
-      { name: 'url_suffix', value: manifest.urlSuffix },
-    ] });
+    if (featureOn(manifest, 'portal')) {
+      records.push({ table: 'sp_portal', sysId: ids.portal, key: 'portal', fields: [
+        { name: 'default', value: false },
+        { name: 'homepage', value: ids.page },
+        { name: 'sys_id', value: ids.portal, xmlOnly: true },
+        { name: 'sys_name', value: manifest.appName, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sp_portal_' + ids.portal, xmlOnly: true },
+        { name: 'theme', value: ids.theme },
+        { name: 'title', value: manifest.appName },
+        { name: 'url_suffix', value: manifest.urlSuffix },
+      ] });
+    }
 
     // Opt-in ACL layer - AFTER everything else (matches the original's non-interleaved order:
     // every table's ACL record first, then every table's ACL-role record). Scoped to just this
@@ -690,7 +712,12 @@
     // already has (matching ACLs at the same table+operation are OR'd).
     if (manifest.features && manifest.features.roles) {
       var r2 = manifest.roles;
-      ACL_TABLES.forEach(function (t) {
+      var aclTables = ACL_TABLES.filter(function (t) {
+        if (t === 'sp_theme') { return featureOn(manifest, 'theme'); }
+        if (t === 'sp_portal') { return featureOn(manifest, 'portal'); }
+        return true;
+      });
+      aclTables.forEach(function (t) {
         var aclId = stableSysId(manifest.sysIdPrefix, t + ':acl');
         records.push({ table: 'sys_security_acl', sysId: aclId, key: 'acl_' + t, fields: [
           { name: 'active', value: true },
@@ -706,7 +733,7 @@
           { name: 'type', value: 'record' },
         ] });
       });
-      ACL_TABLES.forEach(function (t) {
+      aclTables.forEach(function (t) {
         var aclId = stableSysId(manifest.sysIdPrefix, t + ':acl');
         var aclRoleId = stableSysId(manifest.sysIdPrefix, t + ':acl_role');
         records.push({ table: 'sys_security_acl_role', sysId: aclRoleId, key: 'acl_role_' + t, fields: [
@@ -760,20 +787,28 @@
     sys_app: 'Application', sys_user_role: 'User Role', sys_user_group: 'Group',
     sys_group_has_role: 'Group has Role', sp_theme: 'Theme', sp_page: 'Page',
     sp_container: 'Container', sp_row: 'Row', sp_column: 'Column',
-    sp_angular_provider: 'Angular Provider', sp_widget: 'Widget', sp_instance: 'Widget Instance',
+    sp_angular_provider: 'Angular Provider', sp_widget: 'Widget', sp_instance: 'Instance',
     sp_portal: 'Portal', sys_security_acl: 'Access Control', sys_security_acl_role: 'Access Control Role',
   };
 
-  // A human-readable identifier for the wrapper's `target_name` field. Most records already carry
-  // an xmlOnly `sys_name` (added to the model specifically as a display identifier) or a real
-  // `name` field; the handful that carry neither (sp_row, sp_column, sys_group_has_role,
-  // sys_security_acl_role - pure structural/junction records with no name of their own) fall back
-  // to the app name plus this record's own model key.
+  // Human-readable `target_name` on each sys_update_xml wrapper (Retrieved Update Set preview list).
+  // Matches real SP exports: page→id, container→name, row/column→sys_name (order), widget→name,
+  // instance→title or blank. Only fall back to appName+(key) for nameless junction rows.
   function recordTargetName(rec, manifest) {
-    var sysName = rec.fields.filter(function (f) { return f.name === 'sys_name'; })[0];
-    if (sysName) { return sysName.value; }
-    var name = rec.fields.filter(function (f) { return f.name === 'name'; })[0];
-    if (name) { return name.value; }
+    function field(name) {
+      var f = rec.fields.filter(function (x) { return x.name === name; })[0];
+      if (!f || f.empty) { return ''; }
+      return f.value == null ? '' : String(f.value);
+    }
+    if (rec.table === 'sp_page') { return field('id'); }
+    if (rec.table === 'sp_container') { return field('name'); }
+    if (rec.table === 'sp_row' || rec.table === 'sp_column') { return field('sys_name'); }
+    if (rec.table === 'sp_widget') { return field('name'); }
+    if (rec.table === 'sp_instance') { return field('title') || field('name') || field('sys_name'); }
+    var sysName = field('sys_name');
+    if (sysName) { return sysName; }
+    var name = field('name');
+    if (name) { return name; }
     return manifest.appName + ' (' + rec.key + ')';
   }
 
@@ -795,7 +830,9 @@
       // from a live dev instance), so both self-reference this same record's own sys_id.
       { name: 'origin_sys_id', value: setSysId },
       { name: 'remote_sys_id', value: setSysId },
-      { name: 'state', value: 'complete' },
+      // Retrieved Update Sets must land as 'loaded' so Preview / Commit work. 'complete' is a
+      // LOCAL update-set state (done capturing, ready to export) - wrong here and confuses the UI.
+      { name: 'state', value: 'loaded' },
       { name: 'sys_id', value: setSysId, xmlOnly: true },
       { name: 'sys_update_name', value: 'sys_remote_update_set_' + setSysId, xmlOnly: true },
       { name: 'update_source', empty: true },

@@ -53,6 +53,8 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   // resolved live at the point of use, tracking whichever theme is active rather than freezing the
   // dark-mode brights (same fix as jobTitleColor() above).
   var PHASE_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--p5)'];
+  // Icon library for sub-phase filmstrip cards. Seeded sub-phases pick one via sp.icon;
+  // subPhaseIconKey() remains only as a fallback for legacy/localStorage rows that lack icon.
   var SUBPHASE_ICONS = {
     exchange: '<path d="M17 3l4 4-4 4"/><path d="M21 7H8"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h13"/>',
     flag: '<path d="M5 21V4"/><path d="M5 4h13l-2.5 4L18 12H5"/>',
@@ -63,7 +65,20 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h6"/>',
     cloud: '<path d="M7 18a4 4 0 0 1-1-7.9 5 5 0 0 1 9.6-1.7A4.5 4.5 0 0 1 17 18H7z"/><path d="M12 17v-6M9.5 13.5L12 11l2.5 2.5"/>',
     check: '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 5-5"/>',
-    doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>'
+    doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+    inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+    message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    door: '<path d="M13 4h3a2 2 0 0 1 2 2v14H4V6a2 2 0 0 1 2-2h3"/><path d="M10 4v16"/><path d="M15 12h.01"/>',
+    presentation: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="M12 16v5"/><path d="M8 21h8"/><path d="M7 8l3 3 5-5"/>',
+    archive: '<path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/>',
+    scales: '<path d="M12 3v18"/><path d="M5 6h14"/><path d="M5 6l-3 7a3 3 0 0 0 6 0L5 6"/><path d="M19 6l-3 7a3 3 0 0 0 6 0l-3-7"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
+    flask: '<path d="M9 3h6"/><path d="M10 3v7.5L5.5 19a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3L14 10.5V3"/><path d="M8.5 14h7"/>',
+    rocket: '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
+    stamp: '<path d="M12 3v8"/><path d="M8.5 8.5L12 12l3.5-3.5"/><rect x="5" y="14" width="14" height="7" rx="1"/><path d="M8 17h8"/>',
+    lifebuoy: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+    refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/>',
+    briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/>'
   };
   // Cached once per icon key, not per sub-phase or per call: $sce.trustAsHtml() returns a new
   // wrapper object every invocation, and binding that directly into ng-bind-html from a
@@ -72,8 +87,10 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   var ICON_HTML = {};
   Object.keys(SUBPHASE_ICONS).forEach(function (k) { ICON_HTML[k] = $sce.trustAsHtml(SUBPHASE_ICONS[k]); });
 
+  // Fallback only - seeded rows carry sp.icon. Used for legacy localStorage data and brand-new
+  // structure-edit stubs that haven't picked an icon yet.
   function subPhaseIconKey(name) {
-    var n = name.toLowerCase();
+    var n = String(name || '').toLowerCase();
     if (/ipkt|pre-kickoff|touchpoint/.test(n)) { return 'exchange'; }
     if (/kickoff/.test(n)) { return 'flag'; }
     if (/team/.test(n)) { return 'users'; }
@@ -84,6 +101,11 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     if (/deploy|go live|hypercare|preparedness/.test(n)) { return 'cloud'; }
     if (/retrospective|closure|lesson/.test(n)) { return 'check'; }
     return 'doc';
+  }
+
+  function iconKeyFor(sp) {
+    if (sp && sp.icon && ICON_HTML[sp.icon]) { return sp.icon; }
+    return subPhaseIconKey(sp && sp.name);
   }
 
   c.raciLetters = ['R', 'A', 'C', 'I'];
@@ -227,6 +249,14 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     c.jobTitles = d.jobTitles;
     c.methodologies = d.methodologies;
     backfillParticipants(c.methodologies);
+    // Legacy localStorage rows may predate sp.icon - fill from the name heuristic once.
+    c.methodologies.forEach(function (m) {
+      m.phases.forEach(function (p) {
+        p.subPhases.forEach(function (s) {
+          if (!s.icon || !ICON_HTML[s.icon]) { s.icon = subPhaseIconKey(s.name); }
+        });
+      });
+    });
     seedIdCounters();
     JARGON = d.jargon || {};
     c.methodologyId = c.methodologies[0].id;
@@ -235,6 +265,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     refreshWhatsNew();
     refreshJobAids();
     c.loading = false;
+    pushNav(); // seed history with the landing location
   });
 
   function curMeth() {
@@ -357,7 +388,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   c.activeColor = function () { return PHASE_COLORS[c.activePhaseIndex() % PHASE_COLORS.length]; };
   c.phaseColor = function (i) { return PHASE_COLORS[i % PHASE_COLORS.length]; };
   c.phaseHasUnread = function (p) { return p.subPhases.some(function (s) { return c.unreadCount(s) > 0; }); };
-  c.subPhaseIconPaths = function (name) { return ICON_HTML[subPhaseIconKey(name)]; };
+  c.subPhaseIconPaths = function (sp) { return ICON_HTML[iconKeyFor(sp)]; };
 
   // read/unread - a single global flag per changelog entry, matching the prototype's current
   // data model exactly. Phase 3's per-user Acknowledgement design (see the mockup) replaces this
@@ -380,26 +411,73 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   };
 
   c.view = 'journey';
+
+  /* In-app back/forward: stack of {view, methodologyId, subPhaseId}. Pushed on real
+     navigation; goBack/goForward restore without re-pushing (navSilent). */
+  var navStack = [];
+  var navIndex = -1;
+  var navSilent = false;
+  function navSnapshot() {
+    return { view: c.view, methodologyId: c.methodologyId, subPhaseId: c.subPhaseId };
+  }
+  function navSame(a, b) {
+    return !!(a && b && a.view === b.view && a.methodologyId === b.methodologyId && a.subPhaseId === b.subPhaseId);
+  }
+  function pushNav() {
+    if (navSilent || c.loading) { return; }
+    var snap = navSnapshot();
+    if (!snap.methodologyId) { return; }
+    if (navIndex >= 0 && navSame(navStack[navIndex], snap)) { return; }
+    navStack = navStack.slice(0, navIndex + 1);
+    navStack.push(snap);
+    navIndex = navStack.length - 1;
+  }
+  function applyNav(snap) {
+    navSilent = true;
+    c.clearSearch();
+    c.view = snap.view;
+    c.methodologyId = snap.methodologyId;
+    c.subPhaseId = snap.subPhaseId;
+    refreshLoc();
+    if (c.loc) { c.justRead = markRead(c.loc.sp); }
+    if (c.view === 'raci') { refreshRg(); }
+    navSilent = false;
+  }
+  c.canGoBack = function () { return navIndex > 0; };
+  c.canGoForward = function () { return navIndex >= 0 && navIndex < navStack.length - 1; };
+  c.goBack = function () {
+    if (c.editMode) { showToast('Finish editing first'); return; }
+    if (!c.canGoBack()) { return; }
+    navIndex -= 1;
+    applyNav(navStack[navIndex]);
+  };
+  c.goForward = function () {
+    if (c.editMode) { showToast('Finish editing first'); return; }
+    if (!c.canGoForward()) { return; }
+    navIndex += 1;
+    applyNav(navStack[navIndex]);
+  };
+
   c.setView = function (v) {
     if (c.editMode) { showToast('Finish editing first'); return; }
     c.view = v;
     if (v === 'raci') { refreshRg(); }
-    if (v !== 'search') { c.searchQuery = ''; c.searchResultsList = []; }
+    // Switching tabs dismisses an open search popup without changing where you were browsing.
+    c.clearSearch();
+    pushNav();
   };
   c.showMethSwitch = function () { return c.view === 'journey' || c.view === 'raci'; };
   c.pageTitle = function () {
     if (c.view === 'raci') { return 'Who does what'; }
     if (c.view === 'whatsnew') { return "What's New"; }
-    if (c.view === 'search') { return 'Search'; }
     if (c.view === 'reference') { return 'Reference'; }
-    return 'The Delivery Journey';
+    return 'Delivery 2.0';
   };
   c.pageSub = function () {
     if (c.view === 'raci') { return 'Every task and every job title in ' + c.curMeth().name + '. Focus a column to see one role across the whole engagement, or open a task row for its full context.'; }
     if (c.view === 'whatsnew') { return 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.'; }
-    if (c.view === 'search') { return 'Results for “' + (c.searchQuery || '').trim() + '” across every methodology.'; }
     if (c.view === 'reference') { return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.'; }
-    return 'Follow the engagement phase by phase. Select a sub-phase to read it in full.';
+    return 'GlideFast\'s playbook for delivering an engagement end to end. Walk each phase below, then open a sub-phase to read its overview, tasks, RACI, effort and deliverables in full.';
   };
 
   c.switchMethodology = function (id) {
@@ -420,6 +498,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     c.subPhaseId = id;
     refreshLoc();
     c.justRead = markRead(c.loc.sp);
+    pushNav();
   };
   // Used by RACI / What's New / Search results, which can point at a sub-phase in the OTHER
   // methodology - switches methodology first if needed, then opens + marks read, then returns to
@@ -428,8 +507,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     if (c.editMode) { return; }
     if (methId && methId !== c.methodologyId) { c.methodologyId = methId; }
     c.view = 'journey';
-    c.searchQuery = '';
-    c.searchResultsList = [];
+    c.clearSearch();
     c.openSubPhase(subId);
   };
 
@@ -626,6 +704,24 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     c.tmpLoeRole = '';
     c.tmpAddJt = {};
     c.editMode = true;
+  };
+  // Opens the target sub-phase (if needed) then enters content edit. Used by the pencil on the
+  // filmstrip card - the only content-edit entry point, since only sub-phases are editable.
+  c.editSubPhase = function (s, $event) {
+    if ($event) {
+      $event.stopPropagation();
+      $event.preventDefault();
+    }
+    if (c.editMode || c.structureEditMode) { return; }
+    if (!s || !s.id) { return; }
+    if (c.subPhaseId !== s.id) { c.openSubPhase(s.id); }
+    c.enterEdit();
+  };
+  c.fcardKey = function ($event, s) {
+    if ($event.key === 'Enter' || $event.key === ' ') {
+      $event.preventDefault();
+      c.openSubPhase(s.id);
+    }
   };
   c.cancelEdit = function () {
     c.editMode = false;
@@ -1043,12 +1139,11 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   }
 
   /* ================= Search =================
-     c.searchResultsList - computed on demand by c.runSearch() (wired to ng-change on the
-     search input), not on every digest - same reasoning as above, plus there's no reason to
-     re-scan every sub-phase's text on every digest when the query hasn't changed. */
-  // $sce.trustAsHtml is safe to call here (unlike the ICON_HTML/jargon cases above) because
-  // c.searchResultsList is only rebuilt by c.runSearch(), not recomputed every digest - each
-  // result's snippetHtml is trusted exactly once per search, not once per digest cycle.
+     Fixed overlay modal - the header search input and theme toggle never move. Opening/closing
+     without picking a result leaves c.view (and scroll position under the dimmed page) alone.
+     c.searchResultsList is rebuilt only by c.runSearch() (ng-change), not every digest. */
+  // $sce.trustAsHtml is safe here because each result's snippetHtml is trusted once per search,
+  // not once per digest cycle.
   function makeSnippet(hay, q) {
     var clean = hay.replace(/\n+/g, ' · ');
     var i = clean.toLowerCase().indexOf(q);
@@ -1061,13 +1156,26 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
 
   c.searchQuery = '';
   c.searchResultsList = [];
+  c.searchOpen = function () { return !!(c.searchQuery || '').trim(); };
+  c.clearSearch = function () {
+    c.searchQuery = '';
+    c.searchResultsList = [];
+  };
+  c.searchKeydown = function ($event) {
+    if ($event.key === 'Escape') {
+      c.clearSearch();
+      ($event.target && $event.target.blur && $event.target.blur());
+    }
+  };
+  c.pickSearchResult = function (r) {
+    c.jumpTo(r.s.id, r.m.id);
+  };
   c.runSearch = function () {
     var trimmed = (c.searchQuery || '').trim();
-    if (trimmed.length >= 1) {
-      if (c.editMode) { showToast('Finish editing first'); return; }
-      c.view = 'search';
-    } else if (c.view === 'search') {
-      c.view = 'journey';
+    if (trimmed.length >= 1 && c.editMode) {
+      showToast('Finish editing first');
+      c.clearSearch();
+      return;
     }
     var q = trimmed.toLowerCase();
     if (q.length < 2) { c.searchResultsList = []; return; }

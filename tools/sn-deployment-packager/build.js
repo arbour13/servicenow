@@ -10,9 +10,9 @@
      node tools/sn-deployment-packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]
 
    Examples:
-     node tools/sn-deployment-packager/build.js core
-     node tools/sn-deployment-packager/build.js glide-studio --format=fluent
-     node tools/sn-deployment-packager/build.js standards --format=both --fluent-mode=files
+     node tools/sn-deployment-packager/build.js glide-studio
+     node tools/sn-deployment-packager/build.js standards --format=fluent
+     node tools/sn-deployment-packager/build.js delivery-methodology --format=both --fluent-mode=files
 
    Output (all under apps/<app-folder>/deploy/):
      <app-folder>-update-set.xml         (--format=xml or both)
@@ -49,7 +49,11 @@ function loadDescriptor(appFolder) {
   if (!fs.existsSync(manifestFile)) {
     throw new Error(appFolder + ' has no deploy.manifest.js - not deployable (see manifest.schema.md).');
   }
-  return require(manifestFile);
+  var descriptor = require(manifestFile);
+  if (descriptor.deployable === false) {
+    throw new Error(appFolder + ' has deployable: false in deploy.manifest.js - not offered by the packager.');
+  }
+  return descriptor;
 }
 
 // Fetches every source file this app's manifest names, off disk - the Node-side mirror of what

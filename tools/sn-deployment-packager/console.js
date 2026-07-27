@@ -31,6 +31,8 @@
       script.src = appRoot(folder) + 'deploy.manifest.js';
       script.onload = function () {
         var descriptor = window.SNAppManifests && window.SNAppManifests[folder];
+        // deployable: false keeps the manifest on disk but hides the app from this console.
+        if (descriptor && descriptor.deployable === false) { descriptor = null; }
         resolve({ folder: folder, descriptor: descriptor || null });
       };
       script.onerror = function () { resolve({ folder: folder, descriptor: null }); };
@@ -91,6 +93,7 @@
   var togglePasswordBtn = document.getElementById('togglePasswordBtn');
   var themeToggleBtn = document.getElementById('themeToggleBtn');
   var connectBtn = document.getElementById('connectBtn');
+  var disconnectBtn = document.getElementById('disconnectBtn');
   var detectStatus = document.getElementById('detectStatus');
   var savedInstanceSelect = document.getElementById('savedInstanceSelect');
   var saveInstanceBtn = document.getElementById('saveInstanceBtn');
@@ -125,6 +128,8 @@
   var scopeStatus = document.getElementById('scopeStatus');
   var formatXmlBtn = document.getElementById('formatXmlBtn');
   var formatFluentBtn = document.getElementById('formatFluentBtn');
+  var formatToggle = document.getElementById('formatToggle');
+  var formatPill = document.getElementById('formatPill');
   var outputHint = document.getElementById('outputHint');
   var fluentControls = document.getElementById('fluentControls');
   var fluentFileSelect = document.getElementById('fluentFileSelect');
@@ -302,6 +307,10 @@
   var scopeUniqueness = 'unknown';
   var scopeCheckTimer = null;
   var ourInstalledSysId = null; // set when getInstalledApp finds this app on the target
+  // True after a successful Connect against the current credentials. Credentials-in-fields alone
+  // do not count - Upload / uniqueness checks require this. Cleared by Disconnect, app switch,
+  // Connect failure, or editing URL/user/password.
+  var sessionConnected = false;
   // When true, fldScopePrefix is read-only (set from the instance company code / existing install).
   var scopePrefixLocked = false;
   // When true, the whole scope is fixed (existing install) - name is read-only too.
@@ -497,7 +506,11 @@
       saveLastInstanceId('');
       if (currentFolder) { saveConn(currentFolder); }
       applyConnectionFieldLock();
-      detectStatus.textContent = 'Enter instance details, then Connect or Save for later.';
+      if (sessionConnected) {
+        disconnectSession({ message: 'Disconnected.' });
+      } else {
+        detectStatus.textContent = 'Enter instance details, then Connect or Save for later.';
+      }
       return;
     }
     var inst = loadSavedInstances().filter(function (i) { return i.id === id; })[0];
@@ -506,7 +519,14 @@
     saveLastInstanceId(id);
     if (currentFolder) { saveConn(currentFolder); }
     applyConnectionFieldLock();
-    detectStatus.textContent = 'Loaded “' + inst.name + '” - click Connect when ready.';
+    if (sessionConnected) {
+      disconnectSession({
+        clearScope: false,
+        message: 'Loaded “' + inst.name + '” - Connect again to use this connection.',
+      });
+    } else {
+      detectStatus.textContent = 'Loaded “' + inst.name + '” - click Connect when ready.';
+    }
   }
   function onSaveInstanceClick() {
     if (savedInstanceSelect.value) { return; } // fields are locked for saved connections
@@ -667,7 +687,7 @@
   function populateDropdown() {
     var folders = Object.keys(eligibleApps).sort();
     appSelect.innerHTML = '<option value="">Select an app…</option>' + folders.map(function (f) {
-      return '<option value="' + f + '">' + eligibleApps[f].manifest.appName + ' (' + f + ')</option>';
+      return '<option value="' + f + '">' + eligibleApps[f].manifest.appName + '</option>';
     }).join('');
     appSelect.disabled = folders.length === 0;
   }
@@ -720,7 +740,49 @@
   }
 
   function hasLiveConnection() {
-    return !!(fldInstanceUrl.value.trim() && fldUsername.value.trim() && fldPassword.value);
+    return sessionConnected;
+  }
+
+  function syncConnectionSessionUi() {
+    if (connectBtn) { connectBtn.hidden = !!sessionConnected; }
+    if (disconnectBtn) { disconnectBtn.hidden = !sessionConnected; }
+  }
+
+  // Ends the live instance session. Credentials stay in the form (and in saved connections) so the
+  // user can Connect again; App ID locks from the session are cleared so Download works offline.
+  function disconnectSession(opts) {
+    opts = opts || {};
+    sessionConnected = false;
+    ourInstalledSysId = null;
+    scopeUniqueness = 'unknown';
+    if (scopeCheckTimer) { clearTimeout(scopeCheckTimer); scopeCheckTimer = null; }
+    if (opts.clearScope !== false) {
+      setScopeParts('', '', { prefixLocked: false, fullyLocked: false });
+      if (currentParts && currentParts.manifest) {
+        fldAppName.value = currentParts.manifest.appName;
+        fldVersion.value = currentParts.manifest.version || '1.0.0';
+      }
+    } else {
+      scopePrefixLocked = false;
+      scopeFullyLocked = false;
+      applyScopeLockState();
+    }
+    detectStatus.textContent = opts.message != null ? opts.message : 'Disconnected.';
+    syncConnectionSessionUi();
+    updateScopeFieldUI();
+    updateActionButtons();
+    if (currentParts) { rebuildOutput(); }
+  }
+
+  function appShowsConnection() {
+    var d = currentFolder && eligibleApps[currentFolder];
+    return !!(d && d.deployOptions && d.deployOptions.showConnection);
+  }
+
+  // True when App ID is locked because the manifest pins a fixed scope (no live connection UI),
+  // as opposed to locking after finding an existing install on a connected instance.
+  function scopeLockedFromManifest() {
+    return scopeFullyLocked && !appShowsConnection();
   }
 
   function applyScopeLockState() {
@@ -728,11 +790,12 @@
     fldScopeName.readOnly = scopeFullyLocked;
     var room = Math.max(1, core.SCOPE_MAX - fldScopePrefix.value.length);
     fldScopeName.maxLength = room;
+    var fromManifest = scopeLockedFromManifest();
     setTip(fldScopePrefix, scopePrefixLocked
-      ? 'Vendor prefix from the connected instance'
+      ? (fromManifest ? 'Fixed App ID from this app\'s deploy.manifest.js' : 'Vendor prefix from the connected instance')
       : 'Vendor prefix (x_company_)');
     setTip(fldScopeName, scopeFullyLocked
-      ? 'Locked to the app already installed on this instance'
+      ? (fromManifest ? 'Fixed App ID from this app\'s deploy.manifest.js' : 'Locked to the app already installed on this instance')
       : 'App name portion of the App ID');
     // Size the prefix to its content so the name-field caret sits right after it.
     fldScopePrefix.style.width = '0';
@@ -777,6 +840,9 @@
       scopeStatus.className = 'field-status';
     } else if (scopeUniqueness === 'free') {
       scopeStatus.textContent = 'App ID is available on the target instance.';
+      scopeStatus.className = 'field-status';
+    } else if (scopeLockedFromManifest()) {
+      scopeStatus.textContent = 'Fixed App ID from this app\'s deploy.manifest.js.';
       scopeStatus.className = 'field-status';
     } else {
       scopeStatus.textContent = hasLiveConnection() ? '' : 'Connect to the target instance to verify this App ID is unique.';
@@ -888,33 +954,49 @@
     if (!outputHint) { return; }
     if (format === 'fluent') {
       outputHint.innerHTML =
-        '<strong>How to use this Fluent export</strong>' +
+        '<strong>How to use this Fluent project</strong>' +
         '<ol>' +
         '<li>Download the <code>.zip</code>, then unzip it.</li>' +
         '<li>In that folder run <code>npm install</code>.</li>' +
         '<li>Authenticate the Now SDK to your instance ' +
         '(see <a href="https://servicenow.github.io/sdk/" target="_blank" rel="noopener">ServiceNow SDK docs</a>).</li>' +
-        '<li>Run <code>npm run build</code>, then <code>npm run deploy</code> to push metadata to the instance.</li>' +
+        '<li>Run <code>npm run build</code>, then <code>npm run deploy</code> to push the metadata to the instance.</li>' +
         '</ol>';
       return;
     }
     outputHint.innerHTML =
       '<strong>How to use this Update Set</strong>' +
       '<ol>' +
-      '<li><strong>Upload</strong> (when connected) writes the package to Retrieved Update Sets on the target instance, ' +
-      'or <strong>Download</strong> the XML and import it yourself under ' +
-      '<strong>System Update Sets → Retrieved Update Sets → Import Update Set from XML</strong>.</li>' +
-      '<li>Open the Retrieved Update Set, preview the changes, then commit. ' +
-      'Upload does not commit for you.</li>' +
+      '<li><strong>Upload</strong> (when connected), or <strong>Download</strong> and import under Retrieved Update Sets → Import Update Set from XML.</li>' +
+      '<li>Open the Retrieved Update Set, preview, then commit. Upload does not commit for you.</li>' +
       '</ol>';
   }
 
   // Switch output target (XML <-> Fluent), toggling which control row is visible.
+  function syncFormatPill() {
+    if (!formatPill || !formatToggle || !formatXmlBtn || !formatFluentBtn) { return; }
+    var btn = format === 'fluent' ? formatFluentBtn : formatXmlBtn;
+    // Hidden (display:none) ancestors report 0x0 - skip until the output panel is shown.
+    if (btn.offsetWidth === 0) { return; }
+    formatPill.style.width = btn.offsetWidth + 'px';
+    formatPill.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
+    // Enable slide animation only after the first laid-out position, so restoring a
+    // saved Fluent selection on refresh does not animate from the XML default.
+    if (!formatToggle.classList.contains('is-ready')) {
+      // Force layout with transitions still off, then arm them on the next frame.
+      void formatPill.offsetWidth;
+      requestAnimationFrame(function () {
+        formatToggle.classList.add('is-ready');
+      });
+    }
+  }
+
   function setFormat(next) {
     format = next === 'fluent' ? 'fluent' : 'xml';
     saveLastFormat(format);
     formatXmlBtn.classList.toggle('active', format === 'xml');
     formatFluentBtn.classList.toggle('active', format === 'fluent');
+    syncFormatPill();
     fluentControls.style.display = format === 'fluent' ? '' : 'none';
     if (downloadBtnLabel) {
       downloadBtnLabel.textContent = format === 'fluent' ? 'Download Fluent .zip' : 'Download Update Set';
@@ -932,10 +1014,12 @@
     connectionSection.style.display = 'none';
     currentParts = null;
     ourInstalledSysId = null;
+    sessionConnected = false;
     scopeUniqueness = 'unknown';
     scopePrefixLocked = false;
     scopeFullyLocked = false;
     uploadStatus.textContent = '';
+    syncConnectionSessionUi();
     updateActionButtons();
     if (!folder) { setStatus(buildStatus, '', false); return; }
 
@@ -967,13 +1051,24 @@
       currentParts = { manifest: descriptor.manifest, parts: parts };
 
       fldAppName.value = descriptor.manifest.appName;
-      // Leave Scope blank until detect fills/locks the instance prefix (or the user types one).
-      setScopeParts('', '', { prefixLocked: false, fullyLocked: false });
+      if (showConnection) {
+        // Leave App ID blank until Connect fills/locks the instance prefix (or the user types one).
+        setScopeParts('', '', { prefixLocked: false, fullyLocked: false });
+      } else {
+        // Fixed-scope apps (no connection panel) ship a complete manifest.scope - prefill and lock
+        // so Download is enabled immediately (e.g. Standards' x_gfsp_standards).
+        setScopeFromFull(descriptor.manifest.scope || '', {
+          prefixLocked: true,
+          fullyLocked: true,
+        });
+      }
       fldVersion.value = descriptor.manifest.version || '1.0.0';
 
       fluentActivePath = ''; // let the Fluent view re-default to the widget file for the new app
       overridesSection.style.display = '';
       outputSection.style.display = '';
+      // Pill needs laid-out buttons; measure on the next frame.
+      requestAnimationFrame(syncFormatPill);
       if (format === 'xml') { rebuildXml(); } else { rebuildFluent(); }
       setStatus(buildStatus, 'Built ' + descriptor.manifest.appName + ' successfully.', false);
       updateScopeFieldUI();
@@ -1010,12 +1105,21 @@
     var instanceApi = window.SNDeploymentPackager.instance;
     instanceApi.detectCompanyPrefix(conn).then(function (code) {
       if (folder !== currentFolder) { return; } // the user switched apps while this was in flight
-      if (!code) { detectStatus.textContent = "Connected, but couldn't read a vendor prefix - set App ID by hand below."; return; }
+      if (!code) {
+        sessionConnected = true;
+        syncConnectionSessionUi();
+        detectStatus.textContent = "Connected, but couldn't read a vendor prefix - set App ID by hand below.";
+        updateScopeFieldUI();
+        updateActionButtons();
+        return;
+      }
       var descriptor = eligibleApps[folder];
       var ids = core.deriveSysIds(descriptor.manifest);
       var derivedPrefix = core.deriveScopePrefix(code);
       return instanceApi.getInstalledApp(conn, ids.app).then(function (installed) {
         if (folder !== currentFolder) { return; }
+        sessionConnected = true;
+        syncConnectionSessionUi();
         if (installed) {
           ourInstalledSysId = installed.sys_id;
           fldAppName.value = installed.name;
@@ -1029,7 +1133,7 @@
         } else {
           ourInstalledSysId = null;
           setScopeParts(derivedPrefix, '', { prefixLocked: true, fullyLocked: false });
-          detectStatus.textContent = 'Prefix detected: ' + derivedPrefix + '.';
+          detectStatus.textContent = 'Prefix detected: ' + derivedPrefix;
         }
         updateScopeFieldUI();
         scheduleScopeUniquenessCheck();
@@ -1037,8 +1141,29 @@
         rebuildOutput();
       });
     }).catch(function (e) {
-      detectStatus.textContent = 'Connection failed: ' + ((e && e.message) || e);
+      sessionConnected = false;
+      syncConnectionSessionUi();
+      detectStatus.textContent = formatConnectError(e);
+      updateActionButtons();
     });
+  }
+
+  // Turns raw fetch/HTTP failures into actionable operator copy. CORS and "Failed to fetch" are
+  // the usual mystery when Connect is run from a local suite server against a remote instance.
+  function formatConnectError(e) {
+    var msg = String((e && e.message) || e || 'unknown error');
+    var status = e && e.httpStatus;
+    if (status === 401 || status === 403) {
+      return 'Connection failed: check username/password and roles (HTTP ' + status + ').';
+    }
+    if (status) {
+      return 'Connection failed: HTTP ' + status + '. Check the instance URL and that the Table API is reachable.';
+    }
+    if (/failed to fetch|networkerror|load failed|network request failed|access-control|cors/i.test(msg)) {
+      return 'Connection failed: the browser could not reach the instance (often CORS, a bad URL, or being offline). ' +
+        'Allow CORS from this origin on the instance, or Download the Update Set XML and import it manually.';
+    }
+    return 'Connection failed: ' + msg;
   }
 
   // Upload / Download enablement - both wait for a complete App ID.
@@ -1137,7 +1262,12 @@
       uploadBtn.disabled = false;
       if (folder !== currentFolder) { return; }
       var count = (e && e.written && e.written.length) || 0;
-      uploadStatus.textContent = 'Upload failed' + (count ? ' after ' + count + ' records' : '') + ': ' + ((e && e.message) || e);
+      var msg = String((e && e.message) || e);
+      if (/failed to fetch|networkerror|load failed|network request failed|access-control|cors/i.test(msg)) {
+        msg = 'the browser could not reach the instance (often CORS, a bad URL, or being offline). ' +
+          'Allow CORS from this origin, or import the XML manually.';
+      }
+      uploadStatus.textContent = 'Upload failed' + (count ? ' after ' + count + ' records' : '') + ': ' + msg;
     });
   }
 
@@ -1163,6 +1293,7 @@
   fldScopeName.addEventListener('input', function () { onScopePartInput(fldScopeName); });
   fldVersion.addEventListener('input', rebuildOutput);
   connectBtn.addEventListener('click', runDetectAndLookup);
+  disconnectBtn.addEventListener('click', function () { disconnectSession(); });
   savedInstanceSelect.addEventListener('change', onSavedInstanceSelected);
   saveInstanceBtn.addEventListener('click', onSaveInstanceClick);
   removeInstanceBtn.addEventListener('click', onRemoveInstanceClick);
@@ -1176,7 +1307,15 @@
   [fldInstanceUrl, fldUsername, fldPassword].forEach(function (el) {
     el.addEventListener('input', function () {
       saveConn(currentFolder);
-      scheduleScopeUniquenessCheck();
+      if (sessionConnected) {
+        // Keep typed App ID values, but the live session no longer matches these credentials.
+        disconnectSession({
+          clearScope: false,
+          message: 'Credentials changed - Connect again to refresh.',
+        });
+      } else {
+        scheduleScopeUniquenessCheck();
+      }
     });
   });
   formatXmlBtn.addEventListener('click', function () { setFormat('xml'); });
@@ -1229,7 +1368,10 @@
     try { localStorage.setItem('snDeployConsole_theme', next); } catch (e) {}
     syncThemeTip();
     syncEditorTheme();
+    // Pill uses --panel; remeasure after theme paint in case font metrics shift.
+    requestAnimationFrame(syncFormatPill);
   });
+  window.addEventListener('resize', syncFormatPill);
 
   initTooltips();
   setFormat(loadLastFormat());

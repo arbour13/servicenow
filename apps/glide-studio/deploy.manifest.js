@@ -41,6 +41,10 @@
   };
 
   return {
+    // Opt out of the shared SN Deployment Packager (console + build.js). Manifest kept for
+    // reference / future re-enable; set deployable: true (or remove this key) to offer again.
+    deployable: false,
+
     manifest: {
       appName: 'Glide Studio',
       scope: 'x_glide_studio_ng',

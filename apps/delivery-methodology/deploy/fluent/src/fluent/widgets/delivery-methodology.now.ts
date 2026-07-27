@@ -3,8 +3,8 @@ import { SPWidget } from '@servicenow/sdk/core'
 SPWidget({
     $id: Now.ID['widget'],
     name: 'Delivery Methodology',
-    id: 'x_dlvry_method_widget',
-    description: 'Delivery Methodology - the GlideFast delivery journey: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.',
+    id: 'delivery_methodology',
+    description: 'GlideFast delivery methodology: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.',
     controllerAs: 'c',
     hasPreview: true,
     category: 'custom',

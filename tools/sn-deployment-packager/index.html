@@ -52,6 +52,9 @@
     --font: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --mono: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
     --content-width: 900px;
+    --motion-fast: 120ms;
+    --motion-med: 200ms;
+    --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
     --chevron: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5L6 7.5L9 4.5' stroke='%236b7280' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   }
   /* Glide Studio dark tokens. */
@@ -187,6 +190,7 @@
   .status-error { color: var(--danger); }
   .hint { font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
   .output-hint { font-size: 12.5px; color: var(--muted); margin: 0 0 var(--sp-md); line-height: 1.5; }
+  .output-hint p { margin: 6px 0 0; }
   .output-hint ol {
     margin: 8px 0 0; padding-left: 1.25em;
   }
@@ -204,6 +208,25 @@
   }
   .field-status { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 16px; }
   .field-status.field-status-error { color: var(--danger); }
+  /* App ID status sits in reserved panel padding so appearing/clearing it doesn't grow the row. */
+  #overridesSection {
+    padding-bottom: calc(var(--sp-xl) + 1.35em + 6px);
+  }
+  #overridesSection .field {
+    position: relative;
+  }
+  #overridesSection .field-status {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    margin-top: 0;
+    min-height: 0;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   #connectionSection > label:first-child { margin-bottom: 8px; }
   .grid3 { display: grid; grid-template-columns: 1.4fr 1.8fr 0.8fr; gap: var(--sp-md); }
@@ -280,7 +303,9 @@
   button.action-btn.secondary:hover:not(:disabled) {
     background: var(--accent-soft); border-color: var(--accent-border);
   }
-  button.action-btn.secondary[hidden] { display: none; }  .icon-btn {
+  button.action-btn.secondary[hidden],
+  button.action-btn[hidden] { display: none; }
+  .icon-btn {
     width: var(--ctrl-h); height: var(--ctrl-h); padding: 0;
     display: inline-flex; align-items: center; justify-content: center;
     border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
@@ -375,27 +400,36 @@
     display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md);
     margin-bottom: var(--sp-md);
   }
+  /* Segmented control patterned on Delivery 2.0's .views / .vtab shape; selected pill uses
+     the same --accent-fill as primary action buttons. */
   .format-toggle {
-    display: inline-flex; margin: 0; background: transparent; gap: 0;
+    position: relative;
+    display: inline-flex; gap: 2px; margin: 0;
+    background: var(--bg); border-radius: 10px; padding: 3px;
   }
-  .format-toggle .fmt-btn {
-    border-radius: 0;
+  .format-pill {
+    position: absolute; top: 3px; left: 0; z-index: 0;
+    height: calc(100% - 6px); width: 0;
+    background: var(--accent-fill); border-radius: 7px;
+    pointer-events: none;
   }
-  .format-toggle .fmt-btn:first-child {
-    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-  }
-  .format-toggle .fmt-btn:last-child {
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    margin-left: -1px;
+  /* Transitions only after the first layout so a restored Fluent selection does not
+     animate from the default XML slot on refresh. */
+  .format-toggle.is-ready .format-pill {
+    transition: transform var(--motion-med) var(--motion-ease),
+                width var(--motion-med) var(--motion-ease);
   }
   .fmt-btn {
-    position: relative;
-    background: var(--panel-alt); border: 1px solid var(--border-strong); color: var(--muted);
-    padding: 7px 14px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
-    transition: background .12s, color .12s, border-color .12s, box-shadow .12s, z-index 0s;
+    position: relative; z-index: 1;
+    border: none; background: none; color: var(--muted);
+    padding: 7px 15px; border-radius: 7px;
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: color var(--motion-fast) ease;
   }
-  .fmt-btn.active {
-    background: var(--accent-fill); border-color: var(--accent); color: #fff; z-index: 1;
+  .fmt-btn:hover { color: var(--text); }
+  .fmt-btn.active { color: #fff; }
+  @media (prefers-reduced-motion: reduce) {
+    .format-toggle.is-ready .format-pill { transition: none; }
   }
   .fluent-controls {
     display: flex; flex-direction: column; gap: 6px;
@@ -473,7 +507,7 @@
 </div>
 
 <div class="panel" id="connectionSection" style="display:none;">
-  <p class="panel-intro">Choose a saved connection to fill credentials, or New connection to type them. Connect detects the vendor prefix and whether this app is already installed.</p>
+  <p class="panel-intro">Choose a saved connection to fill credentials, or New connection to type them. Connect detects the vendor prefix and whether this app is already installed. Requires CORS from this origin to the instance; if the browser blocks the request, Download the XML instead.</p>
   <div class="saved-row">
     <div class="field">
       <label for="savedInstanceSelect">Saved connection</label>
@@ -510,6 +544,10 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8z"/></svg>
       Connect
     </button>
+    <button type="button" class="action-btn secondary" id="disconnectBtn" hidden data-tip="End the live session - Upload and uniqueness checks stop until you Connect again">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8z"/><line x1="4" y1="4" x2="20" y2="20"/></svg>
+      Disconnect
+    </button>
     <button type="button" class="action-btn secondary" id="saveInstanceBtn" data-tip="Save these credentials as a new connection">Save for later</button>
     <span id="detectStatus" class="status" style="margin:0;"></span>
   </div>
@@ -539,7 +577,8 @@
 
 <div class="panel" id="outputSection" style="display:none;">
   <div class="format-row">
-    <div class="format-toggle">
+    <div class="format-toggle" id="formatToggle">
+      <span class="format-pill" id="formatPill" aria-hidden="true"></span>
       <button type="button" class="fmt-btn active" id="formatXmlBtn">Update Set XML</button>
       <button type="button" class="fmt-btn" id="formatFluentBtn">Fluent project</button>
     </div>
@@ -552,7 +591,7 @@
       <label for="fluentFileSelect">Preview file</label>
       <select id="fluentFileSelect"></select>
     </div>
-    <p class="field-hint" id="fluentZipNote">The zip is a full Now SDK project (<code>package.json</code>, <code>now.config.json</code>, and <code>src/fluent/**</code>). A README is included in the zip.</p>
+    <p class="field-hint" id="fluentZipNote">These are the files the Now SDK uses to deploy. Download the zip for the full project (<code>package.json</code>, <code>now.config.json</code>, <code>src/fluent/**</code>, and a README).</p>
   </div>
 
   <div class="output-wrap">
@@ -599,10 +638,10 @@
   </div>
 </div>
 
-<script src="core.js"></script>
-<script src="instance.js"></script>
-<script src="fluent.js"></script>
-<script src="zip.js"></script>
-<script src="console.js"></script>
+<script src="core.js?v=20260727f"></script>
+<script src="instance.js?v=20260727f"></script>
+<script src="fluent.js?v=20260727f"></script>
+<script src="zip.js?v=20260727f"></script>
+<script src="console.js?v=20260727f"></script>
 </body>
 </html>

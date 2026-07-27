@@ -1,7 +1,7 @@
 {
     "name": "delivery-methodology",
     "version": "1.0.0",
-    "description": "Delivery Methodology - the GlideFast delivery journey: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.",
+    "description": "GlideFast delivery methodology: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.",
     "license": "UNLICENSED",
     "scripts": {
         "build": "now-sdk build",

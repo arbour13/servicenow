@@ -7,7 +7,7 @@
     <name>Delivery Methodology v1.0.0</name>
     <origin_sys_id>a4b5c6d7e87ce7e77b7ce7e77c7ce7e7</origin_sys_id>
     <remote_sys_id>a4b5c6d7e87ce7e77b7ce7e77c7ce7e7</remote_sys_id>
-    <state>complete</state>
+    <state>loaded</state>
     <sys_id>a4b5c6d7e87ce7e77b7ce7e77c7ce7e7</sys_id>
     <sys_update_name>sys_remote_update_set_a4b5c6d7e87ce7e77b7ce7e77c7ce7e7</sys_update_name>
     <update_source/>
@@ -24,7 +24,7 @@
     <name>Delivery Methodology</name>
     <private>false</private>
     <scope>x_dlvry_method</scope>
-    <short_description>Delivery Methodology - the GlideFast delivery journey: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.</short_description>
+    <short_description>GlideFast delivery methodology: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.</short_description>
     <sys_id>a4b5c6d7e8058b7d17058b7d18058b7d</sys_id>
     <sys_scope display_value="Delivery Methodology">a4b5c6d7e8058b7d17058b7d18058b7d</sys_scope>
     <sys_update_name>sys_app_a4b5c6d7e8058b7d17058b7d18058b7d</sys_update_name>
@@ -47,45 +47,19 @@
     <application>a4b5c6d7e8058b7d17058b7d18058b7d</application>
     <category>customer</category>
     <comments/>
-    <name>sp_theme_a4b5c6d7e8af8d2ebfaf8d2ec0af8d2e</name>
-    <payload><![CDATA[<record_update table="sp_theme">
-  <sp_theme action="INSERT_OR_UPDATE">
-    <css_variables/>
-    <name>Delivery Methodology Theme</name>
-    <navbar_fixed>true</navbar_fixed>
-    <sys_id>a4b5c6d7e8af8d2ebfaf8d2ec0af8d2e</sys_id>
-    <sys_name>Delivery Methodology Theme</sys_name>
-    <sys_scope display_value="Delivery Methodology">a4b5c6d7e8058b7d17058b7d18058b7d</sys_scope>
-    <sys_update_name>sp_theme_a4b5c6d7e8af8d2ebfaf8d2ec0af8d2e</sys_update_name>
-  </sp_theme>
-  </record_update>]]></payload>
-    <remote_update_set display_value="Delivery Methodology v1.0.0">a4b5c6d7e87ce7e77b7ce7e77c7ce7e7</remote_update_set>
-    <replace_on_upgrade>false</replace_on_upgrade>
-    <source_table>sp_theme</source_table>
-    <sys_id>a4b5c6d7e82b21d3e62b21d3e72b21d3</sys_id>
-    <sys_update_name>sys_update_xml_a4b5c6d7e82b21d3e62b21d3e72b21d3</sys_update_name>
-    <target_name>Delivery Methodology Theme</target_name>
-    <type>Theme</type>
-    <update_set/>
-  </sys_update_xml>
-  <sys_update_xml action="INSERT_OR_UPDATE">
-    <action>INSERT_OR_UPDATE</action>
-    <application>a4b5c6d7e8058b7d17058b7d18058b7d</application>
-    <category>customer</category>
-    <comments/>
     <name>sp_page_a4b5c6d7e8c4a60205c4a60206c4a602</name>
     <payload><![CDATA[<record_update table="sp_page">
   <sp_page action="INSERT_OR_UPDATE">
     <category>custom</category>
-    <id>x_dlvry_method_page</id>
+    <id>delivery_methodology</id>
     <internal>false</internal>
     <roles></roles>
     <short_description>Delivery Methodology page</short_description>
     <sys_id>a4b5c6d7e8c4a60205c4a60206c4a602</sys_id>
-    <sys_name>Delivery Methodology</sys_name>
+    <sys_name>delivery_methodology</sys_name>
     <sys_scope display_value="Delivery Methodology">a4b5c6d7e8058b7d17058b7d18058b7d</sys_scope>
     <sys_update_name>sp_page_a4b5c6d7e8c4a60205c4a60206c4a602</sys_update_name>
-    <title>Delivery Methodology</title>
+    <title>Delivery 2.0</title>
   </sp_page>
   </record_update>]]></payload>
     <remote_update_set display_value="Delivery Methodology v1.0.0">a4b5c6d7e87ce7e77b7ce7e77c7ce7e7</remote_update_set>
@@ -93,7 +67,7 @@
     <source_table>sp_page</source_table>
     <sys_id>a4b5c6d7e8d0e49bfed0e49bffd0e49c</sys_id>
     <sys_update_name>sys_update_xml_a4b5c6d7e8d0e49bfed0e49bffd0e49c</sys_update_name>
-    <target_name>Delivery Methodology</target_name>
+    <target_name>delivery_methodology</target_name>
     <type>Page</type>
     <update_set/>
   </sys_update_xml>
@@ -106,10 +80,11 @@
     <payload><![CDATA[<record_update table="sp_container">
   <sp_container action="INSERT_OR_UPDATE">
     <bootstrap_alt>false</bootstrap_alt>
-    <name>Delivery Methodology</name>
-    <order>100</order>
+    <name>Delivery 2.0 - Container 1</name>
+    <order>1</order>
     <sp_page>a4b5c6d7e8c4a60205c4a60206c4a602</sp_page>
     <sys_id>a4b5c6d7e80c6037770c6037780c6037</sys_id>
+    <sys_name>Delivery 2.0 - Container 1</sys_name>
     <sys_scope display_value="Delivery Methodology">a4b5c6d7e8058b7d17058b7d18058b7d</sys_scope>
     <sys_update_name>sp_container_a4b5c6d7e80c6037770c6037780c6037</sys_update_name>
     <width>container-fluid</width>
@@ -120,7 +95,7 @@
     <source_table>sp_container</source_table>
     <sys_id>a4b5c6d7e8b53ff11eb53ff11fb53ff1</sys_id>
     <sys_update_name>sys_update_xml_a4b5c6d7e8b53ff11eb53ff11fb53ff1</sys_update_name>
-    <target_name>Delivery Methodology</target_name>
+    <target_name>Delivery 2.0 - Container 1</target_name>
     <type>Container</type>
     <update_set/>
   </sys_update_xml>
@@ -132,9 +107,10 @@
     <name>sp_row_a4b5c6d7e8067ab290067ab291067ab2</name>
     <payload><![CDATA[<record_update table="sp_row">
   <sp_row action="INSERT_OR_UPDATE">
-    <order>100</order>
+    <order>1</order>
     <sp_container>a4b5c6d7e80c6037770c6037780c6037</sp_container>
     <sys_id>a4b5c6d7e8067ab290067ab291067ab2</sys_id>
+    <sys_name>1</sys_name>
     <sys_scope display_value="Delivery Methodology">a4b5c6d7e8058b7d17058b7d18058b7d</sys_scope>
     <sys_update_name>sp_row_a4b5c6d7e8067ab290067ab291067ab2</sys_update_name>
   </sp_row>
@@ -144,7 +120,7 @@
     <source_table>sp_row</source_table>
     <sys_id>a4b5c6d7e85974757759747578597475</sys_id>
     <sys_update_name>sys_update_xml_a4b5c6d7e85974757759747578597475</sys_update_name>
-    <target_name>Delivery Methodology (row)</target_name>
+    <target_name>1</target_name>
     <type>Row</type>
     <update_set/>
   </sys_update_xml>
@@ -156,10 +132,11 @@
     <name>sp_column_a4b5c6d7e8dad75d0cdad75d0ddad75d</name>
     <payload><![CDATA[<record_update table="sp_column">
   <sp_column action="INSERT_OR_UPDATE">
-    <order>100</order>
+    <order>1</order>
     <size>12</size>
     <sp_row>a4b5c6d7e8067ab290067ab291067ab2</sp_row>
     <sys_id>a4b5c6d7e8dad75d0cdad75d0ddad75d</sys_id>
+    <sys_name>1</sys_name>
     <sys_scope display_value="Delivery Methodology">a4b5c6d7e8058b7d17058b7d18058b7d</sys_scope>
     <sys_update_name>sp_column_a4b5c6d7e8dad75d0cdad75d0ddad75d</sys_update_name>
   </sp_column>
@@ -169,7 +146,7 @@
     <source_table>sp_column</source_table>
     <sys_id>a4b5c6d7e8d1d75cc5d1d75cc6d1d75c</sys_id>
     <sys_update_name>sys_update_xml_a4b5c6d7e8d1d75cc5d1d75cc6d1d75c</sys_update_name>
-    <target_name>Delivery Methodology (column)</target_name>
+    <target_name>1</target_name>
     <type>Column</type>
     <update_set/>
   </sys_update_xml>
@@ -293,8 +270,8 @@
     function task(id, order, text, raci, jobAids) {
       return { id: id, order: order, text: text, raci: raci, jobAids: jobAids || [] };
     }
-    function blankSubPhase(id, sid, name, order) {
-      return { id: id, sid: sid, name: name, order: order, changelog: [], overview: '', objective: '', participants: [], comments: [], inputs: [], deliverables: [], tasks: [], meetings: [], levelOfEffort: { mode: 'all', all: {}, roles: {} } };
+    function blankSubPhase(id, sid, name, order, icon) {
+      return { id: id, sid: sid, name: name, order: order, icon: icon || 'doc', changelog: [], overview: '', objective: '', participants: [], comments: [], inputs: [], deliverables: [], tasks: [], meetings: [], levelOfEffort: { mode: 'all', all: {}, roles: {} } };
     }
   
     var METHODOLOGIES = [
@@ -304,7 +281,7 @@
           {
             id: 'd2-initiate', name: 'Initiate', order: 1,
             subPhases: [
-              Object.assign(blankSubPhase('d2-1-1', '1.1', 'Pre-IPKT', 1), {
+              Object.assign(blankSubPhase('d2-1-1', '1.1', 'Pre-IPKT', 1, 'inbox'), {
                 changelog: [
                   { id: 'c1', ts: '2026-07-14', text: 'Input added: “ROM”', read: false },
                   { id: 'c2', ts: '2026-07-14', text: 'Task edited: “Review SOW inputs”', read: false }
@@ -321,16 +298,16 @@
                   task('d2-1-1-t3', 3, 'Review and/or consult with AE / other Delivery personnel regarding previous / concurrent projects / GRSs conducted with the client', { arch: ['R'], em: ['R'], bpc: ['R'], tc: ['R'] })
                 ]
               }),
-              blankSubPhase('d2-1-2', '1.2', 'IPKT', 2),
-              blankSubPhase('d2-1-3', '1.3', 'Customer Pre-Kickoff', 3),
-              blankSubPhase('d2-1-4', '1.4', 'Get to Know the Team', 4),
-              blankSubPhase('d2-1-5', '1.5', 'Kickoff', 5)
+              blankSubPhase('d2-1-2', '1.2', 'IPKT', 2, 'exchange'),
+              blankSubPhase('d2-1-3', '1.3', 'Customer Pre-Kickoff', 3, 'door'),
+              blankSubPhase('d2-1-4', '1.4', 'Get to Know the Team', 4, 'users'),
+              blankSubPhase('d2-1-5', '1.5', 'Kickoff', 5, 'flag')
             ]
           },
           {
             id: 'd2-plan', name: 'Plan', order: 2,
             subPhases: [
-              Object.assign(blankSubPhase('d2-2-1', '2.1', 'Pre-Workshop Planning', 1), {
+              Object.assign(blankSubPhase('d2-2-1', '2.1', 'Pre-Workshop Planning', 1, 'clipboard'), {
                 changelog: [{ id: 'c3', ts: '2026-07-10', text: 'Task added: “Prepare Demo instance”', read: false }],
                 overview: 'At this phase, we are getting our customer team ready for a successful and efficient start of the project. Most of the steps are internal readiness activities, but coordination is needed while interfacing with the client.',
                 objective: 'The primary objective of this stage is to ensure all logistics are cared for on our end, customer expectations are fully aligned, and we maximize the time and effort during the actual workshops, once they begin. This is our first big effort with the customer, and we need to show up prepared, aligned and productive.',
@@ -346,17 +323,17 @@
                   task('d2-2-1-t4', 4, 'Prepare Demo instance', { em: ['I'], bpc: ['C'], arch: ['A', 'R'], tc: ['C'] }, [{ id: 'ja-d221t4-1', url: '#', roles: [] }, { id: 'ja-d221t4-2', url: '#', roles: ['arch'] }])
                 ]
               }),
-              blankSubPhase('d2-2-2', '2.2', 'Customer Workshops', 2),
-              blankSubPhase('d2-2-3', '2.3', 'Post Workshop', 3),
-              blankSubPhase('d2-2-4', '2.4', 'Scope Rebalancing', 4),
-              blankSubPhase('d2-2-5', '2.5', 'Refinement & Sprint Planning', 5),
-              blankSubPhase('d2-2-6', '2.6', 'Sprint Planning with Customer', 6)
+              blankSubPhase('d2-2-2', '2.2', 'Customer Workshops', 2, 'presentation'),
+              blankSubPhase('d2-2-3', '2.3', 'Post Workshop', 3, 'archive'),
+              blankSubPhase('d2-2-4', '2.4', 'Scope Rebalancing', 4, 'scales'),
+              blankSubPhase('d2-2-5', '2.5', 'Refinement & Sprint Planning', 5, 'list'),
+              blankSubPhase('d2-2-6', '2.6', 'Sprint Planning with Customer', 6, 'calendar')
             ]
           },
           {
             id: 'd2-execute', name: 'Execute', order: 3,
             subPhases: [
-              Object.assign(blankSubPhase('d2-3-1', '3.1', 'Build Activities', 1), {
+              Object.assign(blankSubPhase('d2-3-1', '3.1', 'Build Activities', 1, 'code'), {
                 overview: 'This phase is where we execute high quality development and code configurations within the ServiceNow platform. We do this iteratively and incrementally, ensuring that the output evolves in alignment with the plans set forth with the customer, prior.',
                 objective: 'The objective of the development phase is to build upon the user stories established and create a working ServiceNow platform environment that will help customer meet their stated business objectives, in the timeline set forth.',
                 levelOfEffort: { mode: 'all', all: { text: 'As Defined', billable: true }, roles: {} },
@@ -368,13 +345,13 @@
                   task('d2-3-1-t3', 3, 'User story refining and unblocking', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d231t3-1', url: '#', roles: [] }])
                 ]
               }),
-              blankSubPhase('d2-3-2', '3.2', 'Build Validation and UAT Readiness', 2)
+              blankSubPhase('d2-3-2', '3.2', 'Build Validation and UAT Readiness', 2, 'flask')
             ]
           },
           {
             id: 'd2-deliver', name: 'Deliver', order: 4,
             subPhases: [
-              Object.assign(blankSubPhase('d2-4-1', '4.1', 'UAT', 1), {
+              Object.assign(blankSubPhase('d2-4-1', '4.1', 'UAT', 1, 'shield'), {
                 overview: 'The User Acceptance Testing (UAT) is a phase in our overall engagement in which the software/configuration built by GlideFast is tested in “real world” environments with representatives of the personas who will be using ServiceNow simulating their future use and accepting the work performed based on the requirements.',
                 objective: 'The primary objective of UAT is to ensure the ServiceNow code we delivered can perform required tasks in “real world” scenarios, based on the battery of tests built prior. Furthermore, to ensure that defects, if any, are worked on and resolved satisfactorily.',
                 levelOfEffort: { mode: 'all', all: { text: 'As Defined', billable: true }, roles: {} },
@@ -388,16 +365,16 @@
                   task('d2-4-1-t3', 3, 'Prioritize and address defects thru resolution', { em: ['C'], bpc: ['C'], arch: ['R'], tc: ['R'], customer: ['I'] })
                 ]
               }),
-              blankSubPhase('d2-4-2', '4.2', 'Go Live Preparedness', 2),
-              blankSubPhase('d2-4-3', '4.3', 'Customer Signoff & Go Live Readiness', 3),
-              blankSubPhase('d2-4-4', '4.4', 'Deploy', 4),
-              blankSubPhase('d2-4-5', '4.5', 'Hypercare', 5)
+              blankSubPhase('d2-4-2', '4.2', 'Go Live Preparedness', 2, 'rocket'),
+              blankSubPhase('d2-4-3', '4.3', 'Customer Signoff & Go Live Readiness', 3, 'stamp'),
+              blankSubPhase('d2-4-4', '4.4', 'Deploy', 4, 'cloud'),
+              blankSubPhase('d2-4-5', '4.5', 'Hypercare', 5, 'lifebuoy')
             ]
           },
           {
             id: 'd2-close', name: 'Close', order: 5,
             subPhases: [
-              Object.assign(blankSubPhase('d2-5-1', '5.1', 'Internal Closure Meeting', 1), {
+              Object.assign(blankSubPhase('d2-5-1', '5.1', 'Internal Closure Meeting', 1, 'briefcase'), {
                 overview: 'This is the phase in the journey where we prepare for the customer official closure meeting, discuss lessons learned, and care for any internal logistics necessary and associated with the closure of the engagement.',
                 objective: 'The primary objective of this step is to capture all learnings from the engagement for the purpose of internal improvement and closely align on what is expected at the customer closure meeting.',
                 levelOfEffort: { mode: 'byRole', all: {}, roles: { em: { text: '1 hour', billable: true }, bpc: { text: '1 hour', billable: true }, arch: { text: '1 hour', billable: true }, tc: { text: '1 hour', billable: true }, sa: { text: '1 hour', billable: false }, es: { text: '1 hour', billable: false, optional: true }, mktg: { text: '1 hour', billable: false }, ae: { text: '1 hour', billable: false } } },
@@ -409,8 +386,8 @@
                   task('d2-5-1-t2', 2, 'Confirms customer equipment return process and facilitates with each GlideFast team member', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] })
                 ]
               }),
-              blankSubPhase('d2-5-2', '5.2', 'Customer Retrospective', 2),
-              blankSubPhase('d2-5-3', '5.3', 'Customer Closure Meeting', 3)
+              blankSubPhase('d2-5-2', '5.2', 'Customer Retrospective', 2, 'refresh'),
+              blankSubPhase('d2-5-3', '5.3', 'Customer Closure Meeting', 3, 'check')
             ]
           }
         ]
@@ -421,7 +398,7 @@
           {
             id: 'grs-initiate', name: 'Initiate', order: 1,
             subPhases: [
-              Object.assign(blankSubPhase('grs-1-2', '1.2', 'IPKT', 1), {
+              Object.assign(blankSubPhase('grs-1-2', '1.2', 'IPKT', 1, 'exchange'), {
                 overview: 'At this phase, the GRS engagement is confirmed. The Account Executive has moved the opportunity in the Customer Relations Management (CRM) system to “Closed Won” and we are just about ready to meet the client and commence the GRS engagement. The heart of this step is the completion and live review of the IPKT document (and supporting documents) which serves as the transition phase.',
                 objective: 'The primary objective of this step is to obtain knowledge from the sales team that negotiated the merits of the client engagement. A proper “handoff” will help ensure we come across as One company, remove any seams in the transition to Delivery and address any insights, risks and actions that we must take prior to meeting the client for the first time.',
                 levelOfEffort: { mode: 'all', all: { text: '1 hour', billable: true }, roles: {} },
@@ -431,12 +408,12 @@
                 meetings: [{ id: 'mt4', scheduledBy: 'ae', ledBy: 'arch', external: false }],
                 tasks: [task('grs-1-2-t1', 1, 'Complete and live-review the IPKT document with the sales team', { arch: ['A', 'R'], tc: ['A', 'R'], ae: ['C'] })]
               }),
-              blankSubPhase('grs-1-3', '1.3', 'Team Touchpoint', 2),
-              blankSubPhase('grs-1-4', '1.4', 'Kickoff', 3)
+              blankSubPhase('grs-1-3', '1.3', 'Team Touchpoint', 2, 'message'),
+              blankSubPhase('grs-1-4', '1.4', 'Kickoff', 3, 'flag')
             ]
           },
-          { id: 'grs-lifecycle', name: 'Lifecycle Check-ins', order: 2, subPhases: [blankSubPhase('grs-2-1', '2.1', 'Periodic Check-in', 1)] },
-          { id: 'grs-closure', name: 'Closure', order: 3, subPhases: [blankSubPhase('grs-3-1', '3.1', 'Closure', 1)] }
+          { id: 'grs-lifecycle', name: 'Lifecycle Check-ins', order: 2, subPhases: [blankSubPhase('grs-2-1', '2.1', 'Periodic Check-in', 1, 'calendar')] },
+          { id: 'grs-closure', name: 'Closure', order: 3, subPhases: [blankSubPhase('grs-3-1', '3.1', 'Closure', 1, 'check')] }
         ]
       }
     ];
@@ -453,12 +430,33 @@
   
     function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
   
+    // Keeps authored sp.icon in sync for known seed ids when loading from localStorage
+    // (storage may predate the icon field, or hold an older keyword-fallback value).
+    function applySeedIcons(methodologies) {
+      var iconById = {};
+      METHODOLOGIES.forEach(function (m) {
+        m.phases.forEach(function (p) {
+          p.subPhases.forEach(function (s) { if (s.icon) { iconById[s.id] = s.icon; } });
+        });
+      });
+      methodologies.forEach(function (m) {
+        m.phases.forEach(function (p) {
+          p.subPhases.forEach(function (s) {
+            if (iconById[s.id]) { s.icon = iconById[s.id]; }
+            else if (!s.icon) { s.icon = 'doc'; }
+          });
+        });
+      });
+    }
+  
     return {
       getData: function () {
         var stored = loadStoredMethodologies();
+        var methodologies = stored ? deepClone(stored) : deepClone(METHODOLOGIES);
+        applySeedIcons(methodologies);
         return $q.resolve({
           jobTitles: deepClone(JOB_TITLES),
-          methodologies: stored ? deepClone(stored) : deepClone(METHODOLOGIES),
+          methodologies: methodologies,
           jargon: deepClone(JARGON)
         });
       },
@@ -547,6 +545,8 @@
     // resolved live at the point of use, tracking whichever theme is active rather than freezing the
     // dark-mode brights (same fix as jobTitleColor() above).
     var PHASE_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--p5)'];
+    // Icon library for sub-phase filmstrip cards. Seeded sub-phases pick one via sp.icon;
+    // subPhaseIconKey() remains only as a fallback for legacy/localStorage rows that lack icon.
     var SUBPHASE_ICONS = {
       exchange: '<path d="M17 3l4 4-4 4"/><path d="M21 7H8"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h13"/>',
       flag: '<path d="M5 21V4"/><path d="M5 4h13l-2.5 4L18 12H5"/>',
@@ -557,7 +557,20 @@
       clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h6"/>',
       cloud: '<path d="M7 18a4 4 0 0 1-1-7.9 5 5 0 0 1 9.6-1.7A4.5 4.5 0 0 1 17 18H7z"/><path d="M12 17v-6M9.5 13.5L12 11l2.5 2.5"/>',
       check: '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 5-5"/>',
-      doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>'
+      doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+      inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+      message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+      door: '<path d="M13 4h3a2 2 0 0 1 2 2v14H4V6a2 2 0 0 1 2-2h3"/><path d="M10 4v16"/><path d="M15 12h.01"/>',
+      presentation: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="M12 16v5"/><path d="M8 21h8"/><path d="M7 8l3 3 5-5"/>',
+      archive: '<path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/>',
+      scales: '<path d="M12 3v18"/><path d="M5 6h14"/><path d="M5 6l-3 7a3 3 0 0 0 6 0L5 6"/><path d="M19 6l-3 7a3 3 0 0 0 6 0l-3-7"/>',
+      list: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
+      flask: '<path d="M9 3h6"/><path d="M10 3v7.5L5.5 19a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3L14 10.5V3"/><path d="M8.5 14h7"/>',
+      rocket: '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
+      stamp: '<path d="M12 3v8"/><path d="M8.5 8.5L12 12l3.5-3.5"/><rect x="5" y="14" width="14" height="7" rx="1"/><path d="M8 17h8"/>',
+      lifebuoy: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+      refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/>',
+      briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/>'
     };
     // Cached once per icon key, not per sub-phase or per call: $sce.trustAsHtml() returns a new
     // wrapper object every invocation, and binding that directly into ng-bind-html from a
@@ -566,8 +579,10 @@
     var ICON_HTML = {};
     Object.keys(SUBPHASE_ICONS).forEach(function (k) { ICON_HTML[k] = $sce.trustAsHtml(SUBPHASE_ICONS[k]); });
   
+    // Fallback only - seeded rows carry sp.icon. Used for legacy localStorage data and brand-new
+    // structure-edit stubs that haven't picked an icon yet.
     function subPhaseIconKey(name) {
-      var n = name.toLowerCase();
+      var n = String(name || '').toLowerCase();
       if (/ipkt|pre-kickoff|touchpoint/.test(n)) { return 'exchange'; }
       if (/kickoff/.test(n)) { return 'flag'; }
       if (/team/.test(n)) { return 'users'; }
@@ -578,6 +593,11 @@
       if (/deploy|go live|hypercare|preparedness/.test(n)) { return 'cloud'; }
       if (/retrospective|closure|lesson/.test(n)) { return 'check'; }
       return 'doc';
+    }
+  
+    function iconKeyFor(sp) {
+      if (sp && sp.icon && ICON_HTML[sp.icon]) { return sp.icon; }
+      return subPhaseIconKey(sp && sp.name);
     }
   
     c.raciLetters = ['R', 'A', 'C', 'I'];
@@ -721,6 +741,14 @@
       c.jobTitles = d.jobTitles;
       c.methodologies = d.methodologies;
       backfillParticipants(c.methodologies);
+      // Legacy localStorage rows may predate sp.icon - fill from the name heuristic once.
+      c.methodologies.forEach(function (m) {
+        m.phases.forEach(function (p) {
+          p.subPhases.forEach(function (s) {
+            if (!s.icon || !ICON_HTML[s.icon]) { s.icon = subPhaseIconKey(s.name); }
+          });
+        });
+      });
       seedIdCounters();
       JARGON = d.jargon || {};
       c.methodologyId = c.methodologies[0].id;
@@ -729,6 +757,7 @@
       refreshWhatsNew();
       refreshJobAids();
       c.loading = false;
+      pushNav(); // seed history with the landing location
     });
   
     function curMeth() {
@@ -851,7 +880,7 @@
     c.activeColor = function () { return PHASE_COLORS[c.activePhaseIndex() % PHASE_COLORS.length]; };
     c.phaseColor = function (i) { return PHASE_COLORS[i % PHASE_COLORS.length]; };
     c.phaseHasUnread = function (p) { return p.subPhases.some(function (s) { return c.unreadCount(s) > 0; }); };
-    c.subPhaseIconPaths = function (name) { return ICON_HTML[subPhaseIconKey(name)]; };
+    c.subPhaseIconPaths = function (sp) { return ICON_HTML[iconKeyFor(sp)]; };
   
     // read/unread - a single global flag per changelog entry, matching the prototype's current
     // data model exactly. Phase 3's per-user Acknowledgement design (see the mockup) replaces this
@@ -874,26 +903,73 @@
     };
   
     c.view = 'journey';
+  
+    /* In-app back/forward: stack of {view, methodologyId, subPhaseId}. Pushed on real
+       navigation; goBack/goForward restore without re-pushing (navSilent). */
+    var navStack = [];
+    var navIndex = -1;
+    var navSilent = false;
+    function navSnapshot() {
+      return { view: c.view, methodologyId: c.methodologyId, subPhaseId: c.subPhaseId };
+    }
+    function navSame(a, b) {
+      return !!(a && b && a.view === b.view && a.methodologyId === b.methodologyId && a.subPhaseId === b.subPhaseId);
+    }
+    function pushNav() {
+      if (navSilent || c.loading) { return; }
+      var snap = navSnapshot();
+      if (!snap.methodologyId) { return; }
+      if (navIndex >= 0 && navSame(navStack[navIndex], snap)) { return; }
+      navStack = navStack.slice(0, navIndex + 1);
+      navStack.push(snap);
+      navIndex = navStack.length - 1;
+    }
+    function applyNav(snap) {
+      navSilent = true;
+      c.clearSearch();
+      c.view = snap.view;
+      c.methodologyId = snap.methodologyId;
+      c.subPhaseId = snap.subPhaseId;
+      refreshLoc();
+      if (c.loc) { c.justRead = markRead(c.loc.sp); }
+      if (c.view === 'raci') { refreshRg(); }
+      navSilent = false;
+    }
+    c.canGoBack = function () { return navIndex > 0; };
+    c.canGoForward = function () { return navIndex >= 0 && navIndex < navStack.length - 1; };
+    c.goBack = function () {
+      if (c.editMode) { showToast('Finish editing first'); return; }
+      if (!c.canGoBack()) { return; }
+      navIndex -= 1;
+      applyNav(navStack[navIndex]);
+    };
+    c.goForward = function () {
+      if (c.editMode) { showToast('Finish editing first'); return; }
+      if (!c.canGoForward()) { return; }
+      navIndex += 1;
+      applyNav(navStack[navIndex]);
+    };
+  
     c.setView = function (v) {
       if (c.editMode) { showToast('Finish editing first'); return; }
       c.view = v;
       if (v === 'raci') { refreshRg(); }
-      if (v !== 'search') { c.searchQuery = ''; c.searchResultsList = []; }
+      // Switching tabs dismisses an open search popup without changing where you were browsing.
+      c.clearSearch();
+      pushNav();
     };
     c.showMethSwitch = function () { return c.view === 'journey' || c.view === 'raci'; };
     c.pageTitle = function () {
       if (c.view === 'raci') { return 'Who does what'; }
       if (c.view === 'whatsnew') { return "What's New"; }
-      if (c.view === 'search') { return 'Search'; }
       if (c.view === 'reference') { return 'Reference'; }
-      return 'The Delivery Journey';
+      return 'Delivery 2.0';
     };
     c.pageSub = function () {
       if (c.view === 'raci') { return 'Every task and every job title in ' + c.curMeth().name + '. Focus a column to see one role across the whole engagement, or open a task row for its full context.'; }
       if (c.view === 'whatsnew') { return 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.'; }
-      if (c.view === 'search') { return 'Results for “' + (c.searchQuery || '').trim() + '” across every methodology.'; }
       if (c.view === 'reference') { return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.'; }
-      return 'Follow the engagement phase by phase. Select a sub-phase to read it in full.';
+      return 'GlideFast\'s playbook for delivering an engagement end to end. Walk each phase below, then open a sub-phase to read its overview, tasks, RACI, effort and deliverables in full.';
     };
   
     c.switchMethodology = function (id) {
@@ -914,6 +990,7 @@
       c.subPhaseId = id;
       refreshLoc();
       c.justRead = markRead(c.loc.sp);
+      pushNav();
     };
     // Used by RACI / What's New / Search results, which can point at a sub-phase in the OTHER
     // methodology - switches methodology first if needed, then opens + marks read, then returns to
@@ -922,8 +999,7 @@
       if (c.editMode) { return; }
       if (methId && methId !== c.methodologyId) { c.methodologyId = methId; }
       c.view = 'journey';
-      c.searchQuery = '';
-      c.searchResultsList = [];
+      c.clearSearch();
       c.openSubPhase(subId);
     };
   
@@ -1120,6 +1196,24 @@
       c.tmpLoeRole = '';
       c.tmpAddJt = {};
       c.editMode = true;
+    };
+    // Opens the target sub-phase (if needed) then enters content edit. Used by the pencil on the
+    // filmstrip card - the only content-edit entry point, since only sub-phases are editable.
+    c.editSubPhase = function (s, $event) {
+      if ($event) {
+        $event.stopPropagation();
+        $event.preventDefault();
+      }
+      if (c.editMode || c.structureEditMode) { return; }
+      if (!s || !s.id) { return; }
+      if (c.subPhaseId !== s.id) { c.openSubPhase(s.id); }
+      c.enterEdit();
+    };
+    c.fcardKey = function ($event, s) {
+      if ($event.key === 'Enter' || $event.key === ' ') {
+        $event.preventDefault();
+        c.openSubPhase(s.id);
+      }
     };
     c.cancelEdit = function () {
       c.editMode = false;
@@ -1537,12 +1631,11 @@
     }
   
     /* ================= Search =================
-       c.searchResultsList - computed on demand by c.runSearch() (wired to ng-change on the
-       search input), not on every digest - same reasoning as above, plus there's no reason to
-       re-scan every sub-phase's text on every digest when the query hasn't changed. */
-    // $sce.trustAsHtml is safe to call here (unlike the ICON_HTML/jargon cases above) because
-    // c.searchResultsList is only rebuilt by c.runSearch(), not recomputed every digest - each
-    // result's snippetHtml is trusted exactly once per search, not once per digest cycle.
+       Fixed overlay modal - the header search input and theme toggle never move. Opening/closing
+       without picking a result leaves c.view (and scroll position under the dimmed page) alone.
+       c.searchResultsList is rebuilt only by c.runSearch() (ng-change), not every digest. */
+    // $sce.trustAsHtml is safe here because each result's snippetHtml is trusted once per search,
+    // not once per digest cycle.
     function makeSnippet(hay, q) {
       var clean = hay.replace(/\n+/g, ' · ');
       var i = clean.toLowerCase().indexOf(q);
@@ -1555,13 +1648,26 @@
   
     c.searchQuery = '';
     c.searchResultsList = [];
+    c.searchOpen = function () { return !!(c.searchQuery || '').trim(); };
+    c.clearSearch = function () {
+      c.searchQuery = '';
+      c.searchResultsList = [];
+    };
+    c.searchKeydown = function ($event) {
+      if ($event.key === 'Escape') {
+        c.clearSearch();
+        ($event.target && $event.target.blur && $event.target.blur());
+      }
+    };
+    c.pickSearchResult = function (r) {
+      c.jumpTo(r.s.id, r.m.id);
+    };
     c.runSearch = function () {
       var trimmed = (c.searchQuery || '').trim();
-      if (trimmed.length >= 1) {
-        if (c.editMode) { showToast('Finish editing first'); return; }
-        c.view = 'search';
-      } else if (c.view === 'search') {
-        c.view = 'journey';
+      if (trimmed.length >= 1 && c.editMode) {
+        showToast('Finish editing first');
+        c.clearSearch();
+        return;
       }
       var q = trimmed.toLowerCase();
       if (q.length < 2) { c.searchResultsList = []; return; }
@@ -1816,14 +1922,41 @@
     gap: 14px;
     flex-wrap: wrap;
     margin-bottom: 18px;
+  }.dm-widget .nav-history {
+    display: inline-flex;
+    gap: 2px;
+    flex-shrink: 0;
+  }.dm-widget .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface-flat);
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
+  }.dm-widget .nav-btn svg {
+    width: 16px;
+    height: 16px;
+  }.dm-widget .nav-btn:hover:not(:disabled) {
+    color: var(--ink);
+    background: var(--surface-2);
+  }.dm-widget .nav-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
   }.dm-widget .pagehdr-top .views {
     margin-bottom: 0;
-  }/* Groups the toggle and search together as one flex child of .pagehdr-top, so
-     justify-content: space-between pins the PAIR to the right edge - the toggle sits flush against
-     search rather than floating at its own independent distance from it. */.dm-widget .hdr-search-group {
+  }/* Right-side chrome: history, search, theme. space-between pins this cluster opposite the tabs. */.dm-widget .hdr-search-group {
     display: flex;
     align-items: center;
     gap: 10px;
+  }/* Keep history + search + theme above the results overlay so they never move and remain usable. */.dm-widget .app.search-active .hdr-search-group {
+    position: relative;
+    z-index: 190;
   }.dm-widget .hsearch {
     position: relative;
   }.dm-widget .hsearch input {
@@ -1851,6 +1984,80 @@
     stroke: var(--ink-faint);
     fill: none;
     stroke-width: 2;
+  }/* Fixed search results modal - does not affect header layout (theme toggle + search stay put). */.dm-widget .search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 180;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 12vh 16px 24px;
+    background: rgba(4, 19, 31, 0.55);
+    box-sizing: border-box;
+  }.dm-widget .search-modal {
+    width: min(560px, 100%);
+    max-height: min(640px, 76vh);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-flat);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+  }.dm-widget .search-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line-soft, var(--line));
+    flex-shrink: 0;
+  }.dm-widget .search-modal-head h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 650;
+    color: var(--ink);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }.dm-widget .search-modal-close {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }.dm-widget .search-modal-close:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+  }.dm-widget .search-modal-body {
+    padding: 10px;
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+  }.dm-widget .hsearch-empty {
+    margin: 0;
+    padding: 28px 16px;
+    font-size: 13.5px;
+    color: var(--ink-faint);
+    text-align: center;
+  }.dm-widget .search-modal-body .search-result {
+    margin-bottom: 6px;
+    background: var(--surface-2);
+    box-shadow: none;
+  }.dm-widget .search-modal-body .search-result:last-child {
+    margin-bottom: 0;
+  }.dm-widget[data-theme="light"] .search-overlay {
+    background: rgba(10, 33, 54, 0.35);
+  }.dm-widget[data-theme="light"] .search-modal-body .search-result {
+    background: #ffffff;
+    border-color: var(--line);
   }/* .edit-pencil shares this treatment with .theme-toggle - the user asked for the two to "interact
      like" each other, so it's one factored rule rather than duplicated declarations. */.dm-widget .theme-toggle, .dm-widget .edit-pencil {
     display: inline-flex;
@@ -1879,7 +2086,7 @@
     font-weight: 800;
     font-size: 27px;
     letter-spacing: -0.015em;
-    margin: 0 0 4px;
+    margin: 0 0 5px;
     color: var(--ink);
   }.dm-widget .pg-sub {
     margin: 0;
@@ -1887,14 +2094,15 @@
     font-size: 13.5px;
     max-width: 66ch;
     line-height: 1.5;
-  }.dm-widget .pagehdr-title-row {
+  }/* Reading aid - lives with the content it affects (sub-phase panel / reference doc), not the page title. */.dm-widget .sp-header-actions {
     display: flex;
     align-items: center;
-    gap: 26px;
-    flex-wrap: wrap;
-    margin-bottom: 5px;
-  }.dm-widget .pagehdr-title-row h1 {
-    margin-bottom: 0;
+    gap: 14px;
+    flex-shrink: 0;
+  }.dm-widget .refdoc-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 16px;
   }.dm-widget .loe-billable-toggle {
     display: inline-flex;
     align-items: center;
@@ -2239,12 +2447,53 @@
     background: color-mix(in srgb, var(--pc) 22%, transparent);
     color: var(--pc);
     flex-shrink: 0;
+  }.dm-widget .fcard .fcard-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin: -2px -4px 0 0;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--on-accent-soft);
+    cursor: pointer;
+    opacity: 0.85;
+    flex-shrink: 0;
+    transition: opacity 0.12s, color 0.12s, border-color 0.12s, background 0.12s;
+  }.dm-widget .fcard:hover .fcard-edit, .dm-widget .fcard.on .fcard-edit, .dm-widget .fcard .fcard-edit:focus-visible {
+    opacity: 1;
+  }.dm-widget .fcard .fcard-edit:hover, .dm-widget .fcard .fcard-edit:focus-visible {
+    color: var(--teal);
+    border-color: var(--teal);
+    background: var(--surface-flat);
+  }.dm-widget .fcard.stub:not(.on) .fcard-edit {
+    color: var(--ink-faint);
+  }.dm-widget .fcard .fcard-edit svg {
+    width: 13px;
+    height: 13px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+  }.dm-widget .fcard .fcard-edit:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
   }.dm-widget .fcard .fcard-icon svg {
     width: 16px;
     height: 16px;
     stroke: currentColor;
     fill: none;
     stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }.dm-widget .fcard .fcard-icon svg * {
+    fill: none;
+    stroke: inherit;
+    stroke-width: inherit;
+    stroke-linecap: inherit;
+    stroke-linejoin: inherit;
   }.dm-widget .fcard .fcard-sid {
     font-family: var(--font-mono);
     font-size: 10px;
@@ -2418,6 +2667,16 @@
     filter: blur(2.5px) saturate(0.7);
     pointer-events: none;
     transition: filter 0.2s, opacity 0.2s;
+  }/* Same treatment as edit mode: blur the page behind search. History + search + theme stay
+     sharp via .hdr-search-group's raised z-index. */.dm-widget .app.search-active .views, .dm-widget .app.search-active .pagehdr-title, .dm-widget .app.search-active .pagehdr-controls, .dm-widget .app.search-active .main > *:not(.pagehdr) {
+    opacity: 0.5;
+    filter: blur(2.5px) saturate(0.7);
+    pointer-events: none;
+    transition: filter 0.2s, opacity 0.2s;
+  }.dm-widget .app.search-active .search-overlay {
+    background: rgba(4, 19, 31, 0.28);
+  }.dm-widget[data-theme="light"] .app.search-active .search-overlay {
+    background: rgba(10, 33, 54, 0.18);
   }.dm-widget h4.sec {
     font-size: 11px;
     letter-spacing: 0.1em;
@@ -3428,6 +3687,12 @@
   }.dm-widget .vtab svg {
     width: 15px;
     height: 15px;
+    flex-shrink: 0;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }.dm-widget .vtab.on {
     background: var(--surface-2);
     color: var(--ink);
@@ -4049,9 +4314,9 @@
   }
   ]]]]><![CDATA[></css>
     <demo_data/>
-    <description>Delivery Methodology - the GlideFast delivery journey: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.</description>
+    <description>GlideFast delivery methodology: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.</description>
     <has_preview>true</has_preview>
-    <id>x_dlvry_method_widget</id>
+    <id>delivery_methodology</id>
     <internal>false</internal>
     <link><![CDATA[]]]]><![CDATA[></link>
     <name>Delivery Methodology</name>
@@ -4068,7 +4333,7 @@
     <sys_scope display_value="Delivery Methodology">a4b5c6d7e8058b7d17058b7d18058b7d</sys_scope>
     <sys_update_name>sp_widget_a4b5c6d7e8ac99e07aac99e07bac99e0</sys_update_name>
     <template><![CDATA[<div class="dm-widget">
-  <div class="app" ng-class="{editing: c.editMode}" ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
+  <div class="app" ng-class="{editing: c.editMode, 'search-active': c.searchOpen()}" ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
   
     <div class="dm-loading" ng-if="c.loading">Loading…</div>
   
@@ -4078,35 +4343,58 @@
   
     <div class="toast" ng-class="{show: c.toast.show}">{{c.toast.msg}}</div>
   
+    <!-- Search results overlay: fixed layer so the header search + theme toggle never move.
+         Closing without picking a result leaves the underlying view exactly as it was. -->
+    <div class="search-overlay" ng-if="c.searchOpen()" ng-click="c.clearSearch()">
+      <div class="search-modal" role="dialog" aria-modal="true" aria-labelledby="dm-search-title" ng-click="$event.stopPropagation()">
+        <div class="search-modal-head">
+          <h2 id="dm-search-title">{{(c.searchQuery || '').trim().length < 2 ? 'Search' : ('Results for “' + (c.searchQuery || '').trim() + '”')}}</h2>
+          <button type="button" class="search-modal-close" ng-click="c.clearSearch()" aria-label="Close search">&times;</button>
+        </div>
+        <div class="search-modal-body" role="listbox">
+          <p class="hsearch-empty" ng-if="(c.searchQuery || '').trim().length < 2">Type at least two characters.</p>
+          <p class="hsearch-empty" ng-if="(c.searchQuery || '').trim().length >= 2 && !c.searchResultsList.length">No matches.</p>
+          <button type="button" class="search-result" role="option" ng-repeat="r in c.searchResultsList" ng-click="c.pickSearchResult(r)">
+            <div class="sr-loc">{{r.m.name}} &rsaquo; {{r.p.name}} &rsaquo; {{r.s.sid}}</div>
+            <div class="sr-title">{{r.s.name}}</div>
+            <div class="sr-snip" ng-bind-html="r.snippetHtml"></div>
+          </button>
+        </div>
+      </div>
+    </div>
+  
     <div class="main" ng-if="!c.loading">
   
       <div class="pagehdr">
         <div class="pagehdr-top">
           <div class="views" role="tablist">
-            <button type="button" class="vtab" ng-class="{on: c.view === 'journey'}" ng-click="c.setView('journey')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg><span>Journey</span></button>
+            <button type="button" class="vtab" ng-class="{on: c.view === 'journey'}" ng-click="c.setView('journey')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg><span>Methodology</span></button>
             <button type="button" class="vtab" ng-class="{on: c.view === 'raci'}" ng-click="c.setView('raci')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M9 9v11M15 9v11"></path></svg><span>RACI</span></button>
             <button type="button" class="vtab" ng-class="{on: c.view === 'reference'}" ng-click="c.setView('reference')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5a6 6 0 0 0-8 0v12a6 6 0 0 1 8 0 6 6 0 0 1 8 0v-12a6 6 0 0 0-8 0zM12 6.5V19"></path></svg><span>Reference</span></button>
             <button type="button" class="vtab" ng-if="c.anyUnread()" ng-class="{on: c.view === 'whatsnew'}" ng-click="c.setView('whatsnew')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>What's New</span></button>
           </div>
           <div class="hdr-search-group">
+            <div class="nav-history" role="group" aria-label="History">
+              <button type="button" class="nav-btn" ng-click="c.goBack()" ng-disabled="!c.canGoBack()" data-tip="Back" aria-label="Back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+              </button>
+              <button type="button" class="nav-btn" ng-click="c.goForward()" ng-disabled="!c.canGoForward()" data-tip="Forward" aria-label="Forward">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+              </button>
+            </div>
+            <div class="hsearch">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+              <input type="text" placeholder="Search…" autocomplete="off" ng-model="c.searchQuery" ng-change="c.runSearch()" ng-keydown="c.searchKeydown($event)" aria-autocomplete="list" aria-controls="dm-search-modal" aria-expanded="{{c.searchOpen()}}">
+            </div>
             <button type="button" class="theme-toggle" ng-click="c.toggleTheme()"
                     aria-pressed="{{c.theme === 'dark'}}" aria-label="Toggle light/dark mode" data-tip="Toggle light/dark mode">
               <svg ng-if="c.theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
               <svg ng-if="c.theme !== 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             </button>
-            <div class="hsearch">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
-              <input type="text" placeholder="Search…" autocomplete="off" ng-model="c.searchQuery" ng-change="c.runSearch()">
-            </div>
           </div>
         </div>
         <div class="pagehdr-title">
-          <div class="pagehdr-title-row">
-            <h1>{{c.pageTitle()}}</h1>
-            <label class="loe-billable-toggle jargon-toggle" ng-if="c.view === 'journey' || c.view === 'reference'" data-tip="Highlight jargon and acronyms with hover-over definitions">
-              <input type="checkbox" ng-model="c.showJargon"> Explain terms
-            </label>
-          </div>
+          <h1>{{c.pageTitle()}}</h1>
           <p class="pg-sub">{{c.pageSub()}}</p>
         </div>
         <div class="pagehdr-controls" ng-if="c.showMethSwitch()">
@@ -4137,18 +4425,24 @@
   
       <p class="strip-label">{{c.curMeth().phases[c.activePhaseIndex()].name}} - sub-phases</p>
       <div class="film">
-        <button type="button" class="fcard" ng-repeat="s in c.curMeth().phases[c.activePhaseIndex()].subPhases"
+        <div class="fcard" ng-repeat="s in c.curMeth().phases[c.activePhaseIndex()].subPhases"
                 ng-class="{on: s.id === c.subPhaseId, stub: !c.hasContent(s)}"
                 style="--pc: {{c.activeColor()}};"
-                ng-click="c.openSubPhase(s.id)">
+                role="button"
+                tabindex="0"
+                ng-click="c.openSubPhase(s.id)"
+                ng-keydown="c.fcardKey($event, s)">
           <div class="fcard-head">
-            <span class="fcard-icon"><svg viewBox="0 0 24 24" ng-bind-html="c.subPhaseIconPaths(s.name)"></svg></span>
+            <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.subPhaseIconPaths(s)"></svg></span>
+            <button type="button" class="fcard-edit" ng-click="c.editSubPhase(s, $event)" data-tip="Edit this sub-phase" aria-label="Edit this sub-phase">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
+            </button>
           </div>
           <span class="fcard-sid">Sub-phase {{s.sid}}</span>
           <div class="fcard-name">{{s.name}}</div>
           <div class="rbadge" ng-if="c.hasContent(s) && c.unreadCount(s)">&#9679; {{c.unreadCount(s)}} new change{{c.unreadCount(s) > 1 ? 's' : ''}}</div>
           <div class="fcard-meta" ng-if="!c.hasContent(s)">Not yet written</div>
-        </button>
+        </div>
       </div>
   
       <div class="struct-toolbar" ng-if="c.structureEditMode">
@@ -4189,12 +4483,14 @@
               <span class="prec" ng-if="c.unreadCount(c.loc.sp)">&#9679; {{c.unreadCount(c.loc.sp)}} new change{{c.unreadCount(c.loc.sp) > 1 ? 's' : ''}}</span>
             </h1>
           </div>
-          <button type="button" class="edit-pencil" ng-click="c.enterEdit()" data-tip="Edit this sub-phase" aria-label="Edit this sub-phase">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
-          </button>
+          <div class="sp-header-actions">
+            <label class="loe-billable-toggle jargon-toggle" ng-if="c.hasContent(c.loc.sp)" data-tip="Highlight jargon and acronyms with hover-over definitions">
+              Explain terms <input type="checkbox" ng-model="c.showJargon">
+            </label>
+          </div>
         </div>
   
-        <p class="obj faint" ng-if="!c.hasContent(c.loc.sp)">This sub-phase hasn&rsquo;t been written yet. Use the <b>edit &#9998;</b> button above to add its overview, tasks and deliverables.</p>
+        <p class="obj faint" ng-if="!c.hasContent(c.loc.sp)">This sub-phase hasn&rsquo;t been written yet. Use the <b>edit &#9998;</b> on its card above to add its overview, tasks and deliverables.</p>
   
         <div ng-if="c.hasContent(c.loc.sp)">
           <div class="pchange" ng-if="c.justRead.length">
@@ -4602,6 +4898,11 @@
   
       <div ng-if="c.view === 'reference'">
         <div class="refdoc">
+          <div class="refdoc-toolbar">
+            <label class="loe-billable-toggle jargon-toggle" data-tip="Highlight jargon and acronyms with hover-over definitions">
+              Explain terms <input type="checkbox" ng-model="c.showJargon">
+            </label>
+          </div>
           <section class="ref-sec">
             <h3 class="ref-h">How to use RACI</h3>
             <p class="ref-lead">Every task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person's relationship to the work?</p>
@@ -4661,21 +4962,9 @@
         </button>
       </div>
   
-      <div ng-if="c.view === 'search'">
-        <p class="empty" ng-if="(c.searchQuery || '').trim().length < 2">Type at least two characters.</p>
-        <div ng-if="(c.searchQuery || '').trim().length >= 2">
-          <p class="empty" ng-if="!c.searchResultsList.length">No matches.</p>
-          <button type="button" class="search-result" ng-repeat="r in c.searchResultsList" ng-click="c.jumpTo(r.s.id, r.m.id)">
-            <div class="sr-loc">{{r.m.name}} &rsaquo; {{r.p.name}} &rsaquo; {{r.s.sid}}</div>
-            <div class="sr-title">{{r.s.name}}</div>
-            <div class="sr-snip" ng-bind-html="r.snippetHtml"></div>
-          </button>
-        </div>
       </div>
   
     </div>
-  
-  </div>
   </div>]]]]><![CDATA[></template>
   </sp_widget>
   </record_update>]]></payload>
@@ -4696,15 +4985,14 @@
     <name>sp_instance_a4b5c6d7e835c3ca8b35c3ca8c35c3ca</name>
     <payload><![CDATA[<record_update table="sp_instance">
   <sp_instance action="INSERT_OR_UPDATE">
-    <order>100</order>
+    <order>1</order>
     <sp_column>a4b5c6d7e8dad75d0cdad75d0ddad75d</sp_column>
     <sp_widget>a4b5c6d7e8ac99e07aac99e07bac99e0</sp_widget>
     <sys_class_name>sp_instance</sys_class_name>
     <sys_id>a4b5c6d7e835c3ca8b35c3ca8c35c3ca</sys_id>
-    <sys_name>Delivery Methodology</sys_name>
     <sys_scope display_value="Delivery Methodology">a4b5c6d7e8058b7d17058b7d18058b7d</sys_scope>
     <sys_update_name>sp_instance_a4b5c6d7e835c3ca8b35c3ca8c35c3ca</sys_update_name>
-    <title>Delivery Methodology</title>
+    <title/>
   </sp_instance>
   </record_update>]]></payload>
     <remote_update_set display_value="Delivery Methodology v1.0.0">a4b5c6d7e87ce7e77b7ce7e77c7ce7e7</remote_update_set>
@@ -4712,36 +5000,8 @@
     <source_table>sp_instance</source_table>
     <sys_id>a4b5c6d7e86cc2c0046cc2c0056cc2c0</sys_id>
     <sys_update_name>sys_update_xml_a4b5c6d7e86cc2c0046cc2c0056cc2c0</sys_update_name>
-    <target_name>Delivery Methodology</target_name>
-    <type>Widget Instance</type>
-    <update_set/>
-  </sys_update_xml>
-  <sys_update_xml action="INSERT_OR_UPDATE">
-    <action>INSERT_OR_UPDATE</action>
-    <application>a4b5c6d7e8058b7d17058b7d18058b7d</application>
-    <category>customer</category>
-    <comments/>
-    <name>sp_portal_a4b5c6d7e82b7024a22b7024a32b7024</name>
-    <payload><![CDATA[<record_update table="sp_portal">
-  <sp_portal action="INSERT_OR_UPDATE">
-    <default>false</default>
-    <homepage>a4b5c6d7e8c4a60205c4a60206c4a602</homepage>
-    <sys_id>a4b5c6d7e82b7024a22b7024a32b7024</sys_id>
-    <sys_name>Delivery Methodology</sys_name>
-    <sys_scope display_value="Delivery Methodology">a4b5c6d7e8058b7d17058b7d18058b7d</sys_scope>
-    <sys_update_name>sp_portal_a4b5c6d7e82b7024a22b7024a32b7024</sys_update_name>
-    <theme>a4b5c6d7e8af8d2ebfaf8d2ec0af8d2e</theme>
-    <title>Delivery Methodology</title>
-    <url_suffix>delivery-methodology</url_suffix>
-  </sp_portal>
-  </record_update>]]></payload>
-    <remote_update_set display_value="Delivery Methodology v1.0.0">a4b5c6d7e87ce7e77b7ce7e77c7ce7e7</remote_update_set>
-    <replace_on_upgrade>false</replace_on_upgrade>
-    <source_table>sp_portal</source_table>
-    <sys_id>a4b5c6d7e82270245b2270245c227024</sys_id>
-    <sys_update_name>sys_update_xml_a4b5c6d7e82270245b2270245c227024</sys_update_name>
-    <target_name>Delivery Methodology</target_name>
-    <type>Portal</type>
+    <target_name></target_name>
+    <type>Instance</type>
     <update_set/>
   </sys_update_xml>
 </unload>
