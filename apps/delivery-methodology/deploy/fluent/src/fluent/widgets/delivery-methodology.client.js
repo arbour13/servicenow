@@ -1,8 +1,4 @@
-/* Mirrors the standalone prototype's (delivery-methodology.html) render*() logic 1:1, translated
-   from innerHTML-string building into controller state + declarative template bindings
-   (index.html). All views (Journey read + edit, RACI grid/by-role, Reference, What's New, Search)
-   are ported. */
-angular.module('deliveryMethodology').controller('MainController', ['DataService', '$sce', '$timeout', 'ThemeService', function (DataService, $sce, $timeout, ThemeService) {
+api.controller = function (DataService, $sce, $timeout, ThemeService) {
   'use strict';
   var vm = this;
 
@@ -1080,4 +1076,4 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     }); }); });
     vm.searchResultsList = results;
   };
-}]);
+};

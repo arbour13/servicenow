@@ -1,0 +1,15 @@
+import { SPWidget } from '@servicenow/sdk/core'
+
+SPWidget({
+    $id: Now.ID['widget'],
+    name: 'Delivery Methodology',
+    id: 'x_dlvry_method_widget',
+    description: 'Delivery Methodology - the GlideFast delivery journey: phases, sub-phases, RACI by task and job title, job aids, and an auto-generated change log.',
+    controllerAs: 'vm',
+    hasPreview: true,
+    category: 'custom',
+    clientScript: Now.include('delivery-methodology.client.js'),
+    serverScript: Now.include('delivery-methodology.server.js'),
+    htmlTemplate: Now.include('delivery-methodology.html'),
+    customCss: Now.include('delivery-methodology.scss'),
+})

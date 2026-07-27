@@ -7,14 +7,17 @@ does not edit the packager. Written 2026-07-26, against the packager as it stood
 
 ## Why this exists
 
-`apps/delivery-methodology/SCHEMA.md` designs 3 ServiceNow tables for this app's eventual data
-tier (revised down from 5, 2026-07-26 — RACI moved from a relational table into JSON on
-`sub_phase`; see `SCHEMA.md` Decision C). The packager (`tools/sn-deployment-packager/`) has no way
-to emit a table today — its shared record model only knows about portal/widget/security records.
-This spec designs the extension, using this app's own 3 tables as the worked example, so the
-packager owner has a concrete first consumer rather than a hypothetical one. The extension itself
-(a `tables[]` manifest key, structural per-emitter rendering) is unaffected by which or how many
-tables this particular app ends up declaring.
+`apps/delivery-methodology/SCHEMA.md` designs **1** ServiceNow table for this app's eventual data
+tier (revised down twice on 2026-07-26 — 5 → 3 tables when RACI moved from a relational table into
+JSON on `sub_phase`, then 3 → 1 when every remaining table, including the lookup content that used
+to ride `dl_matcher`, folded into a single `type`-discriminated, self-referencing tree; see
+`SCHEMA.md` Decisions C and D). The packager (`tools/sn-deployment-packager/`) has no way to emit a
+table today — its shared record model only knows about portal/widget/security records. This spec
+designs the extension, using this app's own table as the worked example, so the packager owner has
+a concrete first consumer rather than a hypothetical one. The extension itself (a `tables[]`
+manifest key, structural per-emitter rendering) is unaffected by which or how many tables this
+particular app ends up declaring — everything below still applies even though the count dropped to
+one.
 
 ## What the packager does today (verified against the code)
 
@@ -83,14 +86,16 @@ manifest and rendered natively by each emitter — the same principle that alrea
 
 Internal type `json`, platform label "JSON" — listed in the platform field-type reference
 (`markdown/platform-administration/r_FieldTypes.md`) and exposed by Fluent as `JsonColumn`
-(`table-api-now-ts.md`). Every JSON field on `sub_phase` in `SCHEMA.md` (`inputs`, `deliverables`,
-`comments`, `meetings`, `level_of_effort`, `changelog`, `tasks`) is this real, typed column — not a
-large-string workaround, which was worth confirming since the schema design predates this check.
-(`participants` is a `List`/`glide_list`, not JSON — see the column-type mapping below.)
+(`table-api-now-ts.md`). Every `content` field in `SCHEMA.md`'s `type` enum is this real, typed
+column — not a large-string workaround. (`participants` was briefly a `List`/`glide_list` field in
+an intermediate version of the schema; `SCHEMA.md` Decision D folded it back into `content` as its
+own `sub_phase_participant` **type**, so `ListColumn` is no longer part of this app's design at
+all — see the column-type mapping below.)
 
 **3. `dl_matcher` is not documented anywhere** — zero hits searching all 47,239 files in the
-`zurich` branch. Not this spec's concern (see `SCHEMA.md` Open Item 3), but confirms it can only be
-settled by inspecting a real instance in Studio, not by reading further docs.
+`zurich` branch. **No longer this spec's concern at all** (was `SCHEMA.md` Open Item 3; resolved by
+Decision D — nothing rides `dl_matcher` anymore, so its extension mechanics never need verifying).
+Kept here only as a historical note in case a future app reconsiders using it.
 
 **4. One property left genuinely unverified: `ReferenceColumn`'s target-table property name.**
 The Column object's base properties (`label`, `maxLength`, `active`, `mandatory`, `readOnly`,
@@ -105,7 +110,10 @@ before writing the mapping.
 ## Proposed manifest additions
 
 Two new optional keys, kept deliberately distinct because they solve different problems (see
-finding 1):
+finding 1). The `tables[]` example below (a `sub_phase` table with several typed columns) is
+illustrative of the general feature — an arbitrary table with arbitrary columns — not this app's
+actual final shape; see **First consumer** below for what this app's manifest really declares now
+that `SCHEMA.md` collapsed to one table.
 
 ```js
 // Structural — a real table + its columns. Renders natively per emitter.
@@ -159,21 +167,18 @@ generic path already does.
 
 | `SCHEMA.md` type | Fluent Column | Platform internal type |
 |---|---|---|
-| String(n) | `StringColumn` | `string` |
-| Integer | `IntegerColumn` | `integer` |
-| Reference → X | `ReferenceColumn` | `reference` (target-table property name: **unverified**, see finding 4) |
-| List → X (`sub_phase.participants` only) | `ListColumn` | `glide_list` — a genuine upgrade over JSON for this one field: `participants` is the only array on `sub_phase` that's a bare list of `job_title` references with nothing else attached (every other array holds strings or structured objects and needs JSON). Gets native multi-value reference semantics + `addQuery('participants', 'CONTAINS', jobTitleId)` querying, the same mechanism Incident's Watch List uses. Same unverified caveat as `ReferenceColumn`: `ListColumn`'s own scoping properties aren't spelled out in the reference page |
-| JSON | `JsonColumn` | `json` |
-| String, plain text (large) | `MultiLineTextColumn` | plain string — **not** `html`; confirmed by tracing the app's own render path (`overview`/`objective` are authored in a plain `<textarea>` and the controller runs the stored value through `escapeHtml()` before display, which only makes sense if the stored value is plain text — escaping real markup would visibly break it) |
+| `type` (the discriminator itself) | `ChoiceColumn` (with `choices`) | `choice` + `sys_choice` rows — **back in active use**, reversing the note in an earlier version of this spec. `SCHEMA.md`'s Decision D reintroduced a Choice field, just a different one: not `task_raci.designation` (gone, folded into `content`) but the table's own `type` column, with ~17 choice values (18 if `SCHEMA.md` Open Item 1 adds `sub_phase_changelog_ack`) |
+| `parent` | `ReferenceColumn` | `reference` — **self-referencing** (target table = this same table). Target-table property name still **unverified** (finding 4), and a self-reference doesn't add new risk beyond that — it's a well-established platform pattern (e.g. `sys_user.manager`), just worth confirming the property accepts the declaring table's own name before writing it |
+| `name` | `StringColumn` | `string` |
+| `order` | `IntegerColumn` | `integer` |
+| `content` | `JsonColumn` | `json` |
 
-**`ChoiceColumn` (`choice` + `sys_choice` rows) is a real, documented Fluent type and the extension
-should still support it** — kept here as general capability for whatever future app needs a choice
-field. This app's own worked example doesn't currently exercise it: `task_raci.designation`
-(R/A/C/I) was the one place it would have been used, and `task_raci` was folded into
-`sub_phase.tasks` JSON 2026-07-26 (`SCHEMA.md` Decision C — RACI is queried only by this widget, not
-by ServiceNow itself, so it no longer needs to be a relational table). If the implementer wants a
-worked `ChoiceColumn` example against a real field, `SCHEMA.md`'s history has one; this app's
-*current* schema doesn't.
+**Only 5 columns total, because every entity shares one table.** This app's manifest declares one
+`tables[]` entry with exactly these 5 columns — `type`/`parent`/`name`/`order`/`content` — not one
+entry per entity. `StringColumn`/`MultiLineTextColumn` distinctions inside `overview`/`objective`
+etc. from an earlier version of this schema no longer apply at the table-definition level, since
+those fields now live inside `content` (JSON) rather than as their own dictionary columns — see
+`SCHEMA.md`'s `type` enum for what each `content` shape holds.
 
 ## sys_id derivation for new records
 
@@ -187,17 +192,23 @@ backstop if a seed collision happens anyway.
 
 The record model is an ordered array and both emitters preserve that order. A table with a
 `reference` column must have its **target table's record appear earlier** in the array than its
-own. For this app: `methodology` → `phase` → `sub_phase`, which is also the natural declaration
-order in `SCHEMA.md`. (`sub_phase.participants` is a `List` referencing `dl_matcher`, an OOB table
-the packager never declares — not part of this ordering concern.)
+own — this still matters in general (it's why this rule is documented here, for whatever future app
+declares multiple tables), but **this app no longer exercises it at all**: with one table whose only
+`reference` column points at itself, there is no cross-table ordering to get right. The general rule
+survives this app happening not to need it.
 
-## First consumer — this app's 3 tables
+## First consumer — this app's 1 table
 
 Once the above lands, `apps/delivery-methodology/deploy.manifest.js` (not yet written — gated on
-this spec, per project sequencing) declares its `tables[]` using `SCHEMA.md`'s 3 tables verbatim:
-`methodology`, `phase`, `sub_phase`. No `ChoiceColumn` appears in this app's current model (see the
-column-type mapping note above) — the manifest's `tables[]` for this app is a `StringColumn`/
-`IntegerColumn`/`ReferenceColumn`/`ListColumn`/`JsonColumn`/`MultiLineTextColumn` exercise only.
+this spec, per project sequencing) declares a single `tables[]` entry — `methodology_content` (name
+still open, see `SCHEMA.md`'s closing note) — with exactly the 5 columns in the mapping table above:
+`type` (`ChoiceColumn`, ~17-18 values), `parent` (`ReferenceColumn`, self), `name` (`StringColumn`),
+`order` (`IntegerColumn`), `content` (`JsonColumn`). Nothing else. This is a smaller manifest
+declaration than either prior version of this spec described, despite the table now holding every
+entity in the app — the complexity moved into the `type` enum and the `content` shape per type,
+neither of which the packager's table-definition emission needs to know about at all. Whoever
+implements this should *not* expect a large `tables[]` array from this app; one entry, five columns,
+is the actual first consumer.
 
 ## Open question for the packager chat, not decided here
 
@@ -217,5 +228,7 @@ call the packager owner should make, not one to prescribe from an app-scoped spe
    before the column-type mapping table above is treated as final.
 4. Core, Standards, and Glide Studio emit byte-identical XML/Fluent output before and after this
    change (no `tables`/`records` key declared in any of their manifests).
-5. This app's 3-table worked example round-trips: every column in `SCHEMA.md` has a row in the
-   mapping table above, none silently dropped.
+5. This app's 1-table worked example round-trips: all 5 columns (`type`, `parent`, `name`, `order`,
+   `content`) have a row in the mapping table above, none silently dropped. Unlike prior versions of
+   this spec, there is no longer a per-entity column list to check against `SCHEMA.md` — the
+   type-specific shapes all live inside `content`, which the table-definition layer never inspects.

@@ -1,0 +1,2471 @@
+/* Ported verbatim from the standalone prototype's <style> block, so this reads as a faithful
+   1:1 port rather than a fresh restyle.
+   Written as valid plain CSS (a subset of SCSS) - no $variables/nesting used yet, so
+   css/app.css is just a direct copy for now. A real sass build gets wired once that changes. */.dm-widget {
+  --hs-navy-0: #0a2136;
+  --hs-navy-2: #0b2d45;
+  --hs-navy-3: #013c56;
+  --hs-line: rgba(197, 220, 231, 0.35);
+  --hs-line-soft: rgba(197, 220, 231, 0.18);
+  --hs-teal: #00e0ac;
+  /* True alias, not a second literal - this token predates the light rebase and its own naming
+     ("real theme uses one accent, not two") already says it should just track --hs-teal, which is
+     exactly what's needed now: --hs-teal darkens for light-mode contrast, and every existing
+     --hs-mint text/border usage (jargon underline, links, icons) needs to darken with it rather
+     than staying frozen at the bright dark-mode-only hex. */
+  --hs-mint: var(--hs-teal);
+  --ink: #ffffff;
+  --ink-soft: #c5dce7;
+  --ink-2: var(--ink-soft);
+  --ink-faint: #7d97a8;
+  --text-on-primary: #0a2136;
+  --paper: var(--hs-navy-0);
+  --surface: linear-gradient(160deg, var(--hs-navy-2) 0%, var(--hs-navy-0) 100%);
+  --surface-flat: var(--hs-navy-2);
+  --surface-2: var(--hs-navy-3);
+  --line: var(--hs-line);
+  --line-soft: var(--hs-line-soft);
+  --navy: var(--hs-navy-0);
+  --navy-2: var(--hs-navy-2);
+  --teal: var(--hs-teal);
+  --teal-wash: rgba(0, 224, 172, 0.12);
+  --gradient-pill: linear-gradient(90deg, #21fbc8 0%, #3ec2f8 100%);
+  --gradient-pill-hover: linear-gradient(90deg, #a7ffeb 0%, #49c6fa 100%);
+  /* Text sitting ON --gradient-pill. Split out of --text-on-primary because that token has two
+     jobs that must NOT move together: on the BRIGHT RACI fills (.raci-toggle.on, .rg-legend .sw)
+     dark navy is correct in both themes, but --gradient-pill itself darkens for light mode, where
+     dark-on-dark would be unreadable. Same dual-role problem --on-phase-ink already solves for
+     phase-colour fills. */
+  --on-gradient-ink: var(--text-on-primary);
+  /* Chip "selected" fill (participant picker, job-aid role scoping). A token because the two chip
+     types must stay identical, and because light mode wants a pale tint where dark wants a teal
+     wash. NOTE the on-signal is really the border + text colour: no pale tint separates
+     meaningfully from the pale aqua card these chips sit on (max ~1.1:1), whereas the teal ring
+     lands at 6.1-7.8:1. The tint is an assist, not the signal. */
+  --chip-on-bg: rgba(0, 224, 172, 0.1);
+  --gradient-card: linear-gradient(135deg, #275b63 0%, #0d435f 100%);
+  --gradient-card-2: linear-gradient(135deg, #327374 0%, #0c506e 100%);
+  /* How much of --pc gets mixed into .fcard.on's background (see the rule itself, further down).
+     Tokenized because the SAME percentage against a dark-mode-bright --pc vs a light-mode-dark --pc
+     produces very different visual jumps - mixing a dark, saturated colour into a near-white base
+     shifts perceived lightness much harder than the same % of a bright colour into a dark base, so
+     light mode needs a smaller share to land at a comparably subtle selected-vs-unselected delta
+     (verified via sRGB distance across all 5 phase colours: dark 32/20% ~= light 14/9%). */
+  --fcard-on-mix-1: 32%;
+  --fcard-on-mix-2: 20%;
+  --shadow-md: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
+  --r-r: #01cc52;
+  --r-a: #e5c20b;
+  --r-c: #3ec2f8;
+  --r-i: #bdc2cb;
+  --p1: #00e0ac;
+  --p2: #21fbc8;
+  --p3: #8ef1ff;
+  --p4: #3ec2f8;
+  --p5: #b1f5ff;
+  --font-display: 'Montserrat', 'Lato', sans-serif;
+  --font-body: 'Montserrat', 'Lato', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --radius: 8px;
+  --radius-sm: 4px;
+  --radius-round: 50px;
+  --shadow-sm: 2px 2px 4px 0 rgba(0, 0, 0, 0.15);
+  --shadow: var(--shadow-sm);
+  --focus-ring: 2px solid var(--hs-teal);
+  --focus-ring-offset: 2px;
+  --hs-border-tertiary: #c5dce7;
+  /* RGB triple (no alpha) so rgba(var(--wash-rgb), X) calls elsewhere can override just the base
+     color per theme while each call site keeps its own already-tuned alpha. Used for subtle
+     hover/divider washes on the app's OWN theme-tracking surfaces (page/panel backgrounds) -
+     NOT for washes inside fixed always-dark accent components (see --on-accent-rgb below). */
+  --wash-rgb: 255, 255, 255;
+  /* RACI letters serve two different roles that must NOT move together: a BACKGROUND fill (the
+     RACI toggle buttons, paired with the fixed --text-on-primary dark-navy foreground - stays
+     legible against either page theme, so the fill itself never needs to change) vs. direct
+     foreground TEXT/icon color on the app's own surface (the read-view RACI letters, the orphan
+     badge - THIS needs a theme-appropriate contrast-safe value, since the bright dark-mode-tuned
+     hex fails AA on a light surface). --r-r/-a/-c/-i stay the fixed bright bg-fill values in both
+     themes; --r-*-text is the one that gets darkened for light mode. */
+  --r-r-text: var(--r-r);
+  --r-a-text: var(--r-a);
+  --r-c-text: var(--r-c);
+  --r-i-text: var(--r-i);
+  /* Invariant "always looks like dark mode" tokens for text/washes inside components that keep a
+     fixed dark background regardless of the app theme (.fcard's gradient-card, .pchange's
+     gradient-card-2) - deliberately NEVER redefined in the light block below, so these components
+     don't go illegible when the rest of the page switches to light. */
+  --on-accent-ink: #ffffff;
+  --on-accent-soft: #c5dce7;
+  --on-accent-faint: #7d97a8;
+  --on-accent-rgb: 255, 255, 255;
+  /* The two color-mix() stops .fcard.on blends the active phase color (--pc) into, and the digit
+     color on an active phase-color station fill - both were hardcoded hex before, which silently
+     froze them to dark-mode values once --p1..--p5 became theme-aware. */
+  --card-mix-1: #275b63;
+  --card-mix-2: #0d435f;
+  --on-phase-ink: #06121c;
+  /* .fcard's 1px border box already exists in dark mode - it's just transparent, since dark
+     separates the card from the page purely by fill contrast. Tokenising the colour (not adding
+     a rule) lets light mode make that same border visible without changing width/style/radius -
+     a pure value swap, satisfying "light and dark differ only in colour, never in structure". */
+  --card-line: transparent;
+}/* Light theme - re-based on the REAL HomeSpace light-surface tokens (verbatim from
+   HomeSpace/Themes/CSS variables.scss), not invented greys. The portal's light sections are a
+   dark teal->blue band with light PANELS on it (panel-light / panel-heading-light /
+   panel-body-light: white header + $gradient-light-4 mint body + navy text) - this app's page
+   background takes the paler $brand-tertiary-lightest instead of the saturated band so it still
+   reads as an actual light mode, while --gradient-card adopts the real mint panel-body treatment
+   for card components. `data-theme` is set on <html> by ThemeService.toggleApp() (Core's shared
+   provider) - see js/app.module.js's `core` module dependency and the inline pre-paint script in
+   index.html. */.dm-widget[data-theme="light"] {
+  /* "C · Teal surfaces, fixed" - the fourth palette round. Earlier rounds (see git history) put
+     the tint on the wrong surface (a mint PANEL inside a white page reads as "mint everywhere in
+     a box", not "white content in a tinted environment"), used $border-tertiary #c5dce7 directly
+     as surface-2 (desaturated blue-grey - reads muddy against mint), and let the filmstrip cards
+     (#52c2cc solid) out-saturate the actual content. This version moves the wash to --paper (the
+     environment), keeps every content surface white/near-white, and calms the cards to a
+     near-page tint - each confirmed against the real rendered app, not just contrast math. */
+  --paper: #cfeef5;
+  --surface: linear-gradient(160deg, #ffffff 0%, #f2fafc 100%);
+  --surface-flat: #ffffff;       /* $background-primary */
+  --surface-2: #e6f5f9;          /* replaces $border-tertiary #c5dce7 - same role, no longer muddy */
+  --navy: #cfeef5;
+  --navy-2: #ffffff;
+  --ink: #0a2136;                /* $text-primary - the theme's canonical on-light text */
+  --ink-soft: #013c56;           /* $text-secondary */
+  --ink-2: var(--ink-soft);
+  --ink-faint: #4e6270;          /* >=4.5:1 verified against every surface below, incl. the card fill */
+  /* $border-tertiary's role split (see the base :root comment above --hs-border-tertiary) still
+     applies - decoupled from --ink-soft because ink-soft is dark navy in light mode and would be
+     invisible paired with itself as a .btn:hover fill. Re-solved for the tinted page: navy text
+     on this fill is still 10.37:1. */
+  --hs-border-tertiary: #a5d6e2;
+  --line: rgba(1, 60, 86, .40);       /* tuned alpha, not a flat token - solved to match dark's own
+                                         line-vs-page separation ratio (2.569:1) rather than guessed */
+  --line-soft: rgba(1, 60, 86, .18);
+  --wash-rgb: 10, 33, 54;
+  --card-line: #a5d6e2;           /* .fcard's existing 1px border box - see --card-line comment
+                                      on the base :root; only visible once its colour isn't transparent */
+  --hs-teal: #008365;
+  --teal: #005c63;               /* darker than the mid-palette version - a tinted page eats
+                                     contrast margin, verified >=4.5:1 on every surface below */
+  /* The brand gradient darkened so it stops glowing on a pale page (the "too flashy" feedback).
+     First stop is literally --p1, so it stays in-palette. White on the stops: 6.01 / 6.81. */
+  --gradient-pill: linear-gradient(90deg, #006e76 0%, #1c5f8f 100%);
+  --gradient-pill-hover: linear-gradient(90deg, #00838d 0%, #226fa6 100%);
+  --on-gradient-ink: #ffffff;    /* NOT --text-on-primary - see the base :root comment */
+  --chip-on-bg: var(--surface-2);
+  /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb), kept as four distinct
+     hues on purpose - these are the task table's only colour signal (role colours were removed
+     everywhere else). An earlier AI-generated palette round collapsed these to four near-identical
+     navies (worst pairwise perceptual distance ΔE 10.8 - effectively one colour at small mono-font
+     size); restored to darkened R/A/C/I hues (ΔE 27.3, dark mode itself is 36.7) and re-verified
+     >=4.5:1 against every surface below, including the --gradient-card fill. */
+  --r-r-text: #076b2c;
+  --r-a-text: #6b5300;
+  --r-c-text: #0a608e;
+  --r-i-text: #4e5665;
+  /* Darker steps of the same teal->blue family used for the dark-mode ramp, mirroring the dark-mode
+     rebase's own finding in reverse: light/lighter brand steps read well on a DARK surface, darker
+     steps read well on a LIGHT one. Verified >=3:1 (WCAG 1.4.11 non-text) against --paper; this is a
+     decorative fill (progress line + station digit background), not body text. */
+  --p1: #006e76;
+  --p2: #008365;
+  --p3: #2e6d70;
+  --p4: #1c4854;
+  --p5: #013c56;
+  /* Text ON the --gradient-card body (--on-accent-* only ever appears on that fixed accent
+     surface, in EITHER theme - see the base :root comment). */
+  --on-accent-ink: #0a2136;
+  --on-accent-soft: #013c56;
+  --on-accent-faint: #2e5666;
+  --on-accent-rgb: 10, 33, 54;
+  /* The two color-mix() stops .fcard.on blends --pc into (see --card-mix-1/-2 below) and the
+     digit color on an active phase-color station fill (see --on-phase-ink below). */
+  --card-mix-1: #f4fcfd;
+  --card-mix-2: #c9ebf2;
+  /* Smaller than dark mode's 32/20% - see the base :root comment on --fcard-on-mix-1. */
+  --fcard-on-mix-1: 14%;
+  --fcard-on-mix-2: 9%;
+  --on-phase-ink: #ffffff;
+  --gradient-card: linear-gradient(135deg, #f4fcfd 0%, #c9ebf2 100%);
+  --gradient-card-2: linear-gradient(135deg, #e2f6fa 0%, #bfe7ef 100%);
+  --shadow-md: 0 4px 10px 0 rgba(10, 33, 54, 0.12);
+  --shadow-sm: 2px 2px 8px 0 rgba(10, 33, 54, 0.08);
+}/* select.edit-in's dropdown-arrow stroke is baked into a data-URI background-image (can't take a
+   CSS var), so its dark-mode stroke color (#c5dce7, matching --ink-soft) needs its own light-mode
+   copy here instead of staying stuck light-on-light once the select's own background goes pale. */.dm-widget[data-theme="light"] select.edit-in {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23013c56' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}/* .whatsnew-item / .search-result / .metacard have no natural header/body split (a single-purpose
+   list row, not a widget card) but their layout is otherwise flat text on ink tokens, so they take
+   the mint body as a single-tone surface - the real panel-body-light fill - without forcing an
+   artificial divider. .ref-raci-card / .ref-aid stay on --surface-2 instead: both carry a --teal
+   link (job-aid link, crumb link) that fails contrast on mint (2.5:1), the same reason the RACI
+   table/LOE pills/meeting badges stay flat white - see the --r-*-text comment above. */.dm-widget[data-theme="light"] .whatsnew-item, .dm-widget[data-theme="light"] .search-result, .dm-widget[data-theme="light"] .metacard {
+  background: var(--gradient-card);
+}/* --ink-faint fails on the mint fill (2.69:1) - these are the only --ink-faint text spots inside
+   the three components above, so they alone need the on-accent-safe faint token. */.dm-widget[data-theme="light"] .whatsnew-item .wn-date, .dm-widget[data-theme="light"] .search-result .sr-loc, .dm-widget[data-theme="light"] .metacard .section-label {
+  color: var(--on-accent-faint);
+}.dm-widget * {
+  box-sizing: border-box;
+}.dm-widget, .dm-widget {
+  height: 100%;
+}.dm-widget {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}.dm-widget button {
+  font-family: inherit;
+  cursor: pointer;
+}/* Constrained, centered content column - identical to the standalone prototype's .page so the two
+   builds are the same width. */.dm-widget .app {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 40px 100px;
+}@media (max-width: 1000px) {.dm-widget .app {
+    padding: 24px 24px 70px;
+  }
+}.dm-widget .pagehdr {
+  margin-bottom: 22px;
+}.dm-widget .pagehdr-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}.dm-widget .pagehdr-top .views {
+  margin-bottom: 0;
+}/* Groups the toggle and search together as one flex child of .pagehdr-top, so
+   justify-content: space-between pins the PAIR to the right edge - the toggle sits flush against
+   search rather than floating at its own independent distance from it. */.dm-widget .hdr-search-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}.dm-widget .hsearch {
+  position: relative;
+}.dm-widget .hsearch input {
+  height: 34px;
+  width: 200px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface-flat);
+  color: var(--ink);
+  padding: 0 14px 0 34px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}.dm-widget .hsearch input::placeholder {
+  color: var(--ink-faint);
+}.dm-widget .hsearch input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(0, 224, 172, 0.2);
+}.dm-widget .hsearch svg {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  width: 15px;
+  height: 15px;
+  stroke: var(--ink-faint);
+  fill: none;
+  stroke-width: 2;
+}/* .edit-pencil shares this treatment with .theme-toggle - the user asked for the two to "interact
+   like" each other, so it's one factored rule rather than duplicated declarations. */.dm-widget .theme-toggle, .dm-widget .edit-pencil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-flat);
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}.dm-widget .theme-toggle {
+  width: 34px;
+  height: 34px;
+  flex: none;
+}.dm-widget .theme-toggle:hover, .dm-widget .edit-pencil:hover {
+  color: var(--teal);
+  border-color: var(--teal);
+}.dm-widget .theme-toggle svg {
+  width: 16px;
+  height: 16px;
+}.dm-widget .pagehdr-title {
+  margin-bottom: 14px;
+}.dm-widget .pagehdr-title h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.015em;
+  margin: 0 0 4px;
+  color: var(--ink);
+}.dm-widget .pg-sub {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  max-width: 66ch;
+  line-height: 1.5;
+}.dm-widget .pagehdr-title-row {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}.dm-widget .pagehdr-title-row h1 {
+  margin-bottom: 0;
+}.dm-widget .loe-billable-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+}.dm-widget .loe-billable-toggle input {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 34px;
+  height: 19px;
+  border-radius: var(--radius-round);
+  background: var(--surface-flat);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}.dm-widget .loe-billable-toggle input::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #8ba0b0;
+  transition: transform 0.15s, background 0.15s;
+}.dm-widget .loe-billable-toggle input:checked {
+  background: var(--hs-teal);
+  border-color: var(--hs-teal);
+}.dm-widget .loe-billable-toggle input:checked::after {
+  transform: translateX(15px);
+  background: #fff;
+}.dm-widget .loe-billable-toggle input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}/* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
+   color rule regardless of declaration order - the element carries both classes. */.dm-widget .loe-billable-toggle.jargon-toggle {
+  color: var(--ink-2);
+}.dm-widget .pagehdr-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}.dm-widget .meth-switch {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--navy-2);
+  padding: 4px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}.dm-widget .meth-tab {
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 22px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}.dm-widget .meth-tab:hover {
+  color: var(--ink);
+}.dm-widget .meth-tab.active {
+  background: var(--gradient-pill);
+  color: var(--on-gradient-ink);
+  box-shadow: var(--shadow-inset);
+}.dm-widget .meth-tabs {
+  display: inline-flex;
+  margin-bottom: 18px;
+}@media (max-width: 620px) {.dm-widget .pagehdr-top {
+    flex-direction: column;
+    align-items: stretch;
+  }.dm-widget .hdr-search-group {
+    width: 100%;
+  }.dm-widget .hsearch {
+    flex: 1;
+  }.dm-widget .hsearch input {
+    width: 100%;
+  }.dm-widget .vtab span {
+    display: none;
+  }.dm-widget .views {
+    justify-content: space-between;
+  }
+}.dm-widget .road {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--stations, 5), 1fr);
+  margin-bottom: 30px;
+  padding-top: 4px;
+}.dm-widget .road::before {
+  content: "";
+  position: absolute;
+  left: calc(50% / var(--stations));
+  right: calc(50% / var(--stations));
+  top: 26px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--surface-flat);
+}.dm-widget .road::after {
+  content: "";
+  position: absolute;
+  left: calc(50% / var(--stations));
+  top: 26px;
+  height: 3px;
+  border-radius: 3px;
+  width: calc(100% * var(--active) / var(--stations));
+  background: linear-gradient(90deg, var(--p1), var(--p3));
+  transition: width 0.3s ease;
+}.dm-widget .station {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 0 6px;
+}.dm-widget .station .station-num {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 2px solid var(--nc);
+  position: relative;
+  z-index: 1;
+  transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+}.dm-widget .station.done .station-num {
+  background: color-mix(in srgb, var(--nc) 26%, var(--surface-2));
+}.dm-widget .station.on .station-num {
+  background: var(--nc);
+  color: var(--on-phase-ink);
+  transform: scale(1.12);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--nc) 22%, transparent);
+}.dm-widget .station:hover .station-num {
+  transform: scale(1.07);
+}.dm-widget .station.on:hover .station-num {
+  transform: scale(1.12);
+}.dm-widget .station .station-num .unread-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--hs-teal);
+  border: 2px solid var(--navy);
+}.dm-widget .station .station-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: 11px;
+  transition: color 0.15s;
+}.dm-widget .station.on .station-name {
+  color: var(--nc);
+}.dm-widget .station .station-count {
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}.dm-widget .strip-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 10px 2px;
+}.dm-widget .film {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 4px;
+}.dm-widget .struct-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}.dm-widget .struct-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface-flat);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-round);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}.dm-widget .struct-toggle-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}.dm-widget .struct-toggle-btn:hover {
+  color: var(--teal);
+  border-color: var(--teal);
+}.dm-widget .struct-toggle-btn.on {
+  color: var(--teal);
+  border-color: var(--teal);
+  background: var(--teal-wash);
+}/* Structure editor - a plain, direct-mutation-then-save panel (no working-copy/snapshot like
+   vm.editSp's content editor above it): there's no per-field changelog to diff for a tree shape
+   edit, just phase/sub-phase add/rename/reorder/delete, saved immediately on every change. */.dm-widget .struct-toolbar {
+  margin: 4px 0 20px;
+  padding: 18px 20px;
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}.dm-widget .struct-toolbar-hint {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin: 0 0 16px;
+}.dm-widget .struct-phase {
+  margin-bottom: 14px;
+}.dm-widget .struct-phase-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}.dm-widget .struct-num {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  background: var(--surface-flat);
+  border-radius: 50%;
+}.dm-widget .struct-rename {
+  flex: 1;
+}.dm-widget .struct-phase .struct-rename {
+  font-weight: 700;
+}.dm-widget .struct-controls {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}.dm-widget .struct-controls .reorder-btn, .dm-widget .struct-controls .field-x {
+  position: static;
+}.dm-widget .struct-controls .reorder-btn {
+  width: 22px;
+  height: 22px;
+}.dm-widget .struct-controls .reorder-btn svg {
+  width: 14px;
+  height: 14px;
+}.dm-widget .struct-subphase-list {
+  padding-left: 30px;
+}.dm-widget .struct-subphase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}.dm-widget .struct-sid {
+  flex: none;
+  width: 34px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-align: right;
+}.dm-widget .struct-add-phase {
+  margin-top: 4px;
+}.dm-widget .fcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 142px;
+  background: var(--gradient-card);
+  border: 1px solid var(--card-line);
+  border-radius: 12px;
+  padding: 12px 15px 13px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  overflow: hidden;
+  transition: transform 0.16s, box-shadow 0.16s;
+}.dm-widget .fcard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--pc);
+  opacity: 0.9;
+  transition: width 0.16s;
+}.dm-widget .fcard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
+}.dm-widget .fcard.on {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--pc) var(--fcard-on-mix-1), var(--card-mix-1)) 0%, color-mix(in srgb, var(--pc) var(--fcard-on-mix-2), var(--card-mix-2)) 100%);
+}.dm-widget .fcard.on::before {
+  width: 5px;
+}.dm-widget .fcard.on .fcard-sid {
+  color: var(--on-accent-soft);
+}.dm-widget .fcard.on .fcard-meta {
+  color: var(--on-accent-soft);
+}.dm-widget .fcard.stub:not(.on) {
+  background: none;
+  border: 1px dashed var(--line);
+}.dm-widget .fcard.stub:not(.on)::before {
+  opacity: 0.3;
+}/* Unlike a has-content card, an unselected stub's background is transparent (shows the page's own
+   theme-tracking surface through it, not the fixed-dark gradient-card) - so its sid/name need to
+   track theme too, overriding the on-accent-* defaults below that assume the gradient is present. */.dm-widget .fcard.stub:not(.on) .fcard-sid {
+  color: var(--ink-faint);
+}.dm-widget .fcard.stub:not(.on) .fcard-name {
+  color: var(--ink);
+}.dm-widget .fcard .fcard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 9px;
+}.dm-widget .fcard .fcard-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--pc) 22%, transparent);
+  color: var(--pc);
+  flex-shrink: 0;
+}.dm-widget .fcard .fcard-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}.dm-widget .fcard .fcard-sid {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #9db3c2;
+  text-transform: uppercase;
+}.dm-widget .fcard .fcard-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 2px;
+  line-height: 1.25;
+  color: var(--on-accent-ink);
+}/* Unlike fcard-name/fcard-sid, this text ONLY ever renders on a stub (no-content) card - see the
+   ng-if="!vm.hasContent(s)" gate in index.html - which never gets the fixed-dark gradient-card
+   background (only :not(.on) applies here; the .on+stub case is covered by
+   .fcard.on .fcard-meta above), so this one tracks theme rather than using --on-accent-faint. */.dm-widget .fcard .fcard-meta {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-style: italic;
+  margin-top: auto;
+  padding-top: 8px;
+}.dm-widget .fcard .rbadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  background: var(--gradient-pill);
+  color: var(--on-gradient-ink);
+  padding: 3px 8px;
+  border-radius: 20px;
+  width: fit-content;
+  flex-shrink: 0;
+  white-space: nowrap;
+  margin-top: auto;
+}.dm-widget .panel {
+  background: var(--navy-2);
+  border-radius: 14px;
+  padding: 30px 34px;
+  margin-top: 20px;
+}.dm-widget .crumb {
+  font-size: 12px;
+  color: var(--hs-teal);
+  font-weight: 600;
+  margin-bottom: 8px;
+}.dm-widget .sp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}.dm-widget h1.sp-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 14px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}.dm-widget .prec {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--gradient-pill);
+  color: var(--on-gradient-ink);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  vertical-align: middle;
+  margin-left: 8px;
+}.dm-widget .edit-pencil {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}.dm-widget .edit-pencil svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}.dm-widget .pchange {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--gradient-card-2);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  color: var(--on-accent-ink);
+  max-width: 72ch;
+}.dm-widget .pchange b {
+  color: var(--on-accent-ink);
+}.dm-widget .pchange-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}.dm-widget .pchange-list li {
+  padding-left: 14px;
+  position: relative;
+}.dm-widget .pchange-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: rgba(var(--on-accent-rgb), 0.6);
+}.dm-widget .pchange-ts {
+  color: rgba(var(--on-accent-rgb), 0.65);
+  font-size: 12px;
+}.dm-widget .jargon-term {
+  color: inherit;
+  border-bottom: 1.5px dotted var(--hs-mint);
+  cursor: help;
+  padding-bottom: 0.5px;
+}.dm-widget .tip {
+  position: fixed;
+  z-index: 100;
+  max-width: 260px;
+  background: #04131f;
+  color: #fff;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s;
+}.dm-widget .tip.show {
+  opacity: 1;
+}.dm-widget .tip .tname {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--hs-mint);
+  display: block;
+  margin-bottom: 3px;
+  letter-spacing: 0.04em;
+}.dm-widget .toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #04131f;
+  color: #fff;
+  padding: 11px 20px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 200;
+  pointer-events: none;
+}.dm-widget .toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}.dm-widget .task {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px 16px;
+}.dm-widget .task.meeting {
+  margin-bottom: 12px;
+}.dm-widget .editing .main {
+  background: repeating-linear-gradient(45deg, transparent, transparent 22px, rgba(255, 210, 63, 0.045) 22px, rgba(255, 210, 63, 0.045) 23px);
+}.dm-widget .editing .pagehdr, .dm-widget .editing .journey-chrome {
+  opacity: 0.5;
+  filter: blur(2.5px) saturate(0.7);
+  pointer-events: none;
+  transition: filter 0.2s, opacity 0.2s;
+}.dm-widget h4.sec {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hs-teal);
+  margin: 22px 0 8px;
+  font-weight: 700;
+}.dm-widget .lede {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink);
+  max-width: 72ch;
+  margin: 14px 0;
+}.dm-widget .obj {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  max-width: 72ch;
+  margin: 0;
+}.dm-widget .obj.faint {
+  color: var(--ink-faint);
+}.dm-widget .no-tasks-hint {
+  color: var(--ink-faint);
+  font-size: 14px;
+}.dm-widget .setup-block {
+  margin: 20px 0;
+}.dm-widget .setup-block > .section-label {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: block;
+  margin-bottom: 10px;
+}.dm-widget .notes {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(var(--wash-rgb), 0.03);
+  border-left: 2px solid var(--line);
+  border-radius: 0 8px 8px 0;
+  padding: 10px 14px;
+}.dm-widget .notes svg {
+  width: 15px;
+  height: 15px;
+  stroke: var(--ink-faint);
+  fill: none;
+  stroke-width: 2;
+  flex-shrink: 0;
+  margin-top: 2px;
+}.dm-widget .notes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}.dm-widget .notes li {
+  font-size: 13px;
+  color: var(--ink-2, var(--ink));
+  line-height: 1.45;
+}.dm-widget .plegend {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 20px 0 4px;
+}.dm-widget .plegend .plabel {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-right: 4px;
+}.dm-widget .rolechip {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: rgba(var(--wash-rgb), 0.07);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}.dm-widget .rolechip.ext {
+  background: rgba(var(--wash-rgb), 0.03);
+  color: var(--ink-2);
+  border: 1px dashed var(--line);
+}.dm-widget .loe-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+}.dm-widget .loe-pill.bill {
+  background: rgba(63, 224, 197, 0.15);
+  color: var(--hs-mint);
+  border: 1px solid rgba(63, 224, 197, 0.4);
+}.dm-widget .loe-pill.opt {
+  background: rgba(240, 185, 90, 0.14);
+  color: var(--r-a-text);
+  border: 1px dashed rgba(240, 185, 90, 0.5);
+}.dm-widget .loe2 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}.dm-widget .loe2 .row {
+  display: grid;
+  grid-template-columns: minmax(58px, max-content) 62px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}.dm-widget .loe2 .row:nth-child(odd) {
+  background: rgba(var(--wash-rgb), 0.025);
+}.dm-widget .loe2 .loe-role {
+  font-weight: 800;
+  color: var(--c);
+  font-size: 12.5px;
+}.dm-widget .loe2 .eff {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+}.dm-widget .loe2 .eff.none {
+  color: var(--ink-faint);
+}.dm-widget .loe2 .tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}.dm-widget .loe-all {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: rgba(var(--wash-rgb), 0.025);
+  border-radius: 8px;
+  font-size: 13px;
+}.dm-widget .loe-all .loe-role {
+  font-weight: 800;
+  color: var(--hs-teal);
+}.dm-widget .loe-all .eff {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+}.dm-widget .loe-all .eff.none {
+  color: var(--ink-faint);
+}.dm-widget .loe-all .tags {
+  display: flex;
+  gap: 6px;
+}.dm-widget .mtg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}.dm-widget .mtg-card {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 12px 14px;
+}.dm-widget .mtg-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}.dm-widget .mtg-ic {
+  display: inline-flex;
+  color: var(--hs-mint);
+  flex-shrink: 0;
+}.dm-widget .mtg-ic svg {
+  width: 15px;
+  height: 15px;
+}.dm-widget .mtg-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+}.dm-widget .mtg-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(240, 185, 90, 0.14);
+  color: var(--r-a-text);
+  border: 1px dashed rgba(240, 185, 90, 0.5);
+}.dm-widget .mtg-meta {
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}.dm-widget .pipe {
+  position: relative;
+  padding-left: 32px;
+  margin: 18px 0 8px;
+}.dm-widget .pipe::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: linear-gradient(180deg, #7c9cff, var(--hs-mint), #e0b34d);
+  border-radius: 2px;
+  opacity: 0.5;
+}.dm-widget .pstep {
+  position: relative;
+  margin-bottom: 24px;
+}.dm-widget .pstep:last-child {
+  margin-bottom: 0;
+}.dm-widget .pnum {
+  position: absolute;
+  left: -32px;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-flat);
+  border: 2px solid var(--hs-mint);
+  color: var(--hs-mint);
+  font-weight: 800;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}.dm-widget .pstep .pshead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 24px;
+  margin: 0 0 3px;
+}.dm-widget .pstep h5 {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hs-teal);
+  font-weight: 700;
+}.dm-widget .pstep h5 .muted {
+  color: var(--ink-faint);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}.dm-widget .pstep .ordhint {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-style: italic;
+  margin: 0 0 9px;
+}.dm-widget .flowlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  counter-reset: io;
+}.dm-widget .flowlist li {
+  background: var(--surface-2);
+  border-radius: 9px;
+  padding: 9px 12px 9px 34px;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.4;
+  position: relative;
+}.dm-widget .flowlist li::before {
+  counter-increment: io;
+  content: counter(io);
+  position: absolute;
+  left: 11px;
+  top: 9px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgba(var(--wash-rgb), 0.08);
+  color: var(--ink-faint);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+}.dm-widget .flowlist li.none {
+  padding-left: 12px;
+  color: var(--ink-faint);
+  font-style: italic;
+}.dm-widget .flowlist li.none::before {
+  display: none;
+}.dm-widget .ttbl-wrap {
+  overflow-x: auto;
+}.dm-widget table.ttbl {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}.dm-widget table.ttbl th, .dm-widget table.ttbl td {
+  padding: 9px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+}.dm-widget table.ttbl th.tname, .dm-widget table.ttbl td.tname {
+  text-align: left;
+  width: 46%;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14.5px;
+  line-height: 1.4;
+}.dm-widget table.ttbl thead th {
+  font-size: 11px;
+  font-weight: 800;
+  border-bottom: 2px solid var(--line);
+}.dm-widget table.ttbl thead th.tname {
+  color: var(--ink-faint);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}.dm-widget table.ttbl thead th.pcol {
+  color: var(--c);
+  white-space: nowrap;
+}.dm-widget table.ttbl thead th.pcol.ext {
+  border-bottom-style: dashed;
+}.dm-widget table.ttbl thead th.pcol.orphan {
+  border-bottom-style: dotted;
+  opacity: 0.7;
+}.dm-widget table.ttbl td.cell {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 1px;
+}.dm-widget table.ttbl td.cell.off {
+  color: rgba(var(--wash-rgb), 0.16);
+  font-weight: 400;
+}.dm-widget table.ttbl tbody tr:hover {
+  background: rgba(var(--wash-rgb), 0.03);
+}.dm-widget table.ttbl .jobaid {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--hs-mint);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  margin-top: 3px;
+}.dm-widget .ttbl .ja {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}.dm-widget .ja-scope {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--c);
+  border: 1px solid color-mix(in srgb, var(--c) 42%, transparent);
+  border-radius: 4px;
+  padding: 0 4px;
+  letter-spacing: 0.02em;
+}.dm-widget .rl-R {
+  color: var(--r-r-text);
+}.dm-widget .rl-A {
+  color: var(--r-a-text);
+}.dm-widget .rl-C {
+  color: var(--r-c-text);
+}.dm-widget .rl-I {
+  color: var(--r-i-text);
+}.dm-widget .rlegend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--ink-faint);
+}.dm-widget .rlegend .lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}.dm-widget .rlegend .sw {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #06121c;
+  font-size: 11px;
+}.dm-widget .dm-loading {
+  padding: 60px 0;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 14px;
+}/* ---------- Phase 2: edit mode ---------- */.dm-widget .edit-bar {
+  position: sticky;
+  top: 12px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--r-a-text);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  margin: 22px 0 24px;
+  box-shadow: var(--shadow);
+}.dm-widget .edit-bar .flag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--r-a-text);
+  font-weight: 600;
+}.dm-widget .edit-bar .spacer {
+  flex: 1;
+}.dm-widget .edit-bar-loc {
+  font-size: 13px;
+  color: var(--ink-2);
+}.dm-widget .spacer-lg {
+  height: 18px;
+}.dm-widget .section-label.mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hs-mint);
+  margin: 0 0 6px;
+}.dm-widget .btn {
+  height: 34px;
+  padding: 0 20px;
+  border-radius: var(--radius-round);
+  border: 1px solid var(--hs-border-tertiary);
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}.dm-widget .btn:hover {
+  background: var(--hs-border-tertiary);
+  color: var(--text-on-primary);
+  border-color: var(--ink);
+  box-shadow: var(--shadow-md);
+}.dm-widget .btn:active {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink);
+  box-shadow: var(--shadow-inset);
+}.dm-widget .btn.primary {
+  background: var(--gradient-pill);
+  border-color: transparent;
+  color: var(--on-gradient-ink);
+  font-weight: 600;
+}.dm-widget .btn.primary:hover {
+  background: var(--gradient-pill-hover, var(--gradient-pill));
+  border-color: #fff;
+  box-shadow: var(--shadow-md);
+}.dm-widget .btn.primary:active {
+  background: var(--gradient-pill);
+  border-color: #fff;
+  box-shadow: var(--shadow-inset);
+}.dm-widget .btn.sm {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}.dm-widget .edit-in {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: var(--surface-2);
+  resize: vertical;
+  outline: none;
+}.dm-widget .edit-in::placeholder {
+  color: var(--ink-faint);
+}.dm-widget .edit-in:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(23, 184, 166, 0.22);
+}.dm-widget textarea.edit-in {
+  line-height: 1.5;
+}.dm-widget select.edit-in {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 8px 34px 8px 12px;
+  background-color: var(--surface-2);
+  /* Dropdown-arrow stroke color is baked into the data URI (can't reference a CSS var inside one),
+     so it's a literal matching --ink-soft's DARK-mode value here; the light theme below supplies
+     its own copy with a dark-mode-inverted stroke instead of leaving this stuck light-on-light. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c5dce7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}.dm-widget select.edit-in option {
+  background: var(--surface-2);
+  color: var(--ink);
+}.dm-widget .edit-in.title-in {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--ink);
+}.dm-widget .edit-hint {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  margin: 4px 0 0;
+  font-family: var(--font-mono);
+}.dm-widget .metagrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}.dm-widget .metagrid.single-col {
+  grid-template-columns: 1fr;
+}.dm-widget .loe-roles-hint {
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin: 0 0 10px;
+}.dm-widget .metacard {
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 16px;
+}.dm-widget .metacard .section-label {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: block;
+  margin-bottom: 6px;
+}.dm-widget .participant-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 4px;
+}.dm-widget .participant-chip {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: rgba(var(--wash-rgb), 0.05);
+  color: var(--ink-faint);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}.dm-widget .participant-chip:hover {
+  border-color: var(--teal);
+  color: var(--ink);
+}.dm-widget .participant-chip.on {
+  background: var(--chip-on-bg);
+  color: var(--teal);
+  border-color: var(--teal);
+}.dm-widget .participant-chip.ext {
+  border-style: dashed;
+}/* Abbreviation badge + full name, same pairing as the RACI "By Role" job title picker
+   (.jt-pick-btn), so a title reads the same way in both pickers. */.dm-widget .chip-abbr {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--hs-mint);
+  margin-right: 7px;
+}.dm-widget .participant-chip.on .chip-abbr {
+  color: var(--teal);
+}/* Check mark sits in every chip's markup so it can animate in/out on toggle - width/margin
+   collapse to 0 when off, so an unselected chip has no dead space reserved on its left. */.dm-widget .chip-check {
+  width: 0;
+  height: 11px;
+  margin-right: 0;
+  flex: none;
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+  transition: width 0.18s ease, margin-right 0.18s ease, opacity 0.16s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}.dm-widget .participant-chip.on .chip-check {
+  width: 11px;
+  margin-right: 5px;
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}.dm-widget .participants-idle-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  margin: 10px 0 0;
+}.dm-widget .idle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--r-a);
+  flex: none;
+}.dm-widget .orphan-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--r-a-text);
+  background: rgba(229, 194, 11, 0.12);
+  border: 1px solid rgba(229, 194, 11, 0.4);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 8px;
+  white-space: nowrap;
+}.dm-widget .sechead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0 8px;
+}.dm-widget .sechead h4.sec {
+  margin: 0;
+}.dm-widget .list-edit-row {
+  position: relative;
+  margin-bottom: 6px;
+}.dm-widget .list-edit-row:last-child {
+  margin-bottom: 0;
+}.dm-widget .list-edit-row textarea {
+  width: 100%;
+  min-height: 40px;
+  padding-right: 54px;
+}.dm-widget .row-reorder {
+  position: absolute;
+  top: 5px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+}.dm-widget .row-reorder .reorder-btn {
+  width: 18px;
+  height: 14px;
+}.dm-widget .field-x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}.dm-widget .field-x:hover {
+  background: #c0392b;
+  color: #fff;
+}.dm-widget .add-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--hs-mint);
+  font-weight: 600;
+  background: none;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  width: 100%;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s, border-color 0.14s, box-shadow 0.14s;
+}.dm-widget .add-item-btn.tight {
+  margin-top: 6px;
+}.dm-widget .add-item-btn:hover {
+  border-color: var(--teal);
+  background: var(--teal-wash);
+}.dm-widget .reorder-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+  border-radius: 5px;
+  padding: 0;
+  transition: background 0.12s, color 0.12s;
+}.dm-widget .reorder-btn:hover:not(:disabled) {
+  background: var(--teal-wash);
+  color: var(--teal);
+}.dm-widget .reorder-btn:disabled {
+  opacity: 0.26;
+  cursor: default;
+}.dm-widget .reorder-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.4;
+}.dm-widget .te-tools .reorder-btn {
+  width: 24px;
+  height: 24px;
+}.dm-widget .x-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}.dm-widget .x-btn:hover {
+  background: #c0392b;
+  color: #fff;
+}.dm-widget #edit-tasks .task, .dm-widget .edit-mode .task {
+  padding: 16px;
+  margin-bottom: 16px;
+}.dm-widget .te-text {
+  font-size: 14.5px;
+  font-weight: 600;
+}.dm-widget .te-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}.dm-widget .te-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}.dm-widget .te-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(0, 224, 172, 0.18);
+  color: var(--teal);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+}.dm-widget .raci-edit-lbl {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  font-weight: 600;
+  margin: 18px 0 9px;
+}.dm-widget .raci-matrix {
+  border-top: 1px solid rgba(var(--wash-rgb), 0.22);
+  border-radius: 0;
+  overflow: visible;
+  margin-top: 0;
+  background: none;
+}.dm-widget .raci-matrix-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px;
+  border-top: 1px solid rgba(var(--wash-rgb), 0.16);
+  background: none;
+}.dm-widget .raci-matrix-row:first-child {
+  border-top: none;
+}.dm-widget .raci-matrix-row.orphan {
+  background: rgba(229, 194, 11, 0.06);
+}.dm-widget .raci-matrix-row .raci-row-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink);
+}.dm-widget .raci-matrix-row .raci-row-name .abbr {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--hs-mint);
+  margin-right: 6px;
+}.dm-widget .raci-toggle {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  border: 1px solid rgba(var(--wash-rgb), 0.28);
+  background: rgba(var(--wash-rgb), 0.05);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+}.dm-widget .raci-toggle:hover {
+  border-color: var(--ink-2);
+}.dm-widget .raci-toggle.on {
+  color: var(--text-on-primary);
+  border-color: transparent;
+}.dm-widget .raci-toggle.on.t-R {
+  background: var(--r-r);
+}.dm-widget .raci-toggle.on.t-A {
+  background: var(--r-a);
+}.dm-widget .raci-toggle.on.t-C {
+  background: var(--r-c);
+}.dm-widget .raci-toggle.on.t-I {
+  background: var(--r-i);
+}.dm-widget .add-jt-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 2px 0;
+  background: none;
+  border-top: 1px solid rgba(var(--wash-rgb), 0.16);
+}.dm-widget .add-jt-row select {
+  flex: 1;
+  font-size: 13px;
+}.dm-widget .ja-edit-wrap {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(var(--wash-rgb), 0.22);
+}.dm-widget .ja-edit-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  font-weight: 600;
+  margin-bottom: 12px;
+}.dm-widget .ja-edit-lbl svg {
+  width: 13px;
+  height: 13px;
+  color: var(--teal);
+}.dm-widget .ja-edit {
+  position: relative;
+  background: rgba(var(--wash-rgb), 0.05);
+  border: 1px solid rgba(var(--wash-rgb), 0.18);
+  border-left: 3px solid var(--teal);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 10px;
+}.dm-widget .ja-edit-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}.dm-widget .ja-edit-row .link-ic {
+  color: var(--teal);
+  display: flex;
+  flex-shrink: 0;
+}.dm-widget .ja-edit-row .link-ic svg {
+  width: 15px;
+  height: 15px;
+}.dm-widget .ja-edit-row .edit-in {
+  flex: 1;
+}.dm-widget .ja-roles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}.dm-widget .ja-roles-lbl {
+  font-size: 11px;
+  color: var(--ink-2);
+  margin-right: 2px;
+}.dm-widget .ja-rolechip {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  background: rgba(var(--wash-rgb), 0.05);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 4px 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}.dm-widget .ja-rolechip:hover {
+  border-color: var(--teal);
+  color: var(--ink);
+}.dm-widget .ja-rolechip.on {
+  color: var(--teal);
+  background: var(--chip-on-bg);
+  border-color: var(--teal);
+}.dm-widget .ja-rolechip.ext {
+  border-style: dashed;
+}/* Checkmark animates in on select, matching the participant chips - width/margin collapse to 0 when off. */.dm-widget .ja-check {
+  width: 0;
+  height: 10px;
+  margin-right: 0;
+  flex: none;
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+  transition: width 0.18s ease, margin-right 0.18s ease, opacity 0.16s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}.dm-widget .ja-rolechip.on .ja-check {
+  width: 10px;
+  margin-right: 5px;
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}.dm-widget .loe-mode {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--surface-flat);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 12px;
+}.dm-widget .loe-mode-btn {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+}.dm-widget .loe-mode-btn.on {
+  background: var(--gradient-pill);
+  color: var(--on-gradient-ink);
+}.dm-widget .loe-mode.mtg-toggle {
+  margin: 10px 0 0;
+}.dm-widget .loe-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}.dm-widget .loe-edit-row:last-child {
+  margin-bottom: 0;
+}.dm-widget .loe-edit-row.orphan {
+  background: rgba(229, 194, 11, 0.06);
+  border-radius: 6px;
+}.dm-widget .loe-abbr {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--hs-teal);
+  width: 40px;
+  flex-shrink: 0;
+}.dm-widget .loe-abbr.wide {
+  width: auto;
+}.dm-widget .loe-edit-row .edit-in {
+  flex: 1;
+}.dm-widget .loe-edit-row .x-btn {
+  flex-shrink: 0;
+}.dm-widget .loe-flag-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}.dm-widget .loe-flag {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--surface-flat);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 2px;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}.dm-widget .loe-flag.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}.dm-widget .loe-flag-btn {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  border-radius: 16px;
+  padding: 4px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}.dm-widget .loe-flag-btn.on.mandatory {
+  background: rgba(var(--wash-rgb), 0.1);
+  color: var(--ink-2);
+}.dm-widget .loe-flag-btn.on.optional {
+  background: rgba(240, 185, 90, 0.18);
+  color: var(--r-a-text);
+}.dm-widget .loe-flag-btn.on.nonbillable {
+  background: rgba(var(--wash-rgb), 0.1);
+  color: var(--ink-2);
+}.dm-widget .loe-flag-btn.on.billable {
+  background: rgba(63, 224, 197, 0.18);
+  color: var(--hs-mint);
+}.dm-widget .mtg-edit-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}.dm-widget .mtg-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}.dm-widget .mtg-field .orphan-badge {
+  margin-left: 0;
+  align-self: flex-start;
+}/* ---------- Phase 2: top nav, RACI grid, What's New, Reference, Search ---------- */.dm-widget .views {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--surface-flat);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 20px;
+}.dm-widget .vtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 7px 15px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}.dm-widget .vtab:hover {
+  color: var(--ink);
+}.dm-widget .vtab svg {
+  width: 15px;
+  height: 15px;
+}.dm-widget .vtab.on {
+  background: var(--surface-2);
+  color: var(--ink);
+}.dm-widget .vtab.on svg {
+  stroke: var(--teal);
+}.dm-widget .empty {
+  color: var(--ink-faint);
+  font-size: 14px;
+  padding: 30px 0;
+  text-align: center;
+}.dm-widget .rg-controls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}.dm-widget .rg-pfilters {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}/* Same on/off treatment as .participant-chip, not a per-phase identity colour - this is a plain
+   multi-select filter (include/exclude this phase from the grid below), and colour-coding each
+   chip by its phase read as "why are these all different colours?" rather than as on/off state. */.dm-widget .rg-pchip {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 15px;
+  border: 1px solid var(--line);
+  background: rgba(var(--wash-rgb), 0.05);
+  color: var(--ink-faint);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}.dm-widget .rg-pchip:hover {
+  border-color: var(--teal);
+  color: var(--ink);
+}.dm-widget .rg-pchip.on {
+  background: var(--chip-on-bg);
+  color: var(--teal);
+  border-color: var(--teal);
+}/* Checkmark animates in on select, matching the participant chips - width/margin collapse to 0
+   when off. */.dm-widget .rgp-check {
+  width: 0;
+  height: 11px;
+  margin-right: 0;
+  flex: none;
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+  transition: width 0.18s ease, margin-right 0.18s ease, opacity 0.16s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}.dm-widget .rg-pchip.on .rgp-check {
+  width: 11px;
+  margin-right: 5px;
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}.dm-widget .rg-legend {
+  display: flex;
+  gap: 14px;
+  margin-left: auto;
+  align-items: center;
+  flex-wrap: wrap;
+}.dm-widget .rg-legend .lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}.dm-widget .rg-legend .sw {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--text-on-primary);
+}.dm-widget .rg-focusbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(63, 224, 197, 0.08);
+  border: 1px solid rgba(63, 224, 197, 0.3);
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}.dm-widget .rg-focusbar b {
+  color: var(--hs-mint);
+}.dm-widget .rg-focusbar button {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 4px 12px;
+  cursor: pointer;
+}/* No overflow/max-height - the user wants the whole table on the page, scrolling with it, not in
+   its own inner scroller. thead th's position: sticky then sticks to the viewport instead of this
+   container, which is the better behaviour for a long table anyway. */.dm-widget .rg-scroller {
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+}/* Without overflow: hidden on .rg-scroller (removed above so the sticky header can pin to the
+   viewport, not just this container), its border-radius no longer clips the table's own opaque,
+   square-cornered cells - the corners round rather than "hide" then. Rounded directly on the
+   table's own 4 corner cells instead (11px = the container's 12px minus its 1px border, so the
+   curve nests exactly). Safe with border-collapse: separate - corner-cell radius doesn't need
+   collapsed borders to render. */.dm-widget .rg-table thead tr:first-child th:first-child {
+  border-top-left-radius: 11px;
+}.dm-widget .rg-table thead tr:first-child th:last-child {
+  border-top-right-radius: 11px;
+}.dm-widget .rg-table tfoot tr:last-child td:first-child {
+  border-bottom-left-radius: 11px;
+}.dm-widget .rg-table tfoot tr:last-child td:last-child {
+  border-bottom-right-radius: 11px;
+}.dm-widget .rg-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 13px;
+}.dm-widget .rg-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+  z-index: 3;
+  padding: 11px 8px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--teal);
+  border-bottom: 2px solid var(--line);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}/* Was a fixed dark navy literal - broke once the base th above (var(--surface-2)) started
+   tracking theme too, since a light-mode th would hover from near-white into a hardcoded dark
+   navy with no matching text-color change. Now tracks theme like the rest of the table. */.dm-widget .rg-table thead th:hover {
+  background: var(--surface-flat);
+  color: var(--ink);
+}.dm-widget .rg-table thead th.taskcol {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  text-align: left;
+  width: 300px;
+  min-width: 300px;
+  cursor: default;
+  background: var(--surface-2);
+}/* --teal flips brightness across themes the same way phase-colour fills do (bright accent in dark
+   mode, darkened accent in light mode), so this needs --on-phase-ink too, not --text-on-primary -
+   matching .station.on .n's identical pairing. */.dm-widget .rg-table thead th.focused {
+  background: var(--teal);
+  color: var(--on-phase-ink);
+}.dm-widget .rg-table th .cnt {
+  display: block;
+  font-size: 9px;
+  color: var(--teal);
+  font-weight: 400;
+  margin-top: 2px;
+}.dm-widget .rg-table th.focused .cnt {
+  color: var(--on-phase-ink);
+}.dm-widget .rg-grouprow td {
+  background: var(--surface-2);
+  font-weight: 700;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  left: 0;
+}.dm-widget .rg-grouprow .gsid {
+  font-family: var(--font-mono);
+  /* Sits on a PHASE color fill (g.color), not the fixed gradient-pill accent - --text-on-primary
+     is invariant dark navy, but light-mode phase colors are themselves dark (a darkened ramp so
+     the road/progress-line stays >=3:1 on a pale page), so this needs --on-phase-ink instead,
+     matching .station.on .station-num's identical pairing. */
+  color: var(--on-phase-ink);
+  padding: 2px 9px;
+  border-radius: 10px;
+  margin-right: 9px;
+  font-size: 11px;
+}.dm-widget .rg-table tr.taskrow {
+  cursor: pointer;
+}.dm-widget .rg-table tr.taskrow:hover td {
+  background: var(--surface-2);
+}.dm-widget .rg-table tbody td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12.5px;
+}.dm-widget .rg-table td.tname {
+  position: sticky;
+  left: 0;
+  background: var(--paper);
+  z-index: 1;
+  text-align: left;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
+  width: 300px;
+  min-width: 300px;
+}.dm-widget .rg-empty-cell {
+  padding: 26px;
+  color: var(--ink-faint);
+}.dm-widget .rg-table tr.taskrow:hover td.tname {
+  background: var(--surface-2);
+}.dm-widget .rg-table td.dimmed {
+  opacity: 0.25;
+}.dm-widget .rg-lt {
+  letter-spacing: 1px;
+}.dm-widget .rg-dash {
+  color: #294863;
+}.dm-widget .rg-exrow td {
+  background: var(--surface-flat);
+  text-align: left;
+  font-family: var(--font-body);
+  font-weight: 400;
+  padding: 14px 18px;
+  border-bottom: 2px solid var(--line);
+  position: sticky;
+  left: 0;
+}.dm-widget .rg-exgrid {
+  display: flex;
+  gap: 34px;
+  flex-wrap: wrap;
+}.dm-widget .rg-exgrid > div {
+  flex: 1;
+  min-width: 220px;
+}.dm-widget .rg-exgrid h5 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hs-mint);
+  margin: 0 0 6px;
+}.dm-widget .rg-exgrid p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}.dm-widget .rg-exraci {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}.dm-widget .rg-exraci span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--surface-flat);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 8px;
+}.dm-widget .rg-total td {
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--teal);
+  border-top: 2px solid var(--line);
+  padding: 9px 8px;
+  text-align: center;
+}.dm-widget .rg-total td.tname {
+  text-align: left;
+  font-weight: 600;
+  position: sticky;
+  left: 0;
+  background: var(--surface-2);
+  z-index: 1;
+}.dm-widget .rg-table td.colhi, .dm-widget .rg-table th.colhi {
+  background: var(--teal-wash) !important;
+}.dm-widget .jt-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 30px;
+}.dm-widget .jt-pick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+}.dm-widget .jt-pick-btn:hover {
+  border-color: var(--teal);
+}/* Same on/off treatment as .participant-chip - the phase filter chips right below this picker on
+   the Grid tab used to be colour-coded per phase, which read as "why are these all different
+   colours?" rather than as a plain multi-select filter. Both now use one uniform selected look
+   (soft tint + ring + checkmark) instead of borrowing an identity colour that isn't the point here. */.dm-widget .jt-pick-btn.active {
+  background: var(--chip-on-bg);
+  color: var(--teal);
+  border-color: var(--teal);
+  font-weight: 700;
+}.dm-widget .jt-pick-btn .abbr {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--hs-mint);
+}.dm-widget .jt-pick-btn.active .abbr {
+  color: var(--teal);
+}.dm-widget .jt-pick-btn .jt-pick-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  opacity: 0.7;
+}/* Checkmark animates in on select, matching the participant chips - width/margin collapse to 0
+   when off. .jt-pick-btn's parent uses flex `gap` (unlike the plain-margin participant chips), so
+   the collapsed icon also cancels the gap after it via a negative margin, rather than reserving it. */.dm-widget .jt-check {
+  width: 0;
+  height: 12px;
+  margin-right: -8px;
+  flex: none;
+  opacity: 0;
+  transform: scale(0.4) rotate(-20deg);
+  transition: width 0.18s ease, margin-right 0.18s ease, opacity 0.16s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}.dm-widget .jt-pick-btn.active .jt-check {
+  width: 12px;
+  margin-right: 0;
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}.dm-widget .jt-group {
+  margin-bottom: 28px;
+}.dm-widget .jt-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}.dm-widget .jt-group-head .sid {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  /* Sits on a PHASE color fill (g.color) - see .rg-grouprow .gsid comment above. */
+  color: var(--on-phase-ink);
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-weight: 700;
+}.dm-widget .jt-task {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}.dm-widget .jt-task .rt-raci {
+  flex-shrink: 0;
+  display: inline-flex;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  min-width: 46px;
+}.dm-widget .jt-task .rt-text {
+  font-size: 14px;
+  color: var(--ink);
+}.dm-widget .jt-task .rt-loc {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+}.dm-widget .jt-task a.rt-jump {
+  color: var(--hs-mint);
+  text-decoration: none;
+  cursor: pointer;
+}.dm-widget .jt-task a.rt-jump:hover {
+  text-decoration: underline;
+}.dm-widget .whatsnew-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  border-radius: var(--radius);
+  padding: 15px 18px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}.dm-widget .whatsnew-item:hover {
+  border-left-color: var(--hs-mint);
+  filter: brightness(1.08);
+}.dm-widget .whatsnew-item .wn-top {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}.dm-widget .whatsnew-item .wn-loc {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  /* Sits on a PHASE color fill (it.color) - see .rg-grouprow .gsid comment above. */
+  color: var(--on-phase-ink);
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-weight: 700;
+}.dm-widget .whatsnew-item .wn-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  color: var(--ink);
+}.dm-widget .whatsnew-item .wn-date {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}.dm-widget .whatsnew-item .wn-summary {
+  font-size: 14px;
+  color: var(--ink-soft);
+}.dm-widget .search-result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 13px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}.dm-widget .search-result mark {
+  background: #ffd23f;
+  color: #241d02;
+  padding: 0 1px;
+  border-radius: 2px;
+}.dm-widget .search-result:hover {
+  border-color: var(--teal);
+}.dm-widget .search-result .sr-loc {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-bottom: 4px;
+}.dm-widget .search-result .sr-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 3px;
+  color: var(--ink);
+}.dm-widget .search-result .sr-snip {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}.dm-widget .refdoc {
+  max-width: 860px;
+}.dm-widget .ref-sec {
+  margin-bottom: 34px;
+}.dm-widget .ref-h {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}.dm-widget .ref-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal);
+  background: var(--teal-wash);
+  border-radius: 20px;
+  padding: 2px 10px;
+}.dm-widget .ref-lead {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin: 0 0 16px;
+  max-width: 72ch;
+}.dm-widget .ref-raci-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}@media (min-width: 760px) {.dm-widget .ref-raci-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}.dm-widget .ref-raci-card {
+  display: flex;
+  gap: 12px;
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px 16px;
+}.dm-widget .ref-raci-badge {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 15px;
+  background: rgba(var(--wash-rgb), 0.07);
+}.dm-widget .ref-raci-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  margin-bottom: 3px;
+}.dm-widget .ref-raci-desc {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}.dm-widget .ref-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}.dm-widget .ref-rules li {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  padding-left: 18px;
+  position: relative;
+}.dm-widget .ref-rules li::before {
+  content: "•";
+  position: absolute;
+  left: 4px;
+  color: var(--teal);
+}.dm-widget .ref-rules b {
+  color: var(--ink);
+}.dm-widget .ref-rules .rl-A, .dm-widget .ref-rules .rl-R {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}.dm-widget .ref-placeholder {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba(var(--wash-rgb), 0.03);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+}.dm-widget .ref-placeholder svg {
+  width: 19px;
+  height: 19px;
+  stroke: var(--ink-faint);
+  fill: none;
+  stroke-width: 2;
+  flex-shrink: 0;
+  margin-top: 2px;
+}.dm-widget .ref-placeholder b {
+  color: var(--ink);
+  font-size: 14px;
+}.dm-widget .ref-placeholder p {
+  font-size: 13px;
+  color: var(--ink-faint);
+  line-height: 1.55;
+  margin: 4px 0 0;
+}.dm-widget .ref-aids {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}.dm-widget .ref-aid {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 12px 14px;
+}.dm-widget .ref-aid .jobaid {
+  flex-shrink: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hs-mint);
+  text-decoration: none;
+  white-space: nowrap;
+}.dm-widget .ref-aid .jobaid svg {
+  width: 13px;
+  height: 13px;
+}.dm-widget .ref-aid .jobaid:hover {
+  text-decoration: underline;
+}.dm-widget .ref-aid-body {
+  flex: 1;
+  min-width: 0;
+}.dm-widget .ref-aid-task {
+  font-size: 13.5px;
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}.dm-widget .ref-aid-crumb {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--hs-mint);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}.dm-widget .ref-aid-crumb:hover {
+  text-decoration: underline;
+}.dm-widget .ref-aid-scope {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}.dm-widget .ref-allroles {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-2);
+}
