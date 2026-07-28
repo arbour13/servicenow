@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /* Ported verbatim from the standalone prototype's <style> block, so this reads as a faithful
    1:1 port rather than a fresh restyle.
    Written as valid plain CSS (a subset of SCSS) - no $variables/nesting used yet, so
@@ -121,7 +122,7 @@
    for card components. `data-theme` is set on <html> by ThemeService.toggleApp() (Core's shared
    provider) - see js/app.module.js's `core` module dependency and the inline pre-paint script in
    index.html. */
-:root[data-theme="light"] {
+:root[data-theme=light] {
   /* "C · Teal surfaces, fixed" - the fourth palette round. Earlier rounds (see git history) put
      the tint on the wrong surface (a mint PANEL inside a white page reads as "mint everywhere in
      a box", not "white content in a tinted environment"), used $border-tertiary #c5dce7 directly
@@ -131,33 +132,33 @@
      near-page tint - each confirmed against the real rendered app, not just contrast math. */
   --paper: #cfeef5;
   --surface: linear-gradient(160deg, #ffffff 0%, #f2fafc 100%);
-  --surface-flat: #ffffff;       /* $background-primary */
-  --surface-2: #e6f5f9;          /* replaces $border-tertiary #c5dce7 - same role, no longer muddy */
+  --surface-flat: #ffffff; /* $background-primary */
+  --surface-2: #e6f5f9; /* replaces $border-tertiary #c5dce7 - same role, no longer muddy */
   --navy: #cfeef5;
   --navy-2: #ffffff;
-  --ink: #0a2136;                /* $text-primary - the theme's canonical on-light text */
-  --ink-soft: #013c56;           /* $text-secondary */
+  --ink: #0a2136; /* $text-primary - the theme's canonical on-light text */
+  --ink-soft: #013c56; /* $text-secondary */
   --ink-2: var(--ink-soft);
-  --ink-faint: #4e6270;          /* >=4.5:1 verified against every surface below, incl. the card fill */
+  --ink-faint: #4e6270; /* >=4.5:1 verified against every surface below, incl. the card fill */
   /* $border-tertiary's role split (see the base :root comment above --hs-border-tertiary) still
      applies - decoupled from --ink-soft because ink-soft is dark navy in light mode and would be
      invisible paired with itself as a .btn:hover fill. Re-solved for the tinted page: navy text
      on this fill is still 10.37:1. */
   --hs-border-tertiary: #a5d6e2;
-  --line: rgba(1, 60, 86, .40);       /* tuned alpha, not a flat token - solved to match dark's own
-                                         line-vs-page separation ratio (2.569:1) rather than guessed */
+  --line: rgba(1, 60, 86, .40); /* tuned alpha, not a flat token - solved to match dark's own
+   line-vs-page separation ratio (2.569:1) rather than guessed */
   --line-soft: rgba(1, 60, 86, .18);
   --wash-rgb: 10, 33, 54;
-  --card-line: #a5d6e2;           /* .fcard's existing 1px border box - see --card-line comment
-                                      on the base :root; only visible once its colour isn't transparent */
+  --card-line: #a5d6e2; /* .fcard's existing 1px border box - see --card-line comment
+    on the base :root; only visible once its colour isn't transparent */
   --hs-teal: #008365;
-  --teal: #005c63;               /* darker than the mid-palette version - a tinted page eats
-                                     contrast margin, verified >=4.5:1 on every surface below */
+  --teal: #005c63; /* darker than the mid-palette version - a tinted page eats
+    contrast margin, verified >=4.5:1 on every surface below */
   /* The brand gradient darkened so it stops glowing on a pale page (the "too flashy" feedback).
      First stop is literally --p1, so it stays in-palette. White on the stops: 6.01 / 6.81. */
   --gradient-pill: linear-gradient(90deg, #006e76 0%, #1c5f8f 100%);
   --gradient-pill-hover: linear-gradient(90deg, #00838d 0%, #226fa6 100%);
-  --on-gradient-ink: #ffffff;    /* NOT --text-on-primary - see the base :root comment */
+  --on-gradient-ink: #ffffff; /* NOT --text-on-primary - see the base :root comment */
   --chip-on-bg: var(--surface-2);
   /* Darkened from the dark-mode originals (#01cc52/#e5c20b/#3ec2f8/#bdc2cb), kept as four distinct
      hues on purpose - these are the task table's only colour signal (role colours were removed
@@ -201,7 +202,7 @@
 /* select.edit-in's dropdown-arrow stroke is baked into a data-URI background-image (can't take a
    CSS var), so its dark-mode stroke color (#c5dce7, matching --ink-soft) needs its own light-mode
    copy here instead of staying stuck light-on-light once the select's own background goes pale. */
-:root[data-theme="light"] select.edit-in {
+:root[data-theme=light] select.edit-in {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23013c56' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
 
@@ -211,17 +212,17 @@
    artificial divider. .ref-raci-card / .ref-aid stay on --surface-2 instead: both carry a --teal
    link (job-aid link, crumb link) that fails contrast on mint (2.5:1), the same reason the RACI
    table/LOE pills/meeting badges stay flat white - see the --r-*-text comment above. */
-:root[data-theme="light"] .whatsnew-item,
-:root[data-theme="light"] .search-result,
-:root[data-theme="light"] .metacard {
+:root[data-theme=light] .whatsnew-item,
+:root[data-theme=light] .search-result,
+:root[data-theme=light] .metacard {
   background: var(--gradient-card);
 }
 
 /* --ink-faint fails on the mint fill (2.69:1) - these are the only --ink-faint text spots inside
    the three components above, so they alone need the on-accent-safe faint token. */
-:root[data-theme="light"] .whatsnew-item .wn-date,
-:root[data-theme="light"] .search-result .sr-loc,
-:root[data-theme="light"] .metacard .section-label {
+:root[data-theme=light] .whatsnew-item .wn-date,
+:root[data-theme=light] .search-result .sr-loc,
+:root[data-theme=light] .metacard .section-label {
   color: var(--on-accent-faint);
 }
 
@@ -454,11 +455,11 @@ button {
   margin-bottom: 0;
 }
 
-:root[data-theme="light"] .search-overlay {
+:root[data-theme=light] .search-overlay {
   background: rgba(10, 33, 54, 0.35);
 }
 
-:root[data-theme="light"] .search-modal-body .search-result {
+:root[data-theme=light] .search-modal-body .search-result {
   background: #ffffff;
   border-color: var(--line);
 }
@@ -779,6 +780,10 @@ button {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
   margin-bottom: 4px;
+}
+
+.film.ng-hide {
+  margin-bottom: 0;
 }
 
 .struct-toggle-row {
@@ -1317,7 +1322,7 @@ h1.sp-title {
   background: rgba(4, 19, 31, 0.28);
 }
 
-:root[data-theme="light"] .app.search-active .search-overlay {
+:root[data-theme=light] .app.search-active .search-overlay {
   background: rgba(10, 33, 54, 0.18);
 }
 

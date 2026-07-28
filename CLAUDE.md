@@ -41,8 +41,8 @@ Two top-level groups under `ServiceNow/`:
     `apps/theme-generator/`, `apps/widget-studio/`, `apps/scss-mixin-generator/`,
     `apps/delivery-methodology/`.
 - `tools/` — **build tooling**, never deployed:
-  - `tools/sn-deployment-packager/` — assembles ServiceNow Update Set XML (runs in Node/browser at
-    build time).
+- `tools/sn-deployment-packager/` — builds Fluent / Now SDK projects and deploys via a local
+  sdk-bridge (runs in Node/browser at build time; never ships into ServiceNow).
 
 **All paths are relative** — an app's own files (`js/app.module.js`, not `/js/...`) AND cross-tree
 references (the SN Deployment Packager) use relative paths too: from an app at `apps/<app>/`, reach
@@ -85,50 +85,50 @@ each one's own branding phrasing), then re-run that app's `scripts/build-standar
 
 ## ServiceNow deployment: use the shared SN Deployment Packager
 
-If an app's deliverable is a ServiceNow Update Set (scoped app, portal, page, or widget), **do not
-hand-roll the XML-assembly/extraction logic.** Use `tools/sn-deployment-packager/`:
+If an app's deliverable is a ServiceNow scoped app (portal, page, or widget), **do not hand-roll the
+Fluent/SDK packaging.** Use `tools/sn-deployment-packager/`:
 
 - `tools/sn-deployment-packager/core.js` — pure, I/O-free core: provider-body extraction, SCSS
-  scoping, every `sp_*` record builder, sys_id derivation, `assembleXml`.
-- `tools/sn-deployment-packager/manifest.schema.md` — the manifest/sources contract this core
-  takes. Read it before wiring a new app. If the core lacks something (a new record type,
-  extraction case), extend the core — don't duplicate its logic locally.
+  scoping, every `sp_*` record builder, sys_id derivation, `buildRecordModel`.
+- `tools/sn-deployment-packager/fluent.js` — emits a Now SDK / Fluent TypeScript project from that model.
+- `tools/sn-deployment-packager/sdk-bridge.js` — localhost bridge: Connect credentials → `now-sdk`
+  auth/install with NDJSON progress (used by the deploy console).
+- `tools/sn-deployment-packager/manifest.schema.md` — the manifest/sources contract. Read it before
+  wiring a new app. If the core lacks something (a new record type, extraction case), extend the
+  core — don't duplicate its logic locally.
 
-**Two output targets, one shared record model.** `buildRecordModel(manifest, parts)` is the ONE
-place that knows which records + fields make up a package; `assembleXml` and `fluent.js`'s
-`assembleFluent` are both thin emitters that just walk it their own way (XML: CDATA + tags; Fluent:
-typed `SPWidget`/`SPAngularProvider` + generic `Record()` for everything else). A new field on an
-existing record type is a one-place change. Both share sys_id identity, so an XML install and a
-Fluent install describe the same records. The deploy console offers both (XML tabs, or a Fluent file
-tree with full-project/files-only + a `.zip` download via the dependency-free `zip.js`,
-which also runs in Node). Live-instance prefix detection is shared as
-`instance.js`. `tools/sn-deployment-packager/build.js` is a Node CLI that runs the same
-pipeline for any app and writes output straight into that app's own `apps/<app>/deploy/` folder
-(`node tools/sn-deployment-packager/build.js <app-folder> [--format=xml|fluent|both]`) — a build
-lands on disk to commit, not just a browser download.
+**One record model, Fluent emitter.** `buildRecordModel(manifest, parts)` is the ONE place that
+knows which records + fields make up a package; `fluent.js`'s `assembleFluent` walks it into typed
+`SPWidget`/`SPAngularProvider` plus generic `Record()` for everything else. A new field on an
+existing record type is a one-place change. The deploy console is SDK-only: Connect, preview Fluent
+sources, suggest a semver bump from Fluent-vs-prior diffs, and **Deploy with Now SDK** (progress
+modal). Live-instance prefix detection is `instance.js`. The Node CLI writes
+`apps/<app>/deploy/fluent/`:
+
+`node tools/sn-deployment-packager/build.js <app-folder> [--fluent-mode=project|files]`
 
 ### How to consume it
 
 One server serves the whole `ServiceNow/` tree, so cross-tree files are referenced **by relative
 path** — no vendoring:
 
-- **Node build script** (see `apps/standards/scripts/build-deploy.js`): just
-  `require('../../../tools/sn-deployment-packager/core.js')` by relative path.
-- **The standalone deploy console** (`tools/sn-deployment-packager/index.html`) - build/preview/download
-  a package for ANY app outside of that app's own dev harness. It discovers deployable apps by
-  probing each `apps/<app>/deploy.manifest.js`; an app with no such file just doesn't show up in
-  its dropdown - see "The deploy.manifest.js descriptor" below.
+- **Node CLI** — `node tools/sn-deployment-packager/build.js <app-folder>` (see packager README).
+- **The standalone deploy console** (`tools/sn-deployment-packager/index.html`) — build/preview and
+  Deploy with Now SDK for ANY deployable app outside of that app's own harness. It discovers apps by
+  probing each `apps/<app>/deploy.manifest.js`; an app with no such file (or `deployable: false`)
+  does not show up — see "The deploy.manifest.js descriptor" below.
+- **SDK bridge** — `node tools/sn-deployment-packager/sdk-bridge.js` (keep running while deploying).
 
 ### The `deploy.manifest.js` descriptor
 
 Every deployable app has ONE `deploy.manifest.js` at its own root - the single source of truth for
-its deployment manifest (provider list, sys_id prefix, roles, file paths), read by that app's own
-build host (a `build-deploy.js` Node script, or a live Deploy modal's service) AND the standalone
-deploy console, so the manifest is never hand-copied into a second place. Adding a new deployable
-app means adding its `deploy.manifest.js` (see `tools/sn-deployment-packager/manifest.schema.md`'s
-"deploy.manifest.js" section for the exact shape) and its folder name to the console's
-`KNOWN_APP_FOLDERS` list (`tools/sn-deployment-packager/console.js`). An app with none is intentionally
-not deployable - that's the "convention-exempt" tools' current state, not an error.
+its deployment manifest (provider list, sys_id prefix, roles, file paths), read by the standalone
+deploy console and the Node CLI, so the manifest is never hand-copied into a second place. Adding a
+new deployable app means adding its `deploy.manifest.js` (see
+`tools/sn-deployment-packager/manifest.schema.md`'s "deploy.manifest.js" section for the exact shape)
+and its folder name to the console's `KNOWN_APP_FOLDERS` list
+(`tools/sn-deployment-packager/console.js`). An app with none is intentionally not deployable -
+that's the "convention-exempt" tools' current state, not an error.
 
 ## Sys_id rule
 

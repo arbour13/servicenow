@@ -3,7 +3,7 @@
 `core.js` takes two inputs per build: a **manifest** (this app's static
 identity/config - the only thing that lives in the app) and **sources** (already-fetched
 source text - fetching is the host's job, never the core's). This file documents both, plus
-the small `opts` bag `buildParts`/`assembleXml` take.
+the small `opts` bag `buildParts` takes. Fluent emit is `fluent.js`'s `assembleFluent`.
 
 ## manifest
 
@@ -108,37 +108,24 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
 
 - `buildParts(manifest, sources, opts)` - `opts.formatFn`: optional `(code) => code` passed over
   every extracted script body (e.g. a browser host wiring in js-beautify). Defaults to identity.
-- `assembleXml(manifest, parts, opts)` - `opts.stamp`: **required**. The core never calls `Date()`
-  itself, so the same manifest + same parts always produce byte-identical XML unless the host
-  deliberately supplies a fresh wall-clock stamp (a live-deploy host) or a fixed one (a
-  build-script host that wants reproducible diffs).
+- `assembleFluent(manifest, parts, opts)` (in `fluent.js`) - `opts.mode`: `'project'` | `'files'`;
+  `opts.sdkVersion` overrides the pinned SDK dependency in generated `package.json`.
 
 ## Host responsibilities (not in the core)
 
 - **Fetching** every source file (`fetch()` vs `fs.readFileSync`).
-- **The deploy modal UI** (browser-only) - option form, connection fields, theming, copy/download.
-  `tools/sn-deployment-packager/index.html` is the one such host in this suite - build/download/
-  upload (or, for an app with `deployOptions.showConnection: true`, upload straight to Retrieved
-  Update Sets - see below) a package outside of any one app's own dev harness. Review app source in
-  VS Code and the app's local harness; this host only packages. A future app-specific Deploy UI
-  would follow the same pattern rather than duplicating it.
+- **The deploy console UI** (browser-only) - Connect form, Fluent preview, version suggestion,
+  Deploy with Now SDK progress modal. `tools/sn-deployment-packager/index.html` is the one such
+  host in this suite. Review app source in VS Code and the app's local harness; this host packages
+  and deploys via the SDK bridge.
 - **Live-instance connection** - `deployFetch`/`detectCompanyPrefix`/`getInstalledApp`/
-  `publishUpdateSet`-style calls (network I/O). Shared between browser hosts as
-  `tools/sn-deployment-packager/instance.js` (`window.SNDeploymentPackager.instance`) rather than
-  each one keeping its own copy - load it via `<script src>` for any app with
+  `getScopeOccupant` (network I/O, read-only). Shared as
+  `tools/sn-deployment-packager/instance.js` (`window.SNDeploymentPackager.instance`) for apps with
   `deployOptions.showConnection: true`.
-  - `publishUpdateSet(conn, records)` **writes** to the target instance - the one thing here that
-    does. It POSTs/PATCHes `core.js`'s `wrapAsUpdateSet` output (each record's fields run through
-    `recordToApiFields`) directly via the Table API, landing the Update Set in the target's own
-    Retrieved Update Sets list - a real replacement for downloading the XML and uploading it by
-    hand. The console's **Upload Update Set** button drives this and then opens the Retrieved
-    Update Set form in a new tab. It deliberately does **not** commit: ServiceNow's real Commit
-    action is an internal GlideAjax-callable script tied to a logged-in browser session, not a
-    stable, externally-callable REST endpoint the way Table API is, so it isn't something this can
-    reliably automate the way the upload step itself can be. Committing stays a manual step in the
-    target instance's own UI - also the last chance to review the diff before it actually applies.
+- **SDK install** - `tools/sn-deployment-packager/sdk-bridge.js` on `127.0.0.1:17345` (NDJSON
+  progress on `POST /auth` and `POST /deploy`).
 - **Code formatting** (js-beautify or equivalent) - pass it in as `opts.formatFn`.
-- **The timestamp** - pass it in as `opts.stamp`.
+- **Semver suggestions** - `semver.js` (`suggestRelease`) diffs Fluent sources vs the prior build.
 
 ## `deploy.manifest.js` - the per-app descriptor file
 
@@ -227,69 +214,40 @@ The browser key (`root.SNAppManifests['<app-folder-name>']`) is keyed by the app
 under `apps/` (e.g. `'glide-studio'`, `'standards'`) - the same name the deploy console uses to probe for
 it, so no separate registry has to map folder → key.
 
-## Two output targets, one shared record model
+## One output target, one shared record model
 
 `buildParts()` extracts an app's content once; `buildRecordModel(manifest, parts)` (also in
 `core.js`) is the ONE place that then knows which ServiceNow records + fields make up a
 package - an ordered array of `{ table, sysId, key, fields }`, where each field is `{ name, value }`
-plus a marker (`cdata: true` for a long script/template/css body, `empty: true` for a self-closing
-tag, `scopeTag: true` for the `<sys_scope>` tag itself, `xmlOnly: true` for bookkeeping fields only
-XML needs). Two thin emitters walk this SAME model:
+plus markers (`cdata` / `empty` / `scopeTag` / `xmlOnly` — historical field tags still used so
+Fluent can filter bookkeeping). The Fluent emitter walks this model:
 
-- `core.js`'s **`assembleXml(manifest, parts, opts)`** → one Retrieved Update Set `<unload>`
-  string, importable via **System Update Sets → Retrieved Update Sets → Import Update Set from
-  XML**. `buildRecordModel`'s flat record list is NOT emitted directly (that would be a plain
-  per-table XML export, which the Retrieved Update Set importer doesn't recognize as anything to
-  do) - `wrapAsUpdateSet()` wraps it first: one `sys_remote_update_set` header record, then one
-  `sys_update_xml` per model record, each carrying that record's own rendered XML (from the SAME
-  `renderXmlRecord` used before) escaped inside a `<record_update table="...">...</record_update>`
-  `payload` CDATA. `renderXmlRecord` CDATA-wraps `cdata` fields (nesting safely under the payload's
-  own CDATA - `cdata()`'s `]]>` escaping handles arbitrary nesting depth) and self-closes `empty`
-  ones; field order comes straight from the model. `wrapAsUpdateSet` runs XML-only, inside
-  `assembleXml` - `fluent.js` never sees it, since Fluent installs directly via the Now SDK with no
-  Update Set concept at all.
 - `fluent.js`'s **`assembleFluent(manifest, parts, opts)`** → a **file-map**
   (`{ 'relative/path': 'contents' }`) making up a ServiceNow **Now SDK / Fluent** TypeScript project.
   `opts.mode` is `'project'` (full runnable project: `package.json`, `now.config.json`,
   `src/fluent/generated/keys.ts`, `README`) or `'files'` (just the `src/fluent/**` tree, to drop
   into an existing SDK project). `opts.sdkVersion` overrides the pinned SDK dependency.
 
-Both share identity: every record's sys_id comes from the same model (`deriveSysIds()`/
-`stableSysId()`), so the two outputs describe the *same* records - installing one over the other
-updates in place. Adding a field to an existing record type (e.g. a new `sp_container` property)
-means editing `buildRecordModel` ONCE - both emitters pick it up automatically. Only two record
-types need emitter-specific handling at all: `sp_widget` and `sp_angular_provider`, because Fluent
-has TYPED `SPWidget`/`SPAngularProvider` APIs for those (verified against `ServiceNow/sdk-examples`)
-with different field NAMES than XML uses (`client_script`→`clientScript`, `script`→`serverScript`,
-`css`→`customCss`, `template`→`htmlTemplate`, `link`→`linkScript`) and their `cdata` fields become
-external files via `Now.include` rather than inline data. Everything else (page tree, portal, theme,
-roles/ACL layer) has no typed Fluent API and is emitted via the **generic `Record({ $id, table,
-data })`** API, exactly as the official sample does - Fluent's emitter just filters out each
-record's `xmlOnly`/`scopeTag`/`empty` fields and passes the rest straight through as `data`. The
-widget lists no `angularProviders` (providers register globally and inject by name at runtime -
-same as the XML path, which creates no widget→provider m2m link). The `sys_app` record has no
-Fluent Record() equivalent at all (an app's identity is its `now.config.json`, not metadata), so
-Fluent's emitter skips it entirely - its sys_id still becomes `now.config.json`'s `scopeId`.
+Every record's sys_id comes from `deriveSysIds()` / `stableSysId()`, so reinstalls update in place.
+Adding a field to an existing record type means editing `buildRecordModel` once. Only two record
+types need emitter-specific handling: `sp_widget` and `sp_angular_provider` (typed
+`SPWidget`/`SPAngularProvider`). Everything else uses generic `Record({ $id, table, data })`.
+Fluent filters out `xmlOnly`/`scopeTag`/`empty` fields. The widget lists Angular providers on
+`SPWidget.angularProviders` for the widget↔provider m2m. `sys_app` identity becomes
+`now.config.json`'s `scopeId` (no Fluent `Record()` for the app itself).
 
-The host owns **zipping/delivery** of the file-map - both the browser deploy console and the Node
-CLI below use the dependency-free `zip.js` (store-only; `window.SNDeploymentPackager.zip` in a
-browser, `module.exports` in Node) to hand it over as one `.zip`.
+The Node CLI may zip the file-map via `zip.js` for an on-disk artifact; the console deploys through
+the SDK bridge instead of downloading packages.
 
 ## Node CLI: `tools/sn-deployment-packager/build.js`
 
-Generic build script - works for ANY app with a `deploy.manifest.js`, writing output into that
-app's own `apps/<app>/deploy/` folder so a build is just a file on disk (checked into git like
-anything else), not only ever a browser download:
-
 ```bash
-node tools/sn-deployment-packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]
+node tools/sn-deployment-packager/build.js <app-folder> [--fluent-mode=project|files]
+  [--scope=...] [--app-name=...] [--version=...]
 ```
 
-Writes `<app-folder>-update-set.xml` (XML), `fluent/**` + `<app-folder>-fluent.zip` (Fluent, project
-mode), or both (default). Uses the same `buildRecordModel`-backed pipeline as the deploy console, so
-output is identical either way. Note: Standards' existing `scripts/build-deploy.js` still exists and
-writes to its own historically-named file (`standards-portal-update-set.xml`) - this CLI writes
-alongside it under a folder-name-based filename (`standards-update-set.xml`), not in place of it.
+Writes `apps/<app-folder>/deploy/fluent/` (and optionally `<app>-fluent.zip` in project mode).
+XML Update Set export was removed — use the Now SDK path only.
 
 ## Styling: no separate Theme/CSS-Include
 

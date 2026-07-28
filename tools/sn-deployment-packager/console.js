@@ -1,16 +1,20 @@
-/* Standalone deploy console: build/download/upload a ServiceNow Update Set for ANY app in this
-   suite that has a deploy.manifest.js (see manifest.schema.md), without opening that app's own
+/* Standalone SDK-only deploy console: build and deploy a Fluent (Now SDK) project for ANY app in
+   this suite that has a deploy.manifest.js (see manifest.schema.md), without opening that app's own
    dev harness. Every app under apps/ is probed for a deploy.manifest.js; apps without one are
    simply not offered - see manifest.schema.md's "deploy.manifest.js" section. Framework-agnostic
-   plain JS (no Angular) - this is a build-time tool, never deployed, same convention as
-   core.js. Review and edit app source in VS Code + the app's local harness; this console only
-   packages. */
+   plain JS (no Angular) - this is a build-time tool, never deployed, same convention as core.js.
+
+   SDK-only: this console no longer emits or downloads Update Set XML. It always builds the Fluent
+   project (fluent.js's assembleFluent) and ships it to the target instance via the local
+   sdk-bridge.js (Now SDK auth + build + install), which streams progress back as NDJSON into the
+   Deploy modal. Review and edit app source in VS Code + the app's local harness; this console only
+   packages and deploys. */
 (function () {
   'use strict';
 
   var core = window.SNDeploymentPackager.core;
   var fluent = window.SNDeploymentPackager.fluent;
-  var zipper = window.SNDeploymentPackager.zip;
+  var semver = window.SNDeploymentPackager.semver;
 
   // Every app folder this suite currently has (mirrors ServiceNow/CLAUDE.md's apps/ listing) -
   // adding a new app means adding its folder name here so the console probes it. An app with no
@@ -74,12 +78,6 @@
     });
   }
 
-  function pad2(n) { return (n < 10 ? '0' : '') + n; }
-  function nowStamp() {
-    var d = new Date();
-    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
-  }
-
   /* ---------------------------------- DOM wiring ---------------------------------- */
 
   var appSelect = document.getElementById('appSelect');
@@ -94,10 +92,18 @@
   var themeToggleBtn = document.getElementById('themeToggleBtn');
   var connectBtn = document.getElementById('connectBtn');
   var disconnectBtn = document.getElementById('disconnectBtn');
+  var deploySdkBtn = document.getElementById('deploySdkBtn');
+  var deploySdkBtnTip = document.getElementById('deploySdkBtnTip');
+  var bridgeSection = document.getElementById('bridgeSection');
+  var bridgeDot = document.getElementById('bridgeDot');
+  var bridgeStatusLabel = document.getElementById('bridgeStatusLabel');
+  var bridgeCheckBtn = document.getElementById('bridgeCheckBtn');
+  var bridgeCopyCmdBtn = document.getElementById('bridgeCopyCmdBtn');
   var detectStatus = document.getElementById('detectStatus');
   var savedInstanceSelect = document.getElementById('savedInstanceSelect');
   var saveInstanceBtn = document.getElementById('saveInstanceBtn');
   var removeInstanceBtn = document.getElementById('removeInstanceBtn');
+  var removeInstanceTip = document.getElementById('removeInstanceTip');
   var connectionHint = document.getElementById('connectionHint');
   var modalOverlay = document.getElementById('modalOverlay');
   var modalTitle = document.getElementById('modalTitle');
@@ -114,36 +120,33 @@
   var fldScopeName = document.getElementById('fldScopeName');
   var scopeCompound = document.getElementById('scopeCompound');
   var fldVersion = document.getElementById('fldVersion');
+  var versionTipHost = document.getElementById('versionTipHost');
   var outputSection = document.getElementById('outputSection');
   var outputEditorHost = document.getElementById('outputEditor');
   var outputFallback = document.getElementById('outputFallback');
-  var sysIdSummary = document.getElementById('sysIdSummary');
-  var downloadBtn = document.getElementById('downloadBtn');
-  var downloadBtnLabel = document.getElementById('downloadBtnLabel');
-  var uploadBtn = document.getElementById('uploadBtn');
-  var uploadBtnTip = document.getElementById('uploadBtnTip');
-  var downloadBtnTip = document.getElementById('downloadBtnTip');
-  var removeInstanceTip = document.getElementById('removeInstanceTip');
-  var uploadStatus = document.getElementById('uploadStatus');
   var scopeStatus = document.getElementById('scopeStatus');
-  var formatXmlBtn = document.getElementById('formatXmlBtn');
-  var formatFluentBtn = document.getElementById('formatFluentBtn');
-  var formatToggle = document.getElementById('formatToggle');
-  var formatPill = document.getElementById('formatPill');
-  var outputHint = document.getElementById('outputHint');
   var fluentControls = document.getElementById('fluentControls');
   var fluentFileSelect = document.getElementById('fluentFileSelect');
+  var deployModalOverlay = document.getElementById('deployModalOverlay');
+  var deployModalStatus = document.getElementById('deployModalStatus');
+  var deployProgressFill = document.getElementById('deployProgressFill');
+  var deployProgressLog = document.getElementById('deployProgressLog');
+  var deployModalCloseBtn = document.getElementById('deployModalCloseBtn');
+  var deployModalDoneBtn = document.getElementById('deployModalDoneBtn');
 
   var eligibleApps = {};    // folder -> descriptor
   var currentFolder = null;
   var currentParts = null;  // buildParts() result, cached per app selection
-  var currentXml = '';
 
-  var format = 'xml';          // 'xml' | 'fluent' - restored from localStorage on init
   var fluentFiles = {};        // { path: contents } for the current Fluent build
   var fluentActivePath = '';   // which generated file the editor is showing
   var outputEditor = null;     // Monaco instance once loaded
-  var pendingOutput = { text: '', language: 'xml' };
+  var pendingOutput = { text: '', language: 'typescript' };
+
+  // Semver suggestion state - see applyVersionSuggestion() below.
+  var priorFluentFiles = {};        // last known Fluent snapshot (disk or in-memory), diffed on rebuild
+  var installedBaseVersion = null;  // version found on the connected instance via Connect, else null
+  var versionDirty = false;         // true once the user has hand-edited fldVersion this app session
 
   function languageForPath(path) {
     var p = String(path || '').toLowerCase();
@@ -154,11 +157,6 @@
     if (/\.tsx?$/.test(p)) { return 'typescript'; }
     if (/\.jsx?$/.test(p) || /\.mjs$/.test(p) || /\.cjs$/.test(p)) { return 'javascript'; }
     return 'plaintext';
-  }
-
-  function getOutputText() {
-    if (outputEditor) { return outputEditor.getValue(); }
-    return outputFallback.value || '';
   }
 
   function defineOutputThemes(monaco) {
@@ -212,7 +210,7 @@
   }
 
   function setOutputContent(text, language) {
-    pendingOutput = { text: text || '', language: language || 'xml' };
+    pendingOutput = { text: text || '', language: language || 'typescript' };
     outputFallback.value = pendingOutput.text;
     if (!outputEditor) { return; }
     var model = outputEditor.getModel();
@@ -308,19 +306,24 @@
   var scopeCheckTimer = null;
   var ourInstalledSysId = null; // set when getInstalledApp finds this app on the target
   // True after a successful Connect against the current credentials. Credentials-in-fields alone
-  // do not count - Upload / uniqueness checks require this. Cleared by Disconnect, app switch,
+  // do not count - Deploy / uniqueness checks require this. Cleared by Disconnect, app switch,
   // Connect failure, or editing URL/user/password.
   var sessionConnected = false;
+  // Localhost sdk-bridge.js (Now SDK auth/deploy handoff). Polled continuously; the browser cannot
+  // start it — the status panel shows online/offline and offers Check again + a copyable start command.
+  var SDK_BRIDGE = 'http://127.0.0.1:17345';
+  var SDK_BRIDGE_START_CMD = 'node tools/sn-deployment-packager/sdk-bridge.js';
+  var sdkBridgeUp = false;
+  var sdkSyncedAlias = '';
+  var sdkBridgePollTimer = null;
+  var bridgeAuthSyncing = false;
+  var bridgeCredsSynced = false;
   // When true, fldScopePrefix is read-only (set from the instance company code / existing install).
   var scopePrefixLocked = false;
   // When true, the whole scope is fixed (existing install) - name is read-only too.
   var scopeFullyLocked = false;
-  // Only meaningful for apps with deployOptions.showConnection - the most recently detected company
-  // code, kept around purely for display/reference (runDetectAndLookup always re-detects fresh
-  // rather than trusting a stale value across app switches or repeat clicks).
   function connStorageKey(folder) { return 'snDeployConsole_conn_' + folder; }
   var LAST_APP_KEY = 'snDeployConsole_lastApp';
-  var LAST_FORMAT_KEY = 'snDeployConsole_lastFormat';
   var SAVED_INSTANCES_KEY = 'snDeployConsole_savedInstances';
   var LAST_INSTANCE_KEY = 'snDeployConsole_lastInstanceId';
 
@@ -332,15 +335,6 @@
       if (folder) { localStorage.setItem(LAST_APP_KEY, folder); }
       else { localStorage.removeItem(LAST_APP_KEY); }
     } catch (e) {}
-  }
-  function loadLastFormat() {
-    try {
-      var v = localStorage.getItem(LAST_FORMAT_KEY);
-      return (v === 'fluent' || v === 'xml') ? v : 'xml';
-    } catch (e) { return 'xml'; }
-  }
-  function saveLastFormat(next) {
-    try { localStorage.setItem(LAST_FORMAT_KEY, next === 'fluent' ? 'fluent' : 'xml'); } catch (e) {}
   }
   // Per-app draft of whatever was last typed (not the named "credit card" list below).
   function loadSavedConn(folder) {
@@ -746,14 +740,343 @@
   function syncConnectionSessionUi() {
     if (connectBtn) { connectBtn.hidden = !!sessionConnected; }
     if (disconnectBtn) { disconnectBtn.hidden = !sessionConnected; }
+    refreshBridgeLabel();
+    updateSdkBridgeButtons();
+  }
+
+  function setBridgeUi(state, label) {
+    if (bridgeDot) { bridgeDot.setAttribute('data-state', state || 'checking'); }
+    if (bridgeStatusLabel) { bridgeStatusLabel.textContent = label || ''; }
+  }
+
+  function refreshBridgeLabel() {
+    if (!sdkBridgeUp) {
+      setBridgeUi('offline', 'SDK bridge: offline — run the start command, then Check again');
+      return;
+    }
+    if (bridgeAuthSyncing) {
+      setBridgeUi('syncing', 'SDK bridge: online — syncing credentials…');
+      return;
+    }
+    if (sessionConnected && bridgeCredsSynced) {
+      setBridgeUi('online', 'SDK bridge: online — credentials synced');
+      return;
+    }
+    if (sessionConnected) {
+      setBridgeUi('online', 'SDK bridge: online — Connect credentials not synced yet');
+      return;
+    }
+    setBridgeUi('online', 'SDK bridge: online');
+  }
+
+  // Quietly push Connect credentials to the local Now SDK alias store. Called after a successful
+  // Connect, and when the bridge comes back online while a session is already connected.
+  function maybeSyncAuthToBridge() {
+    if (!sdkBridgeUp || !sessionConnected || bridgeAuthSyncing) { return; }
+    if (!(fldInstanceUrl.value.trim() && fldUsername.value.trim() && fldPassword.value)) { return; }
+    if (!currentFolder) { return; }
+    bridgeAuthSyncing = true;
+    refreshBridgeLabel();
+    var alias = sdkSyncedAlias || aliasFromInstanceUrl(fldInstanceUrl.value);
+    var authFailed = false;
+    bridgePostStream('/auth', {
+      instanceUrl: fldInstanceUrl.value.trim(),
+      username: fldUsername.value.trim(),
+      password: fldPassword.value,
+      alias: alias,
+      appFolder: currentFolder,
+    }, function (evt) {
+      if (evt.ok === false) { authFailed = true; }
+      if (evt.step === 'done' && evt.alias) { sdkSyncedAlias = evt.alias; }
+    }).then(function () {
+      bridgeCredsSynced = !authFailed;
+      if (authFailed) { sdkSyncedAlias = ''; }
+    }).catch(function () {
+      bridgeCredsSynced = false;
+      sdkSyncedAlias = '';
+    }).then(function () {
+      bridgeAuthSyncing = false;
+      refreshBridgeLabel();
+      updateSdkBridgeButtons();
+    });
+  }
+
+  // Deploy is only enabled once every precondition is met: the local sdk-bridge is reachable, the
+  // user has a live Connect session, credentials are present, the App ID is complete, and (when we
+  // know the installed version) the App Version field is strictly higher than what's on the instance.
+  function versionReadyForDeploy() {
+    if (!installedBaseVersion) { return { ok: true, tip: '' }; }
+    var v = fldVersion.value.trim();
+    if (!semver.parseSemver(v)) {
+      return { ok: false, tip: 'App Version must be x.y.z and higher than installed v' + installedBaseVersion };
+    }
+    var cmp = semver.compareSemver(v, installedBaseVersion);
+    if (cmp == null || cmp <= 0) {
+      return { ok: false, tip: 'App Version must be higher than installed v' + installedBaseVersion };
+    }
+    return { ok: true, tip: '' };
+  }
+
+  function updateSdkBridgeButtons() {
+    var credsReady = !!(fldInstanceUrl.value.trim() && fldUsername.value.trim() && fldPassword.value);
+    var versionGate = versionReadyForDeploy();
+    var canDeploy = !!(sdkBridgeUp && sessionConnected && credsReady && currentFolder && currentParts &&
+      isScopeComplete() && versionGate.ok);
+    if (deploySdkBtn) {
+      deploySdkBtn.disabled = !canDeploy;
+      setTip(deploySdkBtnTip, !sdkBridgeUp
+        ? 'Start the SDK bridge: ' + SDK_BRIDGE_START_CMD
+        : (!sessionConnected
+          ? 'Connect to the instance first'
+          : (!credsReady
+            ? 'Enter the instance URL, username, and password'
+            : (!isScopeComplete()
+              ? 'Finish the App ID before deploying'
+              : (!versionGate.ok
+                ? versionGate.tip
+                : 'Sync Connect credentials to Now SDK, rebuild Fluent, and install on the instance')))));
+    }
+  }
+
+  // Upload/Download used to live here; SDK-only console has just the one button - alias kept so
+  // every existing call site (app switch, scope edits, connect/disconnect) stays a one-liner.
+  function updateActionButtons() {
+    updateSdkBridgeButtons();
+  }
+
+  function pollSdkBridge(opts) {
+    opts = opts || {};
+    if (opts.manual) { setBridgeUi('checking', 'SDK bridge: checking…'); }
+    fetch(SDK_BRIDGE + '/health', { method: 'GET' }).then(function (r) {
+      return r.ok ? r.json() : Promise.reject();
+    }).then(function () {
+      var wasUp = sdkBridgeUp;
+      sdkBridgeUp = true;
+      refreshBridgeLabel();
+      updateSdkBridgeButtons();
+      // Auto-sync when the bridge comes back while a Connect session is already live.
+      if (!wasUp && sessionConnected) { maybeSyncAuthToBridge(); }
+    }).catch(function () {
+      sdkBridgeUp = false;
+      bridgeCredsSynced = false;
+      refreshBridgeLabel();
+      updateSdkBridgeButtons();
+    });
+  }
+
+  function startSdkBridgePolling() {
+    pollSdkBridge();
+    if (sdkBridgePollTimer) { clearInterval(sdkBridgePollTimer); }
+    sdkBridgePollTimer = setInterval(function () { pollSdkBridge(); }, 4000);
+  }
+
+  function copyBridgeStartCommand() {
+    var cmd = SDK_BRIDGE_START_CMD;
+    function flashCopied() {
+      if (!bridgeCopyCmdBtn) { return; }
+      var prev = bridgeCopyCmdBtn.textContent;
+      bridgeCopyCmdBtn.textContent = 'Copied';
+      setTimeout(function () { bridgeCopyCmdBtn.textContent = prev; }, 1200);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cmd).then(flashCopied).catch(function () {
+        window.prompt('Copy this command:', cmd);
+      });
+    } else {
+      window.prompt('Copy this command:', cmd);
+    }
+  }
+
+  // Fetches the last on-disk Fluent build for this app from the local bridge, so the very first
+  // version suggestion for a freshly-selected app compares against what was actually last deployed
+  // rather than treating this session's first build as having "no prior" to diff against.
+  function fetchPriorFluentSources(folder) {
+    return fetch(SDK_BRIDGE + '/fluent-sources?appFolder=' + encodeURIComponent(folder))
+      .then(function (r) { return r.ok ? r.json() : { files: {} }; })
+      .then(function (data) { return (data && data.files) || {}; })
+      .catch(function () { return {}; });
+  }
+
+  // POSTs to the local sdk-bridge and streams back NDJSON progress events, calling onEvent(evt) for
+  // each parsed line as it arrives. Resolves once the stream ends. If the bridge answers with a
+  // plain JSON body (an error caught before the stream started, e.g. bad request), that's parsed
+  // and thrown instead.
+  function bridgePostStream(pathName, body, onEvent) {
+    return fetch(SDK_BRIDGE + pathName, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(function (r) {
+      var contentType = r.headers.get('Content-Type') || '';
+      if (contentType.indexOf('application/json') === 0) {
+        return r.json().then(function (data) {
+          throw new Error((data && data.error) || ('HTTP ' + r.status));
+        });
+      }
+      function consumeLines(text) {
+        text.split('\n').forEach(function (line) {
+          line = line.trim();
+          if (!line) { return; }
+          try { onEvent(JSON.parse(line)); } catch (e) {}
+        });
+      }
+      if (!r.body || !r.body.getReader) {
+        // Fallback for environments without a streaming Response.body (older browsers).
+        return r.text().then(consumeLines);
+      }
+      var reader = r.body.getReader();
+      var decoder = new TextDecoder('utf-8');
+      var buffer = '';
+      function pump() {
+        return reader.read().then(function (result) {
+          if (result.value) {
+            buffer += decoder.decode(result.value, { stream: !result.done });
+            var lines = buffer.split('\n');
+            buffer = lines.pop();
+            consumeLines(lines.join('\n'));
+          }
+          if (result.done) {
+            if (buffer.trim()) { consumeLines(buffer); }
+            return;
+          }
+          return pump();
+        });
+      }
+      return pump();
+    });
+  }
+
+  function aliasFromInstanceUrl(url) {
+    try {
+      var host = new URL(String(url || '').trim()).hostname || '';
+      var first = host.split('.')[0];
+      return (first && /^[a-zA-Z0-9_-]+$/.test(first)) ? first : 'sn-instance';
+    } catch (e) {
+      return 'sn-instance';
+    }
+  }
+
+  /* ------------------------------- Deploy progress modal ------------------------------- */
+
+  var deployModalFinished = false;
+
+  function openDeployModal() {
+    deployModalFinished = false;
+    setDeployStatus('Starting…');
+    deployProgressLog.innerHTML = '';
+    setDeployProgress(0);
+    deployModalCloseBtn.hidden = true;
+    deployModalDoneBtn.hidden = true;
+    deployModalOverlay.hidden = false;
+  }
+
+  function appendDeployLog(msg, isError) {
+    if (!msg) { return; }
+    var line = document.createElement('div');
+    if (isError) { line.className = 'err'; }
+    line.textContent = msg;
+    deployProgressLog.appendChild(line);
+    deployProgressLog.scrollTop = deployProgressLog.scrollHeight;
+  }
+
+  function setDeployProgress(pct) {
+    deployProgressFill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  }
+
+  function setDeployStatus(text) {
+    deployModalStatus.textContent = text || '';
+  }
+
+  // Only Done/Close ends the modal - see openDeployModal's header comment: while a deploy is in
+  // flight both buttons stay hidden so there's no way to dismiss progress mid-stream.
+  function finishDeployModal(success) {
+    deployModalFinished = true;
+    deployModalCloseBtn.hidden = false;
+    deployModalDoneBtn.hidden = false;
+    deployModalDoneBtn.textContent = success ? 'Done' : 'Close';
+  }
+
+  function closeDeployModal() {
+    if (!deployModalFinished) { return; }
+    deployModalOverlay.hidden = true;
+  }
+
+  // Maps a 0-100 bridge-reported pct onto a sub-range of the modal's overall bar, so auth and
+  // deploy (two separate NDJSON streams) still read as one continuous progress bar.
+  function scalePct(pct, lo, hi) {
+    if (typeof pct !== 'number') { return null; }
+    return lo + (Math.max(0, Math.min(100, pct)) / 100) * (hi - lo);
+  }
+
+  function onDeploySdkClick() {
+    if (!sessionConnected || !sdkBridgeUp || !currentFolder || !currentParts) { return; }
+    var alias = sdkSyncedAlias || aliasFromInstanceUrl(fldInstanceUrl.value);
+    if (deploySdkBtn) { deploySdkBtn.disabled = true; }
+    openDeployModal();
+    setDeployStatus('Syncing Connect credentials to Now SDK…');
+
+    var authFailed = false;
+    bridgePostStream('/auth', {
+      instanceUrl: fldInstanceUrl.value.trim(),
+      username: fldUsername.value.trim(),
+      password: fldPassword.value,
+      alias: alias,
+      appFolder: currentFolder,
+    }, function (evt) {
+      appendDeployLog(evt.message, evt.ok === false);
+      var scaled = scalePct(evt.pct, 0, 45);
+      if (scaled != null) { setDeployProgress(scaled); }
+      if (evt.ok === false) { authFailed = true; }
+      if (evt.step === 'done' && evt.alias) { sdkSyncedAlias = evt.alias; }
+    }).then(function () {
+      if (authFailed) {
+        setDeployStatus('Deploy failed during credential sync.');
+        finishDeployModal(false);
+        updateSdkBridgeButtons();
+        return;
+      }
+      setDeployStatus('Building the Fluent project and installing on the instance…');
+      var deployFailed = false;
+      return bridgePostStream('/deploy', {
+        appFolder: currentFolder,
+        alias: sdkSyncedAlias || alias,
+        scope: fullScope(),
+        appName: fldAppName.value.trim(),
+        version: fldVersion.value.trim(),
+      }, function (evt) {
+        appendDeployLog(evt.message, evt.ok === false);
+        var scaled = scalePct(evt.pct, 45, 100);
+        if (scaled != null) { setDeployProgress(scaled); }
+        if (evt.ok === false) { deployFailed = true; }
+      }).then(function () {
+        if (deployFailed) {
+          setDeployStatus('Deploy failed.');
+          finishDeployModal(false);
+        } else {
+          setDeployProgress(100);
+          setDeployStatus('Deploy finished.');
+          finishDeployModal(true);
+          runDetectAndLookup();
+        }
+        updateSdkBridgeButtons();
+      });
+    }).catch(function (err) {
+      appendDeployLog('Deploy failed: ' + ((err && err.message) || err), true);
+      setDeployStatus('Deploy failed.');
+      finishDeployModal(false);
+      updateSdkBridgeButtons();
+    });
   }
 
   // Ends the live instance session. Credentials stay in the form (and in saved connections) so the
-  // user can Connect again; App ID locks from the session are cleared so Download works offline.
+  // user can Connect again; App ID locks from the session are cleared so the fields are editable.
   function disconnectSession(opts) {
     opts = opts || {};
     sessionConnected = false;
+    sdkSyncedAlias = '';
+    bridgeCredsSynced = false;
     ourInstalledSysId = null;
+    installedBaseVersion = null;
     scopeUniqueness = 'unknown';
     if (scopeCheckTimer) { clearTimeout(scopeCheckTimer); scopeCheckTimer = null; }
     if (opts.clearScope !== false) {
@@ -761,6 +1084,7 @@
       if (currentParts && currentParts.manifest) {
         fldAppName.value = currentParts.manifest.appName;
         fldVersion.value = currentParts.manifest.version || '1.0.0';
+        versionDirty = false;
       }
     } else {
       scopePrefixLocked = false;
@@ -771,7 +1095,7 @@
     syncConnectionSessionUi();
     updateScopeFieldUI();
     updateActionButtons();
-    if (currentParts) { rebuildOutput(); }
+    if (currentParts) { rebuildFluent(); }
   }
 
   function appShowsConnection() {
@@ -887,8 +1211,7 @@
     });
   }
 
-  // The manifest as edited in the override fields (App name / Scope / Version), used by both output
-  // targets so they stay in sync with what's typed.
+  // The manifest as edited in the override fields (App name / Scope / Version).
   function manifestFromFields() {
     var manifest = {};
     for (var k in currentParts.manifest) { if (Object.prototype.hasOwnProperty.call(currentParts.manifest, k)) { manifest[k] = currentParts.manifest[k]; } }
@@ -898,34 +1221,51 @@
     return manifest;
   }
 
-  // Dispatches to whichever output target is active. Called on every field edit and format switch.
-  function rebuildOutput() {
-    if (!currentParts) { return; }
-    if (format === 'fluent') { rebuildFluent(); } else { rebuildXml(); }
-  }
-
-  function rebuildXml() {
-    if (!currentParts) { return; }
-    var manifest = manifestFromFields();
-    currentXml = core.assembleXml(manifest, currentParts.parts, { stamp: nowStamp() });
-    setOutputContent(currentXml, 'xml');
-
-    var ids = core.deriveSysIds(manifest);
-    var allSysIds = Object.keys(ids).map(function (k) { return ids[k]; })
-      .concat((manifest.providers || []).map(function (p) { return core.stableSysId(manifest.sysIdPrefix, p.name); }))
-      .concat((manifest.stubProviders || []).map(function (n) { return core.stableSysId(manifest.sysIdPrefix, n); }));
-    var dupes = allSysIds.filter(function (id, i) { return allSysIds.indexOf(id) !== i; });
-    sysIdSummary.textContent = dupes.length
-      ? 'WARNING: ' + dupes.length + ' duplicate sys_id(s) - import may overwrite the wrong records'
-      : '';
-  }
-
   // Sorted so folders group naturally (package.json / now.config.json first, then src/fluent/**).
   function sortedFluentPaths() {
     return Object.keys(fluentFiles).sort(function (a, b) {
       var ar = a.indexOf('/') === -1 ? 0 : 1, br = b.indexOf('/') === -1 ? 0 : 1;
       return ar !== br ? ar - br : (a < b ? -1 : a > b ? 1 : 0);
     });
+  }
+
+  function shallowCopy(obj) {
+    var out = {};
+    for (var k in obj) { if (Object.prototype.hasOwnProperty.call(obj, k)) { out[k] = obj[k]; } }
+    return out;
+  }
+
+  // Suggests the next App Version from the Fluent-file diff since the last rebuild (or the last
+  // on-disk build, for the very first rebuild of a freshly-selected app - see
+  // fetchPriorFluentSources). Always keeps the suggestion strictly above the installed instance
+  // version when Connect found one. If the user has hand-edited the Version field this session
+  // (versionDirty), their value is left alone (tooltip still explains the suggestion / warns if
+  // too low); otherwise the field is updated. Either way, this build's Fluent output becomes
+  // "prior" for the NEXT rebuild's comparison. Reason text lives on the (i) tooltip, not inline.
+  function applyVersionSuggestion() {
+    if (!currentParts) { return; }
+    var base = installedBaseVersion || currentParts.manifest.version || '1.0.0';
+    var suggestion = semver.suggestRelease({
+      baseVersion: base,
+      minVersion: installedBaseVersion || null,
+      prevFiles: priorFluentFiles,
+      nextFiles: fluentFiles,
+      installed: !!installedBaseVersion,
+    });
+    var tip = suggestion.reason;
+    if (versionDirty) {
+      tip += ' (kept your edited version.)';
+      if (installedBaseVersion) {
+        var cmp = semver.compareSemver(fldVersion.value.trim(), installedBaseVersion);
+        if (cmp == null || cmp <= 0) {
+          tip += ' Must be higher than installed v' + installedBaseVersion + '.';
+        }
+      }
+    } else {
+      fldVersion.value = suggestion.version;
+    }
+    setTip(versionTipHost, tip);
+    priorFluentFiles = shallowCopy(fluentFiles);
   }
 
   function rebuildFluent() {
@@ -947,62 +1287,7 @@
       fluentActivePath ? fluentFiles[fluentActivePath] : '',
       languageForPath(fluentActivePath)
     );
-    sysIdSummary.textContent = '';
-  }
-
-  function syncOutputHint() {
-    if (!outputHint) { return; }
-    if (format === 'fluent') {
-      outputHint.innerHTML =
-        '<strong>How to use this Fluent project</strong>' +
-        '<ol>' +
-        '<li>Download the <code>.zip</code>, then unzip it.</li>' +
-        '<li>In that folder run <code>npm install</code>.</li>' +
-        '<li>Authenticate the Now SDK to your instance ' +
-        '(see <a href="https://servicenow.github.io/sdk/" target="_blank" rel="noopener">ServiceNow SDK docs</a>).</li>' +
-        '<li>Run <code>npm run build</code>, then <code>npm run deploy</code> to push the metadata to the instance.</li>' +
-        '</ol>';
-      return;
-    }
-    outputHint.innerHTML =
-      '<strong>How to use this Update Set</strong>' +
-      '<ol>' +
-      '<li><strong>Upload</strong> (when connected), or <strong>Download</strong> and import under Retrieved Update Sets → Import Update Set from XML.</li>' +
-      '<li>Open the Retrieved Update Set, preview, then commit. Upload does not commit for you.</li>' +
-      '</ol>';
-  }
-
-  // Switch output target (XML <-> Fluent), toggling which control row is visible.
-  function syncFormatPill() {
-    if (!formatPill || !formatToggle || !formatXmlBtn || !formatFluentBtn) { return; }
-    var btn = format === 'fluent' ? formatFluentBtn : formatXmlBtn;
-    // Hidden (display:none) ancestors report 0x0 - skip until the output panel is shown.
-    if (btn.offsetWidth === 0) { return; }
-    formatPill.style.width = btn.offsetWidth + 'px';
-    formatPill.style.transform = 'translateX(' + btn.offsetLeft + 'px)';
-    // Enable slide animation only after the first laid-out position, so restoring a
-    // saved Fluent selection on refresh does not animate from the XML default.
-    if (!formatToggle.classList.contains('is-ready')) {
-      // Force layout with transitions still off, then arm them on the next frame.
-      void formatPill.offsetWidth;
-      requestAnimationFrame(function () {
-        formatToggle.classList.add('is-ready');
-      });
-    }
-  }
-
-  function setFormat(next) {
-    format = next === 'fluent' ? 'fluent' : 'xml';
-    saveLastFormat(format);
-    formatXmlBtn.classList.toggle('active', format === 'xml');
-    formatFluentBtn.classList.toggle('active', format === 'fluent');
-    syncFormatPill();
-    fluentControls.style.display = format === 'fluent' ? '' : 'none';
-    if (downloadBtnLabel) {
-      downloadBtnLabel.textContent = format === 'fluent' ? 'Download Fluent .zip' : 'Download Update Set';
-    }
-    syncOutputHint();
-    if (format === 'xml') { rebuildXml(); } else { rebuildFluent(); }
+    applyVersionSuggestion();
     updateActionButtons();
   }
 
@@ -1012,13 +1297,19 @@
     outputSection.style.display = 'none';
     overridesSection.style.display = 'none';
     connectionSection.style.display = 'none';
+    if (bridgeSection) { bridgeSection.style.display = 'none'; }
     currentParts = null;
     ourInstalledSysId = null;
     sessionConnected = false;
+    bridgeCredsSynced = false;
+    sdkSyncedAlias = '';
     scopeUniqueness = 'unknown';
     scopePrefixLocked = false;
     scopeFullyLocked = false;
-    uploadStatus.textContent = '';
+    installedBaseVersion = null;
+    versionDirty = false;
+    priorFluentFiles = {};
+    setTip(versionTipHost, 'Version suggestion appears after Connect / rebuild');
     syncConnectionSessionUi();
     updateActionButtons();
     if (!folder) { setStatus(buildStatus, '', false); return; }
@@ -1056,31 +1347,38 @@
         setScopeParts('', '', { prefixLocked: false, fullyLocked: false });
       } else {
         // Fixed-scope apps (no connection panel) ship a complete manifest.scope - prefill and lock
-        // so Download is enabled immediately (e.g. Standards' x_gfsp_standards).
+        // so Deploy is reachable as soon as a bridge/session are available (e.g. Standards' x_gfsp_standards).
         setScopeFromFull(descriptor.manifest.scope || '', {
           prefixLocked: true,
           fullyLocked: true,
         });
       }
       fldVersion.value = descriptor.manifest.version || '1.0.0';
+      versionDirty = false;
 
       fluentActivePath = ''; // let the Fluent view re-default to the widget file for the new app
       overridesSection.style.display = '';
+      if (bridgeSection) { bridgeSection.style.display = ''; }
       outputSection.style.display = '';
-      // Pill needs laid-out buttons; measure on the next frame.
-      requestAnimationFrame(syncFormatPill);
-      if (format === 'xml') { rebuildXml(); } else { rebuildFluent(); }
-      setStatus(buildStatus, 'Built ' + descriptor.manifest.appName + ' successfully.', false);
-      updateScopeFieldUI();
-      scheduleScopeUniquenessCheck();
-      updateActionButtons();
+      refreshBridgeLabel();
+      pollSdkBridge();
 
-      // A saved connection with all three fields already filled means we can check the target
-      // instance for an existing install right away, instead of waiting for a manual Connect
-      // click - see runDetectAndLookup's own comment for what this sets.
-      if (showConnection && fldInstanceUrl.value && fldUsername.value && fldPassword.value) {
-        runDetectAndLookup();
-      }
+      return fetchPriorFluentSources(folder).then(function (files) {
+        if (folder !== currentFolder) { return; } // the user switched apps while this was in flight
+        priorFluentFiles = files || {};
+        rebuildFluent();
+        setStatus(buildStatus, 'Built ' + descriptor.manifest.appName + ' successfully.', false);
+        updateScopeFieldUI();
+        scheduleScopeUniquenessCheck();
+        updateActionButtons();
+
+        // A saved connection with all three fields already filled means we can check the target
+        // instance for an existing install right away, instead of waiting for a manual Connect
+        // click - see runDetectAndLookup's own comment for what this sets.
+        if (showConnection && fldInstanceUrl.value && fldUsername.value && fldPassword.value) {
+          runDetectAndLookup();
+        }
+      });
     }).catch(function (err) {
       setStatus(buildStatus, 'Build failed: ' + err.message, true);
     });
@@ -1089,7 +1387,9 @@
   // Detects the target instance's company prefix, then looks up whether THIS app already exists
   // there (by its own deterministic sys_id - see instance.js's getInstalledApp) so Scope/App
   // name/Version get set from the REAL installed record rather than guessed:
-  //   - found:      full scope is locked to the installed value (prefix + name both read-only)
+  //   - found:      full scope is locked to the installed value (prefix + name both read-only), and
+  //                 installedBaseVersion is set so applyVersionSuggestion() bumps from the real
+  //                 installed version instead of the manifest default
   //   - not found:  prefix is locked to "x_<companycode>_", name left for the user to type
   // Runs both from the Connect button AND automatically once per app selection when a
   // saved connection already has all three fields (see onAppSelected).
@@ -1111,6 +1411,7 @@
         detectStatus.textContent = "Connected, but couldn't read a vendor prefix - set App ID by hand below.";
         updateScopeFieldUI();
         updateActionButtons();
+        maybeSyncAuthToBridge();
         return;
       }
       var descriptor = eligibleApps[folder];
@@ -1128,23 +1429,31 @@
             prefixLocked: true,
             fullyLocked: true,
           });
-          fldVersion.value = core.bumpPatchVersion(installed.version);
-          detectStatus.textContent = 'Found existing install (v' + installed.version + ') - next version ' + fldVersion.value + '.';
+          installedBaseVersion = installed.version;
+          versionDirty = false;
         } else {
           ourInstalledSysId = null;
+          installedBaseVersion = null;
           setScopeParts(derivedPrefix, '', { prefixLocked: true, fullyLocked: false });
-          detectStatus.textContent = 'Prefix detected: ' + derivedPrefix;
         }
         updateScopeFieldUI();
         scheduleScopeUniquenessCheck();
         updateActionButtons();
-        rebuildOutput();
+        // Let suggestRelease (via rebuildFluent -> applyVersionSuggestion) work out the next
+        // version from the real installed version + Fluent diff, rather than a bare patch bump.
+        rebuildFluent();
+        detectStatus.textContent = installed
+          ? 'Found existing install (v' + installed.version + ') - suggested next version ' + fldVersion.value + '.'
+          : 'Prefix detected: ' + derivedPrefix;
+        maybeSyncAuthToBridge();
       });
     }).catch(function (e) {
       sessionConnected = false;
+      bridgeCredsSynced = false;
       syncConnectionSessionUi();
       detectStatus.textContent = formatConnectError(e);
       updateActionButtons();
+      refreshBridgeLabel();
     });
   }
 
@@ -1161,118 +1470,13 @@
     }
     if (/failed to fetch|networkerror|load failed|network request failed|access-control|cors/i.test(msg)) {
       return 'Connection failed: the browser could not reach the instance (often CORS, a bad URL, or being offline). ' +
-        'Allow CORS from this origin on the instance, or Download the Update Set XML and import it manually.';
+        'Allow CORS from this origin on the instance, or check the instance URL.';
     }
     return 'Connection failed: ' + msg;
   }
 
-  // Upload / Download enablement - both wait for a complete App ID.
-  function updateActionButtons() {
-    var descriptor = currentFolder && eligibleApps[currentFolder];
-    var uploadEligible = !!(currentParts && format === 'xml' && descriptor && descriptor.deployOptions && descriptor.deployOptions.showConnection);
-    uploadBtnTip.hidden = !uploadEligible;
-    uploadBtn.style.display = uploadEligible ? '' : 'none';
-    var scopeComplete = isScopeComplete();
-    var uploadScopeOk = scopeComplete && (scopeUniqueness === 'free' || scopeUniqueness === 'own');
-    uploadBtn.disabled = !uploadEligible || !uploadScopeOk;
-    if (uploadEligible) {
-      if (!scopeComplete) {
-        setTip(uploadBtnTip, 'Finish the App ID before uploading');
-      } else if (scopeUniqueness === 'taken') {
-        setTip(uploadBtnTip, 'This App ID is already used by another app on the instance');
-      } else if (scopeUniqueness === 'unknown' || scopeUniqueness === 'checking') {
-        setTip(uploadBtnTip, 'Connect to verify this App ID is unique before uploading');
-      } else {
-        setTip(uploadBtnTip, 'Upload to Retrieved Update Sets on the connected instance');
-      }
-    } else {
-      setTip(uploadBtnTip, '');
-    }
-    downloadBtn.disabled = !currentParts || !scopeComplete;
-    downloadBtn.classList.toggle('secondary', format !== 'fluent');
-    if (format === 'fluent') {
-      setTip(downloadBtnTip, !currentParts
-        ? ''
-        : (scopeComplete ? 'Download the Fluent project as a .zip' : 'Finish the App ID before downloading'));
-      if (downloadBtnLabel) { downloadBtnLabel.textContent = 'Download Fluent .zip'; }
-    } else {
-      setTip(downloadBtnTip, !currentParts
-        ? ''
-        : (scopeComplete ? 'Download the Update Set as XML' : 'Finish the App ID before downloading'));
-      if (downloadBtnLabel) { downloadBtnLabel.textContent = 'Download Update Set'; }
-    }
-  }
-
-  // Uploads the CURRENT XML output straight onto the target instance's Retrieved Update Sets via
-  // the Table API (core.js's wrapAsUpdateSet + recordToApiFields, instance.js's publishUpdateSet) -
-  // an in-place replacement for "download the .xml, then upload it by hand" in that one screen.
-  // Deliberately does NOT commit - see instance.js's header comment for why; the status message
-  // below always says so explicitly, so this never reads as "fully deployed." On success, opens
-  // the Retrieved Update Set form in a new tab so the user can preview and commit there.
-  function onUploadClick() {
-    if (!currentParts) { return; }
-    if (!fldInstanceUrl.value.trim() || !fldUsername.value.trim() || !fldPassword.value) {
-      uploadStatus.textContent = 'Enter the target instance URL, username, and password first.';
-      return;
-    }
-    if (!isScopeComplete()) {
-      uploadStatus.textContent = 'App ID looks incomplete (' + (fullScope() || 'empty') + ') - finish it before uploading.';
-      updateScopeFieldUI();
-      return;
-    }
-    var manifest = manifestFromFields();
-    var conn = { instanceUrl: fldInstanceUrl.value, username: fldUsername.value, password: fldPassword.value };
-    var folder = currentFolder;
-    var ourSysId = ourInstalledSysId || core.deriveSysIds(manifest).app;
-    var base = fldInstanceUrl.value.trim().replace(/\/$/, '');
-    saveConn(folder);
-    uploadBtn.disabled = true;
-    uploadStatus.textContent = 'Verifying App ID is unique on the target instance…';
-
-    window.SNDeploymentPackager.instance.getScopeOccupant(conn, manifest.scope).then(function (occupant) {
-      if (folder !== currentFolder) { return null; }
-      if (occupant && occupant.sys_id !== ourSysId) {
-        scopeUniqueness = 'taken';
-        updateScopeFieldUI();
-        uploadBtn.disabled = false;
-        uploadStatus.textContent = 'App ID "' + manifest.scope + '" is already used by another app on the target instance.';
-        return null;
-      }
-      scopeUniqueness = occupant ? 'own' : 'free';
-      updateScopeFieldUI();
-
-      var model = core.buildRecordModel(manifest, currentParts.parts);
-      var wrapped = core.wrapAsUpdateSet(manifest, model);
-      var setSysId = wrapped[0].sysId; // header is always first - see wrapAsUpdateSet
-      var records = wrapped.map(function (rec) {
-        return { table: rec.table, sysId: rec.sysId, apiFields: core.recordToApiFields(rec) };
-      });
-      uploadStatus.textContent = 'Uploading ' + records.length + ' records…';
-      return window.SNDeploymentPackager.instance.publishUpdateSet(conn, records).then(function (written) {
-        return { written: written, setSysId: setSysId };
-      });
-    }).then(function (result) {
-      uploadBtn.disabled = false;
-      if (!result || folder !== currentFolder) { return; }
-      uploadStatus.textContent = 'Uploaded ' + result.written.length + ' records to Retrieved Update Sets - ' +
-        'opened in a new tab; preview and commit there (not done automatically).';
-      window.open(base + '/sys_remote_update_set.do?sys_id=' + result.setSysId, '_blank');
-      runDetectAndLookup();
-    }).catch(function (e) {
-      uploadBtn.disabled = false;
-      if (folder !== currentFolder) { return; }
-      var count = (e && e.written && e.written.length) || 0;
-      var msg = String((e && e.message) || e);
-      if (/failed to fetch|networkerror|load failed|network request failed|access-control|cors/i.test(msg)) {
-        msg = 'the browser could not reach the instance (often CORS, a bad URL, or being offline). ' +
-          'Allow CORS from this origin, or import the XML manually.';
-      }
-      uploadStatus.textContent = 'Upload failed' + (count ? ' after ' + count + ' records' : '') + ': ' + msg;
-    });
-  }
-
   appSelect.addEventListener('change', onAppSelected);
-  fldAppName.addEventListener('input', rebuildOutput);
+  fldAppName.addEventListener('input', rebuildFluent);
   function onScopePartInput(el) {
     // Keep the slug legal for ServiceNow scope chars while typing.
     if (el === fldScopeName || (!scopePrefixLocked && el === fldScopePrefix)) {
@@ -1286,14 +1490,20 @@
     if (!scopePrefixLocked && el === fldScopePrefix) {
       applyScopeLockState(); // refresh name maxlength as prefix length changes
     }
-    rebuildOutput();
+    rebuildFluent();
     scheduleScopeUniquenessCheck();
   }
   fldScopePrefix.addEventListener('input', function () { onScopePartInput(fldScopePrefix); });
   fldScopeName.addEventListener('input', function () { onScopePartInput(fldScopeName); });
-  fldVersion.addEventListener('input', rebuildOutput);
+  fldVersion.addEventListener('input', function () {
+    versionDirty = true;
+    rebuildFluent();
+  });
   connectBtn.addEventListener('click', runDetectAndLookup);
   disconnectBtn.addEventListener('click', function () { disconnectSession(); });
+  if (deploySdkBtn) { deploySdkBtn.addEventListener('click', onDeploySdkClick); }
+  if (deployModalCloseBtn) { deployModalCloseBtn.addEventListener('click', closeDeployModal); }
+  if (deployModalDoneBtn) { deployModalDoneBtn.addEventListener('click', closeDeployModal); }
   savedInstanceSelect.addEventListener('change', onSavedInstanceSelected);
   saveInstanceBtn.addEventListener('click', onSaveInstanceClick);
   removeInstanceBtn.addEventListener('click', onRemoveInstanceClick);
@@ -1303,7 +1513,6 @@
   modalOverlay.addEventListener('click', function (e) {
     if (e.target === modalOverlay) { closeModal(null); }
   });
-  uploadBtn.addEventListener('click', onUploadClick);
   [fldInstanceUrl, fldUsername, fldPassword].forEach(function (el) {
     el.addEventListener('input', function () {
       saveConn(currentFolder);
@@ -1316,34 +1525,23 @@
       } else {
         scheduleScopeUniquenessCheck();
       }
+      sdkSyncedAlias = '';
+      bridgeCredsSynced = false;
+      updateSdkBridgeButtons();
+      refreshBridgeLabel();
     });
   });
-  formatXmlBtn.addEventListener('click', function () { setFormat('xml'); });
-  formatFluentBtn.addEventListener('click', function () { setFormat('fluent'); });
   fluentFileSelect.addEventListener('change', function () {
     fluentActivePath = fluentFileSelect.value;
     setOutputContent(fluentFiles[fluentActivePath] || '', languageForPath(fluentActivePath));
   });
 
-  function triggerDownload(blob, filename) {
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  if (bridgeCheckBtn) {
+    bridgeCheckBtn.addEventListener('click', function () { pollSdkBridge({ manual: true }); });
   }
-
-  downloadBtn.addEventListener('click', function () {
-    if (!currentFolder || !isScopeComplete()) { return; }
-    if (format === 'fluent') {
-      triggerDownload(zipper.zip(fluentFiles), currentFolder + '-fluent.zip');
-      return;
-    }
-    triggerDownload(new Blob([currentXml || getOutputText()], { type: 'text/plain' }), currentFolder + '-update-set.xml');
-  });
+  if (bridgeCopyCmdBtn) {
+    bridgeCopyCmdBtn.addEventListener('click', copyBridgeStartCommand);
+  }
 
   // Password visibility toggle - masked by default; eyeball reveals plain text when needed.
   togglePasswordBtn.addEventListener('click', function () {
@@ -1368,13 +1566,10 @@
     try { localStorage.setItem('snDeployConsole_theme', next); } catch (e) {}
     syncThemeTip();
     syncEditorTheme();
-    // Pill uses --panel; remeasure after theme paint in case font metrics shift.
-    requestAnimationFrame(syncFormatPill);
   });
-  window.addEventListener('resize', syncFormatPill);
 
   initTooltips();
-  setFormat(loadLastFormat());
   loadMonaco();
+  startSdkBridgePolling();
   runDiscovery();
 })();

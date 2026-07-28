@@ -1,27 +1,16 @@
 #!/usr/bin/env node
-/* Generic Node build CLI - works for ANY app with a deploy.manifest.js (see manifest.schema.md),
-   not just the two that happen to have their own build-deploy.js today. Reads the manifest,
-   fetches every source file off disk, runs the same buildParts()/assembleXml()/assembleFluent()
-   pipeline the browser deploy console uses, and writes the result into that app's own
-   apps/<app>/deploy/ folder - so a build is just a file on disk, checked into git like anything
-   else, instead of only ever existing as a browser download.
+/* Generic Node build CLI - works for ANY app with a deploy.manifest.js (see manifest.schema.md).
+   Reads the manifest, loads sources from disk, runs buildParts()/assembleFluent(), and writes the
+   Now SDK project into apps/<app>/deploy/fluent/.
 
    Usage:
-     node tools/sn-deployment-packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]
+     node tools/sn-deployment-packager/build.js <app-folder> [--fluent-mode=project|files]
+       [--scope=...] [--app-name=...] [--version=...]
 
-   Examples:
-     node tools/sn-deployment-packager/build.js glide-studio
-     node tools/sn-deployment-packager/build.js standards --format=fluent
-     node tools/sn-deployment-packager/build.js delivery-methodology --format=both --fluent-mode=files
-
-   Output (all under apps/<app-folder>/deploy/):
-     <app-folder>-update-set.xml         (--format=xml or both)
-     fluent/**                           (--format=fluent or both; the generated Now SDK project)
-     <app-folder>-fluent.zip             (--format=fluent or both, project mode only)
-
-   Any app without a deploy.manifest.js is simply not eligible - same rule the deploy console
-   applies (see manifest.schema.md's "deploy.manifest.js" section). This is a build-time script;
-   it never runs inside a deployed widget. */
+   Output (under apps/<app-folder>/deploy/):
+     fluent/**                 Now SDK project (or src/fluent/** only in files mode)
+     <app-folder>-fluent.zip   project mode only
+*/
 'use strict';
 
 var fs = require('fs');
@@ -30,18 +19,30 @@ var core = require('./core.js');
 var fluent = require('./fluent.js');
 var zipper = require('./zip.js');
 
-var ROOT = path.join(__dirname, '..', '..'); // ServiceNow/ suite root
+var ROOT = path.join(__dirname, '..', '..');
 
 function parseArgs(argv) {
   var appFolder = null;
-  var format = 'both';
   var fluentMode = 'project';
+  var scope = null;
+  var appName = null;
+  var version = null;
   argv.forEach(function (arg) {
-    if (arg.indexOf('--format=') === 0) { format = arg.slice('--format='.length); }
-    else if (arg.indexOf('--fluent-mode=') === 0) { fluentMode = arg.slice('--fluent-mode='.length); }
+    if (arg.indexOf('--format=') === 0) {
+      var fmt = arg.slice('--format='.length);
+      if (fmt !== 'fluent') {
+        throw new Error('XML export was removed - only Fluent/SDK builds are supported (got --format=' + fmt + ').');
+      }
+    } else if (arg.indexOf('--fluent-mode=') === 0) { fluentMode = arg.slice('--fluent-mode='.length); }
+    else if (arg.indexOf('--scope=') === 0) { scope = arg.slice('--scope='.length); }
+    else if (arg.indexOf('--app-name=') === 0) { appName = arg.slice('--app-name='.length); }
+    else if (arg.indexOf('--version=') === 0) { version = arg.slice('--version='.length); }
     else if (arg.indexOf('--') !== 0) { appFolder = arg; }
   });
-  return { appFolder: appFolder, format: format, fluentMode: fluentMode };
+  return {
+    appFolder: appFolder, fluentMode: fluentMode,
+    scope: scope, appName: appName, version: version,
+  };
 }
 
 function loadDescriptor(appFolder) {
@@ -56,9 +57,6 @@ function loadDescriptor(appFolder) {
   return descriptor;
 }
 
-// Fetches every source file this app's manifest names, off disk - the Node-side mirror of what
-// the browser deploy console does with fetch(). All paths are app-root-relative, per
-// deploy.manifest.js's contract.
 function loadSources(appRoot, descriptor) {
   var providerSrcs = {};
   (descriptor.manifest.providers || []).forEach(function (p) {
@@ -81,30 +79,18 @@ function writeFile(filePath, contents) {
   fs.writeFileSync(filePath, contents);
 }
 
-function buildXml(appRoot, descriptor, parts) {
-  var xml = core.assembleXml(descriptor.manifest, parts, { stamp: (descriptor.manifest.version || '1.0.0') + ' build' });
-  var outFile = path.join(appRoot, 'deploy', path.basename(appRoot) + '-update-set.xml');
-  // Never reuse an already-derived slug/filename from elsewhere - use the app's OWN folder name so
-  // output is predictable regardless of what the app calls itself internally.
-  writeFile(outFile, xml);
-
-  var ids = core.deriveSysIds(descriptor.manifest);
-  var allSysIds = Object.keys(ids).map(function (k) { return ids[k]; })
-    .concat((descriptor.manifest.providers || []).map(function (p) { return core.stableSysId(descriptor.manifest.sysIdPrefix, p.name); }))
-    .concat((descriptor.manifest.stubProviders || []).map(function (n) { return core.stableSysId(descriptor.manifest.sysIdPrefix, n); }));
-  var dupes = allSysIds.filter(function (id, i) { return allSysIds.indexOf(id) !== i; });
-  if (dupes.length) { throw new Error('Duplicate sys_id(s) generated: ' + dupes.join(', ')); }
-  console.log('  XML:    ' + path.relative(ROOT, outFile) + ' (' + allSysIds.length + ' unique sys_ids, scope ' + descriptor.manifest.scope + ')');
-}
-
 function buildFluent(appRoot, descriptor, parts, fluentMode) {
   var files = fluent.assembleFluent(descriptor.manifest, parts, {
     mode: fluentMode,
     sdkVersion: descriptor.deployOptions && descriptor.deployOptions.fluent && descriptor.deployOptions.fluent.sdkVersion,
   });
   var fluentDir = path.join(appRoot, 'deploy', 'fluent');
-  // Clean rebuild - a stale file from a previous manifest shape should not survive.
-  fs.rmSync(fluentDir, { recursive: true, force: true });
+  if (fs.existsSync(fluentDir)) {
+    fs.readdirSync(fluentDir).forEach(function (name) {
+      if (name === 'node_modules' || name === 'package-lock.json' || name === '.now') { return; }
+      fs.rmSync(path.join(fluentDir, name), { recursive: true, force: true });
+    });
+  }
   Object.keys(files).forEach(function (relPath) { writeFile(path.join(fluentDir, relPath), files[relPath]); });
   console.log('  Fluent: ' + path.relative(ROOT, fluentDir) + '/ (' + Object.keys(files).length + ' files, ' +
     (fluentMode === 'project' ? 'full Now SDK project' : 'src/fluent/** only') + ')');
@@ -121,20 +107,25 @@ function buildFluent(appRoot, descriptor, parts, fluentMode) {
 function main() {
   var args = parseArgs(process.argv.slice(2));
   if (!args.appFolder) {
-    console.error('Usage: node tools/sn-deployment-packager/build.js <app-folder> [--format=xml|fluent|both] [--fluent-mode=project|files]');
+    console.error('Usage: node tools/sn-deployment-packager/build.js <app-folder> [--fluent-mode=project|files] [--scope=...] [--app-name=...] [--version=...]');
     process.exit(1);
   }
-  if (['xml', 'fluent', 'both'].indexOf(args.format) === -1) { throw new Error('--format must be xml, fluent, or both'); }
   if (['project', 'files'].indexOf(args.fluentMode) === -1) { throw new Error('--fluent-mode must be project or files'); }
 
   var appRoot = path.join(ROOT, 'apps', args.appFolder);
   var descriptor = loadDescriptor(args.appFolder);
+  if (args.appName) { descriptor.manifest.appName = args.appName; }
+  if (args.version) { descriptor.manifest.version = args.version; }
+  if (args.scope) {
+    descriptor.manifest.scope = args.scope;
+    delete descriptor.manifest.vendorPrefix;
+  }
   var sources = loadSources(appRoot, descriptor);
   var parts = core.buildParts(descriptor.manifest, sources, {});
 
   console.log('Building ' + descriptor.manifest.appName + ' (' + args.appFolder + ')…');
-  if (args.format === 'xml' || args.format === 'both') { buildXml(appRoot, descriptor, parts); }
-  if (args.format === 'fluent' || args.format === 'both') { buildFluent(appRoot, descriptor, parts, args.fluentMode); }
+  if (args.scope) { console.log('  Scope:  ' + args.scope + ' (override)'); }
+  buildFluent(appRoot, descriptor, parts, args.fluentMode);
 }
 
 main();

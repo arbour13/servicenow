@@ -1,12 +1,9 @@
-/* Shared core for packaging a single-page Angular tool (Glide Studio, Standards, ...) as a real
-   ServiceNow scoped application Update Set: one sp_angular_provider per service/directive file,
-   an sp_widget carrying the page's own template + controller, and the sp_page/container/row/
-   column/instance/portal scaffold that hosts it. Extracted from Glide Studio's DeployService
-   (the most advanced existing implementation) and Standards' build-deploy.js (the same logic,
-   stripped down) - see Code/_tokens... no, see the workspace memory note for the extraction
-   history. This file has NO I/O of its own (no fetch, no fs) so it runs unchanged in a browser
-   (the live Deploy modal) and in Node (a static build script) - callers fetch source text
-   however their environment allows and pass it in.
+/* Shared core for packaging a single-page Angular tool (Glide Studio, Standards, Delivery
+   Methodology, ...) as a ServiceNow scoped application Fluent / Now SDK project: one
+   sp_angular_provider per service/directive file, an sp_widget carrying the page's own template +
+   controller, and the sp_page/container/row/column/instance scaffold that hosts it. This file has
+   NO I/O of its own (no fetch, no fs) so it runs unchanged in a browser (the deploy console) and in
+   Node (build.js) - callers fetch source text however their environment allows and pass it in.
 
    STYLING STRATEGY: each widget's own <css> field is the SOLE styling carrier (no separate
    sp_css Include / m2m_sp_theme_css_include - deliberately dropped). scopeScss() is run over the
@@ -273,7 +270,61 @@
     return scanBlock(text, 0, text.length);
   }
 
-  // Utility, not on the assembleXml critical path: pulls just the light/default palette's
+  // Service Portal compiles the widget <css> field as SCSS (older libsass). Modern CSS that
+  // libsass tries to evaluate — rgba(var(--rgb), a), color-mix(...), calc(… / var(…)),
+  // min(560px, 100%) — fails the compile and the widget ships with no styles. Wrap those
+  // calls in #{'…'} so Sass emits them as literal CSS. Plain rgba(0,0,0,.25) / calc(1px + 2px)
+  // are left alone (Sass handles them).
+  function sassSafeCss(text) {
+    function wrapLiteral(call) {
+      return '#{\'' + String(call).replace(/\\/g, '\\\\').replace(/'/g, '\\\'') + '\'}';
+    }
+    function replaceFn(src, name, shouldWrap) {
+      var out = '', i = 0, needle = name + '(';
+      while (i < src.length) {
+        var idx = src.indexOf(needle, i);
+        if (idx < 0) { out += src.slice(i); break; }
+        // Word boundary: don't match `rgb` inside `rgba`, `max` inside `minmax`, etc.
+        var prev = idx === 0 ? '' : src[idx - 1];
+        if (prev && /[A-Za-z0-9_-]/.test(prev)) {
+          out += src.slice(i, idx + 1);
+          i = idx + 1;
+          continue;
+        }
+        out += src.slice(i, idx);
+        var open = idx + needle.length - 1;
+        var depth = 0, j = open;
+        for (; j < src.length; j++) {
+          if (src[j] === '(') { depth++; }
+          else if (src[j] === ')') {
+            depth--;
+            if (depth === 0) { j++; break; }
+          }
+        }
+        var call = src.slice(idx, j);
+        out += shouldWrap(call) ? wrapLiteral(call) : call;
+        i = j;
+      }
+      return out;
+    }
+    function wrapIfVarOrColorSpace(call) {
+      return /\bvar\s*\(|\bin\s+srgb\b|\bin\s+lab\b|\bin\s+oklab\b/.test(call);
+    }
+    // Order matters: longer/more-specific names first where one is a prefix of another.
+    text = replaceFn(text, 'rgba', wrapIfVarOrColorSpace);
+    text = replaceFn(text, 'rgb', wrapIfVarOrColorSpace);
+    text = replaceFn(text, 'color-mix', function () { return true; });
+    text = replaceFn(text, 'calc', function (call) {
+      return /[/*]|\bvar\s*\(/.test(call);
+    });
+    text = replaceFn(text, 'clamp', function () { return true; });
+    text = replaceFn(text, 'minmax', function () { return true; });
+    text = replaceFn(text, 'min', function () { return true; });
+    text = replaceFn(text, 'max', function () { return true; });
+    return text;
+  }
+
+  // Utility: pulls just the light/default palette's
   // `$<tokenPrefix>-*` declarations out of an SCSS source (e.g. for a "these are this widget's
   // defaults" preview). `-dark`-suffixed ones are excluded - those are an app's own runtime
   // light/dark toggle (CSS custom properties), not this compile-time SCSS token system.
@@ -393,15 +444,19 @@
   function deriveVendorPrefix(scope) {
     return String(scope || '').split('_').slice(0, 2).join('_');
   }
-  // Suggests a next version after finding an already-installed app - bumps the patch component of
-  // an "x.y.z" version. Anything else (a version string that isn't three dot-separated integers) is
-  // returned UNCHANGED rather than guessed at - a caller/host still shows it, but leaves deciding
-  // the next version to whoever's driving the redeploy.
-  function bumpPatchVersion(version) {
+  // Suggests a next version after finding an already-installed app. Prefer semver.js's
+  // suggestRelease() for Fluent-diff-aware bumps; these remain for simple Connect fallbacks.
+  function bumpSemver(version, level) {
     var parts = String(version || '').split('.');
     if (parts.length !== 3 || !parts.every(function (p) { return /^\d+$/.test(p); })) { return version; }
-    return parts[0] + '.' + parts[1] + '.' + (parseInt(parts[2], 10) + 1);
+    var major = parseInt(parts[0], 10);
+    var minor = parseInt(parts[1], 10);
+    var patch = parseInt(parts[2], 10);
+    if (level === 'major') { return (major + 1) + '.0.0'; }
+    if (level === 'minor') { return major + '.' + (minor + 1) + '.0'; }
+    return major + '.' + minor + '.' + (patch + 1);
   }
+  function bumpPatchVersion(version) { return bumpSemver(version, 'patch'); }
 
   /* ==================================================================================
      Pure assembly: given already-fetched source text, extract every piece a package needs.
@@ -436,7 +491,7 @@
     // untouched; the app's rules that reference those tokens compile against them. This is what gives
     // every widget the shared token vocabulary + portal portability. See manifest.schema.md.
     var scssSrc = (sources.sharedScss ? sources.sharedScss + '\n\n' : '') + sources.scssSrc;
-    var css = scopeScss(scssSrc, '.' + manifest.widgetScopeClass);
+    var css = sassSafeCss(scopeScss(scssSrc, '.' + manifest.widgetScopeClass));
 
     return { providers: providers, clientScript: clientScript, serverScript: serverScript, template: template, css: css, link: sources.link || '' };
   }
@@ -453,7 +508,7 @@
      record's own sys_id inside its data. `key` is the Now.ID key a Fluent emitter uses for this
      record; it's meaningless to XML.
 
-     Both assembleXml() (below) and fluent.js's assembleFluent() build this SAME model
+     fluent.js's assembleFluent() builds this SAME model
      and then just walk it their own way - so a new field on, say, sp_container is added in
      exactly one place (here) and both output formats pick it up automatically. Field ORDER is
      preserved deliberately (it matches a real ServiceNow Update Set export's per-table field
@@ -488,7 +543,7 @@
     ] });
 
     // Opt-in roles/groups layer - BEFORE the theme/page/provider/widget records (matches the
-    // original assembleXml's concatenation order).
+    // original record-model concatenation order).
     if (manifest.features && manifest.features.roles) {
       var r = manifest.roles;
       records.push({ table: 'sys_user_role', sysId: ids.userRole, key: 'userRole', fields: [
@@ -680,6 +735,9 @@
     ] });
 
     records.push({ table: 'sp_instance', sysId: ids.instance, key: 'instance', fields: [
+      // Fluent Record() does not apply platform defaults - omit active and the instance stays
+      // inactive, so the widget never renders on the page.
+      { name: 'active', value: true },
       { name: 'order', value: 1 },
       { name: 'sp_column', value: ids.column },
       { name: 'sp_widget', value: ids.widget },
@@ -749,174 +807,20 @@
     return { ids: ids, scopeTag: scopeTag, records: records };
   }
 
-  // Renders one record as an XML block: CDATA-wraps `cdata` fields, self-closes `empty` fields,
-  // inserts the record model's precomputed <sys_scope> tag for `scopeTag` fields, drops in a
-  // caller-precomputed tag verbatim for `rawTag` fields (same idea as scopeTag, for a reference
-  // field that isn't this record's own scope - see wrapAsUpdateSet's `remote_update_set` field),
-  // and esc()'s everything else. Field ORDER comes straight from the model, so this reproduces
-  // exactly what the old per-table builder functions emitted.
-  function renderXmlRecord(rec, scopeTag) {
-    var lines = ['<' + rec.table + ' action="INSERT_OR_UPDATE">'];
-    rec.fields.forEach(function (f) {
-      if (f.scopeTag) { lines.push('  ' + scopeTag); return; }
-      if (f.rawTag) { lines.push('  ' + f.rawTag); return; }
-      if (f.empty) { lines.push('  <' + f.name + '/>'); return; }
-      var content = f.cdata ? cdata(f.value) : esc(f.value);
-      lines.push('  <' + f.name + '>' + content + '</' + f.name + '>');
-    });
-    lines.push('</' + rec.table + '>');
-    return lines.join('\n');
-  }
-
-  /* ==================================================================================
-     Retrieved Update Set wrapping - XML-ONLY, applied by assembleXml() below, never touched by
-     fluent.js (Fluent installs straight into an instance via the Now SDK; there is no Update Set
-     concept there at all). buildRecordModel()'s output above is a flat list of the actual records
-     a package needs (sp_widget, sys_app, ...) - that is exactly what a plain per-table XML export
-     looks like, and it is NOT what ServiceNow's Retrieved Update Set importer (System Update Sets >
-     Retrieved Update Sets > Import Update Set from XML) parses. That importer looks specifically
-     for ONE `sys_remote_update_set` header record plus one `sys_update_xml` WRAPPER record per
-     customization, where the actual record's own XML is escaped inside the wrapper's `payload`
-     field. Without this wrapping, importing the plain record list finds nothing to do.
-     ================================================================================== */
-
-  // Cosmetic label shown in ServiceNow's own Retrieved Update Set preview list (the `type` column).
-  // Not load-bearing - the platform acts on `source_table` and `payload`, not this text - but worth
-  // getting close to what a real export would show.
-  var UPDATE_XML_TYPE_LABELS = {
-    sys_app: 'Application', sys_user_role: 'User Role', sys_user_group: 'Group',
-    sys_group_has_role: 'Group has Role', sp_theme: 'Theme', sp_page: 'Page',
-    sp_container: 'Container', sp_row: 'Row', sp_column: 'Column',
-    sp_angular_provider: 'Angular Provider', sp_widget: 'Widget', sp_instance: 'Instance',
-    sp_portal: 'Portal', sys_security_acl: 'Access Control', sys_security_acl_role: 'Access Control Role',
-  };
-
-  // Human-readable `target_name` on each sys_update_xml wrapper (Retrieved Update Set preview list).
-  // Matches real SP exports: page→id, container→name, row/column→sys_name (order), widget→name,
-  // instance→title or blank. Only fall back to appName+(key) for nameless junction rows.
-  function recordTargetName(rec, manifest) {
-    function field(name) {
-      var f = rec.fields.filter(function (x) { return x.name === name; })[0];
-      if (!f || f.empty) { return ''; }
-      return f.value == null ? '' : String(f.value);
-    }
-    if (rec.table === 'sp_page') { return field('id'); }
-    if (rec.table === 'sp_container') { return field('name'); }
-    if (rec.table === 'sp_row' || rec.table === 'sp_column') { return field('sys_name'); }
-    if (rec.table === 'sp_widget') { return field('name'); }
-    if (rec.table === 'sp_instance') { return field('title') || field('name') || field('sys_name'); }
-    var sysName = field('sys_name');
-    if (sysName) { return sysName; }
-    var name = field('name');
-    if (name) { return name; }
-    return manifest.appName + ' (' + rec.key + ')';
-  }
-
-  // Wraps every record from buildRecordModel() into the shape described above. Returns an ordered
-  // array starting with the sys_remote_update_set header, followed by one sys_update_xml per
-  // original record (same relative order buildRecordModel produced them in).
-  function wrapAsUpdateSet(manifest, model) {
-    var setSysId = stableSysId(manifest.sysIdPrefix, 'remote_update_set');
-    var setName = manifest.appName + ' v' + (manifest.version || '1.0.0');
-    var setTag = '<remote_update_set display_value="' + esc(setName).replace(/"/g, '&quot;') + '">' + setSysId + '</remote_update_set>';
-
-    var header = { table: 'sys_remote_update_set', sysId: setSysId, key: 'remoteUpdateSet', fields: [
-      { name: 'application', value: model.ids.app },
-      { name: 'application_name', value: manifest.appName },
-      { name: 'description', empty: true },
-      { name: 'name', value: setName },
-      // origin_sys_id/remote_sys_id normally identify this set on the instance it was RETRIEVED
-      // from; this set has no such originating instance (it's generated directly, not retrieved
-      // from a live dev instance), so both self-reference this same record's own sys_id.
-      { name: 'origin_sys_id', value: setSysId },
-      { name: 'remote_sys_id', value: setSysId },
-      // Retrieved Update Sets must land as 'loaded' so Preview / Commit work. 'complete' is a
-      // LOCAL update-set state (done capturing, ready to export) - wrong here and confuses the UI.
-      { name: 'state', value: 'loaded' },
-      { name: 'sys_id', value: setSysId, xmlOnly: true },
-      { name: 'sys_update_name', value: 'sys_remote_update_set_' + setSysId, xmlOnly: true },
-      { name: 'update_source', empty: true },
-    ] };
-
-    var wrapped = model.records.map(function (rec) {
-      var payload = '<record_update table="' + rec.table + '">\n' + renderXmlRecord(rec, model.scopeTag) + '\n</record_update>';
-      var wrapId = stableSysId(manifest.sysIdPrefix, 'update_xml:' + rec.key);
-      return { table: 'sys_update_xml', sysId: wrapId, key: 'updateXml_' + rec.key, fields: [
-        { name: 'action', value: 'INSERT_OR_UPDATE' },
-        { name: 'application', value: model.ids.app },
-        { name: 'category', value: 'customer' },
-        { name: 'comments', empty: true },
-        { name: 'name', value: rec.table + '_' + rec.sysId },
-        { name: 'payload', value: payload, cdata: true },
-        { name: 'remote_update_set', rawTag: setTag, value: setSysId },
-        { name: 'replace_on_upgrade', value: false },
-        { name: 'source_table', value: rec.table },
-        { name: 'sys_id', value: wrapId, xmlOnly: true },
-        { name: 'sys_update_name', value: 'sys_update_xml_' + wrapId, xmlOnly: true },
-        { name: 'target_name', value: recordTargetName(rec, manifest) },
-        { name: 'type', value: UPDATE_XML_TYPE_LABELS[rec.table] || rec.table },
-        { name: 'update_set', empty: true },
-      ] };
-    });
-
-    return [header].concat(wrapped);
-  }
-
-  // Converts one record's fields into a plain {fieldName: value} object for a live Table API write
-  // (POST/PATCH) - the non-XML counterpart to renderXmlRecord, used to publish an Update Set
-  // straight onto an instance instead of producing a file a human uploads by hand. No CDATA/esc()
-  // needed - a JSON request body handles any string content natively, unlike embedding text inside
-  // an XML document. `scopeTag`/`rawTag` fields carry their real value alongside their
-  // display-decorated XML markup (see buildRecordModel/wrapAsUpdateSet) for exactly this consumer.
-  function recordToApiFields(rec) {
-    var obj = {};
-    rec.fields.forEach(function (f) {
-      obj[f.name] = f.empty ? '' : (f.value == null ? '' : f.value);
-    });
-    return obj;
-  }
-
-  /* ==================================================================================
-     Top-level XML assembly. `opts.stamp` is required - this file never calls Date() itself (so
-     the same manifest + same parts always produce byte-identical XML unless a host deliberately
-     wants a fresh wall-clock stamp). Output is wrapped as a real Retrieved Update Set (see
-     wrapAsUpdateSet's header comment) - buildRecordModel()'s own flat record list is never emitted
-     directly; that's what fluent.js's assembleFluent consumes instead, unwrapped.
-     ================================================================================== */
-
-  function assembleXml(manifest, parts, opts) {
-    var stamp = (opts && opts.stamp) || '';
-    var model = buildRecordModel(manifest, parts);
-    var body = wrapAsUpdateSet(manifest, model).map(function (r) {
-      return renderXmlRecord(r, model.scopeTag).split('\n').map(function (line) {
-        return '  ' + line;
-      }).join('\n');
-    });
-    return ['<?xml version="1.0" encoding="UTF-8"?>', '<unload unload_date="' + esc(stamp) + '">']
-      .concat(body).concat(['</unload>']).join('\n');
-  }
-
   return {
-    // XML primitives
-    cdata: cdata, esc: esc,
     // extraction
     findMatchingParen: findMatchingParen, extractProviderBody: extractProviderBody,
     unwrapDiArray: unwrapDiArray, extractTrailingMarker: extractTrailingMarker,
     buildTemplateFromSource: buildTemplateFromSource, extractAppDiv: extractAppDiv,
     // styling
-    scopeScss: scopeScss, extractDefaultVariables: extractDefaultVariables,
+    scopeScss: scopeScss, sassSafeCss: sassSafeCss, extractDefaultVariables: extractDefaultVariables,
     // sys_id / scope
     stableSysId: stableSysId, deriveSysIds: deriveSysIds,
-    deriveScope: deriveScope, deriveScopePrefix: deriveScopePrefix, bumpPatchVersion: bumpPatchVersion,
+    deriveScope: deriveScope, deriveScopePrefix: deriveScopePrefix,
+    bumpSemver: bumpSemver, bumpPatchVersion: bumpPatchVersion,
     scopeSlug: scopeSlug, deriveVendorPrefix: deriveVendorPrefix, SCOPE_MAX: SCOPE_MAX,
-    // assembly - buildRecordModel is the shared source of truth both assembleXml (below) and
-    // fluent.js's assembleFluent consume; renderXmlRecord is exposed for hosts that want to
-    // inspect/override a single record's XML. wrapAsUpdateSet/recordToApiFields are exposed for a
-    // host that wants to publish an Update Set straight onto a live instance (see instance.js's
-    // publishUpdateSet) instead of producing a file - same record wrapping assembleXml uses
-    // internally, just serialized as plain field objects instead of XML text.
-    buildParts: buildParts, buildRecordModel: buildRecordModel, renderXmlRecord: renderXmlRecord, assembleXml: assembleXml,
-    wrapAsUpdateSet: wrapAsUpdateSet, recordToApiFields: recordToApiFields,
+    // assembly - buildRecordModel is the shared source of truth fluent.js's assembleFluent consumes.
+    buildParts: buildParts, buildRecordModel: buildRecordModel,
     ACL_TABLES: ACL_TABLES,
   };
 });

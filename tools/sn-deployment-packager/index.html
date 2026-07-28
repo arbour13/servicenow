@@ -158,7 +158,6 @@
   .output-editor:focus-within,
   button:focus-visible,
   .scope-compound:focus-within,
-  .fmt-btn:focus-visible,
   .theme-toggle:focus-visible,
   .password-toggle:focus-visible,
   .icon-btn:focus-visible,
@@ -189,18 +188,6 @@
   .status:empty { display: none; margin: 0; min-height: 0; }
   .status-error { color: var(--danger); }
   .hint { font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
-  .output-hint { font-size: 12.5px; color: var(--muted); margin: 0 0 var(--sp-md); line-height: 1.5; }
-  .output-hint p { margin: 6px 0 0; }
-  .output-hint ol {
-    margin: 8px 0 0; padding-left: 1.25em;
-  }
-  .output-hint li { margin: 3px 0; }
-  .output-hint code {
-    font-family: var(--mono); font-size: 0.92em;
-    background: var(--panel-alt); border: 1px solid var(--border);
-    border-radius: 4px; padding: 1px 5px;
-  }
-  .output-hint a { color: var(--accent); }
 
   input.field-error {
     border-color: var(--danger);
@@ -277,6 +264,25 @@
   .conn-actions {
     margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
+  .bridge-status {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    margin: 0; padding: 10px 12px;
+    background: var(--panel-alt); border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .bridge-dot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    background: var(--faint);
+  }
+  .bridge-dot[data-state="online"] { background: #2f9e6b; box-shadow: 0 0 0 3px rgba(47,158,107,.18); }
+  .bridge-dot[data-state="offline"] { background: var(--danger); box-shadow: 0 0 0 3px rgba(224,104,95,.18); }
+  .bridge-dot[data-state="checking"] { background: #c9a227; }
+  .bridge-dot[data-state="syncing"] { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .bridge-label {
+    flex: 1 1 auto; min-width: 140px;
+    font-size: 13px; color: var(--text);
+  }
+  .bridge-btn { height: 30px; padding: 0 10px; font-size: 12px; }
   .saved-row {
     display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: end;
     margin-bottom: 14px;
@@ -291,6 +297,18 @@
     font-family: var(--mono); font-size: 0.92em;
     background: var(--panel-alt); border: 1px solid var(--border);
     border-radius: 4px; padding: 1px 5px; color: var(--muted);
+  }
+  .version-label {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .version-tip {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    color: var(--faint); cursor: help;
+  }
+  .version-tip:hover,
+  .version-tip:focus-visible {
+    color: var(--accent); background: var(--accent-soft);
   }
   input[type="text"]:read-only,
   input[type="password"]:read-only {
@@ -396,41 +414,6 @@
   .modal-btn.danger:hover { filter: brightness(.92); }
   .modal-btn[hidden] { display: none; }
 
-  .format-row {
-    display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md);
-    margin-bottom: var(--sp-md);
-  }
-  /* Segmented control patterned on Delivery 2.0's .views / .vtab shape; selected pill uses
-     the same --accent-fill as primary action buttons. */
-  .format-toggle {
-    position: relative;
-    display: inline-flex; gap: 2px; margin: 0;
-    background: var(--bg); border-radius: 10px; padding: 3px;
-  }
-  .format-pill {
-    position: absolute; top: 3px; left: 0; z-index: 0;
-    height: calc(100% - 6px); width: 0;
-    background: var(--accent-fill); border-radius: 7px;
-    pointer-events: none;
-  }
-  /* Transitions only after the first layout so a restored Fluent selection does not
-     animate from the default XML slot on refresh. */
-  .format-toggle.is-ready .format-pill {
-    transition: transform var(--motion-med) var(--motion-ease),
-                width var(--motion-med) var(--motion-ease);
-  }
-  .fmt-btn {
-    position: relative; z-index: 1;
-    border: none; background: none; color: var(--muted);
-    padding: 7px 15px; border-radius: 7px;
-    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
-    transition: color var(--motion-fast) ease;
-  }
-  .fmt-btn:hover { color: var(--text); }
-  .fmt-btn.active { color: #fff; }
-  @media (prefers-reduced-motion: reduce) {
-    .format-toggle.is-ready .format-pill { transition: none; }
-  }
   .fluent-controls {
     display: flex; flex-direction: column; gap: 6px;
     margin-bottom: var(--sp-md);
@@ -441,6 +424,26 @@
     width: 100%;
     font-family: var(--mono); font-size: 12.5px;
   }
+
+  .deploy-progress-bar {
+    height: 8px; border-radius: 999px; background: var(--bg);
+    overflow: hidden; margin: 12px 0 10px;
+  }
+  .deploy-progress-fill {
+    height: 100%; width: 0%;
+    background: var(--accent-fill);
+    transition: width .25s ease;
+  }
+  .deploy-progress-log {
+    max-height: 220px; overflow: auto;
+    margin: 0; padding: 10px 12px;
+    background: var(--panel-alt); border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--mono); font-size: 12px; line-height: 1.45;
+    color: var(--text-muted); white-space: pre-wrap;
+  }
+  .deploy-progress-log .err { color: var(--danger); }
+  .modal.deploy-modal { max-width: 520px; width: min(520px, calc(100vw - 32px)); }
 
   .output-wrap { position: relative; }
   .output-editor {
@@ -490,7 +493,7 @@
     <div class="brand-logo" aria-hidden="true">D</div>
     <div class="brand-text">
       <h1>ServiceNow Deployment Packager</h1>
-      <p class="subtitle">Package any suite app that has a <code>deploy.manifest.js</code> as an Update Set XML or a Fluent project.</p>
+      <p class="subtitle">Deploy any suite app that has a <code>deploy.manifest.js</code> with the Now SDK (Fluent project).</p>
     </div>
   </div>
   <button type="button" class="theme-toggle" id="themeToggleBtn" data-tip="Switch to dark mode" aria-label="Toggle light/dark mode">
@@ -507,7 +510,7 @@
 </div>
 
 <div class="panel" id="connectionSection" style="display:none;">
-  <p class="panel-intro">Choose a saved connection to fill credentials, or New connection to type them. Connect detects the vendor prefix and whether this app is already installed. Requires CORS from this origin to the instance; if the browser blocks the request, Download the XML instead.</p>
+  <p class="panel-intro">Choose a saved connection to fill credentials, or New connection to type them. Connect detects the vendor prefix and whether this app is already installed. Requires CORS from this origin to the instance. Deploy uses the local SDK bridge with these credentials.</p>
   <div class="saved-row">
     <div class="field">
       <label for="savedInstanceSelect">Saved connection</label>
@@ -544,7 +547,7 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8z"/></svg>
       Connect
     </button>
-    <button type="button" class="action-btn secondary" id="disconnectBtn" hidden data-tip="End the live session - Upload and uniqueness checks stop until you Connect again">
+    <button type="button" class="action-btn secondary" id="disconnectBtn" hidden data-tip="End the live session - Deploy and uniqueness checks stop until you Connect again">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8z"/><line x1="4" y1="4" x2="20" y2="20"/></svg>
       Disconnect
     </button>
@@ -552,6 +555,16 @@
     <span id="detectStatus" class="status" style="margin:0;"></span>
   </div>
   <p class="field-hint" id="connectionHint">To add a saved connection, leave New connection selected, fill in the fields, then click Save for later.</p>
+</div>
+
+<div class="panel" id="bridgeSection" style="display:none;">
+  <div class="bridge-status" id="bridgeStatusBar" aria-live="polite">
+    <span class="bridge-dot" id="bridgeDot" data-state="checking" aria-hidden="true"></span>
+    <span class="bridge-label" id="bridgeStatusLabel">SDK bridge: checking…</span>
+    <button type="button" class="action-btn secondary bridge-btn" id="bridgeCheckBtn" data-tip="Ping the local SDK bridge again">Check again</button>
+    <button type="button" class="action-btn secondary bridge-btn" id="bridgeCopyCmdBtn" data-tip="Copy: node tools/sn-deployment-packager/sdk-bridge.js">Copy start command</button>
+  </div>
+  <p class="field-hint" style="margin-top:10px;margin-bottom:0;">The browser cannot start Node. If the bridge is offline, run <code>node tools/sn-deployment-packager/sdk-bridge.js</code> from the repo root, then click Check again. Credentials sync to the bridge automatically after Connect when the bridge is online.</p>
 </div>
 
 <div class="panel" id="overridesSection" style="display:none;">
@@ -569,53 +582,41 @@
       <div id="scopeStatus" class="field-status"></div>
     </div>
     <div class="field">
-      <label for="fldVersion">App Version</label>
+      <label for="fldVersion" class="version-label">
+        App Version
+        <span class="tip-host version-tip" id="versionTipHost" data-tip="Version suggestion appears after Connect / rebuild" tabindex="0" aria-label="Version suggestion">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6"/><path d="M12 7h.01"/></svg>
+        </span>
+      </label>
       <input type="text" id="fldVersion" autocomplete="off">
     </div>
   </div>
 </div>
 
 <div class="panel" id="outputSection" style="display:none;">
-  <div class="format-row">
-    <div class="format-toggle" id="formatToggle">
-      <span class="format-pill" id="formatPill" aria-hidden="true"></span>
-      <button type="button" class="fmt-btn active" id="formatXmlBtn">Update Set XML</button>
-      <button type="button" class="fmt-btn" id="formatFluentBtn">Fluent project</button>
-    </div>
-  </div>
-
-  <div class="output-hint" id="outputHint"></div>
-
-  <div class="fluent-controls" id="fluentControls" style="display:none;">
+  <div class="fluent-controls" id="fluentControls">
     <div class="field">
       <label for="fluentFileSelect">Preview file</label>
       <select id="fluentFileSelect"></select>
     </div>
-    <p class="field-hint" id="fluentZipNote">These are the files the Now SDK uses to deploy. Download the zip for the full project (<code>package.json</code>, <code>now.config.json</code>, <code>src/fluent/**</code>, and a README).</p>
+    <p class="field-hint" id="fluentZipNote">These are the files the Now SDK uses to deploy. Use <strong>Deploy with Now SDK</strong> below (requires the local sdk-bridge and a Connect session). The project also lives under <code>apps/&lt;app&gt;/deploy/fluent/</code>.</p>
   </div>
 
   <div class="output-wrap">
-    <div id="outputEditor" class="output-editor" role="textbox" aria-label="Package output" aria-readonly="true"></div>
+    <div id="outputEditor" class="output-editor" role="textbox" aria-label="Fluent project preview" aria-readonly="true"></div>
     <textarea id="outputFallback" class="output-fallback" readonly spellcheck="false" hidden></textarea>
   </div>
   <div class="output-actions">
     <span id="sysIdSummary"></span>
     <div class="output-action-btns">
-      <span class="tip-host" id="downloadBtnTip" data-tip="Download the Update Set as XML">
-        <button type="button" class="action-btn secondary" id="downloadBtn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span id="downloadBtnLabel">Download Update Set</span>
-        </button>
-      </span>
-      <span class="tip-host" id="uploadBtnTip">
-        <button type="button" class="action-btn" id="uploadBtn" style="display:none;">
+      <span class="tip-host" id="deploySdkBtnTip" data-tip="Rebuild Fluent and now-sdk install (syncs Connect credentials first)">
+        <button type="button" class="action-btn" id="deploySdkBtn" disabled>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Upload Update Set
+          Deploy with Now SDK
         </button>
       </span>
     </div>
   </div>
-  <div id="uploadStatus" class="status" style="margin-top:8px;"></div>
 </div>
 
 </div>
@@ -638,10 +639,27 @@
   </div>
 </div>
 
-<script src="core.js?v=20260727f"></script>
-<script src="instance.js?v=20260727f"></script>
-<script src="fluent.js?v=20260727f"></script>
-<script src="zip.js?v=20260727f"></script>
-<script src="console.js?v=20260727f"></script>
+<div class="modal-overlay" id="deployModalOverlay" hidden>
+  <div class="modal deploy-modal" role="dialog" aria-modal="true" aria-labelledby="deployModalTitle">
+    <div class="modal-head">
+      <span id="deployModalTitle">Deploying with Now SDK</span>
+      <button type="button" class="modal-close" id="deployModalCloseBtn" data-tip="Close" aria-label="Close" hidden>✕</button>
+    </div>
+    <p class="modal-hint" id="deployModalStatus">Starting…</p>
+    <div class="deploy-progress-bar" aria-hidden="true">
+      <div class="deploy-progress-fill" id="deployProgressFill"></div>
+    </div>
+    <div class="deploy-progress-log" id="deployProgressLog"></div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn primary" id="deployModalDoneBtn" hidden>Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="core.js?v=20260727m"></script>
+<script src="semver.js?v=20260727m"></script>
+<script src="instance.js?v=20260727m"></script>
+<script src="fluent.js?v=20260727m"></script>
+<script src="console.js?v=20260727m"></script>
 </body>
 </html>

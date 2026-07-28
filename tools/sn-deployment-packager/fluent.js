@@ -1,11 +1,10 @@
-/* Fluent (ServiceNow Now SDK) serializer - the second output target of the SN Deployment Packager,
-   parallel to core.js's assembleXml(). Where assembleXml() emits ONE Update Set <unload> string,
+/* Fluent (ServiceNow Now SDK) serializer for the SN Deployment Packager.
    assembleFluent() emits a whole Now SDK TypeScript PROJECT as a file-map ({ 'relative/path':
-   'contents' }); the host (the deploy console) zips and downloads it. Pure and I/O-free, same as
-   the core - it takes the already-extracted `parts` (from core.buildParts) plus the manifest, and
-   returns data. No fetch, no fs, no zip here.
+   'contents' }). Pure and I/O-free, same as the core - it takes the already-extracted `parts`
+   (from core.buildParts) plus the manifest, and returns data. No fetch, no fs, no zip here.
+   The deploy console previews the map and installs via sdk-bridge; the Node CLI may also zip it.
 
-   Both output targets walk the SAME shared record model (core.buildRecordModel) - see that
+   Walks the SAME shared record model (core.buildRecordModel) - see that
    function's doc comment in core.js for the field shape. This file's only job is
    deciding HOW to render each record as Fluent: `sp_widget`/`sp_angular_provider` use Fluent's
    TYPED APIs (SPWidget/SPAngularProvider from '@servicenow/sdk/core'), with every `cdata`-flagged
@@ -22,10 +21,10 @@
    records - re-importing one over the other updates in place instead of duplicating.
 
    controllerAs comes from the shared record model's controller_as field (manifest.controllerAs,
-   default 'vm'). We do NOT list angularProviders on the widget: providers deploy as their own
-   sp_angular_provider records and AngularJS injects them BY NAME from the shared page injector at
-   runtime - same as the XML path, which also creates no widget->provider m2m link. Omitting it
-   keeps keys.ts free of composite m2m entries and matches the XML behavior exactly. */
+   default 'vm'). Widgets that inject Angular providers list them on SPWidget.angularProviders so
+   Service Portal creates the widget↔provider m2m and the controller's DI can resolve them. (XML
+   historically omitted that m2m and relied on global injector coincidence - that fails for
+   Fluent/scoped installs, which is why {{c.*}} bindings show unbound when providers are missing.) */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -50,6 +49,22 @@
     return undefined;
   }
 
+  // Fluent Record() data is typed (SDK 4.9+ table schemas). The shared record model stores many
+  // values as XML-friendly strings ('false', '1', ''); coerce here so .now.ts typechecks. XML
+  // assembly still uses the raw model unchanged.
+  function coerceFluentValue(name, value) {
+    if (value === '' && (name === 'roles' || name === 'role')) { return undefined; }
+    if (name === 'roles' && typeof value === 'string' && value) { return [value]; }
+    if (name === 'bootstrap_alt' || name === 'internal' || name === 'active' || name === 'public') {
+      if (value === 'true' || value === true) { return true; }
+      if (value === 'false' || value === false) { return false; }
+    }
+    if ((name === 'order' || name === 'size') && typeof value === 'string' && /^-?\d+$/.test(value)) {
+      return parseInt(value, 10);
+    }
+    return value;
+  }
+
   // The "real" fields a generic Record() carries - everything except XML-only bookkeeping
   // (sys_id/sys_name/sys_scope/sys_update_name/sys_class_name via `xmlOnly`/`scopeTag`) and the
   // self-closing `empty` tags (sp_widget-only, handled by the typed-widget branch instead).
@@ -57,7 +72,9 @@
     var data = {};
     rec.fields.forEach(function (f) {
       if (f.xmlOnly || f.scopeTag || f.empty) { return; }
-      data[f.name] = f.value;
+      var v = coerceFluentValue(f.name, f.value);
+      if (v === undefined) { return; }
+      data[f.name] = v;
     });
     return data;
   }
@@ -68,7 +85,13 @@
   function renderRecord(key, table, data) {
     var lines = Object.keys(data).map(function (f) {
       var v = data[f];
-      var rendered = typeof v === 'boolean' || typeof v === 'number' ? String(v) : jsStr(v);
+      var rendered;
+      if (typeof v === 'boolean' || typeof v === 'number') { rendered = String(v); }
+      else if (Array.isArray(v)) {
+        rendered = '[' + v.map(function (item) {
+          return typeof item === 'string' ? jsStr(item) : String(item);
+        }).join(', ') + ']';
+      } else { rendered = jsStr(v); }
       return '        ' + f + ': ' + rendered + ',';
     });
     return "Record({\n    $id: Now.ID[" + jsStr(key) + "],\n    table: " + jsStr(table) +
@@ -94,42 +117,18 @@
     var model = core.buildRecordModel(manifest, parts);
     var files = {};
     var keyRegistry = []; // { key, table, id } - drives generated/keys.ts
-    var providerDecls = [];
+    var providerDecls = []; // { name, decl } - exported consts the widget imports
     var pageRecs = [];
     var portalRecs = [];
     var roleRecs = [];
+    var widgetRec = null;
 
     model.records.forEach(function (rec) {
       if (rec.table === 'sys_app') { return; } // identity lives in now.config.json, not a Record
       keyRegistry.push({ key: rec.key, table: rec.table, id: rec.sysId });
 
       if (rec.table === 'sp_widget') {
-        files['src/fluent/widgets/' + slug + '.client.js'] = fieldValue(rec, 'client_script');
-        files['src/fluent/widgets/' + slug + '.html'] = fieldValue(rec, 'template');
-        files['src/fluent/widgets/' + slug + '.scss'] = fieldValue(rec, 'css');
-        files['src/fluent/widgets/' + slug + '.server.js'] = fieldValue(rec, 'script');
-        var link = fieldValue(rec, 'link');
-        var lines = [
-          "import { SPWidget } from '@servicenow/sdk/core'", '',
-          'SPWidget({',
-          "    $id: Now.ID['widget'],",
-          '    name: ' + jsStr(fieldValue(rec, 'name')) + ',',
-          '    id: ' + jsStr(fieldValue(rec, 'id')) + ',',
-          '    description: ' + jsStr(fieldValue(rec, 'description')) + ',',
-          '    controllerAs: ' + jsStr(fieldValue(rec, 'controller_as') || 'vm') + ',',
-          '    hasPreview: true,',
-          "    category: 'custom',",
-          "    clientScript: Now.include('" + slug + ".client.js'),",
-          "    serverScript: Now.include('" + slug + ".server.js'),",
-          "    htmlTemplate: Now.include('" + slug + ".html'),",
-          "    customCss: Now.include('" + slug + ".scss'),",
-        ];
-        if (link) {
-          files['src/fluent/widgets/' + slug + '.link.js'] = link;
-          lines.push("    linkScript: Now.include('" + slug + ".link.js'),");
-        }
-        lines.push('})', '');
-        files['src/fluent/widgets/' + slug + '.now.ts'] = lines.join('\n');
+        widgetRec = rec;
         return;
       }
 
@@ -137,14 +136,16 @@
         var pname = fieldValue(rec, 'name');
         var ptype = fieldValue(rec, 'type');
         files['src/fluent/providers/' + pname + '.js'] = fieldValue(rec, 'script');
-        providerDecls.push(
-          "SPAngularProvider({\n" +
-          "    $id: Now.ID[" + jsStr(pname) + "],\n" +
-          "    name: " + jsStr(pname) + ",\n" +
-          "    type: " + jsStr(ptype === 'directive' ? 'directive' : 'service') + ",\n" +
-          "    script: Now.include(" + jsStr(pname + '.js') + "),\n" +
-          "})"
-        );
+        providerDecls.push({
+          name: pname,
+          decl:
+            'export const ' + pname + ' = SPAngularProvider({\n' +
+            "    $id: Now.ID[" + jsStr(pname) + "],\n" +
+            "    name: " + jsStr(pname) + ",\n" +
+            "    type: " + jsStr(ptype === 'directive' ? 'directive' : 'service') + ",\n" +
+            "    script: Now.include(" + jsStr(pname + '.js') + "),\n" +
+            "})",
+        });
         return;
       }
 
@@ -155,9 +156,50 @@
       else { roleRecs.push(rendered); } // sys_user_role/sys_user_group/sys_group_has_role/sys_security_acl*
     });
 
+    if (widgetRec) {
+      var rec = widgetRec;
+      files['src/fluent/widgets/' + slug + '.client.js'] = fieldValue(rec, 'client_script');
+      files['src/fluent/widgets/' + slug + '.html'] = fieldValue(rec, 'template');
+      files['src/fluent/widgets/' + slug + '.scss'] = fieldValue(rec, 'css');
+      files['src/fluent/widgets/' + slug + '.server.js'] = fieldValue(rec, 'script');
+      var link = fieldValue(rec, 'link');
+      var importLines = ["import { SPWidget } from '@servicenow/sdk/core'"];
+      if (providerDecls.length) {
+        importLines.push(
+          'import { ' + providerDecls.map(function (p) { return p.name; }).join(', ') +
+          " } from '../providers/" + slug + ".providers'"
+        );
+      }
+      var lines = importLines.concat([
+        '',
+        'SPWidget({',
+        "    $id: Now.ID['widget'],",
+        '    name: ' + jsStr(fieldValue(rec, 'name')) + ',',
+        '    id: ' + jsStr(fieldValue(rec, 'id')) + ',',
+        '    description: ' + jsStr(fieldValue(rec, 'description')) + ',',
+        '    controllerAs: ' + jsStr(fieldValue(rec, 'controller_as') || 'vm') + ',',
+        '    hasPreview: true,',
+        "    category: 'custom',",
+        "    clientScript: Now.include('" + slug + ".client.js'),",
+        "    serverScript: Now.include('" + slug + ".server.js'),",
+        "    htmlTemplate: Now.include('" + slug + ".html'),",
+        "    customCss: Now.include('" + slug + ".scss'),",
+      ]);
+      if (providerDecls.length) {
+        lines.push('    angularProviders: [' + providerDecls.map(function (p) { return p.name; }).join(', ') + '],');
+      }
+      if (link) {
+        files['src/fluent/widgets/' + slug + '.link.js'] = link;
+        lines.push("    linkScript: Now.include('" + slug + ".link.js'),");
+      }
+      lines.push('})', '');
+      files['src/fluent/widgets/' + slug + '.now.ts'] = lines.join('\n');
+    }
+
     if (providerDecls.length) {
       files['src/fluent/providers/' + slug + '.providers.now.ts'] =
-        "import { SPAngularProvider } from '@servicenow/sdk/core'\n\n" + providerDecls.join('\n\n') + "\n";
+        "import { SPAngularProvider } from '@servicenow/sdk/core'\n\n" +
+        providerDecls.map(function (p) { return p.decl; }).join('\n\n') + "\n";
     }
     files['src/fluent/page/' + slug + '.page.now.ts'] =
       "import { Record } from '@servicenow/sdk/core'\n\n" + pageRecs.join('\n\n') + "\n";
@@ -218,8 +260,7 @@
       'Generated by the SN Deployment Packager. **These are the files the Now SDK needs to deploy this app.**\n' +
       'The zip is a full ServiceNow Now SDK project: Service Portal widget, Angular providers, page' +
       (hasPortal ? ', portal, and theme' : '') +
-      ' as metadata-as-code. Record sys_ids match the Update Set XML build, so XML and Fluent installs\n' +
-      'update the same records.\n\n' +
+      ' as metadata-as-code. Reinstalls update the same records via stable sys_ids.\n\n' +
       '## Prerequisites\n\n' +
       '- Node.js + npm\n' +
       '- Access to a ServiceNow instance that supports the Now SDK / Fluent deploy path\n' +

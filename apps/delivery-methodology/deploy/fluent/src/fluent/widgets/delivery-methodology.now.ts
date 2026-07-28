@@ -1,4 +1,5 @@
 import { SPWidget } from '@servicenow/sdk/core'
+import { ThemeService, DataService } from '../providers/delivery-methodology.providers'
 
 SPWidget({
     $id: Now.ID['widget'],
@@ -12,4 +13,5 @@ SPWidget({
     serverScript: Now.include('delivery-methodology.server.js'),
     htmlTemplate: Now.include('delivery-methodology.html'),
     customCss: Now.include('delivery-methodology.scss'),
+    angularProviders: [ThemeService, DataService],
 })

@@ -114,16 +114,18 @@
     </div>
 
     <div ng-if="c.view === 'journey'">
-    <div class="journey-chrome">
     <div class="struct-toggle-row" ng-if="c.structureEditUiEnabled">
       <button type="button" class="struct-toggle-btn" ng-class="{on: c.structureEditMode}" ng-click="c.toggleStructureEdit()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
         {{c.structureEditMode ? 'Done editing structure' : 'Edit structure'}}
       </button>
     </div>
-    <div class="road" style="--stations: {{c.curMeth().phases.length}}; --active: {{c.activePhaseIndex()}};">
-      <button type="button" class="station" ng-repeat="p in c.curMeth().phases"
-              ng-class="{done: $index < c.activePhaseIndex(), on: $index === c.activePhaseIndex()}"
+    <!-- One mounted journey chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
+         toggles visibility instead of destroying/rebuilding every station + film card. -->
+    <div class="journey-chrome" ng-repeat="m in c.methodologies track by m.id" ng-show="m.id === c.methodologyId">
+    <div class="road" style="--stations: {{m.phases.length}}; --active: {{c.phaseIndexInMeth(m)}};">
+      <button type="button" class="station" ng-repeat="p in m.phases track by p.id"
+              ng-class="{done: $index < c.phaseIndexInMeth(m), on: $index === c.phaseIndexInMeth(m)}"
               style="--nc: {{c.phaseColor($index)}};"
               ng-click="c.selectPhase($index)">
         <span class="station-num">{{$index + 1}}<span class="unread-dot" ng-if="c.phaseHasUnread(p)"></span></span>
@@ -132,11 +134,13 @@
       </button>
     </div>
 
-    <p class="strip-label">{{c.curMeth().phases[c.activePhaseIndex()].name}} - sub-phases</p>
-    <div class="film">
-      <div class="fcard" ng-repeat="s in c.curMeth().phases[c.activePhaseIndex()].subPhases"
+    <p class="strip-label">{{m.phases[c.phaseIndexInMeth(m)].name}} - sub-phases</p>
+    <!-- Keep every phase's filmstrip mounted; ng-show swaps which strip is visible so phase
+         changes (and returning to a methodology) don't rebuild the cards. -->
+    <div class="film" ng-repeat="p in m.phases track by p.id" ng-show="$index === c.phaseIndexInMeth(m)">
+      <div class="fcard" ng-repeat="s in p.subPhases track by s.id"
               ng-class="{on: s.id === c.subPhaseId, stub: !c.hasContent(s)}"
-              style="--pc: {{c.activeColor()}};"
+              style="--pc: {{c.phaseColor($parent.$index)}};"
               role="button"
               tabindex="0"
               ng-click="c.openSubPhase(s.id)"
@@ -156,7 +160,7 @@
 
     <div class="struct-toolbar" ng-if="c.structureEditMode">
       <p class="struct-toolbar-hint">Rename phases and sub-phases inline, reorder with the arrows, or remove them. Adding a new sub-phase opens it straight into edit mode so you can write it.</p>
-      <div class="struct-phase" ng-repeat="p in c.curMeth().phases">
+      <div class="struct-phase" ng-repeat="p in m.phases track by p.id">
         <div class="struct-phase-head">
           <span class="struct-num">{{$index + 1}}</span>
           <input type="text" class="edit-in struct-rename" ng-model="p.name" ng-model-options="{updateOn: 'blur'}" ng-change="c.renamePhase(p)" placeholder="Phase name" aria-label="Phase name">
@@ -167,7 +171,7 @@
           </span>
         </div>
         <div class="struct-subphase-list">
-          <div class="struct-subphase" ng-repeat="s in p.subPhases">
+          <div class="struct-subphase" ng-repeat="s in p.subPhases track by s.id">
             <span class="struct-sid">{{s.sid}}</span>
             <input type="text" class="edit-in struct-rename" ng-model="s.name" ng-model-options="{updateOn: 'blur'}" ng-change="c.renameSubPhase(s)" placeholder="Sub-phase name" aria-label="Sub-phase name">
             <span class="struct-controls">

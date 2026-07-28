@@ -208,6 +208,9 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   c.methodologies = [];
   c.methodologyId = null;
   c.subPhaseId = null;
+  // Last-opened sub-phase per methodology. Lets Project ↔ GRS (and back) resume where you were,
+  // and keeps each methodology's pre-mounted filmstrip on the right phase while it's hidden.
+  var methSubPhaseById = {};
   // c.loc (not a c.currentLoc() function) is deliberate: findSubPhase() below builds a fresh
   // {meth, phase, phaseIndex, sp} wrapper object on every call, so binding it directly into the
   // template as a function call (ng-if="c.currentLoc()") never reference-equals its previous
@@ -261,6 +264,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     JARGON = d.jargon || {};
     c.methodologyId = c.methodologies[0].id;
     c.subPhaseId = firstContentSubPhase(curMeth());
+    methSubPhaseById[c.methodologyId] = c.subPhaseId;
     refreshLoc();
     refreshWhatsNew();
     refreshJobAids();
@@ -384,6 +388,18 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     }
     return 0;
   };
+  // Phase index for a specific methodology (active uses c.subPhaseId; hidden uses the remembered
+  // last visit). Used by the per-methodology ng-show journey chrome so a hidden meth's filmstrip
+  // stays on the right phase instead of tracking the active meth's sub-phase.
+  c.phaseIndexInMeth = function (m) {
+    if (!m || !m.phases || !m.phases.length) { return 0; }
+    var subId = (m.id === c.methodologyId) ? c.subPhaseId : methSubPhaseById[m.id];
+    if (!subId) { return 0; }
+    for (var i = 0; i < m.phases.length; i++) {
+      if (m.phases[i].subPhases.some(function (s) { return s.id === subId; })) { return i; }
+    }
+    return 0;
+  };
   c.activePhaseIndex = function () { return c.phaseIndexOfSub(c.subPhaseId); };
   c.activeColor = function () { return PHASE_COLORS[c.activePhaseIndex() % PHASE_COLORS.length]; };
   c.phaseColor = function (i) { return PHASE_COLORS[i % PHASE_COLORS.length]; };
@@ -438,6 +454,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     c.view = snap.view;
     c.methodologyId = snap.methodologyId;
     c.subPhaseId = snap.subPhaseId;
+    if (snap.methodologyId && snap.subPhaseId) { methSubPhaseById[snap.methodologyId] = snap.subPhaseId; }
     refreshLoc();
     if (c.loc) { c.justRead = markRead(c.loc.sp); }
     if (c.view === 'raci') { refreshRg(); }
@@ -482,8 +499,13 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
 
   c.switchMethodology = function (id) {
     if (c.editMode) { showToast('Finish editing first'); return; }
+    if (id === c.methodologyId) { return; }
+    if (c.methodologyId && c.subPhaseId) { methSubPhaseById[c.methodologyId] = c.subPhaseId; }
     c.methodologyId = id;
-    c.openSubPhase(firstContentSubPhase(curMeth()));
+    var resume = methSubPhaseById[id];
+    var loc = resume ? c.findSubPhase(resume) : null;
+    if (!loc || loc.meth.id !== id) { resume = firstContentSubPhase(curMeth()); }
+    c.openSubPhase(resume);
     if (c.view === 'raci') { refreshRg(); }
   };
   c.selectPhase = function (phaseIndex) {
@@ -496,8 +518,9 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   c.openSubPhase = function (id) {
     if (c.editMode) { return; }
     c.subPhaseId = id;
+    if (c.methodologyId) { methSubPhaseById[c.methodologyId] = id; }
     refreshLoc();
-    c.justRead = markRead(c.loc.sp);
+    c.justRead = c.loc ? markRead(c.loc.sp) : [];
     pushNav();
   };
   // Used by RACI / What's New / Search results, which can point at a sub-phase in the OTHER

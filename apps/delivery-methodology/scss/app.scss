@@ -780,6 +780,9 @@ button {
   gap: 12px;
   margin-bottom: 4px;
 }
+.film.ng-hide {
+  margin-bottom: 0;
+}
 
 .struct-toggle-row {
   display: flex;
