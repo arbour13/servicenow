@@ -45,8 +45,9 @@
 <script src="js/app.module.js"></script>
 <script src="js/data/seed.js"></script>
 <script src="js/services/theme.service.js"></script>
-<script src="js/services/data.service.js"></script>
-<script src="js/controllers/main.controller.js"></script>
+  <script src="js/services/data.service.js"></script>
+  <script src="js/services/changelog-diff.service.js"></script>
+  <script src="js/controllers/main.controller.js"></script>
 
   <div class="app" ng-controller="MainController as c" ng-class="{editing: c.editMode || c.structureEditMode, 'search-active': c.searchOpen()}"
     ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">

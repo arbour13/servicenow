@@ -2,7 +2,7 @@
    from innerHTML-string building into controller state + declarative template bindings
    (index.html). All views (Journey read + edit, RACI grid/by-role, Reference, What's New, Search)
    are ported. */
-angular.module('deliveryMethodology').controller('MainController', ['DataService', '$sce', '$timeout', '$q', 'ThemeService', function (DataService, $sce, $timeout, $q, ThemeService) {
+angular.module('deliveryMethodology').controller('MainController', ['DataService', '$sce', '$timeout', '$q', 'ThemeService', 'ChangelogDiffService', function (DataService, $sce, $timeout, $q, ThemeService, ChangelogDiffService) {
   'use strict';
   var c = this;
 
@@ -1070,7 +1070,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   }
   c.saveEdit = function () {
     collapseJobAidRoles(c.editSp);
-    var changes = describeChanges(c.editSnapshot, c.editSp);
+    var changes = ChangelogDiffService.describeChanges(c.editSnapshot, c.editSp, c.jobTitleById);
     var entries = [];
     var idx = c.loc.phase.subPhases.findIndex(function (s) { return s.id === c.editSp.id; });
     var previous = deepClone(c.editSnapshot);
@@ -1099,135 +1099,6 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
       refreshLoc();
     });
   };
-
-  // ---- change diffing (ported from the prototype's describeChanges/diffLoe/diffMeetings/diffRaci) ----
-  function truncateText(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
-  // True only for a PURE reorder: same items, same counts, different positions. Returns false (not
-  // "unknown") whenever an add/remove is present, so callers can safely check this after their own
-  // add/remove diff came up empty without double-reporting.
-  function idSequenceChanged(beforeIds, afterIds) {
-    if (beforeIds.length !== afterIds.length) { return false; }
-    var sortedB = beforeIds.slice().sort(), sortedA = afterIds.slice().sort();
-    for (var i = 0; i < sortedB.length; i++) { if (sortedB[i] !== sortedA[i]) { return false; } }
-    for (var i2 = 0; i2 < beforeIds.length; i2++) { if (beforeIds[i2] !== afterIds[i2]) { return true; } }
-    return false;
-  }
-  // Multiset-based (not indexOf-based) so a duplicate string added/removed is counted correctly -
-  // e.g. before=['ROM','ROM'], after=['ROM'] correctly reports one removal instead of nothing. Falls
-  // back to a reorder entry when every count matches but the position order doesn't.
-  function diffListField(before, after, label) {
-    before = before || []; after = after || [];
-    var out = [];
-    var bCount = {}, aCount = {};
-    before.forEach(function (x) { bCount[x] = (bCount[x] || 0) + 1; });
-    after.forEach(function (x) { aCount[x] = (aCount[x] || 0) + 1; });
-    Object.keys(bCount).concat(Object.keys(aCount)).filter(function (v, i, a) { return a.indexOf(v) === i; }).forEach(function (x) {
-      var diff = (aCount[x] || 0) - (bCount[x] || 0);
-      for (var i = 0; i < diff; i++) { out.push(label + ' added: “' + truncateText(x, 60) + '”'); }
-      for (var i2 = 0; i2 < -diff; i2++) { out.push(label + ' removed: “' + truncateText(x, 60) + '”'); }
-    });
-    if (!out.length && idSequenceChanged(before, after)) { out.push(label + 's reordered'); }
-    return out;
-  }
-  function diffRaci(before, after, taskLabel) {
-    before = before || {}; after = after || {};
-    var ids = Object.keys(before).concat(Object.keys(after)).filter(function (v, i, a) { return a.indexOf(v) === i; });
-    var out = [];
-    ids.forEach(function (id) {
-      var b = (before[id] || []).join(''), a = (after[id] || []).join('');
-      if (b === a) { return; }
-      var jt = c.jobTitleById(id), abbr = jt ? jt.abbr : id;
-      if (!b) { out.push('RACI added on “' + taskLabel + '”: ' + abbr + ' (' + a + ')'); }
-      else if (!a) { out.push('RACI removed on “' + taskLabel + '”: ' + abbr); }
-      else { out.push('RACI changed on “' + taskLabel + '”: ' + abbr + ' ' + b + ' → ' + a); }
-    });
-    return out;
-  }
-  function loeEntrySame(a, b) {
-    a = a || {}; b = b || {};
-    return (a.text || '') === (b.text || '') && !!a.billable === !!b.billable && !!a.optional === !!b.optional;
-  }
-  function diffLoe(before, after) {
-    before = before || { mode: 'all', all: {}, roles: {} };
-    after = after || { mode: 'all', all: {}, roles: {} };
-    var out = [];
-    if (before.mode !== after.mode) { out.push(after.mode === 'all' ? 'Level of effort set to one value for all participants' : 'Level of effort broken out per role'); }
-    if (after.mode === 'all') {
-      if (!loeEntrySame(before.all, after.all)) { out.push('Level of effort updated (all participants)'); }
-    } else {
-      var ids = Object.keys(before.roles || {}).concat(Object.keys(after.roles || {})).filter(function (v, i, a) { return a.indexOf(v) === i; });
-      ids.forEach(function (id) {
-        var b = (before.roles || {})[id], a = (after.roles || {})[id];
-        if (loeEntrySame(b, a)) { return; }
-        // Switching to "Per role" auto-seeds every participant with a default entry (empty text,
-        // role-default billable/optional flags) so the picker has rows to show - that seeding alone
-        // isn't a user-authored change. Only log it once real text exists on either side; a
-        // flag-only difference on an otherwise-empty row is noise, not content.
-        if (!(b && b.text) && !(a && a.text)) { return; }
-        var jt = c.jobTitleById(id);
-        out.push('Level of effort updated for ' + (jt ? jt.abbr : id));
-      });
-    }
-    return out;
-  }
-  function meetingLabel(m) {
-    if (m && m.name) { return m.name; }
-    var parts = [];
-    var sb = m.scheduledBy && c.jobTitleById(m.scheduledBy);
-    var lb = m.ledBy && c.jobTitleById(m.ledBy);
-    if (sb) { parts.push('scheduled by ' + sb.abbr); }
-    if (lb) { parts.push('led by ' + lb.abbr); }
-    return parts.length ? parts.join(', ') : 'meeting';
-  }
-  function meetingSame(a, b) { return a.name === b.name && a.scheduledBy === b.scheduledBy && a.ledBy === b.ledBy && !!a.external === !!b.external; }
-  function diffMeetings(before, after) {
-    var out = [];
-    var beforeById = {}; (before || []).forEach(function (m) { beforeById[m.id] = m; });
-    var afterById = {}; (after || []).forEach(function (m) { afterById[m.id] = m; });
-    (after || []).forEach(function (m) {
-      if (!beforeById[m.id]) { out.push('Meeting added: “' + meetingLabel(m) + '”'); return; }
-      if (!meetingSame(beforeById[m.id], m)) { out.push('Meeting edited: “' + meetingLabel(m) + '”'); }
-    });
-    (before || []).forEach(function (m) { if (!afterById[m.id]) { out.push('Meeting removed: “' + meetingLabel(m) + '”'); } });
-    if (!out.length && idSequenceChanged((before || []).map(function (m) { return m.id; }), (after || []).map(function (m) { return m.id; }))) { out.push('Meetings reordered'); }
-    return out;
-  }
-  function diffParticipants(before, after) {
-    before = before || []; after = after || [];
-    var out = [];
-    after.filter(function (id) { return before.indexOf(id) < 0; }).forEach(function (id) {
-      var jt = c.jobTitleById(id); out.push('Participant added: ' + (jt ? jt.abbr : id));
-    });
-    before.filter(function (id) { return after.indexOf(id) < 0; }).forEach(function (id) {
-      var jt = c.jobTitleById(id); out.push('Participant removed: ' + (jt ? jt.abbr : id));
-    });
-    return out;
-  }
-  function describeChanges(before, after) {
-    var changes = [];
-    if (before.name !== after.name) { changes.push('Renamed to “' + after.name + '”'); }
-    if (before.overview !== after.overview) { changes.push('Overview edited'); }
-    if (before.objective !== after.objective) { changes.push('Objective edited'); }
-    changes = changes.concat(diffParticipants(before.participants, after.participants));
-    changes = changes.concat(diffLoe(before.levelOfEffort, after.levelOfEffort));
-    changes = changes.concat(diffMeetings(before.meetings, after.meetings));
-    changes = changes.concat(diffListField(before.inputs, after.inputs, 'Input'));
-    changes = changes.concat(diffListField(before.deliverables, after.deliverables, 'Deliverable'));
-    changes = changes.concat(diffListField(before.comments, after.comments, 'Comment'));
-    var beforeTasks = {}; (before.tasks || []).forEach(function (t) { beforeTasks[t.id] = t; });
-    var afterTasks = {}; (after.tasks || []).forEach(function (t) { afterTasks[t.id] = t; });
-    (after.tasks || []).forEach(function (t) {
-      var label = truncateText(t.text, 50);
-      if (!beforeTasks[t.id]) { changes.push('Task added: “' + label + '”'); return; }
-      var bt = beforeTasks[t.id];
-      if (bt.text !== t.text) { changes.push('Task edited: “' + label + '”'); }
-      if (JSON.stringify(bt.jobAids || []) !== JSON.stringify(t.jobAids || [])) { changes.push('Job aids updated on “' + label + '”'); }
-      changes = changes.concat(diffRaci(bt.raci, t.raci, label));
-    });
-    (before.tasks || []).forEach(function (t) { if (!afterTasks[t.id]) { changes.push('Task removed: “' + truncateText(t.text, 50) + '”'); } });
-    if (idSequenceChanged((before.tasks || []).map(function (t) { return t.id; }), (after.tasks || []).map(function (t) { return t.id; }))) { changes.push('Tasks reordered'); }
-    return changes;
-  }
 
   // ---- list fields: comments / inputs / deliverables (plain string arrays) ----
   c.addListItem = function (kind) { c.editSp[kind].push(''); };
