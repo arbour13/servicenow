@@ -30,6 +30,9 @@
   --navy-2: var(--hs-navy-2);
   --teal: var(--hs-teal);
   --teal-wash: rgba(0, 224, 172, 0.12);
+  /* Stronger wash / border tint for billable pills, focus bars, edit ordinals. Light mode overrides. */
+  --teal-wash-strong: rgba(0, 224, 172, 0.18);
+  --teal-line: rgba(0, 224, 172, 0.35);
   --gradient-pill: linear-gradient(90deg, #21fbc8 0%, #3ec2f8 100%);
   --gradient-pill-hover: linear-gradient(90deg, #a7ffeb 0%, #49c6fa 100%);
   /* Text sitting ON --gradient-pill. Split out of --text-on-primary because that token has two
@@ -197,6 +200,10 @@
   --gradient-card-2: linear-gradient(135deg, #e2f6fa 0%, #bfe7ef 100%);
   --shadow-md: 0 4px 10px 0 rgba(10, 33, 54, 0.12);
   --shadow-sm: 2px 2px 8px 0 rgba(10, 33, 54, 0.08);
+  /* Darker teal washes so mint does not glow on the pale page (matches light --teal / --hs-teal). */
+  --teal-wash: rgba(0, 92, 99, 0.1);
+  --teal-wash-strong: rgba(0, 92, 99, 0.16);
+  --teal-line: rgba(0, 92, 99, 0.35);
 }
 
 /* select.edit-in's dropdown-arrow stroke is baked into a data-URI background-image (can't take a
@@ -351,7 +358,11 @@ button {
 
 .hsearch input:focus {
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(0, 224, 172, 0.2);
+}
+
+.hsearch input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .hsearch svg {
@@ -504,7 +515,20 @@ button {
 .meth-tab:focus-visible,
 .vtab:focus-visible,
 .loe-mode-btn:focus-visible,
-.btn:focus-visible {
+.btn:focus-visible,
+.participant-chip:focus-visible,
+.ja-rolechip:focus-visible,
+.rg-pchip:focus-visible,
+.jt-pick-btn:focus-visible,
+.raci-toggle:focus-visible,
+.reorder-btn:focus-visible,
+.field-x:focus-visible,
+.x-btn:focus-visible,
+.add-item-btn:focus-visible,
+.loe-flag-btn:focus-visible,
+.meth-intro-toggle:focus-visible,
+.sp-brief-toggle:focus-visible,
+.loe-billable-toggle.jargon-toggle:focus-within {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
 }
@@ -682,6 +706,10 @@ button {
   .vtab span {
     display: none;
   }
+  /* Grid / By Role need text - icons alone are ambiguous at this size. */
+  .views.secondary .vtab span {
+    display: inline;
+  }
   .views {
     justify-content: space-between;
   }
@@ -756,11 +784,6 @@ button {
 
 .sp-brief-body .sec {
   margin-top: 14px;
-}
-
-.sp-brief-toggle:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
 }
 
 .meth-intro-feedback {
@@ -1478,6 +1501,99 @@ h1.sp-title {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Confirm dialog (MessagingService) - theme-aware panel, not the always-dark toast chrome. */
+.msg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(4, 19, 31, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+:root[data-theme="light"] .msg-overlay {
+  background: rgba(10, 33, 54, 0.35);
+}
+
+.msg-dialog {
+  width: min(420px, 100%);
+  background: var(--navy-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  padding: 18px 20px 16px;
+}
+
+.msg-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.msg-dialog-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.msg-dialog-x {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.msg-dialog-x:hover {
+  color: var(--ink);
+  background: var(--surface-flat);
+}
+
+.msg-dialog-x:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.msg-dialog-body {
+  margin: 10px 0 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.msg-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn.danger {
+  background: #b42318;
+  border-color: #b42318;
+  color: #fff;
+}
+
+.btn.danger:hover {
+  background: #912018;
+  border-color: #912018;
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.btn.danger:disabled {
+  opacity: 0.55;
+}
+
 .task {
   background: var(--surface-2);
   border-radius: 12px;
@@ -1644,9 +1760,9 @@ h4.sec {
 }
 
 .loe-pill.bill {
-  background: rgba(63, 224, 197, 0.15);
+  background: var(--teal-wash);
   color: var(--hs-mint);
-  border: 1px solid rgba(63, 224, 197, 0.4);
+  border: 1px solid var(--teal-line);
 }
 
 .loe-pill.opt {
@@ -2132,6 +2248,14 @@ table.ttbl .jobaid {
   box-shadow: var(--shadow-inset);
 }
 
+.btn:disabled,
+.btn.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+
 .btn.sm {
   height: 28px;
   padding: 0 12px;
@@ -2340,8 +2464,17 @@ select.edit-in option {
   margin: 24px 0 8px;
 }
 
-.sechead h4.sec {
+.sechead h4.sec,
+.sechead .section-label {
   margin: 0;
+}
+
+.sechead .section-label {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: block;
 }
 
 .list-edit-row {
@@ -2512,7 +2645,7 @@ select.edit-in option {
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  background: rgba(0, 224, 172, 0.18);
+  background: var(--teal-wash-strong);
   color: var(--teal);
   font-family: var(--font-mono);
   font-size: 12px;
@@ -2861,7 +2994,7 @@ select.edit-in option {
 }
 
 .loe-flag-btn.on.billable {
-  background: rgba(63, 224, 197, 0.18);
+  background: var(--teal-wash-strong);
   color: var(--hs-mint);
 }
 
@@ -3068,8 +3201,8 @@ select.edit-in option {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(63, 224, 197, 0.08);
-  border: 1px solid rgba(63, 224, 197, 0.3);
+  background: var(--teal-wash);
+  border: 1px solid var(--teal-line);
   border-radius: 8px;
   padding: 8px 14px;
   margin-bottom: 14px;

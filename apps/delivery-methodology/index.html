@@ -30,7 +30,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=optional"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=20260728am">
+  <link rel="stylesheet" href="css/app.css?v=20260728ap">
 </head>
 
 <body>
@@ -56,8 +56,10 @@
   <script src="js/services/icon.service.js"></script>
   <script src="js/services/tip.service.js"></script>
   <script src="js/services/jargon.service.js"></script>
+  <script src="js/services/messaging.service.js"></script>
   <script src="js/services/content-edit.service.js"></script>
   <script src="js/services/structure-edit.service.js"></script>
+  <script src="js/directives/dm-modal.directive.js"></script>
   <script src="js/controllers/main.controller.js"></script>
 
   <div class="app" ng-controller="MainController as c" ng-class="{editing: c.editMode || c.structureEditMode, 'search-active': c.searchOpen()}"
@@ -70,6 +72,22 @@
     </div>
 
     <div class="toast" ng-class="{show: c.toast.show}">{{c.toast.msg}}</div>
+
+    <div class="msg-overlay" ng-if="c.confirm.open" dm-modal="c.dismissConfirm()" dm-modal-focus="dmConfirmCancel"
+      ng-click="$event.target === $event.currentTarget && c.dismissConfirm()">
+      <div class="msg-dialog" role="dialog" aria-modal="true" aria-labelledby="dmConfirmTitle"
+        ng-click="$event.stopPropagation()">
+        <div class="msg-dialog-head">
+          <h2 id="dmConfirmTitle" class="msg-dialog-title">{{c.confirm.title}}</h2>
+          <button type="button" class="msg-dialog-x" ng-click="c.dismissConfirm()" aria-label="Close">&times;</button>
+        </div>
+        <p class="msg-dialog-body">{{c.confirm.body}}</p>
+        <div class="msg-dialog-actions">
+          <button id="dmConfirmCancel" type="button" class="btn" ng-click="c.dismissConfirm()">{{c.confirm.cancel}}</button>
+          <button type="button" class="btn danger" ng-click="c.acceptConfirm()">{{c.confirm.ok}}</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Search results overlay: fixed layer so the header search + theme toggle never move.
        Closing without picking a result leaves the underlying view exactly as it was. -->
@@ -254,8 +272,8 @@
             <span class="flag">&#9679; Editing structure</span>
             <span class="edit-bar-loc">{{c.curMeth().name}}</span>
             <span class="spacer"></span>
-            <button type="button" class="btn" ng-click="c.cancelStructureEdit()">Cancel</button>
-            <button type="button" class="btn primary" ng-click="c.saveStructureEdit()">Save changes</button>
+            <button type="button" class="btn" ng-click="c.cancelStructureEdit()" ng-disabled="c.isSaving">Cancel</button>
+            <button type="button" class="btn primary" ng-click="c.saveStructureEdit()" ng-disabled="c.isSaving">Save changes</button>
           </div>
 
           <p class="struct-toolbar-hint">Rename the methodology, phases, and sub-phases inline. Reorder with the
@@ -350,7 +368,7 @@
             </div>
           </div>
 
-          <p class="obj faint stub-hint" ng-if="!c.hasContent(c.loc.sp)">This sub-phase hasn&rsquo;t been written yet. Use the
+          <p class="obj faint stub-hint" ng-if="!c.hasContent(c.loc.sp)">Not yet written. Use the
             <b class="stub-hint-edit">edit <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 20h9"></path>
@@ -398,7 +416,7 @@
                     ng-bind-html="c.jargonHtml(comment)"></li>
                 </ul>
               </div>
-              <p class="faint" ng-if="!c.loc.sp.comments.length">None</p>
+              <p class="faint" ng-if="!c.loc.sp.comments.length">None yet</p>
             </div>
 
             <div class="plegend" ng-if="c.participantsOf(c.loc.sp).length">
@@ -500,7 +518,7 @@
                     </tbody>
                   </table>
                 </div>
-                <p ng-if="!c.loc.sp.tasks.length" class="no-tasks-hint">No tasks yet.</p>
+                <p ng-if="!c.loc.sp.tasks.length" class="no-tasks-hint">None yet</p>
                 <div class="rlegend" ng-if="c.loc.sp.tasks.length">
                   <span class="lg" ng-repeat="l in c.raciLetters"><span class="sw"
                       ng-style="{background: c.raciHex[l]}">{{l}}</span>{{c.raciNames[l]}}</span>
@@ -527,8 +545,8 @@
             <span class="flag">&#9679; Editing</span>
             <span class="edit-bar-loc">{{c.loc.phase.name}} &middot; {{c.editSp.sid}} {{c.editSp.name}}</span>
             <span class="spacer"></span>
-            <button type="button" class="btn" ng-click="c.cancelEdit()">Cancel</button>
-            <button type="button" class="btn primary" ng-click="c.saveEdit()">Save changes</button>
+            <button type="button" class="btn" ng-click="c.cancelEdit()" ng-disabled="c.isSaving">Cancel</button>
+            <button type="button" class="btn primary" ng-click="c.saveEdit()" ng-disabled="c.isSaving">Save changes</button>
           </div>
 
           <div class="crumb">{{c.loc.phase.name}} &rsaquo; {{c.editSp.sid}}</div>
@@ -630,7 +648,7 @@
           </div>
 
           <div class="sechead">
-            <h4 class="sec">Comments</h4>
+            <span class="section-label">Comments</span>
           </div>
           <div class="list-edit-row" ng-repeat="comment in c.editSp.comments track by $index">
             <textarea class="edit-in" rows="2" ng-model="c.editSp.comments[$index]"></textarea>
@@ -652,7 +670,7 @@
           <button type="button" class="add-item-btn tight" ng-click="c.addListItem('comments')">+ Add comment</button>
 
           <div class="sechead">
-            <h4 class="sec">Meetings</h4>
+            <span class="section-label">Meetings</span>
           </div>
           <div class="task meeting" ng-repeat="m in c.editSp.meetings track by m.id">
             <div class="te-head">
@@ -1012,7 +1030,7 @@
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
               </svg>
-              <div><b>Not yet authored.</b>
+              <div><b>Not yet written.</b>
                 <p>This section will hold GlideFast's escalation guidance - when and how to raise an issue, severity
                   tiers, and who to contact at each level. Add the real content here when it's ready.</p>
               </div>

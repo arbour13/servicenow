@@ -1,4 +1,4 @@
-['$sce', function ($sce) {
+['$sce', 'MessagingService', function ($sce, MessagingService) {
   'use strict';
 
   var searchQuery = '';
@@ -47,7 +47,7 @@
     options = options || {};
     var trimmed = (searchQuery || '').trim();
     if (trimmed.length >= 1 && options.isEditing && options.isEditing()) {
-      if (options.onDenyEditing) { options.onDenyEditing(); }
+      MessagingService.toast('Finish editing first');
       return clear();
     }
 

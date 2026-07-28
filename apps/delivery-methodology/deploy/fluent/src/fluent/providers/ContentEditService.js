@@ -1,6 +1,6 @@
 [
-  'ChangelogDiffService', 'IdSeqService',
-  function (ChangelogDiffService, IdSeqService) {
+  'ChangelogDiffService', 'IdSeqService', 'MessagingService',
+  function (ChangelogDiffService, IdSeqService, MessagingService) {
   'use strict';
 
   var LOE_ROLE_DEFAULTS = {
@@ -15,6 +15,7 @@
   };
 
   var CORE_TEAM = ['em', 'bpc', 'arch', 'tc'];
+  var RACI_LETTERS = ['R', 'A', 'C', 'I'];
 
   var hooks = {};
   var state = {
@@ -72,7 +73,7 @@
 
   function enterEdit() {
     if (!hooks.canEdit()) {
-      hooks.denyEdit();
+      MessagingService.toast('You do not have permission to edit');
       return;
     }
     if (hooks.isStructureEditing && hooks.isStructureEditing()) {
@@ -86,24 +87,21 @@
       hooks.clearTmpLoeRole();
     }
     state.editMode = true;
-    if (hooks.scrollToEditBar) {
-      hooks.scrollToEditBar();
-    }
+    MessagingService.scrollToEditBar();
   }
 
   function cancelEdit() {
     state.editMode = false;
     state.editSp = null;
     state.editSnapshot = null;
-    if (hooks.showToast) {
-      hooks.showToast('Edit cancelled - changes reverted');
-    }
-    if (hooks.scrollPageToTop) {
-      hooks.scrollPageToTop();
-    }
+    MessagingService.toast('Edit cancelled - changes reverted');
+    MessagingService.scrollPageToTop();
   }
 
   function saveEdit() {
+    if (hooks.tryBeginSave && !hooks.tryBeginSave()) {
+      return;
+    }
     collapseJobAidRoles(state.editSp);
     var changes = ChangelogDiffService.describeChanges(state.editSnapshot, state.editSp, hooks.jobTitleById);
     var entries = [];
@@ -117,12 +115,14 @@
       if (!toSave.changelog) {
         toSave.changelog = [];
       }
+      // Own saves start read so What's New / unread dots don't treat the editor's write
+      // as someone else's update. justRead still surfaces them in the post-save banner.
       entries = changes.map(function (text) {
         return {
           id: IdSeqService.next('changelog'),
           ts: IdSeqService.today(),
           text: text,
-          read: false
+          read: true
         };
       });
       toSave.changelog.unshift.apply(toSave.changelog, entries);
@@ -135,16 +135,12 @@
       if (hooks.afterSaveSuccess) {
         hooks.afterSaveSuccess(entries, changes.length);
       }
-      if (hooks.showToast) {
-        if (changes.length) {
-          hooks.showToast('Saved - ' + changes.length + ' change' + (changes.length > 1 ? 's' : '') + ' detected and logged automatically');
-        } else {
-          hooks.showToast('Saved - no changes detected');
-        }
+      if (changes.length) {
+        MessagingService.toast('Saved - ' + changes.length + ' change' + (changes.length > 1 ? 's' : '') + ' detected and logged automatically');
+      } else {
+        MessagingService.toast('Saved - no changes detected');
       }
-      if (hooks.scrollPageToTop) {
-        hooks.scrollPageToTop();
-      }
+      MessagingService.scrollPageToTop();
     }, function () {
       location.phase.subPhases[index] = previous;
       if (hooks.afterSaveFailure) {
@@ -360,7 +356,7 @@
     } else {
       letters.push(letter);
       letters.sort(function (left, right) {
-        return hooks.raciLetters().indexOf(left) - hooks.raciLetters().indexOf(right);
+        return RACI_LETTERS.indexOf(left) - RACI_LETTERS.indexOf(right);
       });
     }
   }

@@ -1,7 +1,9 @@
 /* In-app back/forward, view/methodology/sub-phase navigation, and deep links.
    Bind host hooks once after the controller's location helpers exist - avoids DI cycles
    with Raci/Search/WhatsNew. */
-angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', function ($timeout) {
+angular.module('deliveryMethodology').factory('NavigationService', [
+  '$timeout', 'MessagingService', 'SearchService',
+  function ($timeout, MessagingService, SearchService) {
   'use strict';
 
   var navStack = [];
@@ -30,10 +32,16 @@ angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', 
   }
 
   function push() {
-    if (navSilent || (hooks.isLoading && hooks.isLoading())) { return; }
+    if (navSilent || (hooks.isLoading && hooks.isLoading())) {
+      return;
+    }
     var snap = snapshot();
-    if (!snap.methodologyId) { return; }
-    if (navIndex >= 0 && sameSnapshot(navStack[navIndex], snap)) { return; }
+    if (!snap.methodologyId) {
+      return;
+    }
+    if (navIndex >= 0 && sameSnapshot(navStack[navIndex], snap)) {
+      return;
+    }
     navStack = navStack.slice(0, navIndex + 1);
     navStack.push(snap);
     navIndex = navStack.length - 1;
@@ -41,55 +49,89 @@ angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', 
 
   function apply(snap) {
     navSilent = true;
-    if (hooks.clearSearch) { hooks.clearSearch(); }
+    clearSearchOverlay();
     hooks.setView(snap.view);
     hooks.setMethodologyId(snap.methodologyId);
     hooks.setSubPhaseId(snap.subPhaseId);
     if (snap.methodologyId && snap.subPhaseId) {
       methSubPhaseById[snap.methodologyId] = snap.subPhaseId;
     }
-    if (hooks.refreshLoc) { hooks.refreshLoc(); }
-    if (hooks.afterOpenSubPhase) { hooks.afterOpenSubPhase(); }
-    if (hooks.refreshRgIfRaci) { hooks.refreshRgIfRaci(); }
+    if (hooks.refreshLoc) {
+      hooks.refreshLoc();
+    }
+    if (hooks.afterOpenSubPhase) {
+      hooks.afterOpenSubPhase();
+    }
+    if (hooks.refreshRgIfRaci) {
+      hooks.refreshRgIfRaci();
+    }
     navSilent = false;
   }
 
-  function canGoBack() { return navIndex > 0; }
-  function canGoForward() { return navIndex >= 0 && navIndex < navStack.length - 1; }
+  function canGoBack() {
+    return navIndex > 0;
+  }
+
+  function canGoForward() {
+    return navIndex >= 0 && navIndex < navStack.length - 1;
+  }
 
   function denyIfEditing() {
     if (hooks.isEditing && hooks.isEditing()) {
-      if (hooks.onDenyEditing) { hooks.onDenyEditing(); }
+      MessagingService.toast('Finish editing first');
       return true;
     }
     return false;
   }
 
+  function clearSearchOverlay() {
+    SearchService.clear();
+    if (hooks.syncSearch) {
+      hooks.syncSearch();
+    }
+  }
+
   function goBack() {
-    if (denyIfEditing()) { return; }
-    if (!canGoBack()) { return; }
+    if (denyIfEditing()) {
+      return;
+    }
+    if (!canGoBack()) {
+      return;
+    }
     navIndex -= 1;
     apply(navStack[navIndex]);
   }
 
   function goForward() {
-    if (denyIfEditing()) { return; }
-    if (!canGoForward()) { return; }
+    if (denyIfEditing()) {
+      return;
+    }
+    if (!canGoForward()) {
+      return;
+    }
     navIndex += 1;
     apply(navStack[navIndex]);
   }
 
   function setView(view) {
-    if (denyIfEditing()) { return; }
+    if (denyIfEditing()) {
+      return;
+    }
     hooks.setView(view);
-    if (view === 'raci' && hooks.refreshRgIfRaci) { hooks.refreshRgIfRaci(); }
-    if (hooks.clearSearch) { hooks.clearSearch(); }
+    if (view === 'raci' && hooks.refreshRgIfRaci) {
+      hooks.refreshRgIfRaci();
+    }
+    clearSearchOverlay();
     push();
   }
 
   function switchMethodology(methodologyId) {
-    if (denyIfEditing()) { return; }
-    if (methodologyId === hooks.getMethodologyId()) { return; }
+    if (denyIfEditing()) {
+      return;
+    }
+    if (methodologyId === hooks.getMethodologyId()) {
+      return;
+    }
     var currentMethodologyId = hooks.getMethodologyId();
     var currentSubPhaseId = hooks.getSubPhaseId();
     if (currentMethodologyId && currentSubPhaseId) {
@@ -102,30 +144,46 @@ angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', 
       resume = hooks.firstContentSubPhase(hooks.curMeth());
     }
     openSubPhase(resume);
-    if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) { hooks.refreshRgIfRaci(); }
+    if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) {
+      hooks.refreshRgIfRaci();
+    }
   }
 
   function selectPhase(phaseIndex) {
-    if (hooks.isEditing && hooks.isEditing()) { return; }
+    if (hooks.isEditing && hooks.isEditing()) {
+      return;
+    }
     var methodology = hooks.curMeth();
     var phase = methodology.phases[phaseIndex];
-    if (!phase.subPhases.length) { return; }
+    if (!phase.subPhases.length) {
+      return;
+    }
     var written = phase.subPhases.find(hooks.hasContent);
     openSubPhase((written || phase.subPhases[0]).id);
   }
 
   function openSubPhase(subPhaseId) {
-    if (hooks.isEditing && hooks.isEditing()) { return; }
+    if (hooks.isEditing && hooks.isEditing()) {
+      return;
+    }
     hooks.setSubPhaseId(subPhaseId);
     var methodologyId = hooks.getMethodologyId();
-    if (methodologyId) { methSubPhaseById[methodologyId] = subPhaseId; }
-    if (hooks.refreshLoc) { hooks.refreshLoc(); }
-    if (hooks.afterOpenSubPhase) { hooks.afterOpenSubPhase(); }
+    if (methodologyId) {
+      methSubPhaseById[methodologyId] = subPhaseId;
+    }
+    if (hooks.refreshLoc) {
+      hooks.refreshLoc();
+    }
+    if (hooks.afterOpenSubPhase) {
+      hooks.afterOpenSubPhase();
+    }
     push();
   }
 
   function focusJumpTarget(elementKey) {
-    if (!elementKey) { return; }
+    if (!elementKey) {
+      return;
+    }
     $timeout(function () {
       var nodes = document.querySelectorAll('.main [data-el]');
       var target = null;
@@ -135,22 +193,31 @@ angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', 
           break;
         }
       }
-      if (!target) { return; }
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (!target) {
+        return;
+      }
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
       target.classList.remove('jump-hl');
       void target.offsetWidth;
       target.classList.add('jump-hl');
-      $timeout(function () { target.classList.remove('jump-hl'); }, 2000);
+      $timeout(function () {
+        target.classList.remove('jump-hl');
+      }, 2000);
     }, 0);
   }
 
   function jumpTo(subPhaseId, methodologyId, elementKey) {
-    if (hooks.isEditing && hooks.isEditing()) { return; }
+    if (hooks.isEditing && hooks.isEditing()) {
+      return;
+    }
     if (methodologyId && methodologyId !== hooks.getMethodologyId()) {
       hooks.setMethodologyId(methodologyId);
     }
     hooks.setView('methodology');
-    if (hooks.clearSearch) { hooks.clearSearch(); }
+    clearSearchOverlay();
     openSubPhase(subPhaseId);
     focusJumpTarget(elementKey);
   }
@@ -159,9 +226,13 @@ angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', 
     try {
       var params = new URLSearchParams(window.location.search || '');
       var subPhaseId = params.get('sub');
-      if (!subPhaseId) { return false; }
+      if (!subPhaseId) {
+        return false;
+      }
       var location = hooks.findSubPhase(subPhaseId);
-      if (!location) { return false; }
+      if (!location) {
+        return false;
+      }
       hooks.setMethodologyId(location.meth.id);
       hooks.setView('methodology');
       openSubPhase(subPhaseId);
@@ -173,7 +244,9 @@ angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', 
   }
 
   function remember(methodologyId, subPhaseId) {
-    if (methodologyId && subPhaseId) { methSubPhaseById[methodologyId] = subPhaseId; }
+    if (methodologyId && subPhaseId) {
+      methSubPhaseById[methodologyId] = subPhaseId;
+    }
   }
 
   function remembered(methodologyId) {
@@ -190,6 +263,30 @@ angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', 
 
   function setResumeMap(map) {
     methSubPhaseById = Object.assign({}, map || {});
+  }
+
+  function getHistory() {
+    return {
+      stack: navStack.slice(),
+      index: navIndex
+    };
+  }
+
+  function setHistory(history) {
+    if (!history || !Array.isArray(history.stack)) {
+      navStack = [];
+      navIndex = -1;
+      return;
+    }
+    navStack = history.stack.slice();
+    var nextIndex = history.index;
+    if (typeof nextIndex !== 'number' || nextIndex < -1) {
+      nextIndex = navStack.length - 1;
+    }
+    if (nextIndex >= navStack.length) {
+      nextIndex = navStack.length - 1;
+    }
+    navIndex = nextIndex;
   }
 
   return {
@@ -209,6 +306,8 @@ angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', 
     remembered: remembered,
     forget: forget,
     getResumeMap: getResumeMap,
-    setResumeMap: setResumeMap
+    setResumeMap: setResumeMap,
+    getHistory: getHistory,
+    setHistory: setHistory
   };
 }]);

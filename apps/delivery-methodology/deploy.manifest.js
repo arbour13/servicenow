@@ -93,8 +93,10 @@
         { file: 'js/services/icon.service.js', name: 'IconService', type: 'service' },
         { file: 'js/services/tip.service.js', name: 'TipService', type: 'service' },
         { file: 'js/services/jargon.service.js', name: 'JargonService', type: 'service' },
+        { file: 'js/services/messaging.service.js', name: 'MessagingService', type: 'service' },
         { file: 'js/services/content-edit.service.js', name: 'ContentEditService', type: 'service' },
         { file: 'js/services/structure-edit.service.js', name: 'StructureEditService', type: 'service' },
+        { file: 'js/directives/dm-modal.directive.js', name: 'dmModal', type: 'directive' },
         // Harness-only play data (window.DMSeed). deploy: false → packager skips this file entirely
         // so the instance widget stays thin. Local index.html still loads it before DataService.
         { file: 'js/data/seed.js', name: 'DMSeed', type: 'script', deploy: false },

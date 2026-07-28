@@ -113,6 +113,10 @@ declare global {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc"
                     }
+                    "MessagingService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8084b3e27084b3e28084b3e"
+                    }
                     "ContentEditService": {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e83cdfcde83cdfcde93cdfcd"
@@ -120,6 +124,10 @@ declare global {
                     "StructureEditService": {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e8ba87332eba87332fba8733"
+                    }
+                    "dmModal": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8d1f419dad1f419dbd1f419"
                     }
                     "widget": {
                         table: "sp_widget"

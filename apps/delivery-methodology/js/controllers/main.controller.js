@@ -3,11 +3,11 @@
    (index.html). All views (Methodology read + edit, RACI grid/by-role, Reference, What's New, Search)
    are ported. */
 angular.module('deliveryMethodology').controller('MainController', [
-  'DataService', '$timeout', '$q', 'ThemeService',
+  'DataService', '$timeout', '$q', 'ThemeService', 'MessagingService',
   'RaciGridService', 'NavigationService', 'SearchService', 'WhatsNewService', 'ReferenceService',
   'IdSeqService', 'IconService', 'TipService', 'JargonService', 'ContentEditService', 'StructureEditService',
   function (
-    DataService, $timeout, $q, ThemeService,
+    DataService, $timeout, $q, ThemeService, MessagingService,
     RaciGridService, NavigationService, SearchService, WhatsNewService, ReferenceService,
     IdSeqService, IconService, TipService, JargonService, ContentEditService, StructureEditService
   ) {
@@ -44,27 +44,40 @@ angular.module('deliveryMethodology').controller('MainController', [
   // Editor/admin roles set data.canEdit in the widget server script. Local harness has no server
   // payload, so default true. Read-only users (role `user` only) cannot enter edit.
   c.canEdit = !(c.data && c.data.canEdit === false);
-  function denyEdit() { showToast('You do not have permission to edit'); }
 
   // Service Portal exposes c.server; the local harness does not. Bind so getData/saveData hit the
   // content table when deployed.
   if (c.server) { DataService.bindServer(c.server); }
 
-  c.toast = { show: false, msg: '' };
-  var toastTimer = null;
-  function showToast(msg) {
-    c.toast.msg = msg;
-    c.toast.show = true;
-    if (toastTimer) { $timeout.cancel(toastTimer); }
-    toastTimer = $timeout(function () { c.toast.show = false; }, 2200);
-  }
+  // Live object refs - MessagingService mutates these; template binds c.toast / c.confirm.
+  var messagingState = MessagingService.readState();
+  c.toast = messagingState.toast;
+  c.confirm = messagingState.confirm;
+  c.dismissConfirm = MessagingService.dismissConfirm;
+  c.acceptConfirm = MessagingService.acceptConfirm;
 
   // Persist via DataService; surface server/local failures instead of fire-and-forget.
   // Reject after the error toast so callers can withhold success UI / keep edit drafts open.
+  // tryBeginSave() arms the gate before draft mutation so a double-click cannot start two saves.
+  c.isSaving = false;
+  function tryBeginSave() {
+    if (c.isSaving) {
+      return false;
+    }
+    c.isSaving = true;
+    return true;
+  }
   function persistMethodologies() {
-    return DataService.saveData(c.methodologies).then(null, function (err) {
+    if (!c.isSaving) {
+      c.isSaving = true;
+    }
+    return DataService.saveData(c.methodologies).then(function (result) {
+      c.isSaving = false;
+      return result;
+    }, function (err) {
+      c.isSaving = false;
       var msg = (err && err.error) ? err.error : 'Could not save changes.';
-      showToast(msg);
+      MessagingService.toast(msg);
       return $q.reject(err);
     });
   }
@@ -398,9 +411,6 @@ angular.module('deliveryMethodology').controller('MainController', [
 
   c.view = 'methodology';
 
-  function denyWhileEditing() {
-    showToast('Finish editing first');
-  }
   function isEditing() {
     return !!(ContentEditService.isEditing() || StructureEditService.isEditing());
   }
@@ -489,20 +499,6 @@ angular.module('deliveryMethodology').controller('MainController', [
   c.structureEditMode = false;
   c.structureSnapshot = null;
   c.structureNavSnapshot = null;
-  function scrollToEditBar() {
-    $timeout(function () {
-      var bar = document.querySelector('.main .edit-bar');
-      if (!bar) { return; }
-      var stickyTop = parseFloat(window.getComputedStyle(bar).top) || 0;
-      var target = Math.max(0, window.scrollY + bar.getBoundingClientRect().top - stickyTop);
-      window.scrollTo({ top: target, behavior: 'smooth' });
-    }, 0);
-  }
-  function scrollPageToTop() {
-    $timeout(function () {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 0);
-  }
   function syncStructure() {
     var structureState = StructureEditService.readState();
     c.structureEditUiEnabled = structureState.structureEditUiEnabled;
@@ -676,28 +672,24 @@ angular.module('deliveryMethodology').controller('MainController', [
   };
   c.runSearch = function () {
     SearchService.setQuery(c.searchQuery);
-    SearchService.run(c.methodologies, { isEditing: isEditing, onDenyEditing: denyWhileEditing });
+    SearchService.run(c.methodologies, { isEditing: isEditing });
     syncSearch();
   };
 
   ContentEditService.bind({
     canEdit: function () { return c.canEdit; },
-    denyEdit: denyEdit,
-    showToast: showToast,
     isStructureEditing: StructureEditService.isEditing,
     getLoc: function () { return c.loc; },
+    tryBeginSave: tryBeginSave,
     persistMethodologies: persistMethodologies,
     jobTitleById: c.jobTitleById,
     sortJobTitleIds: c.sortJobTitleIds,
     participantsOf: c.participantsOf,
-    raciLetters: function () { return c.raciLetters; },
-    scrollToEditBar: scrollToEditBar,
-    scrollPageToTop: scrollPageToTop,
     getTmpLoeRole: function () { return c.tmpLoeRole; },
     clearTmpLoeRole: function () { c.tmpLoeRole = ''; },
     afterSaveSuccess: function (entries) {
       syncEdit();
-      c.justRead = entries;
+      c.justRead = entries || [];
       refreshLoc();
       refreshWhatsNew();
       refreshJobAids();
@@ -710,8 +702,6 @@ angular.module('deliveryMethodology').controller('MainController', [
 
   StructureEditService.bind({
     canEdit: function () { return c.canEdit; },
-    denyEdit: denyEdit,
-    showToast: showToast,
     isContentEditing: ContentEditService.isEditing,
     getMethodologies: function () { return c.methodologies; },
     setMethodologies: function (methodologies) { c.methodologies = methodologies; },
@@ -720,34 +710,34 @@ angular.module('deliveryMethodology').controller('MainController', [
     getSubPhaseId: function () { return c.subPhaseId; },
     setSubPhaseId: function (id) { c.subPhaseId = id; },
     getView: function () { return c.view; },
+    getLoc: function () { return c.loc; },
     curMeth: curMeth,
     firstContentSubPhase: firstContentSubPhase,
+    sortJobTitleIds: c.sortJobTitleIds,
+    jobTitleById: c.jobTitleById,
+    hasContent: hasContent,
+    tryBeginSave: tryBeginSave,
     persistMethodologies: persistMethodologies,
-    scrollToEditBar: scrollToEditBar,
-    scrollPageToTop: scrollPageToTop,
     refreshLoc: refreshLoc,
-    refreshWhatsNew: refreshWhatsNew,
-    refreshJobAids: refreshJobAids,
-    refreshRgIfRaci: function () {
-      if (c.view === 'raci') { refreshRg(); }
+    syncDerived: function () {
+      syncWhatsNew();
+      syncJobAids();
+      syncRg();
     },
     syncRg: syncRg,
-    pushNav: pushNav,
     getRgActivePhasesMirror: function () { return c.rgActivePhases; },
-    markReadCurrent: function () {
-      if (c.loc) { c.justRead = markRead(c.loc.sp); }
-    },
+    setJustRead: function (entries) { c.justRead = entries || []; },
     enterContentEdit: function () {
       ContentEditService.enterEdit();
       syncEdit();
       syncStructure();
     },
-    afterSaveSuccess: syncStructure
+    afterSaveSuccess: syncStructure,
+    afterSaveFailure: syncStructure
   });
 
   NavigationService.bind({
     isEditing: isEditing,
-    onDenyEditing: denyWhileEditing,
     isLoading: function () { return c.loading; },
     getView: function () { return c.view; },
     setView: function (v) { c.view = v; },
@@ -755,7 +745,7 @@ angular.module('deliveryMethodology').controller('MainController', [
     setMethodologyId: function (id) { c.methodologyId = id; },
     getSubPhaseId: function () { return c.subPhaseId; },
     setSubPhaseId: function (id) { c.subPhaseId = id; },
-    clearSearch: clearSearch,
+    syncSearch: syncSearch,
     refreshLoc: refreshLoc,
     afterOpenSubPhase: function () {
       c.justRead = c.loc ? markRead(c.loc.sp) : [];
@@ -774,7 +764,7 @@ angular.module('deliveryMethodology').controller('MainController', [
   // first paint isn't Loading… → jump; instance loads stay async via the server.
   if (c.server) {
     DataService.getData().then(applyLoadedData, function (err) {
-      showToast((err && err.error) ? err.error : 'Could not load content.');
+      MessagingService.toast((err && err.error) ? err.error : 'Could not load content.');
       c.loading = false;
     });
   } else {

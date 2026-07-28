@@ -29,6 +29,9 @@
   --navy-2: var(--hs-navy-2);
   --teal: var(--hs-teal);
   --teal-wash: rgba(0, 224, 172, 0.12);
+  /* Stronger wash / border tint for billable pills, focus bars, edit ordinals. Light mode overrides. */
+  --teal-wash-strong: rgba(0, 224, 172, 0.18);
+  --teal-line: rgba(0, 224, 172, 0.35);
   --gradient-pill: linear-gradient(90deg, #21fbc8 0%, #3ec2f8 100%);
   --gradient-pill-hover: linear-gradient(90deg, #a7ffeb 0%, #49c6fa 100%);
   /* Text sitting ON --gradient-pill. Split out of --text-on-primary because that token has two
@@ -193,6 +196,10 @@
   --gradient-card-2: linear-gradient(135deg, #e2f6fa 0%, #bfe7ef 100%);
   --shadow-md: 0 4px 10px 0 rgba(10, 33, 54, 0.12);
   --shadow-sm: 2px 2px 8px 0 rgba(10, 33, 54, 0.08);
+  /* Darker teal washes so mint does not glow on the pale page (matches light --teal / --hs-teal). */
+  --teal-wash: rgba(0, 92, 99, 0.1);
+  --teal-wash-strong: rgba(0, 92, 99, 0.16);
+  --teal-line: rgba(0, 92, 99, 0.35);
 }/* select.edit-in's dropdown-arrow stroke is baked into a data-URI background-image (can't take a
    CSS var), so its dark-mode stroke color (#c5dce7, matching --ink-soft) needs its own light-mode
    copy here instead of staying stuck light-on-light once the select's own background goes pale. */.dm-widget[data-theme="light"] select.edit-in {
@@ -291,7 +298,9 @@
   color: var(--ink-faint);
 }.dm-widget .hsearch input:focus {
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(0, 224, 172, 0.2);
+}.dm-widget .hsearch input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }.dm-widget .hsearch svg {
   position: absolute;
   left: 12px;
@@ -396,7 +405,7 @@
 }.dm-widget .theme-toggle svg {
   width: 16px;
   height: 16px;
-}/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */.dm-widget .nav-btn:focus-visible, .dm-widget .theme-toggle:focus-visible, .dm-widget .edit-pencil:focus-visible, .dm-widget .struct-icon-btn:focus-visible, .dm-widget .meth-tab:focus-visible, .dm-widget .vtab:focus-visible, .dm-widget .loe-mode-btn:focus-visible, .dm-widget .btn:focus-visible {
+}/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */.dm-widget .nav-btn:focus-visible, .dm-widget .theme-toggle:focus-visible, .dm-widget .edit-pencil:focus-visible, .dm-widget .struct-icon-btn:focus-visible, .dm-widget .meth-tab:focus-visible, .dm-widget .vtab:focus-visible, .dm-widget .loe-mode-btn:focus-visible, .dm-widget .btn:focus-visible, .dm-widget .participant-chip:focus-visible, .dm-widget .ja-rolechip:focus-visible, .dm-widget .rg-pchip:focus-visible, .dm-widget .jt-pick-btn:focus-visible, .dm-widget .raci-toggle:focus-visible, .dm-widget .reorder-btn:focus-visible, .dm-widget .field-x:focus-visible, .dm-widget .x-btn:focus-visible, .dm-widget .add-item-btn:focus-visible, .dm-widget .loe-flag-btn:focus-visible, .dm-widget .meth-intro-toggle:focus-visible, .dm-widget .sp-brief-toggle:focus-visible, .dm-widget .loe-billable-toggle.jargon-toggle:focus-within {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
 }.dm-widget .pagehdr-title {
@@ -522,6 +531,8 @@
     width: 100%;
   }.dm-widget .vtab span {
     display: none;
+  }/* Grid / By Role need text - icons alone are ambiguous at this size. */.dm-widget .views.secondary .vtab span {
+    display: inline;
   }.dm-widget .views {
     justify-content: space-between;
   }
@@ -568,9 +579,6 @@
   margin-top: 0;
 }.dm-widget .sp-brief-body .sec {
   margin-top: 14px;
-}.dm-widget .sp-brief-toggle:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
 }.dm-widget .meth-intro-feedback {
   flex-shrink: 0;
   color: var(--hs-teal);
@@ -1084,6 +1092,72 @@
 }.dm-widget .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}/* Confirm dialog (MessagingService) - theme-aware panel, not the always-dark toast chrome. */.dm-widget .msg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(4, 19, 31, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}.dm-widget[data-theme="light"] .msg-overlay {
+  background: rgba(10, 33, 54, 0.35);
+}.dm-widget .msg-dialog {
+  width: #{'min(420px, 100%)'};
+  background: var(--navy-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  padding: 18px 20px 16px;
+}.dm-widget .msg-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}.dm-widget .msg-dialog-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}.dm-widget .msg-dialog-x {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}.dm-widget .msg-dialog-x:hover {
+  color: var(--ink);
+  background: var(--surface-flat);
+}.dm-widget .msg-dialog-x:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}.dm-widget .msg-dialog-body {
+  margin: 10px 0 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}.dm-widget .msg-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}.dm-widget .btn.danger {
+  background: #b42318;
+  border-color: #b42318;
+  color: #fff;
+}.dm-widget .btn.danger:hover {
+  background: #912018;
+  border-color: #912018;
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}.dm-widget .btn.danger:disabled {
+  opacity: 0.55;
 }.dm-widget .task {
   background: var(--surface-2);
   border-radius: 12px;
@@ -1200,9 +1274,9 @@
   border-radius: 20px;
   letter-spacing: 0.02em;
 }.dm-widget .loe-pill.bill {
-  background: rgba(63, 224, 197, 0.15);
+  background: var(--teal-wash);
   color: var(--hs-mint);
-  border: 1px solid rgba(63, 224, 197, 0.4);
+  border: 1px solid var(--teal-line);
 }.dm-widget .loe-pill.opt {
   background: rgba(240, 185, 90, 0.14);
   color: var(--r-a-text);
@@ -1548,6 +1622,11 @@
   background: var(--gradient-pill);
   border-color: #fff;
   box-shadow: var(--shadow-inset);
+}.dm-widget .btn:disabled, .dm-widget .btn.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
 }.dm-widget .btn.sm {
   height: 28px;
   padding: 0 12px;
@@ -1700,8 +1779,14 @@
   justify-content: space-between;
   gap: 12px;
   margin: 24px 0 8px;
-}.dm-widget .sechead h4.sec {
+}.dm-widget .sechead h4.sec, .dm-widget .sechead .section-label {
   margin: 0;
+}.dm-widget .sechead .section-label {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  display: block;
 }.dm-widget .list-edit-row {
   position: relative;
   margin-bottom: 6px;
@@ -1828,7 +1913,7 @@
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  background: rgba(0, 224, 172, 0.18);
+  background: var(--teal-wash-strong);
   color: var(--teal);
   font-family: var(--font-mono);
   font-size: 12px;
@@ -2071,7 +2156,7 @@
   background: #{'rgba(var(--wash-rgb), 0.1)'};
   color: var(--ink-2);
 }.dm-widget .loe-flag-btn.on.billable {
-  background: rgba(63, 224, 197, 0.18);
+  background: var(--teal-wash-strong);
   color: var(--hs-mint);
 }.dm-widget .mtg-edit-row {
   display: flex;
@@ -2220,8 +2305,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(63, 224, 197, 0.08);
-  border: 1px solid rgba(63, 224, 197, 0.3);
+  background: var(--teal-wash);
+  border: 1px solid var(--teal-line);
   border-radius: 8px;
   padding: 8px 14px;
   margin-bottom: 14px;

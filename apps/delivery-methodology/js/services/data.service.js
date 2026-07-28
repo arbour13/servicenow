@@ -215,19 +215,16 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
           return rejectServerError(d, 'Could not load content.');
         }
 
-        if (d.methodologies && d.methodologies.length) {
-          var payload = fromServerData(d);
-          cacheLookups(payload);
-          return payload;
-        }
-
-        // Empty table on instance: do not ship/apply harness seed. Editors create content in-app
-        // (or content is loaded by other means). Harness-only DMSeed is absent in production.
-        var empty = emptyPayload();
-        cacheLookups(empty);
-        return empty;
+        // Empty methodologies is valid (fresh instance). Still keep job titles / jargon /
+        // referenceSections from the response - emptyPayload() would wipe those lookups.
+        // Harness-only DMSeed is never applied here (absent in production).
+        var payload = fromServerData(d);
+        cacheLookups(payload);
+        return payload;
       }, function () {
-        return localGetData();
+        // Instance path: never fall back to harness localStorage/seed. Seed is not deployed;
+        // a silent local resolve would mask the outage and could hydrate stale browser storage.
+        return rejectServerError(null, 'Could not load content.');
       });
     },
     saveData: function (methodologies) {

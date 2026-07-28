@@ -1,5 +1,5 @@
 /* Full-text search across methodologies. Builds trusted snippets once per runSearch. */
-angular.module('deliveryMethodology').factory('SearchService', ['$sce', function ($sce) {
+angular.module('deliveryMethodology').factory('SearchService', ['$sce', 'MessagingService', function ($sce, MessagingService) {
   'use strict';
 
   var searchQuery = '';
@@ -48,7 +48,7 @@ angular.module('deliveryMethodology').factory('SearchService', ['$sce', function
     options = options || {};
     var trimmed = (searchQuery || '').trim();
     if (trimmed.length >= 1 && options.isEditing && options.isEditing()) {
-      if (options.onDenyEditing) { options.onDenyEditing(); }
+      MessagingService.toast('Finish editing first');
       return clear();
     }
 

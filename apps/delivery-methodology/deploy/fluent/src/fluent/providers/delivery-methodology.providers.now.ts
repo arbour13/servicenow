@@ -84,6 +84,13 @@ export const JargonService = SPAngularProvider({
     script: Now.include('JargonService.js'),
 })
 
+export const MessagingService = SPAngularProvider({
+    $id: Now.ID['MessagingService'],
+    name: 'MessagingService',
+    type: 'service',
+    script: Now.include('MessagingService.js'),
+})
+
 export const ContentEditService = SPAngularProvider({
     $id: Now.ID['ContentEditService'],
     name: 'ContentEditService',
@@ -96,4 +103,11 @@ export const StructureEditService = SPAngularProvider({
     name: 'StructureEditService',
     type: 'service',
     script: Now.include('StructureEditService.js'),
+})
+
+export const dmModal = SPAngularProvider({
+    $id: Now.ID['dmModal'],
+    name: 'dmModal',
+    type: 'directive',
+    script: Now.include('dmModal.js'),
 })

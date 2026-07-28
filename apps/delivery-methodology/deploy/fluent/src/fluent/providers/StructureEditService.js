@@ -1,6 +1,10 @@
 [
-  'DataService', 'IdSeqService', 'NavigationService', 'RaciGridService',
-  function (DataService, IdSeqService, NavigationService, RaciGridService) {
+  'DataService', 'IdSeqService', 'NavigationService', 'RaciGridService', 'MessagingService',
+  'WhatsNewService', 'ReferenceService',
+  function (
+    DataService, IdSeqService, NavigationService, RaciGridService, MessagingService,
+    WhatsNewService, ReferenceService
+  ) {
   'use strict';
 
   var hooks = {};
@@ -13,6 +17,34 @@
 
   function bind(hostHooks) {
     hooks = hostHooks || {};
+  }
+
+  // Peer refreshes + one host sync for template mirrors (whatsNew / jobAids / rg).
+  function refreshDerived() {
+    var methodologies = hooks.getMethodologies();
+    WhatsNewService.refresh(methodologies);
+    ReferenceService.refresh(methodologies, hooks.sortJobTitleIds, hooks.jobTitleById);
+    if (hooks.getView() === 'raci') {
+      RaciGridService.refresh({
+        methodology: hooks.curMeth(),
+        sortJobTitleIds: hooks.sortJobTitleIds,
+        hasContent: hooks.hasContent
+      });
+    }
+    if (hooks.syncDerived) {
+      hooks.syncDerived();
+    }
+  }
+
+  function markReadCurrent() {
+    var location = hooks.getLoc && hooks.getLoc();
+    if (!location || !location.sp) {
+      return;
+    }
+    var entries = WhatsNewService.markRead(location.sp, hooks.getMethodologies());
+    if (hooks.setJustRead) {
+      hooks.setJustRead(entries);
+    }
   }
 
   function isEditing() {
@@ -34,12 +66,11 @@
       methodologyId: hooks.getMethodologyId(),
       subPhaseId: hooks.getSubPhaseId(),
       methSubPhaseById: NavigationService.getResumeMap(),
-      rgActivePhases: RaciGridService.getActivePhases()
+      rgActivePhases: RaciGridService.getActivePhases(),
+      navHistory: NavigationService.getHistory()
     };
     state.structureEditMode = true;
-    if (hooks.scrollToEditBar) {
-      hooks.scrollToEditBar();
-    }
+    MessagingService.scrollToEditBar();
   }
 
   function exitStructureEdit() {
@@ -50,11 +81,11 @@
 
   function toggleStructureEdit() {
     if (!hooks.canEdit()) {
-      hooks.denyEdit();
+      MessagingService.toast('You do not have permission to edit');
       return;
     }
     if (hooks.isContentEditing && hooks.isContentEditing()) {
-      hooks.showToast('Finish editing first');
+      MessagingService.toast('Finish editing first');
       return;
     }
     if (state.structureEditMode) {
@@ -70,71 +101,78 @@
         hooks.setMethodologyId(state.structureNavSnapshot.methodologyId);
         hooks.setSubPhaseId(state.structureNavSnapshot.subPhaseId);
         NavigationService.setResumeMap(state.structureNavSnapshot.methSubPhaseById);
+        NavigationService.setHistory(state.structureNavSnapshot.navHistory);
         RaciGridService.setActivePhases(state.structureNavSnapshot.rgActivePhases);
-        if (hooks.syncRg) {
-          hooks.syncRg();
-        }
       }
     }
     exitStructureEdit();
     if (hooks.refreshLoc) {
       hooks.refreshLoc();
     }
-    if (hooks.refreshWhatsNew) {
-      hooks.refreshWhatsNew();
+    refreshDerived();
+    MessagingService.toast('Structure edit cancelled - changes reverted');
+    MessagingService.scrollPageToTop();
+  }
+
+  // Fill blank names for persist; keep previous values so a failed save can restore them
+  // (draft stays open — same honesty model as ContentEditService.saveEdit).
+  function coerceBlankNames(methodologies) {
+    var coerced = [];
+
+    function coerce(target) {
+      if (!target) {
+        return;
+      }
+      var previous = target.name;
+      if (!String(previous || '').trim()) {
+        coerced.push({
+          target: target,
+          previous: previous
+        });
+        target.name = 'Untitled';
+      }
     }
-    if (hooks.refreshJobAids) {
-      hooks.refreshJobAids();
-    }
-    if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) {
-      hooks.refreshRgIfRaci();
-    }
-    hooks.showToast('Structure edit cancelled - changes reverted');
-    if (hooks.scrollPageToTop) {
-      hooks.scrollPageToTop();
-    }
+
+    (methodologies || []).forEach(function (methodology) {
+      coerce(methodology);
+      (methodology.phases || []).forEach(function (phase) {
+        coerce(phase);
+        (phase.subPhases || []).forEach(coerce);
+      });
+    });
+    return coerced;
+  }
+
+  function restoreCoercedNames(coerced) {
+    (coerced || []).forEach(function (item) {
+      if (item && item.target) {
+        item.target.name = item.previous;
+      }
+    });
   }
 
   function saveStructureEdit() {
+    if (hooks.tryBeginSave && !hooks.tryBeginSave()) {
+      return;
+    }
     var methodologies = hooks.getMethodologies();
-    methodologies.forEach(function (methodology) {
-      if (!methodology || !String(methodology.name || '').trim()) {
-        methodology.name = 'Untitled';
-      }
-      (methodology.phases || []).forEach(function (phase) {
-        if (!phase || !String(phase.name || '').trim()) {
-          phase.name = 'Untitled';
-        }
-        (phase.subPhases || []).forEach(function (subPhase) {
-          if (!subPhase || !String(subPhase.name || '').trim()) {
-            subPhase.name = 'Untitled';
-          }
-        });
-      });
-    });
+    var coercedNames = coerceBlankNames(methodologies);
     hooks.persistMethodologies().then(function () {
       exitStructureEdit();
       if (hooks.refreshLoc) {
         hooks.refreshLoc();
       }
-      if (hooks.refreshWhatsNew) {
-        hooks.refreshWhatsNew();
-      }
-      if (hooks.refreshJobAids) {
-        hooks.refreshJobAids();
-      }
-      if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) {
-        hooks.refreshRgIfRaci();
-      }
-      if (hooks.pushNav) {
-        hooks.pushNav();
-      }
+      refreshDerived();
+      NavigationService.push();
       if (hooks.afterSaveSuccess) {
         hooks.afterSaveSuccess();
       }
-      hooks.showToast('Structure saved');
-      if (hooks.scrollPageToTop) {
-        hooks.scrollPageToTop();
+      MessagingService.toast('Structure saved');
+      MessagingService.scrollPageToTop();
+    }, function () {
+      restoreCoercedNames(coercedNames);
+      if (hooks.afterSaveFailure) {
+        hooks.afterSaveFailure();
       }
     });
   }
@@ -147,11 +185,11 @@
 
   function addMethodology() {
     if (!hooks.canEdit()) {
-      hooks.denyEdit();
+      MessagingService.toast('You do not have permission to edit');
       return;
     }
     if (hooks.isContentEditing && hooks.isContentEditing()) {
-      hooks.showToast('Finish editing first');
+      MessagingService.toast('Finish editing first');
       return;
     }
     if (!state.structureEditMode) {
@@ -199,65 +237,56 @@
     if (hooks.refreshLoc) {
       hooks.refreshLoc();
     }
-    if (hooks.markReadCurrent) {
-      hooks.markReadCurrent();
-    }
-    if (hooks.refreshWhatsNew) {
-      hooks.refreshWhatsNew();
-    }
-    if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) {
-      hooks.refreshRgIfRaci();
-    }
-    if (hooks.pushNav) {
-      hooks.pushNav();
-    }
+    markReadCurrent();
+    refreshDerived();
+    NavigationService.push();
   }
 
   function deleteMethodology() {
     if (!hooks.canEdit()) {
-      hooks.denyEdit();
+      MessagingService.toast('You do not have permission to edit');
       return;
     }
     if (hooks.isContentEditing && hooks.isContentEditing()) {
-      hooks.showToast('Finish editing first');
+      MessagingService.toast('Finish editing first');
       return;
     }
     var methodologies = hooks.getMethodologies();
     if (methodologies.length <= 1) {
-      hooks.showToast('Keep at least one methodology');
+      MessagingService.toast('Keep at least one methodology');
       return;
     }
     var methodology = hooks.curMeth();
     if (!methodology) {
       return;
     }
-    if (!window.confirm('Remove methodology “' + methodology.name + '” and all of its phases from this draft? Cancel structure edit to undo.')) {
-      return;
-    }
-    var index = methodologies.findIndex(function (item) {
-      return item.id === methodology.id;
+    MessagingService.confirm({
+      title: 'Remove methodology?',
+      body: 'Remove “' + methodology.name + '” and all of its phases from this draft? Cancel structure edit to undo.',
+      cancel: 'Keep',
+      ok: 'Remove'
+    }).then(function (accepted) {
+      if (!accepted) {
+        return;
+      }
+      var index = methodologies.findIndex(function (item) {
+        return item.id === methodology.id;
+      });
+      if (index < 0) {
+        return;
+      }
+      methodologies.splice(index, 1);
+      NavigationService.forget(methodology.id);
+      var next = methodologies[Math.max(0, index - 1)] || methodologies[0];
+      hooks.setMethodologyId(next.id);
+      hooks.setSubPhaseId(NavigationService.remembered(next.id) || hooks.firstContentSubPhase(next));
+      NavigationService.remember(next.id, hooks.getSubPhaseId());
+      if (hooks.refreshLoc) {
+        hooks.refreshLoc();
+      }
+      refreshDerived();
+      NavigationService.push();
     });
-    if (index < 0) {
-      return;
-    }
-    methodologies.splice(index, 1);
-    NavigationService.forget(methodology.id);
-    var next = methodologies[Math.max(0, index - 1)] || methodologies[0];
-    hooks.setMethodologyId(next.id);
-    hooks.setSubPhaseId(NavigationService.remembered(next.id) || hooks.firstContentSubPhase(next));
-    NavigationService.remember(next.id, hooks.getSubPhaseId());
-    if (hooks.refreshLoc) {
-      hooks.refreshLoc();
-    }
-    if (hooks.refreshWhatsNew) {
-      hooks.refreshWhatsNew();
-    }
-    if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) {
-      hooks.refreshRgIfRaci();
-    }
-    if (hooks.pushNav) {
-      hooks.pushNav();
-    }
   }
 
   function renamePhase(phase) {
@@ -306,6 +335,9 @@
   }
 
   function addSubPhase(phaseIndex) {
+    if (hooks.tryBeginSave && !hooks.tryBeginSave()) {
+      return;
+    }
     var methodology = hooks.curMeth();
     var phase = methodology.phases[phaseIndex];
     var subPhase = DataService.blankSubPhase(
@@ -329,17 +361,20 @@
       if (hooks.refreshLoc) {
         hooks.refreshLoc();
       }
-      if (hooks.markReadCurrent) {
-        hooks.markReadCurrent();
-      }
-      if (hooks.refreshWhatsNew) {
-        hooks.refreshWhatsNew();
-      }
-      if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) {
-        hooks.refreshRgIfRaci();
-      }
+      markReadCurrent();
+      refreshDerived();
       if (hooks.enterContentEdit) {
         hooks.enterContentEdit();
+      }
+    }, function () {
+      // Keep the new sub-phase in the open structure draft; only roll back the sid numbers
+      // if the host wants a sync. Persist toast already fired.
+      IdSeqService.recomputeSids(methodology);
+      if (hooks.afterSaveFailure) {
+        hooks.afterSaveFailure();
+      }
+      if (hooks.refreshLoc) {
+        hooks.refreshLoc();
       }
     });
   }
@@ -372,65 +407,69 @@
   function deletePhase(index) {
     var methodology = hooks.curMeth();
     if (methodology.phases.length <= 1) {
-      hooks.showToast('A methodology needs at least one phase');
+      MessagingService.toast('A methodology needs at least one phase');
       return;
     }
     var phase = methodology.phases[index];
-    if (!window.confirm('Remove phase “' + phase.name + '” and all ' + phase.subPhases.length + ' of its sub-phases from this draft? Cancel structure edit to undo.')) {
-      return;
-    }
-    var removedIds = phase.subPhases.map(function (subPhase) {
-      return subPhase.id;
-    });
-    methodology.phases.splice(index, 1);
-    IdSeqService.recomputeSids(methodology);
-    var activePhases = hooks.getRgActivePhasesMirror && hooks.getRgActivePhasesMirror();
-    if (activePhases) {
-      delete activePhases[phase.id];
-    }
-    if (removedIds.indexOf(hooks.getSubPhaseId()) >= 0) {
-      hooks.setSubPhaseId(hooks.firstContentSubPhase(methodology));
-      if (hooks.refreshLoc) {
-        hooks.refreshLoc();
+    MessagingService.confirm({
+      title: 'Remove phase?',
+      body: 'Remove “' + phase.name + '” and all ' + phase.subPhases.length + ' of its sub-phases from this draft? Cancel structure edit to undo.',
+      cancel: 'Keep',
+      ok: 'Remove'
+    }).then(function (accepted) {
+      if (!accepted) {
+        return;
       }
-    }
-    if (hooks.refreshWhatsNew) {
-      hooks.refreshWhatsNew();
-    }
-    if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) {
-      hooks.refreshRgIfRaci();
-    }
+      var removedIds = phase.subPhases.map(function (subPhase) {
+        return subPhase.id;
+      });
+      methodology.phases.splice(index, 1);
+      IdSeqService.recomputeSids(methodology);
+      var activePhases = hooks.getRgActivePhasesMirror && hooks.getRgActivePhasesMirror();
+      if (activePhases) {
+        delete activePhases[phase.id];
+      }
+      if (removedIds.indexOf(hooks.getSubPhaseId()) >= 0) {
+        hooks.setSubPhaseId(hooks.firstContentSubPhase(methodology));
+        if (hooks.refreshLoc) {
+          hooks.refreshLoc();
+        }
+      }
+      refreshDerived();
+    });
   }
 
   function deleteSubPhase(phaseIndex, index) {
     var methodology = hooks.curMeth();
     var array = methodology.phases[phaseIndex].subPhases;
     var subPhase = array[index];
-    if (!window.confirm('Remove sub-phase “' + subPhase.name + '” from this draft? Cancel structure edit to undo.')) {
-      return;
-    }
-    var wasOpen = subPhase.id === hooks.getSubPhaseId();
-    array.splice(index, 1);
-    IdSeqService.recomputeSids(methodology);
-    if (wasOpen) {
-      var next = array[index] || array[index - 1];
-      if (next) {
-        hooks.setSubPhaseId(next.id);
-        NavigationService.remember(methodology.id, next.id);
-      } else {
-        hooks.setSubPhaseId(hooks.firstContentSubPhase(methodology));
-        NavigationService.remember(methodology.id, hooks.getSubPhaseId());
+    MessagingService.confirm({
+      title: 'Remove sub-phase?',
+      body: 'Remove “' + subPhase.name + '” from this draft? Cancel structure edit to undo.',
+      cancel: 'Keep',
+      ok: 'Remove'
+    }).then(function (accepted) {
+      if (!accepted) {
+        return;
       }
-      if (hooks.refreshLoc) {
-        hooks.refreshLoc();
+      var wasOpen = subPhase.id === hooks.getSubPhaseId();
+      array.splice(index, 1);
+      IdSeqService.recomputeSids(methodology);
+      if (wasOpen) {
+        var next = array[index] || array[index - 1];
+        if (next) {
+          hooks.setSubPhaseId(next.id);
+          NavigationService.remember(methodology.id, next.id);
+        } else {
+          hooks.setSubPhaseId(hooks.firstContentSubPhase(methodology));
+          NavigationService.remember(methodology.id, hooks.getSubPhaseId());
+        }
+        if (hooks.refreshLoc) {
+          hooks.refreshLoc();
+        }
       }
-    }
-    if (hooks.refreshWhatsNew) {
-      hooks.refreshWhatsNew();
-    }
-    if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) {
-      hooks.refreshRgIfRaci();
-    }
+      refreshDerived();
+    });
   }
 
   return {
