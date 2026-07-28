@@ -146,6 +146,59 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
        Angular or ng-bind-html's raw innerHTML produced them. */
   var JARGON = {};
   c.showJargon = false;
+
+  // Methodology intro panel: expanded until the user collapses it once, then remember collapsed
+  // (per methodology) in localStorage. Expanding again updates the preference so it stays open.
+  var METH_INTRO_COLLAPSED_KEY = 'gf-dm-meth-intro-collapsed';
+  var methIntroCollapsedById = {};
+
+  function loadMethIntroCollapsed() {
+    try {
+      var raw = window.localStorage.getItem(METH_INTRO_COLLAPSED_KEY);
+      if (!raw) {
+        return {};
+      }
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+      return {};
+    } catch (loadError) {
+      return {};
+    }
+  }
+
+  function storeMethIntroCollapsed() {
+    try {
+      window.localStorage.setItem(METH_INTRO_COLLAPSED_KEY, JSON.stringify(methIntroCollapsedById));
+    } catch (storeError) {
+      /* storage unavailable - preference is session-only */
+    }
+  }
+
+  methIntroCollapsedById = loadMethIntroCollapsed();
+
+  c.isMethIntroCollapsed = function (methodologyId) {
+    return !!methIntroCollapsedById[methodologyId];
+  };
+
+  c.toggleMethIntro = function (methodologyId) {
+    if (methIntroCollapsedById[methodologyId]) {
+      delete methIntroCollapsedById[methodologyId];
+    } else {
+      methIntroCollapsedById[methodologyId] = true;
+    }
+    storeMethIntroCollapsed();
+  };
+
+  c.methIntroParagraphs = function (methodology) {
+    if (!methodology || !methodology.description) {
+      return [];
+    }
+    return String(methodology.description).split(/\n\s*\n/).map(function (paragraph) {
+      return paragraph.replace(/\s+/g, ' ').trim();
+    }).filter(Boolean);
+  };
   var jargonCache = {};
   function jargonHtml(text) {
     if (!text) { return $sce.trustAsHtml(''); }
@@ -266,8 +319,8 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   }
 
   DataService.getData().then(function (d) {
-    c.jobTitles = d.jobTitles;
-    c.methodologies = d.methodologies;
+    c.jobTitles = d.jobTitles || [];
+    c.methodologies = d.methodologies || [];
     backfillParticipants(c.methodologies);
     // Legacy localStorage rows may predate sp.icon - fill from the name heuristic once.
     c.methodologies.forEach(function (m) {
@@ -279,6 +332,14 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     });
     seedIdCounters();
     JARGON = d.jargon || {};
+
+    if (!c.methodologies.length) {
+      c.methodologyId = null;
+      c.subPhaseId = null;
+      c.loading = false;
+      return;
+    }
+
     c.methodologyId = c.methodologies[0].id;
     c.subPhaseId = firstContentSubPhase(curMeth());
     methSubPhaseById[c.methodologyId] = c.subPhaseId;
@@ -514,7 +575,14 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     if (c.view === 'raci') { return 'Every task and every job title in ' + c.curMeth().name + '. Focus a column to see one role across the whole engagement, or open a task row for its full context.'; }
     if (c.view === 'whatsnew') { return 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.'; }
     if (c.view === 'reference') { return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.'; }
-    return 'GlideFast\'s playbook for delivering an engagement end to end. Walk each phase below, then open a sub-phase to read its overview, tasks, RACI, effort and deliverables in full.';
+    var methodology = curMeth();
+    if (methodology && methodology.summary) {
+      return methodology.summary;
+    }
+    if (methodology) {
+      return 'Playbook for ' + methodology.name + ' engagements.';
+    }
+    return 'GlideFast\'s playbook for delivering an engagement end to end.';
   };
 
   c.switchMethodology = function (id) {

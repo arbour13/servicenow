@@ -67,7 +67,9 @@
 
   function loadSources(folder, descriptor) {
     var root = appRoot(folder);
-    var providers = descriptor.manifest.providers || [];
+    var providers = (descriptor.manifest.providers || []).filter(function (p) {
+      return p.deploy !== false;
+    });
     var sharedScssPartials = descriptor.sharedScssPartials || [];
     var files = descriptor.files || {};
     var fetches = [

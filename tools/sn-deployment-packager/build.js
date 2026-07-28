@@ -73,6 +73,7 @@ function resolveServerScript(appRoot, descriptor) {
 function loadSources(appRoot, descriptor) {
   var providerSrcs = {};
   (descriptor.manifest.providers || []).forEach(function (p) {
+    if (p.deploy === false) { return; }
     providerSrcs[p.file] = fs.readFileSync(path.join(appRoot, p.file), 'utf8');
   });
   var sharedScss = (descriptor.sharedScssPartials || [])

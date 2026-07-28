@@ -50,6 +50,10 @@ the small `opts` bag `buildParts` takes. Fluent emit is `fluent.js`'s `assembleF
       // optional: a one-off trailing top-level statement after this file's own .directive() call
       // (e.g. a shared document-scroll listener) - see extractTrailingMarker's doc comment.
       trailingMarker: "document.addEventListener('scroll'" },
+    // Optional: deploy: false omits the file from the Fluent package (harness-only assets such as
+    // seed data). type: 'script' is for non-Angular files that set a global; they must use
+    // deploy: false. Default deploy is true when the key is omitted.
+    // { file: 'js/data/seed.js', name: 'DMSeed', type: 'script', deploy: false },
   ],
 
   // dev-harness-only services the controller injects that must NOT ship as real providers (the

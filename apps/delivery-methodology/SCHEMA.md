@@ -70,7 +70,7 @@ to reference — always a `job_title` row — lives inside `content` as a plain 
 
 | `type` | `parent` → | `name` holds | `content` holds |
 |---|---|---|---|
-| `methodology` | — | methodology name | `{ id, description }` |
+| `methodology` | — | short chip name (e.g. Project) | `{ id, title, summary, description, feedbackUrl, feedbackLabel, diagramUrl }` — `summary` is the one-line Journey subtitle; `description` is multi-paragraph intro prose (`\n\n`-separated); `title` is optional legacy/display heading (Journey uses “About {name}” instead); feedback is a URL (often `mailto:…`); `diagramUrl` is optional illustration |
 | `phase` | a `methodology` row | phase name | `{ id }` |
 | `sub_phase` | a `phase` row | sub-phase name | `{ id, overview, objective, icon }` |
 | `task` | a `sub_phase` row | the task text | `{ id }` |

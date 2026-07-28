@@ -82,6 +82,9 @@
       providers: [
         { file: 'js/services/theme.service.js', name: 'ThemeService', type: 'service' },
         { file: 'js/services/data.service.js', name: 'DataService', type: 'service' },
+        // Harness-only play data (window.DMSeed). deploy: false → packager skips this file entirely
+        // so the instance widget stays thin. Local index.html still loads it before DataService.
+        { file: 'js/data/seed.js', name: 'DMSeed', type: 'script', deploy: false },
       ],
 
       // Nothing to stub: this app has no dev-harness-only injections. Both providers above are

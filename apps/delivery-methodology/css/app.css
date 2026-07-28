@@ -657,6 +657,120 @@ button {
     justify-content: space-between;
   }
 }
+.meth-intro {
+  margin: 0 0 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.meth-intro-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 36px;
+}
+
+.meth-intro-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.meth-intro-toggle:hover {
+  color: var(--ink);
+}
+
+.meth-intro-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+  transform: rotate(90deg);
+}
+
+.meth-intro.collapsed .meth-intro-chevron {
+  transform: rotate(0deg);
+}
+
+.meth-intro-heading {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.meth-intro-feedback {
+  flex-shrink: 0;
+  color: var(--hs-teal);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.meth-intro-feedback:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.meth-intro-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  padding: 4px 0 16px 24px;
+}
+
+.meth-intro-body.has-diagram {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+
+.meth-intro-copy {
+  min-width: 0;
+}
+
+.meth-intro-copy p {
+  margin: 0 0 10px;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  line-height: 1.55;
+  max-width: 68ch;
+}
+
+.meth-intro-copy p:last-child {
+  margin-bottom: 0;
+}
+
+.meth-intro-empty {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.meth-intro-diagram {
+  min-width: 0;
+  align-self: start;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.meth-intro-diagram img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+@media (max-width: 900px) {
+  .meth-intro-body.has-diagram {
+    grid-template-columns: 1fr;
+  }
+}
 .road {
   position: relative;
   display: grid;

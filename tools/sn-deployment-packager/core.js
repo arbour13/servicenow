@@ -532,9 +532,15 @@
     var formatFn = (opts && opts.formatFn) || function (s) { return s; };
     var moduleName = manifest.angularModuleName;
 
-    var providers = (manifest.providers || []).map(function (p) {
+    var providers = (manifest.providers || []).filter(function (p) {
+      // deploy: false = harness-only (e.g. seed data). Omit from the shipped package entirely.
+      return p.deploy !== false;
+    }).map(function (p) {
       var src = sources.providerSrcs[p.file];
       if (src == null) { throw new Error('No source provided for provider file ' + p.file); }
+      if (p.type === 'script') {
+        throw new Error('Provider ' + p.file + ' has type "script" but deploy is not false - script assets are harness-only.');
+      }
       var body = extractProviderBody(src, moduleName, p.type === 'directive' ? 'directive' : 'factory');
       if (p.trailingMarker) { body += '\n\n' + extractTrailingMarker(src, p.trailingMarker); }
       return { name: p.name, type: p.type, file: p.file, script: formatFn(body) };

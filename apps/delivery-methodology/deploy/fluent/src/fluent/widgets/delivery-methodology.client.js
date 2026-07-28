@@ -262,8 +262,8 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   }
 
   DataService.getData().then(function (d) {
-    c.jobTitles = d.jobTitles;
-    c.methodologies = d.methodologies;
+    c.jobTitles = d.jobTitles || [];
+    c.methodologies = d.methodologies || [];
     backfillParticipants(c.methodologies);
     // Legacy localStorage rows may predate sp.icon - fill from the name heuristic once.
     c.methodologies.forEach(function (m) {
@@ -275,6 +275,14 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     });
     seedIdCounters();
     JARGON = d.jargon || {};
+
+    if (!c.methodologies.length) {
+      c.methodologyId = null;
+      c.subPhaseId = null;
+      c.loading = false;
+      return;
+    }
+
     c.methodologyId = c.methodologies[0].id;
     c.subPhaseId = firstContentSubPhase(curMeth());
     methSubPhaseById[c.methodologyId] = c.subPhaseId;
