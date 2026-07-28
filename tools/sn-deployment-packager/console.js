@@ -54,26 +54,46 @@
   // Fetches every source file a package needs, keyed the same way manifest.schema.md's `sources`
   // contract expects - every provider/controller/scss/index path is resolved relative to the
   // APP'S OWN ROOT, per deploy.manifest.js's contract (see manifest.schema.md).
+  function resolveServerScript(root, descriptor, fetched) {
+    var files = descriptor.files || {};
+    if (files.serverScript) {
+      var parts = [];
+      if (files.contentModel && fetched.contentModel) { parts.push(fetched.contentModel); }
+      parts.push(fetched.serverScript);
+      return parts.join('\n');
+    }
+    return descriptor.serverScriptSource;
+  }
+
   function loadSources(folder, descriptor) {
     var root = appRoot(folder);
     var providers = descriptor.manifest.providers || [];
     var sharedScssPartials = descriptor.sharedScssPartials || [];
-    return Promise.all([
+    var files = descriptor.files || {};
+    var fetches = [
       Promise.all(providers.map(function (p) { return fetchText(root + p.file); })),
-      fetchText(root + descriptor.files.controller),
-      fetchText(root + descriptor.files.scss),
-      fetchText(root + descriptor.files.index),
+      fetchText(root + files.controller),
+      fetchText(root + files.scss),
+      fetchText(root + files.index),
       Promise.all(sharedScssPartials.map(function (f) { return fetchText(root + f); })),
-    ]).then(function (results) {
+    ];
+    if (files.serverScript) {
+      fetches.push(files.contentModel ? fetchText(root + files.contentModel) : Promise.resolve(''));
+      fetches.push(fetchText(root + files.serverScript));
+    }
+    return Promise.all(fetches).then(function (results) {
       var providerSrcs = {};
       providers.forEach(function (p, i) { providerSrcs[p.file] = results[0][i]; });
+      var serverScript = files.serverScript
+        ? resolveServerScript(root, descriptor, { contentModel: results[5], serverScript: results[6] })
+        : descriptor.serverScriptSource;
       return {
         controllerSrc: results[1],
         scssSrc: results[2],
         sharedScss: results[4].join('\n'),
         indexHtml: results[3],
         providerSrcs: providerSrcs,
-        serverScript: descriptor.serverScriptSource,
+        serverScript: serverScript,
       };
     });
   }
@@ -309,6 +329,13 @@
   // do not count - Deploy / uniqueness checks require this. Cleared by Disconnect, app switch,
   // Connect failure, or editing URL/user/password.
   var sessionConnected = false;
+  // True while detect/lookup is in flight. Also set briefly before auto-Connect when saved
+  // credentials are present, so the UI shows Disconnect instead of flashing Connect first.
+  var connectionInFlight = false;
+  // True once the user has typed in either App ID part this app session - incomplete App ID is
+  // not treated as an error until then (or until Connect finishes), so the field doesn't flash
+  // red while blank waiting for Connect to fill the prefix.
+  var scopeUserTouched = false;
   // Localhost sdk-bridge.js (Now SDK auth/deploy handoff). Polled continuously; the browser cannot
   // start it — the status panel shows online/offline and offers Check again + a copyable start command.
   var SDK_BRIDGE = 'http://127.0.0.1:17345';
@@ -738,8 +765,10 @@
   }
 
   function syncConnectionSessionUi() {
-    if (connectBtn) { connectBtn.hidden = !!sessionConnected; }
-    if (disconnectBtn) { disconnectBtn.hidden = !sessionConnected; }
+    // Optimistic Disconnect while Connect is running (or about to, after loading saved creds).
+    var showDisconnect = !!(sessionConnected || connectionInFlight);
+    if (connectBtn) { connectBtn.hidden = showDisconnect; }
+    if (disconnectBtn) { disconnectBtn.hidden = !showDisconnect; }
     refreshBridgeLabel();
     updateSdkBridgeButtons();
   }
@@ -802,13 +831,20 @@
   }
 
   // Deploy is only enabled once every precondition is met: the local sdk-bridge is reachable, the
-  // user has a live Connect session, credentials are present, the App ID is complete, and (when we
-  // know the installed version) the App Version field is strictly higher than what's on the instance.
+  // user has a live Connect session, credentials are present, the App ID is complete, and (when the
+  // app is not in development and we know the installed version) the App Version is strictly higher
+  // than what's on the instance.
+  function isDevelopmentApp() {
+    return !!(currentParts && currentParts.manifest && currentParts.manifest.development);
+  }
+
   function versionReadyForDeploy() {
-    if (!installedBaseVersion) { return { ok: true, tip: '' }; }
     var v = fldVersion.value.trim();
     if (!semver.parseSemver(v)) {
-      return { ok: false, tip: 'App Version must be x.y.z and higher than installed v' + installedBaseVersion };
+      return { ok: false, tip: 'App Version must be x.y.z' };
+    }
+    if (isDevelopmentApp() || !installedBaseVersion) {
+      return { ok: true, tip: '' };
     }
     var cmp = semver.compareSemver(v, installedBaseVersion);
     if (cmp == null || cmp <= 0) {
@@ -1073,6 +1109,7 @@
   function disconnectSession(opts) {
     opts = opts || {};
     sessionConnected = false;
+    connectionInFlight = false;
     sdkSyncedAlias = '';
     bridgeCredsSynced = false;
     ourInstalledSysId = null;
@@ -1081,6 +1118,7 @@
     if (scopeCheckTimer) { clearTimeout(scopeCheckTimer); scopeCheckTimer = null; }
     if (opts.clearScope !== false) {
       setScopeParts('', '', { prefixLocked: false, fullyLocked: false });
+      scopeUserTouched = false;
       if (currentParts && currentParts.manifest) {
         fldAppName.value = currentParts.manifest.appName;
         fldVersion.value = currentParts.manifest.version || '1.0.0';
@@ -1141,16 +1179,23 @@
     setScopeParts(parts.prefix, parts.name, opts);
   }
 
-  // Updates the Scope compound's error styling + status line. Incomplete scopes are always erroneous.
-  // When a live connection is available and the scope is complete, also reflects uniqueness.
+  // Updates the Scope compound's error styling + status line. Incomplete App ID is only an error
+  // after Connect has settled or the user has edited the field - blank-on-load is expected for
+  // connection apps (Connect fills the prefix), so we don't flash red on first paint.
   function updateScopeFieldUI() {
     var scope = fullScope();
     var incomplete = !isScopeComplete(scope);
     var taken = scopeUniqueness === 'taken';
-    var erroneous = incomplete || taken;
+    var pendingFill = incomplete && !scopeUserTouched && !sessionConnected;
+    var erroneous = taken || (incomplete && !pendingFill && !connectionInFlight);
     scopeCompound.classList.toggle('field-error', erroneous);
 
-    if (incomplete) {
+    if (incomplete && (connectionInFlight || pendingFill)) {
+      scopeStatus.textContent = connectionInFlight
+        ? 'Connecting — App ID will fill from the instance…'
+        : '';
+      scopeStatus.className = 'field-status';
+    } else if (incomplete) {
       scopeStatus.textContent = 'App ID is incomplete';
       scopeStatus.className = 'field-status field-status-error';
     } else if (scopeUniqueness === 'checking') {
@@ -1237,13 +1282,24 @@
 
   // Suggests the next App Version from the Fluent-file diff since the last rebuild (or the last
   // on-disk build, for the very first rebuild of a freshly-selected app - see
-  // fetchPriorFluentSources). Always keeps the suggestion strictly above the installed instance
-  // version when Connect found one. If the user has hand-edited the Version field this session
-  // (versionDirty), their value is left alone (tooltip still explains the suggestion / warns if
-  // too low); otherwise the field is updated. Either way, this build's Fluent output becomes
-  // "prior" for the NEXT rebuild's comparison. Reason text lives on the (i) tooltip, not inline.
+  // fetchPriorFluentSources). For release apps (manifest.development !== true), keeps the
+  // suggestion strictly above the installed instance version when Connect found one. Development
+  // apps keep the current/installed version — no forced bump. If the user has hand-edited the
+  // Version field this session (versionDirty), their value is left alone (tooltip still explains).
   function applyVersionSuggestion() {
     if (!currentParts) { return; }
+    var tip;
+    if (isDevelopmentApp()) {
+      var keep = installedBaseVersion || currentParts.manifest.version || '1.0.0';
+      if (!versionDirty) { fldVersion.value = keep; }
+      tip = 'Development mode — same version may be redeployed; bumps are optional until ' +
+        'manifest.development is turned off.' +
+        (installedBaseVersion ? ' Installed on instance: v' + installedBaseVersion + '.' : '') +
+        (versionDirty ? ' (kept your edited version.)' : '');
+      setTip(versionTipHost, tip);
+      priorFluentFiles = shallowCopy(fluentFiles);
+      return;
+    }
     var base = installedBaseVersion || currentParts.manifest.version || '1.0.0';
     var suggestion = semver.suggestRelease({
       baseVersion: base,
@@ -1252,7 +1308,7 @@
       nextFiles: fluentFiles,
       installed: !!installedBaseVersion,
     });
-    var tip = suggestion.reason;
+    tip = suggestion.reason;
     if (versionDirty) {
       tip += ' (kept your edited version.)';
       if (installedBaseVersion) {
@@ -1301,6 +1357,8 @@
     currentParts = null;
     ourInstalledSysId = null;
     sessionConnected = false;
+    connectionInFlight = false;
+    scopeUserTouched = false;
     bridgeCredsSynced = false;
     sdkSyncedAlias = '';
     scopeUniqueness = 'unknown';
@@ -1335,6 +1393,13 @@
         fldPassword.value = (savedConn && savedConn.password) || '';
       }
       applyConnectionFieldLock();
+      // Saved full credentials → auto-Connect is coming; show Disconnect immediately so Connect
+      // doesn't flash first while sources load.
+      if (fldInstanceUrl.value.trim() && fldUsername.value.trim() && fldPassword.value) {
+        connectionInFlight = true;
+        detectStatus.textContent = 'Connecting…';
+        syncConnectionSessionUi();
+      }
     }
 
     loadSources(folder, descriptor).then(function (sources) {
@@ -1380,6 +1445,8 @@
         }
       });
     }).catch(function (err) {
+      connectionInFlight = false;
+      syncConnectionSessionUi();
       setStatus(buildStatus, 'Build failed: ' + err.message, true);
     });
   }
@@ -1395,9 +1462,14 @@
   // saved connection already has all three fields (see onAppSelected).
   function runDetectAndLookup() {
     if (!fldInstanceUrl.value.trim() || !fldUsername.value.trim() || !fldPassword.value) {
+      connectionInFlight = false;
+      syncConnectionSessionUi();
       detectStatus.textContent = 'Enter the target instance URL, username, and password first.';
       return;
     }
+    connectionInFlight = true;
+    syncConnectionSessionUi();
+    updateScopeFieldUI();
     detectStatus.textContent = 'Connecting…';
     var conn = { instanceUrl: fldInstanceUrl.value, username: fldUsername.value, password: fldPassword.value };
     var folder = currentFolder;
@@ -1406,6 +1478,7 @@
     instanceApi.detectCompanyPrefix(conn).then(function (code) {
       if (folder !== currentFolder) { return; } // the user switched apps while this was in flight
       if (!code) {
+        connectionInFlight = false;
         sessionConnected = true;
         syncConnectionSessionUi();
         detectStatus.textContent = "Connected, but couldn't read a vendor prefix - set App ID by hand below.";
@@ -1419,6 +1492,7 @@
       var derivedPrefix = core.deriveScopePrefix(code);
       return instanceApi.getInstalledApp(conn, ids.app).then(function (installed) {
         if (folder !== currentFolder) { return; }
+        connectionInFlight = false;
         sessionConnected = true;
         syncConnectionSessionUi();
         if (installed) {
@@ -1448,12 +1522,14 @@
         maybeSyncAuthToBridge();
       });
     }).catch(function (e) {
+      connectionInFlight = false;
       sessionConnected = false;
       bridgeCredsSynced = false;
       syncConnectionSessionUi();
       detectStatus.textContent = formatConnectError(e);
       updateActionButtons();
       refreshBridgeLabel();
+      updateScopeFieldUI();
     });
   }
 
@@ -1478,6 +1554,7 @@
   appSelect.addEventListener('change', onAppSelected);
   fldAppName.addEventListener('input', rebuildFluent);
   function onScopePartInput(el) {
+    scopeUserTouched = true;
     // Keep the slug legal for ServiceNow scope chars while typing.
     if (el === fldScopeName || (!scopePrefixLocked && el === fldScopePrefix)) {
       var start = el.selectionStart;
@@ -1516,7 +1593,7 @@
   [fldInstanceUrl, fldUsername, fldPassword].forEach(function (el) {
     el.addEventListener('input', function () {
       saveConn(currentFolder);
-      if (sessionConnected) {
+      if (sessionConnected || connectionInFlight) {
         // Keep typed App ID values, but the live session no longer matches these credentials.
         disconnectSession({
           clearScope: false,

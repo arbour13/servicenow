@@ -137,6 +137,33 @@ an app already shipped with hand-picked literal sys_ids before adopting the SN D
 (or may already be imported into a live instance), pin them via `manifest.sysIds` so re-importing
 updates the same records instead of duplicating them — see `core.js`'s `deriveSysIds()` doc comment.
 
+## Scripting style
+
+Clean Code–oriented conventions for this whole suite (apps and tools):
+
+- **No JSDoc** — short `//` intent comments only when a well-named function is not enough; never
+  `@param` / `@returns` blocks.
+- **CRUD verbs on record I/O** — `get…` to read, `create…` to insert, `update…` to update,
+  `delete…` to delete. Do not use `query` / `insert` / `read` / `write` in *our* function names
+  (platform APIs like `GlideRecord.insert()` stay as they are).
+- **One GlideRecord (or GlideRecordSecure) per function** — orchestration that needs several
+  cursors calls several functions.
+- **Declare and assign on the same line** — `var name = value;`, not `var name;` then assign later
+  when avoidable.
+- **No abbreviations** — prefer `contentRecord`, `systemId`, `index` over `gr`, `sysId`, `i`
+  (platform terms like `sys_id` as *field* names are fine).
+- **Names over comments** — if you need a section comment, extract a function instead.
+- **Blank lines between differently shaped statements** — group same-shape lines (e.g. a run of
+  `setValue`); blank line when the shape changes.
+- **No empty line at end of code files** — end on the last line of code plus a single trailing
+  newline (POSIX). Do not leave a blank line after that. Exception: leave `.css` / `.scss` alone
+  (including any trailing blank lines they already have).
+- **Blocks over ternaries** — prefer `if` / `else` blocks; do not use `? :` for control flow or
+  value selection when a block statement is clearer.
+- **Always brace blocks** — every `if` / `else` / `for` / `while` body gets `{ }`, even one-liners.
+- **Object properties on multiple lines** — when defining or assigning an object literal, put each
+  property on its own line (including single-property objects used as payloads).
+
 ## Styling
 
 A widget's own `<css>` field is the *sole* styling carrier — there is no separate `sp_css` Include

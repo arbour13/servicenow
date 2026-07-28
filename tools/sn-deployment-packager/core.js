@@ -382,6 +382,61 @@
     return !(manifest.features && manifest.features[name] === false);
   }
 
+  function hasEditorRole(manifest) {
+    return !!(manifest.features && manifest.features.roles &&
+      manifest.roles && manifest.roles.editorRoleName);
+  }
+
+  // Short table name (e.g. "content") → full scoped name (e.g. "x_dlvry_method_content").
+  // If the manifest already passed a fully-scoped name, leave it alone.
+  function fullTableName(scope, shortName) {
+    var s = String(shortName || '').trim();
+    var sc = String(scope || '').trim();
+    if (!s) { return s; }
+    if (sc && (s === sc || s.indexOf(sc + '_') === 0)) { return s; }
+    return sc ? (sc + '_' + s) : s;
+  }
+
+  // Normalize manifest.tables[] into the structural model Fluent emits as Table().
+  // Column `reference` values that match another table's short name (or this table's) resolve to
+  // the full scoped table name. Apps with no tables[] get [].
+  function buildTablesModel(manifest) {
+    var list = Array.isArray(manifest.tables) ? manifest.tables : [];
+    var scope = manifest.scope || '';
+    var shortToFull = {};
+    list.forEach(function (t) {
+      var shortName = String(t.name || '').trim();
+      if (!shortName) { return; }
+      shortToFull[shortName] = fullTableName(scope, shortName);
+    });
+    return list.map(function (t) {
+      var shortName = String(t.name || '').trim();
+      var fullName = shortToFull[shortName] || fullTableName(scope, shortName);
+      var columns = (t.columns || []).map(function (col) {
+        var out = {
+          name: col.name,
+          type: col.type,
+          label: col.label || col.name,
+        };
+        if (col.maxLength != null) { out.maxLength = col.maxLength; }
+        if (col.mandatory) { out.mandatory = true; }
+        if (col.choices) { out.choices = col.choices; }
+        if (col.cascadeRule) { out.cascadeRule = col.cascadeRule; }
+        if (col.type === 'reference') {
+          var ref = String(col.reference || '').trim();
+          out.referenceTable = shortToFull[ref] || fullTableName(scope, ref) || ref;
+        }
+        return out;
+      });
+      return {
+        shortName: shortName,
+        name: fullName,
+        label: t.label || shortName,
+        columns: columns,
+      };
+    }).filter(function (t) { return !!t.shortName; });
+  }
+
   function deriveSysIds(manifest) {
     var p = manifest.sysIdPrefix;
     var ids = {
@@ -402,6 +457,14 @@
       ids.adminGroup = stableSysId(p, 'admin_group');
       ids.userGroupRole = stableSysId(p, 'user_group_role');
       ids.adminGroupRole = stableSysId(p, 'admin_group_role');
+      // Optional third role (editor) - only when roles.editorRoleName is set.
+      if (hasEditorRole(manifest)) {
+        ids.editorRole = stableSysId(p, 'editor_role');
+        ids.editorGroup = stableSysId(p, 'editor_group');
+        ids.editorGroupRole = stableSysId(p, 'editor_group_role');
+        ids.editorGroupUserRole = stableSysId(p, 'editor_group_user_role');
+        ids.adminGroupUserRole = stableSysId(p, 'admin_group_user_role');
+      }
     }
     var overrides = manifest.sysIds || {};
     for (var key in overrides) {
@@ -543,11 +606,13 @@
     ] });
 
     // Opt-in roles/groups layer - BEFORE the theme/page/provider/widget records (matches the
-    // original record-model concatenation order).
+    // original record-model concatenation order). Optional editor role when roles.editorRoleName
+    // is set - editor/admin groups also get the user role so page access via the user role works.
     if (manifest.features && manifest.features.roles) {
       var r = manifest.roles;
+      var withEditor = hasEditorRole(manifest);
       records.push({ table: 'sys_user_role', sysId: ids.userRole, key: 'userRole', fields: [
-        { name: 'active', value: true },
+        // Fluent's Data<"sys_user_role"> has no `active` field - omit it (roles are active by default).
         { name: 'description', value: r.userRoleDescription || ('Can view and use the ' + manifest.appName + ' tool.') },
         { name: 'name', value: r.userRoleName },
         { name: 'sys_id', value: ids.userRole, xmlOnly: true },
@@ -555,8 +620,17 @@
         SC,
         { name: 'sys_update_name', value: 'sys_user_role_' + ids.userRole, xmlOnly: true },
       ] });
+      if (withEditor) {
+        records.push({ table: 'sys_user_role', sysId: ids.editorRole, key: 'editorRole', fields: [
+          { name: 'description', value: r.editorRoleDescription || ('Can edit ' + manifest.appName + ' content in the tool.') },
+          { name: 'name', value: r.editorRoleName },
+          { name: 'sys_id', value: ids.editorRole, xmlOnly: true },
+          { name: 'sys_name', value: r.editorRoleName, xmlOnly: true },
+          SC,
+          { name: 'sys_update_name', value: 'sys_user_role_' + ids.editorRole, xmlOnly: true },
+        ] });
+      }
       records.push({ table: 'sys_user_role', sysId: ids.adminRole, key: 'adminRole', fields: [
-        { name: 'active', value: true },
         { name: 'description', value: r.adminRoleDescription || ("Can edit " + manifest.appName + "'s own application records (widget, page, theme, layout).") },
         { name: 'name', value: r.adminRoleName },
         { name: 'sys_id', value: ids.adminRole, xmlOnly: true },
@@ -573,6 +647,17 @@
         SC,
         { name: 'sys_update_name', value: 'sys_user_group_' + ids.userGroup, xmlOnly: true },
       ] });
+      if (withEditor) {
+        records.push({ table: 'sys_user_group', sysId: ids.editorGroup, key: 'editorGroup', fields: [
+          { name: 'active', value: true },
+          { name: 'description', value: r.editorGroupDescription || ('Members can edit ' + manifest.appName + ' content in the tool.') },
+          { name: 'name', value: r.editorGroupName },
+          { name: 'sys_id', value: ids.editorGroup, xmlOnly: true },
+          { name: 'sys_name', value: r.editorGroupName, xmlOnly: true },
+          SC,
+          { name: 'sys_update_name', value: 'sys_user_group_' + ids.editorGroup, xmlOnly: true },
+        ] });
+      }
       records.push({ table: 'sys_user_group', sysId: ids.adminGroup, key: 'adminGroup', fields: [
         { name: 'active', value: true },
         { name: 'description', value: r.adminGroupDescription || ('Members can edit the ' + manifest.appName + ' application.') },
@@ -589,6 +674,22 @@
         SC,
         { name: 'sys_update_name', value: 'sys_group_has_role_' + ids.userGroupRole, xmlOnly: true },
       ] });
+      if (withEditor) {
+        records.push({ table: 'sys_group_has_role', sysId: ids.editorGroupRole, key: 'editorGroupRole', fields: [
+          { name: 'group', value: ids.editorGroup },
+          { name: 'role', value: ids.editorRole },
+          { name: 'sys_id', value: ids.editorGroupRole, xmlOnly: true },
+          SC,
+          { name: 'sys_update_name', value: 'sys_group_has_role_' + ids.editorGroupRole, xmlOnly: true },
+        ] });
+        records.push({ table: 'sys_group_has_role', sysId: ids.editorGroupUserRole, key: 'editorGroupUserRole', fields: [
+          { name: 'group', value: ids.editorGroup },
+          { name: 'role', value: ids.userRole },
+          { name: 'sys_id', value: ids.editorGroupUserRole, xmlOnly: true },
+          SC,
+          { name: 'sys_update_name', value: 'sys_group_has_role_' + ids.editorGroupUserRole, xmlOnly: true },
+        ] });
+      }
       records.push({ table: 'sys_group_has_role', sysId: ids.adminGroupRole, key: 'adminGroupRole', fields: [
         { name: 'group', value: ids.adminGroup },
         { name: 'role', value: ids.adminRole },
@@ -596,6 +697,15 @@
         SC,
         { name: 'sys_update_name', value: 'sys_group_has_role_' + ids.adminGroupRole, xmlOnly: true },
       ] });
+      if (withEditor) {
+        records.push({ table: 'sys_group_has_role', sysId: ids.adminGroupUserRole, key: 'adminGroupUserRole', fields: [
+          { name: 'group', value: ids.adminGroup },
+          { name: 'role', value: ids.userRole },
+          { name: 'sys_id', value: ids.adminGroupUserRole, xmlOnly: true },
+          SC,
+          { name: 'sys_update_name', value: 'sys_group_has_role_' + ids.adminGroupUserRole, xmlOnly: true },
+        ] });
+      }
     }
 
     // Scaffold theme - only when features.theme is on (default). Needed so sp_portal can reference
@@ -624,7 +734,12 @@
     var pageTitle = manifest.pageTitle || manifest.appName;
     var layoutOrder = '1';
     var containerName = pageTitle + ' - Container 1';
-    var pageRolesTag = (manifest.features && manifest.features.roles) ? ids.userRole : '';
+    var pageRolesTag = '';
+    if (manifest.features && manifest.features.roles) {
+      // All declared roles can open the page. Editor/admin groups also carry the user role, but
+      // listing every role sys_id keeps page access correct even if group membership is incomplete.
+      pageRolesTag = [ids.userRole, ids.editorRole, ids.adminRole].filter(Boolean).join(',');
+    }
     records.push({ table: 'sp_page', sysId: ids.page, key: 'page', fields: [
       { name: 'category', value: 'custom' },
       { name: 'id', value: pageId },
@@ -768,43 +883,76 @@
     // app's own records via a `sys_scope=` condition, so this grant can't reach another scoped
     // app's records on the same table - additive alongside whatever ACL(s) the target instance
     // already has (matching ACLs at the same table+operation are OR'd).
+    // Custom manifest.tables[] get their own read (user+editor+admin) and write/create/delete
+    // (editor+admin when editor exists, else admin-only) ACLs on the full scoped table name.
+    var tablesModel = buildTablesModel(manifest);
     if (manifest.features && manifest.features.roles) {
       var r2 = manifest.roles;
+      var withEditorAcl = hasEditorRole(manifest);
       var aclTables = ACL_TABLES.filter(function (t) {
         if (t === 'sp_theme') { return featureOn(manifest, 'theme'); }
         if (t === 'sp_portal') { return featureOn(manifest, 'portal'); }
         return true;
       });
-      aclTables.forEach(function (t) {
-        var aclId = stableSysId(manifest.sysIdPrefix, t + ':acl');
-        records.push({ table: 'sys_security_acl', sysId: aclId, key: 'acl_' + t, fields: [
+      function pushAcl(tableName, operation, seedSuffix, roleIds, description) {
+        var aclId = stableSysId(manifest.sysIdPrefix, seedSuffix + ':acl');
+        var aclFields = [
           { name: 'active', value: true },
           { name: 'admin_overrides', value: false },
-          { name: 'condition', value: 'sys_scope=' + ids.app },
-          { name: 'description', value: 'Lets ' + r2.adminRoleName + ' edit ' + t + ' records that belong to this application.' },
-          { name: 'name', value: t },
-          { name: 'operation', value: 'write' },
+          { name: 'description', value: description },
+          { name: 'name', value: tableName },
+          { name: 'operation', value: operation },
           { name: 'sys_id', value: aclId, xmlOnly: true },
-          { name: 'sys_name', value: t + '.write', xmlOnly: true },
+          { name: 'sys_name', value: tableName + '.' + operation, xmlOnly: true },
           SC,
           { name: 'sys_update_name', value: 'sys_security_acl_' + aclId, xmlOnly: true },
           { name: 'type', value: 'record' },
-        ] });
-      });
+        ];
+        // Portal/layout ACLs stay scoped to this app; custom data tables are already app-scoped.
+        if (tableName.indexOf('sp_') === 0) {
+          aclFields.splice(2, 0, { name: 'condition', value: 'sys_scope=' + ids.app });
+        }
+        records.push({ table: 'sys_security_acl', sysId: aclId, key: 'acl_' + seedSuffix.replace(/[^a-zA-Z0-9_]/g, '_'), fields: aclFields });
+        roleIds.forEach(function (roleId, idx) {
+          var aclRoleId = stableSysId(manifest.sysIdPrefix, seedSuffix + ':acl_role:' + idx);
+          records.push({ table: 'sys_security_acl_role', sysId: aclRoleId, key: 'acl_role_' + seedSuffix.replace(/[^a-zA-Z0-9_]/g, '_') + '_' + idx, fields: [
+            { name: 'sys_security_acl', value: aclId },
+            { name: 'sys_user_role', value: roleId },
+            { name: 'sys_id', value: aclRoleId, xmlOnly: true },
+            SC,
+            { name: 'sys_update_name', value: 'sys_security_acl_role_' + aclRoleId, xmlOnly: true },
+          ] });
+        });
+      }
       aclTables.forEach(function (t) {
-        var aclId = stableSysId(manifest.sysIdPrefix, t + ':acl');
-        var aclRoleId = stableSysId(manifest.sysIdPrefix, t + ':acl_role');
-        records.push({ table: 'sys_security_acl_role', sysId: aclRoleId, key: 'acl_role_' + t, fields: [
-          { name: 'sys_security_acl', value: aclId },
-          { name: 'sys_user_role', value: ids.adminRole },
-          { name: 'sys_id', value: aclRoleId, xmlOnly: true },
-          SC,
-          { name: 'sys_update_name', value: 'sys_security_acl_role_' + aclRoleId, xmlOnly: true },
-        ] });
+        pushAcl(t, 'write', t, [ids.adminRole],
+          'Lets ' + r2.adminRoleName + ' edit ' + t + ' records that belong to this application.');
+      });
+      tablesModel.forEach(function (t) {
+        var readRoles = [ids.userRole, ids.adminRole];
+        var writeRoles = [ids.adminRole];
+        if (withEditorAcl) {
+          readRoles = [ids.userRole, ids.editorRole, ids.adminRole];
+          writeRoles = [ids.editorRole, ids.adminRole];
+        }
+        pushAcl(t.name, 'read', 'table:' + t.shortName + ':read', readRoles,
+          'Lets ' + appRoleNames(r2, withEditorAcl) + ' read ' + t.label + ' rows.');
+        ['write', 'create', 'delete'].forEach(function (op) {
+          pushAcl(t.name, op, 'table:' + t.shortName + ':' + op, writeRoles,
+            'Lets ' + (withEditorAcl ? (r2.editorRoleName + '/' + r2.adminRoleName) : r2.adminRoleName) +
+            ' ' + op + ' ' + t.label + ' rows.');
+        });
       });
     }
 
-    return { ids: ids, scopeTag: scopeTag, records: records };
+    return { ids: ids, scopeTag: scopeTag, records: records, tables: tablesModel };
+  }
+
+  function appRoleNames(r, withEditor) {
+    if (withEditor) {
+      return r.userRoleName + '/' + r.editorRoleName + '/' + r.adminRoleName;
+    }
+    return r.userRoleName + '/' + r.adminRoleName;
   }
 
   return {
@@ -821,6 +969,7 @@
     scopeSlug: scopeSlug, deriveVendorPrefix: deriveVendorPrefix, SCOPE_MAX: SCOPE_MAX,
     // assembly - buildRecordModel is the shared source of truth fluent.js's assembleFluent consumes.
     buildParts: buildParts, buildRecordModel: buildRecordModel,
+    buildTablesModel: buildTablesModel, fullTableName: fullTableName, hasEditorRole: hasEditorRole,
     ACL_TABLES: ACL_TABLES,
   };
 });

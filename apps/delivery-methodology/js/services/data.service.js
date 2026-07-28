@@ -1,12 +1,6 @@
-/* Phase 1 (skeleton): returns the same seed content the standalone prototype ships with, already
-   normalized to its current data shape (meetings[] with scheduledBy/ledBy/external, jobAids[]
-   with roles) - no legacy scheduling[]/jobAidUrl fields, no client-side migration logic, since
-   this is authored fresh rather than loaded from old localStorage.
-   Interim persistence: edits are saved to the browser's localStorage (see saveData/STORAGE_KEY
-   below) so they survive a reload - a stand-in for real storage until Phase 3 replaces getData()'s
-   body with a GlideAjax call (or c.server.get() - see the widget server script once that's wired)
-   against the real Methodology Item / Job Title tables. Every consumer of this service only
-   depends on the shape below, not on where it came from, so that swap won't touch callers. */
+/* Seed + dual persistence: local harness uses localStorage; Service Portal uses the widget
+   server script against the scoped `content` table (see js/server/content.server.js + SCHEMA.md).
+   Call bindServer(c.server) from the controller when `c.server` exists. */
 angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q) {
   'use strict';
 
@@ -20,6 +14,11 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
   // discarded in favor of the fresh seed rather than silently trusted as still position-correct.
   var STORAGE_KEY = 'gf-delivery-methodology-v1';
   var SEED_VERSION = 2;
+  var serverApi = null;
+  var cachedJobTitles = null;
+  var cachedJargon = null;
+  var cachedReferenceSections = null;
+
   function loadStoredMethodologies() {
     try {
       var raw = window.localStorage.getItem(STORAGE_KEY);
@@ -232,21 +231,114 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
     });
   }
 
+  function seedPayload() {
+    var methodologies = deepClone(METHODOLOGIES);
+    applySeedIcons(methodologies);
+    return {
+      jobTitles: deepClone(JOB_TITLES),
+      methodologies: methodologies,
+      jargon: deepClone(JARGON),
+      referenceSections: []
+    };
+  }
+
+  function cacheLookups(payload) {
+    cachedJobTitles = payload.jobTitles;
+    cachedJargon = payload.jargon;
+    cachedReferenceSections = payload.referenceSections || [];
+  }
+
+  function localGetData() {
+    var stored = loadStoredMethodologies();
+    var payload = seedPayload();
+    if (stored) {
+      payload.methodologies = deepClone(stored);
+      applySeedIcons(payload.methodologies);
+    }
+    cacheLookups(payload);
+    return $q.resolve(payload);
+  }
+
+  function fromServerData(d) {
+    return {
+      jobTitles: d.jobTitles || [],
+      methodologies: d.methodologies || [],
+      jargon: d.jargon || {},
+      referenceSections: d.referenceSections || []
+    };
+  }
+
+  function rejectServerError(d, fallbackMessage) {
+    var message = (d && d.error) ? d.error : (fallbackMessage || 'Content save failed.');
+    return $q.reject({ error: message, data: d });
+  }
+
+  function savePayload(methodologies) {
+    return {
+      action: 'save',
+      methodologies: methodologies,
+      jobTitles: cachedJobTitles || deepClone(JOB_TITLES),
+      jargon: cachedJargon || deepClone(JARGON),
+      referenceSections: cachedReferenceSections || []
+    };
+  }
+
   return {
+    // Wire the Service Portal widget server API (c.server). No-op in the local harness.
+    bindServer: function (api) {
+      if (api && typeof api.get === 'function') { serverApi = api; }
+    },
     getData: function () {
-      var stored = loadStoredMethodologies();
-      var methodologies = stored ? deepClone(stored) : deepClone(METHODOLOGIES);
-      applySeedIcons(methodologies);
-      return $q.resolve({
-        jobTitles: deepClone(JOB_TITLES),
-        methodologies: methodologies,
-        jargon: deepClone(JARGON)
-      });
+      if (!serverApi) { return localGetData(); }
+      return serverApi.get({ action: 'load' }).then(function (response) {
+        var d = (response && response.data) || {};
+        if (d.error && !(d.methodologies && d.methodologies.length)) {
+          return rejectServerError(d, 'Could not load content.');
+        }
+        if (d.methodologies && d.methodologies.length) {
+          var payload = fromServerData(d);
+          cacheLookups(payload);
+          return payload;
+        }
+        // Empty content table — use seed. Editors persist it so the next load is shared.
+        var seed = seedPayload();
+        cacheLookups(seed);
+        if (d.canEdit) {
+          return serverApi.get(savePayload(seed.methodologies)).then(function (saveRes) {
+            var sd = (saveRes && saveRes.data) || {};
+            if (sd.error || sd.saved === false) {
+              return seed;
+            }
+            if (sd.methodologies && sd.methodologies.length) {
+              var saved = fromServerData(sd);
+              cacheLookups(saved);
+              return saved;
+            }
+            return seed;
+          }, function () { return seed; });
+        }
+        return seed;
+      }, function () { return localGetData(); });
     },
     // Persists the FULL methodologies tree (both Project and GRS) every time - simplest correct
     // thing when a single sub-phase save or a read-state change could touch either one, and the
     // payload is small enough that writing all of it each time costs nothing noticeable.
-    saveData: function (methodologies) { storeMethodologies(methodologies); },
+    saveData: function (methodologies) {
+      if (!serverApi) {
+        storeMethodologies(methodologies);
+        return $q.resolve({ saved: true });
+      }
+      return serverApi.get(savePayload(methodologies)).then(function (response) {
+        var d = (response && response.data) || {};
+        if (d.error || d.saved === false) {
+          return rejectServerError(d);
+        }
+        if (d.jobTitles) { cachedJobTitles = d.jobTitles; }
+        if (d.jargon) { cachedJargon = d.jargon; }
+        if (d.referenceSections) { cachedReferenceSections = d.referenceSections; }
+        return d;
+      });
+    },
     resetData: function () { try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) {} },
     // Exposed so the controller can mint new sub-phases (structure editing) with the same shape
     // as every seeded one, instead of hand-rolling a second copy of this object literal.

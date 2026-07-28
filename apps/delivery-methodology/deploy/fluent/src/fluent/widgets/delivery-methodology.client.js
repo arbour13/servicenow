@@ -35,6 +35,15 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   syncTheme();
   c.toggleTheme = function () { ThemeService.toggleApp(); syncTheme(); };
 
+  // Editor/admin roles set data.canEdit in the widget server script. Local harness has no server
+  // payload, so default true. Read-only users (role `user` only) cannot enter edit.
+  c.canEdit = !(c.data && c.data.canEdit === false);
+  function denyEdit() { showToast('You do not have permission to edit'); }
+
+  // Service Portal exposes c.server; the local harness does not. Bind so getData/saveData hit the
+  // content table when deployed.
+  if (c.server) { DataService.bindServer(c.server); }
+
   c.toast = { show: false, msg: '' };
   var toastTimer = null;
   function showToast(msg) {
@@ -42,6 +51,14 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     c.toast.show = true;
     if (toastTimer) { $timeout.cancel(toastTimer); }
     toastTimer = $timeout(function () { c.toast.show = false; }, 2200);
+  }
+
+  // Persist via DataService; surface server/local failures instead of fire-and-forget.
+  function persistMethodologies() {
+    return persistMethodologies().then(null, function (err) {
+      var msg = (err && err.error) ? err.error : 'Could not save changes.';
+      showToast(msg);
+    });
   }
 
   // CSS var references (not literal hexes) so every inline style="--nc/--pc: ..." binding and
@@ -266,6 +283,9 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     refreshJobAids();
     c.loading = false;
     pushNav(); // seed history with the landing location
+  }, function (err) {
+    showToast((err && err.error) ? err.error : 'Could not load content.');
+    c.loading = false;
   });
 
   function curMeth() {
@@ -411,7 +431,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     var entries = unreadEntries(sp);
     entries.forEach(function (c) { c.read = true; });
     refreshWhatsNew();
-    if (entries.length) { DataService.saveData(c.methodologies); }
+    if (entries.length) { persistMethodologies(); }
     return entries;
   }
   // Entries just marked read by the most recent openSubPhase - the read-panel shows these once,
@@ -533,21 +553,22 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   /* ================= Structure editing (phases + sub-phases) =================
      Add/rename/delete/reorder, direct-mutation-then-save (no working-copy/snapshot pattern like
      c.editSp above - there's no per-field changelog to diff here, just a tree shape edit). Every
-     mutation below is followed by recomputeSids() (position IS the sid) and DataService.saveData()
+     mutation below is followed by recomputeSids() (position IS the sid) and persistMethodologies()
      (persists the whole tree - see the service's own comment on why that's fine to do every time).
      UI entry point (the "Edit structure" toggle button) is pulled for now - flip this back to true
      to bring it back. Every function below stays fully wired and working either way. */
   c.structureEditUiEnabled = false;
   c.structureEditMode = false;
   c.toggleStructureEdit = function () {
+    if (!c.canEdit) { denyEdit(); return; }
     if (c.editMode) { showToast('Finish editing first'); return; }
     c.structureEditMode = !c.structureEditMode;
   };
   c.renamePhase = function (phase) {
-    DataService.saveData(c.methodologies);
+    persistMethodologies();
   };
   c.renameSubPhase = function (sp) {
-    DataService.saveData(c.methodologies);
+    persistMethodologies();
   };
   c.addPhase = function () {
     var m = curMeth();
@@ -555,7 +576,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     m.phases.push(phase);
     rgEnsureActivePhases();
     c.rgActivePhases[phase.id] = true;
-    DataService.saveData(c.methodologies);
+    persistMethodologies();
   };
   // Lands the editor directly in the new sub-phase's content edit panel (enterEdit) rather than
   // just creating a stub and leaving the user to find and open it - selectPhase deliberately skips
@@ -567,7 +588,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     sp.changelog.push({ id: 'c' + (changelogSeq++), ts: TODAY, text: 'Sub-phase created', read: false });
     p.subPhases.push(sp);
     recomputeSids(m);
-    DataService.saveData(c.methodologies);
+    persistMethodologies();
     c.structureEditMode = false;
     c.subPhaseId = sp.id;
     refreshLoc();
@@ -580,7 +601,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     if (j < 0 || j >= m.phases.length) { return; }
     var tmp = m.phases[index]; m.phases[index] = m.phases[j]; m.phases[j] = tmp;
     recomputeSids(m);
-    DataService.saveData(c.methodologies);
+    persistMethodologies();
   };
   c.moveSubPhase = function (phaseIndex, index, dir) {
     var m = curMeth();
@@ -589,7 +610,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     if (j < 0 || j >= arr.length) { return; }
     var tmp = arr[index]; arr[index] = arr[j]; arr[j] = tmp;
     recomputeSids(m);
-    DataService.saveData(c.methodologies);
+    persistMethodologies();
   };
   c.deletePhase = function (index) {
     var m = curMeth();
@@ -604,7 +625,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       c.subPhaseId = firstContentSubPhase(m);
       refreshLoc();
     }
-    DataService.saveData(c.methodologies);
+    persistMethodologies();
     refreshWhatsNew();
     if (c.view === 'raci') { refreshRg(); }
   };
@@ -623,7 +644,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       c.subPhaseId = next ? next.id : firstContentSubPhase(m);
       refreshLoc();
     }
-    DataService.saveData(c.methodologies);
+    persistMethodologies();
     refreshWhatsNew();
     if (c.view === 'raci') { refreshRg(); }
   };
@@ -669,7 +690,12 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
      changelog, then replaces the real sub-phase in place. This is the Angular-native equivalent
      of the prototype's live-edit-plus-snapshot-revert approach: two-way ng-model binding makes
      editing a plain object trivial, so there's no need to mutate live data just to get that. */
-  var TODAY = '2026-07-15';
+  var TODAY = (function () {
+    var d = new Date();
+    var month = d.getMonth() + 1;
+    var day = d.getDate();
+    return d.getFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
+  })();
   // Id counters for records created during editing (meetings, job aids, changelog entries, tasks).
   // These MUST start above the highest id already present in seed + persisted data - otherwise a
   // freshly minted 'mt1' collides with a seeded 'mt1', which Angular's ng-repeat rejects
@@ -717,6 +743,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   c.tmpAddJt = {};
 
   c.enterEdit = function () {
+    if (!c.canEdit) { denyEdit(); return; }
     if (c.structureEditMode) { return; }
     c.editSnapshot = deepClone(c.loc.sp);
     c.editSp = deepClone(c.loc.sp);
@@ -731,6 +758,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       $event.stopPropagation();
       $event.preventDefault();
     }
+    if (!c.canEdit) { denyEdit(); return; }
     if (c.editMode || c.structureEditMode) { return; }
     if (!s || !s.id) { return; }
     if (c.subPhaseId !== s.id) { c.openSubPhase(s.id); }
@@ -780,7 +808,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     refreshLoc();
     refreshWhatsNew();
     refreshJobAids();
-    DataService.saveData(c.methodologies);
+    persistMethodologies();
     showToast(changes.length ? ('Saved - ' + changes.length + ' change' + (changes.length > 1 ? 's' : '') + ' detected and logged automatically') : 'Saved - no changes detected');
   };
 

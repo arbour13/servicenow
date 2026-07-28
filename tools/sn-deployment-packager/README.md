@@ -94,6 +94,12 @@ node tools/sn-deployment-packager/build.js delivery-methodology --version=1.2.0 
 
 Output lands under `apps/<app-folder>/deploy/fluent/` (and a `.zip` of the project in project mode).
 
+## Tables and roles
+
+Optional `manifest.tables[]` emits Fluent `Table()` files (see `manifest.schema.md`). Optional
+`roles.editorRoleName` adds a third role between user and admin; content-table write ACLs go to
+editor + admin. Delivery Methodology is the first consumer (`content` table + three roles).
+
 ## Adding a new deployable app
 
 1. Add `apps/<app>/deploy.manifest.js` (see `manifest.schema.md`).

@@ -57,6 +57,19 @@ function loadDescriptor(appFolder) {
   return descriptor;
 }
 
+function resolveServerScript(appRoot, descriptor) {
+  var files = descriptor.files || {};
+  if (files.serverScript) {
+    var parts = [];
+    if (files.contentModel) {
+      parts.push(fs.readFileSync(path.join(appRoot, files.contentModel), 'utf8'));
+    }
+    parts.push(fs.readFileSync(path.join(appRoot, files.serverScript), 'utf8'));
+    return parts.join('\n');
+  }
+  return descriptor.serverScriptSource;
+}
+
 function loadSources(appRoot, descriptor) {
   var providerSrcs = {};
   (descriptor.manifest.providers || []).forEach(function (p) {
@@ -70,7 +83,7 @@ function loadSources(appRoot, descriptor) {
     sharedScss: sharedScss,
     indexHtml: fs.readFileSync(path.join(appRoot, descriptor.files.index), 'utf8'),
     providerSrcs: providerSrcs,
-    serverScript: descriptor.serverScriptSource,
+    serverScript: resolveServerScript(appRoot, descriptor),
   };
 }
 

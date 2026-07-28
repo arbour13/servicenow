@@ -48,6 +48,9 @@
       // wrong one; this literal is what you get if you build without connecting to an instance.
       scope: 'x_dlvry_method',
       version: '1.0.0',
+      // Still iterating on the target instance — packager allows redeploy at the same version and
+      // does not force semver bumps. Flip to false (or remove) when this app is release-ready.
+      development: true,
       urlSuffix: 'delivery-methodology',
       // SP page/widget id slug (hyphens→underscores from urlSuffix by default). Page title is the
       // in-portal display brand; appName stays the scoped-app / widget name.
@@ -85,10 +88,67 @@
       // real and used by the deployed widget.
       stubProviders: [],
 
-      // No roles/groups/ACLs. No own portal/theme - this widget drops onto an existing host portal
-      // page (or the packaged sp_page is wired into one manually). Glide Studio / Standards still
-      // ship the portal scaffold; this app does not.
-      features: { portal: false, theme: false },
+      // No own portal/theme - this widget drops onto an existing host portal page (or the packaged
+      // sp_page is wired into one manually). Roles gate the page and the content table: user =
+      // view; editor + admin = edit content in the tool; admin also gets write ACLs on app metadata.
+      features: { portal: false, theme: false, roles: true },
+
+      roles: {
+        userRoleName: 'user',
+        editorRoleName: 'editor',
+        adminRoleName: 'admin',
+        userGroupName: 'Delivery Methodology Users',
+        editorGroupName: 'Delivery Methodology Editors',
+        adminGroupName: 'Delivery Methodology Admins',
+        userRoleDescription: 'Can view the Delivery Methodology tool (read-only).',
+        editorRoleDescription: 'Can edit Delivery Methodology content in the tool.',
+        adminRoleDescription: 'Can edit Delivery Methodology content and the application’s own records.',
+      },
+
+      // One self-referencing content table — see SCHEMA.md. Short name becomes
+      // <scope>_content at emit time. Parent cascade deletes descendants.
+      tables: [
+        {
+          name: 'content',
+          label: 'Content',
+          columns: [
+            {
+              name: 'type',
+              type: 'choice',
+              label: 'Type',
+              choices: [
+                { value: 'methodology', label: 'Methodology' },
+                { value: 'phase', label: 'Phase' },
+                { value: 'sub_phase', label: 'Sub-phase' },
+                { value: 'task', label: 'Task' },
+                { value: 'raci', label: 'RACI' },
+                { value: 'job_aid', label: 'Job aid' },
+                { value: 'job_aid_role', label: 'Job aid role' },
+                { value: 'input', label: 'Input' },
+                { value: 'deliverable', label: 'Deliverable' },
+                { value: 'comment', label: 'Comment' },
+                { value: 'participant', label: 'Participant' },
+                { value: 'meeting', label: 'Meeting' },
+                { value: 'level_of_effort', label: 'Level of effort' },
+                { value: 'changelog_entry', label: 'Changelog entry' },
+                { value: 'job_title', label: 'Job title' },
+                { value: 'glossary_term', label: 'Glossary term' },
+                { value: 'reference_section', label: 'Reference section' },
+              ],
+            },
+            {
+              name: 'parent',
+              type: 'reference',
+              reference: 'content',
+              label: 'Parent',
+              cascadeRule: 'cascade',
+            },
+            { name: 'name', type: 'string', maxLength: 150, label: 'Name' },
+            { name: 'order', type: 'integer', label: 'Order' },
+            { name: 'content', type: 'json', label: 'Content' },
+          ],
+        },
+      ],
     },
 
     files: {
@@ -98,12 +158,12 @@
       // point of the widget's <css> field carrying authored SCSS for ServiceNow to compile.
       scss: 'scss/app.scss',
       index: 'index.html',
+      // Prefixed onto the widget server script at package time (hydrate/dehydrate).
+      contentModel: 'js/lib/content-model.js',
+      serverScript: 'js/server/content.server.js',
     },
 
-    // No server-side data: everything the widget needs is client-side today (DataService is
-    // seed + localStorage - see SCHEMA.md, the real table-backed data tier is designed but not
-    // built). Replace this stub when that lands.
-    serverScriptSource: '(function() {\n  /* No server-side data yet - DataService is client-side (seeded + localStorage). See SCHEMA.md for the table-backed data tier this becomes. */\n})();',
+    // Inline serverScriptSource omitted — hosts concatenate files.contentModel + files.serverScript.
 
     // This app authors its own complete palette as CSS custom properties rather than consuming the
     // suite's shared $token !default partials, so there is nothing to inline. NOTE: a full

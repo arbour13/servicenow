@@ -54,7 +54,9 @@
   // assembly still uses the raw model unchanged.
   function coerceFluentValue(name, value) {
     if (value === '' && (name === 'roles' || name === 'role')) { return undefined; }
-    if (name === 'roles' && typeof value === 'string' && value) { return [value]; }
+    if (name === 'roles' && typeof value === 'string' && value) {
+      return value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    }
     if (name === 'bootstrap_alt' || name === 'internal' || name === 'active' || name === 'public') {
       if (value === 'true' || value === true) { return true; }
       if (value === 'false' || value === false) { return false; }
@@ -104,6 +106,83 @@
   var PAGE_TABLES = { sp_page: 1, sp_container: 1, sp_row: 1, sp_column: 1, sp_instance: 1 };
   var PORTAL_TABLES = { sp_theme: 1, sp_portal: 1 };
 
+  // Emit one Fluent Table() file per model.tables entry. schema is an object of typed Columns
+  // (SDK Table API), not a flat Record().
+  function renderColumnCall(col) {
+    var props = [];
+    if (col.label) { props.push('label: ' + jsStr(col.label)); }
+    if (col.mandatory) { props.push('mandatory: true'); }
+    if (col.maxLength != null) { props.push('maxLength: ' + Number(col.maxLength)); }
+    if (col.type === 'choice' && col.choices) {
+      var choicesObj = normalizeChoices(col.choices);
+      var choiceLines = Object.keys(choicesObj).map(function (k) {
+        return '            ' + JSON.stringify(k) + ': ' + jsStr(choicesObj[k]) + ',';
+      });
+      props.push('choices: {\n' + choiceLines.join('\n') + '\n        }');
+    }
+    if (col.type === 'reference') {
+      props.push('referenceTable: ' + jsStr(col.referenceTable));
+      if (col.cascadeRule) { props.push('cascadeRule: ' + jsStr(col.cascadeRule)); }
+    }
+    var ctor = {
+      choice: 'ChoiceColumn',
+      reference: 'ReferenceColumn',
+      string: 'StringColumn',
+      integer: 'IntegerColumn',
+      json: 'JsonColumn',
+    }[col.type] || 'StringColumn';
+    return ctor + '({\n            ' + props.join(',\n            ') + ',\n        })';
+  }
+
+  function normalizeChoices(choices) {
+    var out = {};
+    if (Array.isArray(choices)) {
+      choices.forEach(function (c) {
+        if (typeof c === 'string') {
+          out[c] = c.replace(/_/g, ' ').replace(/\b\w/g, function (ch) { return ch.toUpperCase(); });
+        } else if (c && c.value != null) {
+          out[c.value] = c.label || String(c.value);
+        }
+      });
+      return out;
+    }
+    if (choices && typeof choices === 'object') {
+      Object.keys(choices).forEach(function (k) {
+        var v = choices[k];
+        out[k] = (v && typeof v === 'object' && v.label) ? v.label : String(v);
+      });
+    }
+    return out;
+  }
+
+  function renderTableFile(table) {
+    var colTypes = {};
+    table.columns.forEach(function (c) {
+      var ctor = {
+        choice: 'ChoiceColumn',
+        reference: 'ReferenceColumn',
+        string: 'StringColumn',
+        integer: 'IntegerColumn',
+        json: 'JsonColumn',
+      }[c.type] || 'StringColumn';
+      colTypes[ctor] = true;
+    });
+    var imports = ['Table'].concat(Object.keys(colTypes)).join(', ');
+    var schemaLines = table.columns.map(function (c) {
+      return '        ' + c.name + ': ' + renderColumnCall(c) + ',';
+    });
+    // Export const name must be a valid identifier matching the table name (SDK requirement).
+    var exportName = table.name.replace(/[^a-zA-Z0-9_]/g, '_');
+    return "import { " + imports + " } from '@servicenow/sdk/core'\n\n" +
+      'export const ' + exportName + ' = Table({\n' +
+      '    name: ' + jsStr(table.name) + ',\n' +
+      '    label: ' + jsStr(table.label) + ',\n' +
+      '    schema: {\n' +
+      schemaLines.join('\n') + '\n' +
+      '    },\n' +
+      '})\n';
+  }
+
   /* ==================================================================================
      assembleFluent(manifest, parts, opts) -> { 'relative/path': 'file contents', ... }
      opts.mode: 'project' (default) emits a full runnable Now SDK project (package.json,
@@ -122,6 +201,10 @@
     var portalRecs = [];
     var roleRecs = [];
     var widgetRec = null;
+
+    (model.tables || []).forEach(function (t) {
+      files['src/fluent/tables/' + t.shortName + '.now.ts'] = renderTableFile(t);
+    });
 
     model.records.forEach(function (rec) {
       if (rec.table === 'sys_app') { return; } // identity lives in now.config.json, not a Record
@@ -167,7 +250,7 @@
       if (providerDecls.length) {
         importLines.push(
           'import { ' + providerDecls.map(function (p) { return p.name; }).join(', ') +
-          " } from '../providers/" + slug + ".providers'"
+          " } from '../providers/" + slug + ".providers.now'"
         );
       }
       var lines = importLines.concat([
@@ -225,7 +308,7 @@
         devDependencies: { '@servicenow/sdk': ver, '@servicenow/glide': ver },
       }, null, 4) + '\n';
       files['.gitignore'] = ['node_modules/', '.now/', 'dist/', '*.log'].join('\n') + '\n';
-      files['README.md'] = renderReadme(manifest, slug);
+      files['README.md'] = renderReadme(manifest, slug, model.tables || []);
     }
 
     return files;
@@ -254,8 +337,12 @@
       "}\n";
   }
 
-  function renderReadme(manifest, slug) {
+  function renderReadme(manifest, slug, tables) {
     var hasPortal = !(manifest.features && (manifest.features.portal === false || manifest.features.theme === false));
+    var tableLines = (tables && tables.length)
+      ? '- `src/fluent/tables/` - Fluent `Table()` definitions (' +
+        tables.map(function (t) { return t.name; }).join(', ') + ')\n'
+      : '';
     return '# ' + manifest.appName + ' - Fluent (Now SDK) project\n\n' +
       'Generated by the SN Deployment Packager. **These are the files the Now SDK needs to deploy this app.**\n' +
       'The zip is a full ServiceNow Now SDK project: Service Portal widget, Angular providers, page' +
@@ -279,7 +366,8 @@
       '- `src/fluent/providers/` - each `SPAngularProvider` (injected by name at runtime)\n' +
       '- `src/fluent/page/` - page / container / row / column / instance layout\n' +
       (hasPortal ? '- `src/fluent/portal/` - portal + theme\n' : '') +
-      '- `src/fluent/generated/keys.ts` - stable record identity shared with the XML package\n' +
+      tableLines +
+      '- `src/fluent/generated/keys.ts` - stable record identity\n' +
       '- `README.md` - this file\n';
   }
 

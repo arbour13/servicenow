@@ -1,5 +1,5 @@
 import { SPWidget } from '@servicenow/sdk/core'
-import { ThemeService, DataService } from '../providers/delivery-methodology.providers'
+import { ThemeService, DataService } from '../providers/delivery-methodology.providers.now'
 
 SPWidget({
     $id: Now.ID['widget'],

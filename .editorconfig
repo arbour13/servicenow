@@ -1,0 +1,17 @@
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Code: one trailing newline, no blank line after the last line of code
+[*.{js,ts,tsx,jsx,html,json,mjs,cjs}]
+insert_final_newline = true
+
+# CSS/SCSS: do not strip trailing blank lines
+[*.{css,scss,sass}]
+trim_trailing_whitespace = true
+insert_final_newline = true

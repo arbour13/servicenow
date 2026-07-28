@@ -16,6 +16,9 @@ the small `opts` bag `buildParts` takes. Fluent emit is `fluent.js`'s `assembleF
                                          // "Dynamic scope" below.
   vendorPrefix: 'x_glide_studio',       // optional - derived from scope if omitted
   version: '1.0.0',                     // optional - defaults to '1.0.0'
+  // When true, the deploy console allows redeploying at the same version as the instance and
+  // does not force/suggest semver bumps. Set false (or omit) when the app is release-ready.
+  development: true,                    // optional - defaults to false / omitted
   shortDescription: '...',              // optional - defaults to appName
   urlSuffix: 'glide-studio-ng',         // required when features.portal is on; also seeds page/widget
                                          // id (hyphens→underscores) unless pageId/widgetId set
@@ -64,8 +67,26 @@ the small `opts` bag `buildParts` takes. Fluent emit is `fluent.js`'s `assembleF
   roles: {                                // required if features.roles is true
     userRoleName: 'glide_studio_user', adminRoleName: 'glide_studio_admin',
     userGroupName: 'Glide Studio Users', adminGroupName: 'Glide Studio Admins',
+    // Optional third role — when editorRoleName is set, the packager also emits editor role/group
+    // (editors + admins get the user role for page access). Content-table write ACLs go to
+    // editor+admin; portal/widget write ACLs stay admin-only.
+    // editorRoleName: 'app_editor', editorGroupName: 'App Editors',
     // each *Description is optional - a sensible default is generated from appName if omitted
   },
+
+  // Optional Fluent Table() definitions. Short `name` is prefixed with manifest.scope
+  // (e.g. name: 'content' → x_dlvry_method_content). Emitted to src/fluent/tables/<short>.now.ts.
+  // Column types: choice | reference | string | integer | json. Reference `reference` is another
+  // table's short name (or full scoped name); cascadeRule (e.g. 'cascade') is passed through.
+  // tables: [
+  //   { name: 'content', label: 'Content', columns: [
+  //     { name: 'type', type: 'choice', label: 'Type', choices: ['methodology', ...] },
+  //     { name: 'parent', type: 'reference', reference: 'content', cascadeRule: 'cascade' },
+  //     { name: 'name', type: 'string', maxLength: 150 },
+  //     { name: 'order', type: 'integer' },
+  //     { name: 'content', type: 'json' },
+  //   ]},
+  // ],
 }
 ```
 
@@ -158,8 +179,14 @@ key or set `true` to stay deployable (default).
       controller: 'js/controllers/main.controller.js',
       scss: 'scss/app.scss',
       index: 'index.html',
+      // Optional: file-backed widget server script. When set, hosts concatenate
+      // contentModel (if present) + serverScript and pass that as sources.serverScript.
+      // Prefer this over serverScriptSource when the script is non-trivial.
+      contentModel: 'js/lib/content-model.js',   // optional
+      serverScript: 'js/server/content.server.js', // optional
     },
-    serverScriptSource: undefined,      // optional inline string - omit to use the SN Deployment Packager's built-in stub
+    serverScriptSource: undefined,      // optional inline string - used when files.serverScript is absent;
+                                         // omit both to use the SN Deployment Packager's built-in stub
     sharedScssPartials: undefined,      // optional array of app-root-relative paths to shared SCSS
                                          // partials (e.g. a design-token file); each host reads and
                                          // concatenates them, passing the text as sources.sharedScss
