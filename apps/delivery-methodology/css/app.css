@@ -65,9 +65,9 @@
   --p3: #8ef1ff;
   --p4: #3ec2f8;
   --p5: #b1f5ff;
-  --font-display: 'Montserrat', 'Lato', sans-serif;
-  --font-body: 'Montserrat', 'Lato', sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-display: 'Montserrat', system-ui, 'Segoe UI', sans-serif;
+  --font-body: 'Montserrat', system-ui, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   --radius: 8px;
   --radius-sm: 4px;
   --radius-round: 50px;
@@ -631,6 +631,16 @@ button {
   box-shadow: var(--shadow-inset);
 }
 
+.meth-tab.meth-add {
+  color: var(--hs-teal);
+  font-weight: 600;
+}
+
+.meth-tab.meth-add:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--hs-teal) 12%, transparent);
+}
+
 .meth-tabs {
   display: inline-flex;
   margin-bottom: 18px;
@@ -739,7 +749,11 @@ button {
   color: var(--ink-soft);
   font-size: 13.5px;
   line-height: 1.55;
-  max-width: 68ch;
+  max-width: 80ch;
+}
+
+.meth-intro-body.has-diagram .meth-intro-copy p {
+  max-width: none;
 }
 
 .meth-intro-copy p:last-child {
@@ -900,62 +914,97 @@ button {
   margin-bottom: 0;
 }
 
-.struct-toggle-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
-}
-
-.struct-toggle-btn {
+/* Pencil next to the methodology switch - same shape language as the sub-phase .edit-pencil. */
+.struct-icon-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  background: var(--surface-flat);
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
   border: 1px solid var(--line);
-  border-radius: var(--radius-round);
-  padding: 6px 14px;
+  background: var(--navy-2);
+  color: var(--ink-soft);
   cursor: pointer;
+  flex-shrink: 0;
   transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
 
-.struct-toggle-btn svg {
-  width: 13px;
-  height: 13px;
+.struct-icon-btn svg {
+  width: 15px;
+  height: 15px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
 }
 
-.struct-toggle-btn:hover {
+.struct-icon-btn:hover,
+.struct-icon-btn:focus-visible {
   color: var(--teal);
   border-color: var(--teal);
+  background: var(--surface-flat);
 }
 
-.struct-toggle-btn.on {
+.struct-icon-btn.on {
   color: var(--teal);
   border-color: var(--teal);
   background: var(--teal-wash);
 }
 
-/* Structure editor - a plain, direct-mutation-then-save panel (no working-copy/snapshot like
-   c.editSp's content editor above it): there's no per-field changelog to diff for a tree shape
-   edit, just phase/sub-phase add/rename/reorder/delete, saved immediately on every change. */
-.struct-toolbar {
-  margin: 4px 0 20px;
-  padding: 18px 20px;
-  background: var(--surface-2);
-  border: 1px dashed var(--line);
-  border-radius: 12px;
+.struct-icon-btn:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
+/* Structure editor lives in a normal .panel (same navy surface as sub-phase edit). Cancel
+   restores a snapshot; Save commits the draft. */
 .struct-toolbar-hint {
   font-size: 12.5px;
   color: var(--ink-faint);
   margin: 0 0 16px;
+}
+
+.struct-methodology {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.struct-methodology-label {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.struct-methodology .struct-rename {
+  flex: 1;
+  min-width: 0;
+}
+
+.struct-methodology .field-x,
+.struct-controls .field-x {
+  position: static;
+  flex: none;
+}
+
+.struct-methodology .field-x:disabled,
+.struct-controls .field-x:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.struct-methodology .field-x:disabled:hover,
+.struct-controls .field-x:disabled:hover {
+  background: none;
+  color: var(--ink-faint);
 }
 
 .struct-phase {
@@ -1031,6 +1080,10 @@ button {
   font-size: 11px;
   color: var(--ink-faint);
   text-align: right;
+}
+
+.struct-add-methodology {
+  margin: -8px 0 18px;
 }
 
 .struct-add-phase {
@@ -1126,52 +1179,20 @@ button {
   flex-shrink: 0;
 }
 
-.fcard .fcard-edit {
+.stub-hint-edit {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  margin: -2px -4px 0 0;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--on-accent-soft);
-  cursor: pointer;
-  opacity: 0.85;
-  flex-shrink: 0;
-  transition: opacity 0.12s, color 0.12s, border-color 0.12s, background 0.12s;
+  gap: 4px;
+  white-space: nowrap;
 }
 
-.fcard:hover .fcard-edit,
-.fcard.on .fcard-edit,
-.fcard .fcard-edit:focus-visible {
-  opacity: 1;
-}
-
-.fcard .fcard-edit:hover,
-.fcard .fcard-edit:focus-visible {
-  color: var(--teal);
-  border-color: var(--teal);
-  background: var(--surface-flat);
-}
-
-.fcard.stub:not(.on) .fcard-edit {
-  color: var(--ink-faint);
-}
-
-.fcard .fcard-edit svg {
+.stub-hint-edit svg {
   width: 13px;
   height: 13px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
-}
-
-.fcard .fcard-edit:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
+  vertical-align: -2px;
 }
 
 .fcard .fcard-icon svg {
@@ -1311,6 +1332,22 @@ h1.sp-title {
 
 .pchange b {
   color: var(--on-accent-ink);
+}
+
+/* Deep-link / RACI jump target - background pulse (fill, not box-shadow) so it works on <tr>. */
+@keyframes jumpPulse {
+  0% {
+    background-color: transparent;
+  }
+  8% {
+    background-color: color-mix(in srgb, var(--teal) 35%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.jump-hl {
+  animation: jumpPulse 2s ease-out 1;
 }
 
 .pchange-list {
@@ -1852,7 +1889,7 @@ table.ttbl th.tname, table.ttbl td.tname {
 table.ttbl thead th {
   font-size: 11px;
   font-weight: 800;
-  border-bottom: 2px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 table.ttbl thead th.tname {
@@ -1868,12 +1905,7 @@ table.ttbl thead th.pcol {
   white-space: nowrap;
 }
 
-table.ttbl thead th.pcol.ext {
-  border-bottom-style: dashed;
-}
-
 table.ttbl thead th.pcol.orphan {
-  border-bottom-style: dotted;
   opacity: 0.7;
 }
 
@@ -1887,10 +1919,6 @@ table.ttbl td.cell {
 table.ttbl td.cell.off {
   color: rgba(var(--wash-rgb), 0.16);
   font-weight: 400;
-}
-
-table.ttbl tbody tr:hover {
-  background: rgba(var(--wash-rgb), 0.03);
 }
 
 table.ttbl .jobaid {
@@ -2986,26 +3014,15 @@ select.edit-in option {
   cursor: pointer;
 }
 
-/* No overflow/max-height - the user wants the whole table on the page, scrolling with it, not in
-   its own inner scroller. thead th's position: sticky then sticks to the viewport instead of this
-   container, which is the better behaviour for a long table anyway. */
+/* Table scrolls with the page; thead sticks flush to the viewport.
+   Scroller fill matches the header/footer so the kept border-radius corners
+   read as one piece (square th cells no longer leave a paper gap in the arc).
+   No top inset / upward pad - those left the frame's left/right borders visible
+   in the gap above the stuck header. */
 .rg-scroller {
-  border: 1px solid var(--line-soft);
+  border: 1px solid var(--line);
   border-radius: 12px;
-}
-
-/* Without overflow: hidden on .rg-scroller (removed above so the sticky header can pin to the
-   viewport, not just this container), its border-radius no longer clips the table's own opaque,
-   square-cornered cells - the corners round rather than "hide" then. Rounded directly on the
-   table's own 4 corner cells instead (11px = the container's 12px minus its 1px border, so the
-   curve nests exactly). Safe with border-collapse: separate - corner-cell radius doesn't need
-   collapsed borders to render. */
-.rg-table thead tr:first-child th:first-child {
-  border-top-left-radius: 11px;
-}
-
-.rg-table thead tr:first-child th:last-child {
-  border-top-right-radius: 11px;
+  background: var(--surface-2);
 }
 
 .rg-table tfoot tr:last-child td:first-child {
@@ -3016,6 +3033,15 @@ select.edit-in option {
   border-bottom-right-radius: 11px;
 }
 
+/* Match the scroller's 12px frame (11px inner) so the header fill follows the curve. */
+.rg-table thead tr:first-child th:first-child {
+  border-top-left-radius: 11px;
+}
+
+.rg-table thead tr:first-child th:last-child {
+  border-top-right-radius: 11px;
+}
+
 .rg-table {
   border-collapse: separate;
   border-spacing: 0;
@@ -3023,29 +3049,45 @@ select.edit-in option {
   font-size: 13px;
 }
 
+/* Shared grid lines - horizontal only. */
+.rg-table thead th,
+.rg-table tbody td,
+.rg-table tfoot td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 8px;
+}
+
+.rg-table tfoot tr:last-child td {
+  border-bottom: none;
+}
+
 .rg-table thead th {
   position: sticky;
   top: 0;
   background: var(--surface-2);
   z-index: 3;
-  padding: 11px 8px;
   text-align: center;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   color: var(--teal);
-  border-bottom: 2px solid var(--line);
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
+  height: 52px;
+  vertical-align: middle;
+  box-sizing: border-box;
+  border-bottom-color: transparent;
+  /* Bottom edge of the sticky bar (rows scroll underneath). */
+  box-shadow: inset 0 -1px 0 var(--line);
 }
 
-/* Was a fixed dark navy literal - broke once the base th above (var(--surface-2)) started
-   tracking theme too, since a light-mode th would hover from near-white into a hardcoded dark
-   navy with no matching text-color change. Now tracks theme like the rest of the table. */
-.rg-table thead th:hover {
-  background: var(--surface-flat);
-  color: var(--ink);
+/* Role columns only - Task is not a focus control. Mix teal into surface-2 (opaque) rather than
+   --teal-wash, which is translucent and lets underlying row borders show through while sticky. */
+.rg-table thead th:not(.taskcol):hover,
+.rg-table thead th.colhi:not(.focused) {
+  background: color-mix(in srgb, var(--teal) 16%, var(--surface-2));
+  color: var(--teal);
 }
 
 .rg-table thead th.taskcol {
@@ -3057,12 +3099,21 @@ select.edit-in option {
   min-width: 300px;
   cursor: default;
   background: var(--surface-2);
+  color: var(--ink-soft);
 }
 
-/* --teal flips brightness across themes the same way phase-colour fills do (bright accent in dark
-   mode, darkened accent in light mode), so this needs --on-phase-ink too, not --text-on-primary -
-   matching .station.on .n's identical pairing. */
+.rg-table thead th.taskcol:hover {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+/* --teal flips brightness across themes; needs --on-phase-ink, not --text-on-primary. */
 .rg-table thead th.focused {
+  background: var(--teal);
+  color: var(--on-phase-ink);
+}
+
+.rg-table thead th.focused:hover {
   background: var(--teal);
   color: var(--on-phase-ink);
 }
@@ -3070,7 +3121,7 @@ select.edit-in option {
 .rg-table th .cnt {
   display: block;
   font-size: 9px;
-  color: var(--teal);
+  color: var(--ink-faint);
   font-weight: 400;
   margin-top: 2px;
 }
@@ -3079,13 +3130,13 @@ select.edit-in option {
   color: var(--on-phase-ink);
 }
 
-.rg-grouprow td {
+.rg-table tbody tr.rg-grouprow td {
   background: var(--surface-2);
   font-weight: 700;
-  padding: 9px 12px;
+  padding: 9px 16px;
   font-size: 12.5px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-family: var(--font-body);
   position: sticky;
   left: 0;
 }
@@ -3103,27 +3154,22 @@ select.edit-in option {
   font-size: 11px;
 }
 
-.rg-table tr.taskrow {
-  cursor: pointer;
-}
-
-.rg-table tr.taskrow:hover td {
-  background: var(--surface-2);
-}
-
 .rg-table tbody td {
-  padding: 10px 8px;
-  border-bottom: 1px solid var(--line);
   text-align: center;
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 12.5px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.rg-table tr.taskrow:hover td {
+  background: var(--surface-flat);
 }
 
 .rg-table td.tname {
   position: sticky;
   left: 0;
-  background: var(--paper);
   z-index: 1;
   text-align: left;
   font-family: var(--font-body);
@@ -3134,17 +3180,46 @@ select.edit-in option {
   min-width: 300px;
 }
 
+.rg-table thead th.taskcol,
+.rg-table td.tname,
+.rg-total td.tname {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.rg-task-link {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rg-task-link:hover,
+.rg-task-link:focus-visible {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.rg-task-link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .rg-empty-cell {
   padding: 26px;
   color: var(--ink-faint);
-}
-
-.rg-table tr.taskrow:hover td.tname {
-  background: var(--surface-2);
+  font-family: var(--font-body);
+  font-weight: 500;
+  text-align: left;
 }
 
 .rg-table td.dimmed {
-  opacity: 0.25;
+  opacity: 0.3;
 }
 
 .rg-lt {
@@ -3152,83 +3227,37 @@ select.edit-in option {
 }
 
 .rg-dash {
-  color: #294863;
-}
-
-.rg-exrow td {
-  background: var(--surface-flat);
-  text-align: left;
-  font-family: var(--font-body);
-  font-weight: 400;
-  padding: 14px 18px;
-  border-bottom: 2px solid var(--line);
-  position: sticky;
-  left: 0;
-}
-
-.rg-exgrid {
-  display: flex;
-  gap: 34px;
-  flex-wrap: wrap;
-}
-
-.rg-exgrid > div {
-  flex: 1;
-  min-width: 220px;
-}
-
-.rg-exgrid h5 {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--hs-mint);
-  margin: 0 0 6px;
-}
-
-.rg-exgrid p {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.rg-exraci {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.rg-exraci span {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  background: var(--surface-flat);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 3px 8px;
+  color: var(--ink-faint);
+  font-weight: 500;
 }
 
 .rg-total td {
   background: var(--surface-2);
   font-family: var(--font-mono);
   font-size: 11px;
+  font-weight: 600;
   color: var(--teal);
-  border-top: 2px solid var(--line);
-  padding: 9px 8px;
   text-align: center;
+  height: 44px;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .rg-total td.tname {
   text-align: left;
-  font-weight: 600;
   position: sticky;
   left: 0;
-  background: var(--surface-2);
   z-index: 1;
+  background: var(--surface-2);
+  color: var(--ink-soft);
 }
 
-.rg-table td.colhi, .rg-table th.colhi {
+.rg-table td.colhi {
   background: var(--teal-wash) !important;
+}
+
+.rg-table thead th.colhi:not(.focused) {
+  background: color-mix(in srgb, var(--teal) 16%, var(--surface-2)) !important;
 }
 
 .jt-picker {
@@ -3331,7 +3360,7 @@ select.edit-in option {
 
 .jt-task {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line-soft);
@@ -3350,22 +3379,6 @@ select.edit-in option {
 .jt-task .rt-text {
   font-size: 14px;
   color: var(--ink);
-}
-
-.jt-task .rt-loc {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-faint);
-}
-
-.jt-task a.rt-jump {
-  color: var(--hs-mint);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.jt-task a.rt-jump:hover {
-  text-decoration: underline;
 }
 
 .whatsnew-item {

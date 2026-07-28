@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=optional"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=20260728c">
+  <link rel="stylesheet" href="css/app.css?v=20260728af">
 </head>
 
 <body>
@@ -48,7 +48,7 @@
 <script src="js/services/data.service.js"></script>
 <script src="js/controllers/main.controller.js"></script>
 
-  <div class="app" ng-controller="MainController as c" ng-class="{editing: c.editMode, 'search-active': c.searchOpen()}"
+  <div class="app" ng-controller="MainController as c" ng-class="{editing: c.editMode || c.structureEditMode, 'search-active': c.searchOpen()}"
     ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
     <div class="dm-loading" ng-if="c.loading">Loading…</div>
@@ -157,30 +157,31 @@
           <h1>{{c.pageTitle()}}</h1>
           <p class="pg-sub">{{c.pageSub()}}</p>
         </div>
-        <div class="pagehdr-controls" ng-if="c.showMethSwitch()">
-          <div class="meth-switch">
+        <div class="pagehdr-controls"
+          ng-if="(c.view === 'journey' || c.view === 'raci') && (c.showMethSwitch() || (c.view === 'journey' && c.structureEditUiEnabled && c.canEdit))">
+          <div class="meth-switch" ng-if="c.showMethSwitch()">
             <button type="button" class="meth-tab" ng-class="{active: m.id === c.methodologyId}"
-              ng-repeat="m in c.methodologies" ng-click="c.switchMethodology(m.id)">{{m.name}}</button>
+              ng-repeat="m in c.methodologies track by m.id" ng-click="c.switchMethodology(m.id)">{{m.name}}</button>
           </div>
+          <button type="button" class="struct-icon-btn" ng-if="c.view === 'journey' && c.structureEditUiEnabled && c.canEdit"
+            ng-class="{on: c.structureEditMode}" ng-click="c.toggleStructureEdit()"
+            data-tip="Edit structure"
+            aria-label="Edit structure"
+            aria-pressed="{{c.structureEditMode}}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
+            </svg>
+          </button>
         </div>
       </div>
 
       <div ng-if="c.view === 'journey'">
-        <div class="struct-toggle-row" ng-if="c.structureEditUiEnabled">
-          <button type="button" class="struct-toggle-btn" ng-class="{on: c.structureEditMode}"
-            ng-click="c.toggleStructureEdit()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
-            </svg>
-            {{c.structureEditMode ? 'Done editing structure' : 'Edit structure'}}
-          </button>
-        </div>
         <!-- One mounted journey chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
          toggles visibility instead of destroying/rebuilding every station + film card. -->
         <div class="journey-chrome" ng-repeat="m in c.methodologies track by m.id" ng-show="m.id === c.methodologyId">
-            <div class="meth-intro" ng-class="{collapsed: c.isMethIntroCollapsed(m.id)}">
+          <div class="meth-intro" ng-class="{collapsed: c.isMethIntroCollapsed(m.id)}">
             <div class="meth-intro-bar">
               <button type="button" class="meth-intro-toggle" ng-click="c.toggleMethIntro(m.id)"
                 aria-expanded="{{!c.isMethIntroCollapsed(m.id)}}">
@@ -226,14 +227,6 @@
               <div class="fcard-head">
                 <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.subPhaseIconPaths(s)"></svg></span>
-                <button type="button" class="fcard-edit" ng-if="c.canEdit" ng-click="c.editSubPhase(s, $event)"
-                  data-tip="Edit this sub-phase" aria-label="Edit this sub-phase">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
-                  </svg>
-                </button>
               </div>
               <span class="fcard-sid">Sub-phase {{s.sid}}</span>
               <div class="fcard-name">{{s.name}}</div>
@@ -242,62 +235,84 @@
               <div class="fcard-meta" ng-if="!c.hasContent(s)">Not yet written</div>
             </div>
           </div>
-
-          <div class="struct-toolbar" ng-if="c.structureEditMode">
-            <p class="struct-toolbar-hint">Rename phases and sub-phases inline, reorder with the arrows, or remove them.
-              Adding a new sub-phase opens it straight into edit mode so you can write it.</p>
-            <div class="struct-phase" ng-repeat="p in m.phases track by p.id">
-              <div class="struct-phase-head">
-                <span class="struct-num">{{$index + 1}}</span>
-                <input type="text" class="edit-in struct-rename" ng-model="p.name" ng-model-options="{updateOn: 'blur'}"
-                  ng-change="c.renamePhase(p)" placeholder="Phase name" aria-label="Phase name">
-                <span class="struct-controls">
-                  <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="c.movePhase($index, 'up')"
-                    data-tip="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M6 15l6-6 6 6"></path>
-                    </svg></button>
-                  <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="c.movePhase($index, 'down')"
-                    data-tip="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M6 9l6 6 6-6"></path>
-                    </svg></button>
-                  <button type="button" class="field-x" ng-click="c.deletePhase($index)" data-tip="Delete phase"
-                    aria-label="Delete phase">&times;</button>
-                </span>
-              </div>
-              <div class="struct-subphase-list">
-                <div class="struct-subphase" ng-repeat="s in p.subPhases track by s.id">
-                  <span class="struct-sid">{{s.sid}}</span>
-                  <input type="text" class="edit-in struct-rename" ng-model="s.name"
-                    ng-model-options="{updateOn: 'blur'}" ng-change="c.renameSubPhase(s)" placeholder="Sub-phase name"
-                    aria-label="Sub-phase name">
-                  <span class="struct-controls">
-                    <button type="button" class="reorder-btn" ng-disabled="$first"
-                      ng-click="c.moveSubPhase($parent.$index, $index, 'up')" data-tip="Move sub-phase earlier"
-                      aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 15l6-6 6 6"></path>
-                      </svg></button>
-                    <button type="button" class="reorder-btn" ng-disabled="$last"
-                      ng-click="c.moveSubPhase($parent.$index, $index, 'down')" data-tip="Move sub-phase later"
-                      aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 9l6 6 6-6"></path>
-                      </svg></button>
-                    <button type="button" class="field-x" ng-click="c.deleteSubPhase($parent.$index, $index)"
-                      data-tip="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>
-                  </span>
-                </div>
-                <button type="button" class="add-item-btn tight" ng-click="c.addSubPhase($index)">+ Add
-                  sub-phase</button>
-              </div>
-            </div>
-            <button type="button" class="add-item-btn struct-add-phase" ng-click="c.addPhase()">+ Add phase</button>
-          </div>
         </div>
 
-        <div class="panel" ng-if="c.loc && !c.editMode">
+        <div class="panel" ng-if="c.structureEditMode && c.curMeth()">
+          <div class="edit-bar">
+            <span class="flag">&#9679; Editing structure</span>
+            <span class="edit-bar-loc">{{c.curMeth().name}}</span>
+            <span class="spacer"></span>
+            <button type="button" class="btn" ng-click="c.cancelStructureEdit()">Cancel</button>
+            <button type="button" class="btn primary" ng-click="c.saveStructureEdit()">Save changes</button>
+          </div>
+
+          <p class="struct-toolbar-hint">Rename the methodology, phases, and sub-phases inline. Reorder with the
+            arrows, or remove them with &times;. Changes stay in a draft until you save. Adding a new sub-phase
+            saves the structure and opens it for writing.</p>
+          <div class="struct-methodology">
+            <span class="struct-methodology-label">Methodology</span>
+            <input type="text" class="edit-in struct-rename" ng-model="c.curMeth().name"
+              ng-model-options="{updateOn: 'blur'}" ng-change="c.renameMethodology(c.curMeth())"
+              placeholder="Methodology name" aria-label="Methodology name">
+            <button type="button" class="field-x" ng-click="c.deleteMethodology()"
+              data-tip="Delete this methodology" aria-label="Delete this methodology"
+              ng-disabled="c.methodologies.length <= 1">&times;</button>
+          </div>
+          <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()">+ Add
+            methodology</button>
+          <div class="struct-phase" ng-repeat="p in c.curMeth().phases track by p.id">
+            <div class="struct-phase-head">
+              <span class="struct-num">{{$index + 1}}</span>
+              <input type="text" class="edit-in struct-rename" ng-model="p.name" ng-model-options="{updateOn: 'blur'}"
+                ng-change="c.renamePhase(p)" placeholder="Phase name" aria-label="Phase name">
+              <span class="struct-controls">
+                <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="c.movePhase($index, 'up')"
+                  data-tip="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 15l6-6 6 6"></path>
+                  </svg></button>
+                <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="c.movePhase($index, 'down')"
+                  data-tip="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9l6 6 6-6"></path>
+                  </svg></button>
+                <button type="button" class="field-x" ng-click="c.deletePhase($index)"
+                  data-tip="Delete phase" aria-label="Delete phase"
+                  ng-disabled="c.curMeth().phases.length <= 1">&times;</button>
+              </span>
+            </div>
+            <div class="struct-subphase-list">
+              <div class="struct-subphase" ng-repeat="s in p.subPhases track by s.id">
+                <span class="struct-sid">{{s.sid}}</span>
+                <input type="text" class="edit-in struct-rename" ng-model="s.name"
+                  ng-model-options="{updateOn: 'blur'}" ng-change="c.renameSubPhase(s)" placeholder="Sub-phase name"
+                  aria-label="Sub-phase name">
+                <span class="struct-controls">
+                  <button type="button" class="reorder-btn" ng-disabled="$first"
+                    ng-click="c.moveSubPhase($parent.$index, $index, 'up')" data-tip="Move sub-phase earlier"
+                    aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 15l6-6 6 6"></path>
+                    </svg></button>
+                  <button type="button" class="reorder-btn" ng-disabled="$last"
+                    ng-click="c.moveSubPhase($parent.$index, $index, 'down')" data-tip="Move sub-phase later"
+                    aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 9l6 6 6-6"></path>
+                    </svg></button>
+                  <button type="button" class="field-x"
+                    ng-click="c.deleteSubPhase($parent.$index, $index)"
+                    data-tip="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>
+                </span>
+              </div>
+              <button type="button" class="add-item-btn tight" ng-click="c.addSubPhase($index)">+ Add
+                sub-phase</button>
+            </div>
+          </div>
+          <button type="button" class="add-item-btn struct-add-phase" ng-click="c.addPhase()">+ Add phase</button>
+        </div>
+
+        <div class="panel" ng-if="c.loc && !c.editMode && !c.structureEditMode">
           <div class="sp-header">
             <div>
               <div class="crumb">{{c.loc.phase.name}} &rsaquo; {{c.loc.sp.sid}}</div>
@@ -312,11 +327,23 @@
                 data-tip="Highlight jargon and acronyms with hover-over definitions">
                 Explain terms <input type="checkbox" ng-model="c.showJargon">
               </label>
+              <button type="button" class="edit-pencil" ng-if="c.canEdit" ng-click="c.enterEdit()"
+                data-tip="Edit this sub-phase" aria-label="Edit this sub-phase">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
+                </svg>
+              </button>
             </div>
           </div>
 
-          <p class="obj faint" ng-if="!c.hasContent(c.loc.sp)">This sub-phase hasn&rsquo;t been written yet. Use the
-            <b>edit &#9998;</b> on its card above to add its overview, tasks and deliverables.</p>
+          <p class="obj faint stub-hint" ng-if="!c.hasContent(c.loc.sp)">This sub-phase hasn&rsquo;t been written yet. Use the
+            <b class="stub-hint-edit">edit <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path>
+              </svg></b> button above to add its overview, tasks and deliverables.</p>
 
           <div ng-if="c.hasContent(c.loc.sp)">
             <div class="pchange" ng-if="c.justRead.length">
@@ -426,7 +453,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr ng-repeat="t in c.loc.sp.tasks">
+                      <tr ng-repeat="t in c.loc.sp.tasks" data-el="task:{{t.id}}">
                         <td class="tname">
                           <span ng-bind-html="c.jargonHtml(t.text)"></span>
                           <div class="ja" ng-repeat="j in t.jobAids track by j.id" ng-if="j.url">
@@ -468,7 +495,7 @@
           </div>
         </div>
 
-        <div class="panel" ng-if="c.loc && c.editMode">
+        <div class="panel" ng-if="c.loc && c.editMode && !c.structureEditMode">
           <div class="edit-bar">
             <span class="flag">&#9679; Editing</span>
             <span class="edit-bar-loc">{{c.loc.phase.name}} &middot; {{c.editSp.sid}} {{c.editSp.name}}</span>
@@ -778,16 +805,29 @@
       </div>
 
       <div ng-if="c.view === 'raci'">
-        <div class="meth-tabs">
-          <button type="button" class="meth-tab" ng-class="{active: c.raciMode === 'grid'}"
-            ng-click="c.rgSetMode('grid')">Grid</button>
-          <button type="button" class="meth-tab" ng-class="{active: c.raciMode === 'byrole'}"
-            ng-click="c.rgSetMode('byrole')">By Role</button>
+        <div class="views" role="tablist" aria-label="RACI layout">
+          <button type="button" class="vtab" role="tab" ng-class="{on: c.raciMode === 'grid'}"
+            ng-click="c.rgSetMode('grid')" aria-selected="{{c.raciMode === 'grid'}}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+              <path d="M3 9h18M9 9v11M15 9v11"></path>
+            </svg><span>Grid</span>
+          </button>
+          <button type="button" class="vtab" role="tab" ng-class="{on: c.raciMode === 'byrole'}"
+            ng-click="c.rgSetMode('byrole')" aria-selected="{{c.raciMode === 'byrole'}}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg><span>By Role</span>
+          </button>
         </div>
 
         <div ng-if="c.raciMode === 'byrole'">
           <div class="jt-picker">
-            <button type="button" class="jt-pick-btn" ng-class="{active: c.rgFocusJob === id}"
+            <button type="button" class="jt-pick-btn" ng-class="{active: c.rgByRoleFocusJob === id}"
               ng-repeat="id in c.rg.ids" ng-click="c.rgSelectByRole(id)">
               <svg class="jt-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -796,22 +836,19 @@
                 class="jt-pick-count">{{c.rg.counts[id] || 0}}</span>
             </button>
           </div>
-          <div ng-if="c.rgFocusJob">
+          <div ng-if="c.rgByRoleFocusJob">
             <div class="jt-group" ng-repeat="g in c.rg.byRoleGroups">
               <div class="jt-group-head"><span class="sid"
                   ng-style="{background: g.color}">{{g.sp.sid}}</span>{{g.phase.name}} - {{g.sp.name}}</div>
               <div class="jt-task" ng-repeat="t in g.tasks">
-                <span class="rt-raci"><span ng-repeat="l in t.raci[c.rgFocusJob]"
+                <span class="rt-raci"><span ng-repeat="l in t.raci[c.rgByRoleFocusJob]"
                     ng-class="'rl-' + l">{{l}}</span></span>
-                <div>
-                  <div class="rt-text">{{t.text}}</div>
-                  <a class="rt-jump rt-loc" ng-click="c.jumpTo(g.sp.id, c.methodologyId)">{{g.phase.name}} &rsaquo;
-                    {{g.sp.sid}} {{g.sp.name}} &#8599;</a>
-                </div>
+                <button type="button" class="rt-text rg-task-link"
+                  ng-click="c.jumpTo(g.sp.id, c.methodologyId, 'task:' + t.id)">{{t.text}}</button>
               </div>
             </div>
           </div>
-          <p class="empty" ng-if="!c.rgFocusJob">No job titles have tasks yet.</p>
+          <p class="empty" ng-if="!c.rgByRoleFocusJob">No job titles have tasks yet.</p>
         </div>
 
         <div ng-if="c.raciMode === 'grid'">
@@ -831,8 +868,8 @@
             </div>
           </div>
 
-          <div class="rg-focusbar" ng-if="c.rgFocusJob">
-            Focused on&nbsp;<b>{{c.jobTitleById(c.rgFocusJob).name}}</b>&nbsp;- showing only tasks where they carry a
+          <div class="rg-focusbar" ng-if="c.rgGridFocusJob">
+            Focused on&nbsp;<b>{{c.jobTitleById(c.rgGridFocusJob).name}}</b>&nbsp;- showing only tasks where they carry a
             RACI designation.
             <button type="button" ng-click="c.rgClearFocus()">Clear focus</button>
           </div>
@@ -842,7 +879,7 @@
               <thead>
                 <tr>
                   <th class="taskcol">Task</th>
-                  <th ng-class="{focused: c.rgFocusJob === id, colhi: !c.rgFocusJob && c.rgHoverCol === id}"
+                  <th ng-class="{focused: c.rgGridFocusJob === id, colhi: !c.rgGridFocusJob && c.rgHoverCol === id}"
                     ng-repeat="id in c.rg.ids" ng-click="c.rgToggleCol(id)" ng-mouseenter="c.rgHoverCol = id"
                     ng-mouseleave="c.rgHoverCol = null" data-tip-name="{{c.jobTitleById(id).name}}"
                     data-tip="{{c.jobTitleById(id).description}}">{{c.jobTitleById(id).abbr}}<span
@@ -862,28 +899,16 @@
                   <td colspan="{{c.rg.ids.length + 1}}"><span class="gsid"
                       ng-style="{background: g.color}">{{g.sp.sid}}</span>{{g.phase.name}} - {{g.sp.name}}</td>
                 </tr>
-                <tr class="taskrow" ng-repeat-start="row in g.rows" ng-click="c.rgToggleRow(row.key)">
-                  <td class="tname">{{row.task.text}}</td>
+                <tr class="taskrow" ng-repeat="row in g.rows">
+                  <td class="tname">
+                    <button type="button" class="rg-task-link"
+                      ng-click="c.jumpTo(g.sp.id, c.methodologyId, 'task:' + row.task.id)">{{row.task.text}}</button>
+                  </td>
                   <td ng-repeat="id in c.rg.ids"
-                    ng-class="{dimmed: c.rgFocusJob && id !== c.rgFocusJob, colhi: !c.rgFocusJob && c.rgHoverCol === id}">
+                    ng-class="{dimmed: c.rgGridFocusJob && id !== c.rgGridFocusJob, colhi: !c.rgGridFocusJob && c.rgHoverCol === id}">
                     <span ng-if="row.task.raci[id]" class="rg-lt"><span ng-repeat="l in row.task.raci[id]"
                         ng-class="'rl-' + l">{{l}}</span></span>
                     <span ng-if="!row.task.raci[id]" class="rg-dash">&ndash;</span>
-                  </td>
-                </tr>
-                <tr class="rg-exrow" ng-repeat-end ng-if="c.rgOpenRow === row.key">
-                  <td colspan="{{c.rg.ids.length + 1}}">
-                    <div class="rg-exgrid">
-                      <div>
-                        <h5>Phase context</h5>
-                        <p>{{g.sp.overview || '-'}}</p>
-                      </div>
-                      <div>
-                        <h5>This task - full RACI</h5>
-                        <div class="rg-exraci"><span ng-repeat="er in row.exRaci"><b data-tip-name="{{er.name}}"
-                              data-tip="{{er.description}}">{{er.abbr}}</b> {{er.text}}</span></div>
-                      </div>
-                    </div>
                   </td>
                 </tr>
               </tbody>

@@ -815,22 +815,27 @@
         {
           id: 'grs-initiate', name: 'Initiate', order: 1,
           subPhases: [
-            Object.assign(blankSubPhase('grs-1-2', '1.2', 'IPKT', 1, 'exchange'), {
-              overview: 'At this phase, the GRS engagement is confirmed. The Account Executive has moved the opportunity in the Customer Relations Management (CRM) system to “Closed Won” and we are just about ready to meet the client and commence the GRS engagement. The heart of this step is the completion and live review of the IPKT document (and supporting documents) which serves as the transition phase.',
-              objective: 'The primary objective of this step is to obtain knowledge from the sales team that negotiated the merits of the client engagement. A proper “handoff” will help ensure we come across as One company, remove any seams in the transition to Delivery and address any insights, risks and actions that we must take prior to meeting the client for the first time.',
-              levelOfEffort: { mode: 'all', all: { text: '1 hour', billable: true }, roles: {} },
-              comments: ['Aligned to AE'],
-              inputs: ['IPKT Document', 'CRM opportunity record'],
-              deliverables: ['Completed IPKT review', 'Transition risks & actions logged'],
-              meetings: [{ id: 'mt4', scheduledBy: 'ae', ledBy: 'arch', external: false }],
-              tasks: [task('grs-1-2-t1', 1, 'Complete and live-review the IPKT document with the sales team', { arch: ['A', 'R'], tc: ['A', 'R'], ae: ['C'] })]
-            }),
-            blankSubPhase('grs-1-3', '1.3', 'Team Touchpoint', 2, 'message'),
-            blankSubPhase('grs-1-4', '1.4', 'Kickoff', 3, 'flag')
+            blankSubPhase('grs-1-1', '1.1', 'Pre-IPKT', 1, 'inbox'),
+            blankSubPhase('grs-1-2', '1.2', 'IPKT', 2, 'exchange'),
+            blankSubPhase('grs-1-3', '1.3', 'Customer Pre-Kickoff', 3, 'door'),
+            blankSubPhase('grs-1-4', '1.4', 'Get to Know the Team', 4, 'users'),
+            blankSubPhase('grs-1-5', '1.5', 'Kickoff', 5, 'flag')
           ]
         },
-        { id: 'grs-lifecycle', name: 'Lifecycle Check-ins', order: 2, subPhases: [blankSubPhase('grs-2-1', '2.1', 'Periodic Check-in', 1, 'calendar')] },
-        { id: 'grs-closure', name: 'Closure', order: 3, subPhases: [blankSubPhase('grs-3-1', '3.1', 'Closure', 1, 'check')] }
+        {
+          id: 'grs-checkin', name: 'Check-in', order: 2,
+          subPhases: [
+            blankSubPhase('grs-2-1', '2.1', 'Check-in', 1, 'calendar')
+          ]
+        },
+        {
+          id: 'grs-close', name: 'Close', order: 3,
+          subPhases: [
+            blankSubPhase('grs-3-1', '3.1', 'Internal Closure Meeting', 1, 'briefcase'),
+            blankSubPhase('grs-3-2', '3.2', 'Customer Retrospective', 2, 'refresh'),
+            blankSubPhase('grs-3-3', '3.3', 'Customer Closure Meeting', 3, 'check')
+          ]
+        }
       ]
     }
   ];
@@ -847,7 +852,7 @@
 
 
   root.DMSeed = {
-    version: 15,
+    version: 19,
     jobTitles: JOB_TITLES,
     methodologies: METHODOLOGIES,
     jargon: JARGON,

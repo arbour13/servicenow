@@ -35,9 +35,10 @@
 
   return {
     manifest: {
-      // SN app / portal / widget display name. In-UI page title stays "Delivery 2.0" (controller
-      // pageTitle) - that brand is chrome only, not the scoped-app name. Scope / urlSuffix / folder
-      // stay as delivery-methodology tech identity so renaming display text does not mint a second
+      // SN app / portal / widget display name. Journey page h1 is "Methodology" (matches the
+      // view tab); "Delivery 2.0" lives as portal pageTitle / browser tab - brand chrome for
+      // stakeholders, not the in-app section heading. Scope / urlSuffix / folder stay as
+      // delivery-methodology tech identity so renaming display text does not mint a second
       // scoped app on redeploy.
       appName: 'Delivery Methodology',
 
