@@ -2715,11 +2715,18 @@ select.edit-in option {
   border-radius: 6px;
   padding: 5px 12px;
   cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
 
+.loe-mode-btn:hover {
+  color: var(--ink);
+}
+
+/* Same muted selected treatment as .vtab.on - gradient pill is for primary chrome
+   (methodology switch), not in-panel mode toggles. */
 .loe-mode-btn.on {
-  background: var(--gradient-pill);
-  color: var(--on-gradient-ink);
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 .loe-mode.mtg-toggle {
