@@ -84,6 +84,11 @@
         { file: 'js/services/theme.service.js', name: 'ThemeService', type: 'service' },
         { file: 'js/services/data.service.js', name: 'DataService', type: 'service' },
         { file: 'js/services/changelog-diff.service.js', name: 'ChangelogDiffService', type: 'service' },
+        { file: 'js/services/raci-grid.service.js', name: 'RaciGridService', type: 'service' },
+        { file: 'js/services/navigation.service.js', name: 'NavigationService', type: 'service' },
+        { file: 'js/services/search.service.js', name: 'SearchService', type: 'service' },
+        { file: 'js/services/whats-new.service.js', name: 'WhatsNewService', type: 'service' },
+        { file: 'js/services/reference.service.js', name: 'ReferenceService', type: 'service' },
         // Harness-only play data (window.DMSeed). deploy: false → packager skips this file entirely
         // so the instance widget stays thin. Local index.html still loads it before DataService.
         { file: 'js/data/seed.js', name: 'DMSeed', type: 'script', deploy: false },
