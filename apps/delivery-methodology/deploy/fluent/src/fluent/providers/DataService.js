@@ -144,6 +144,10 @@
   }
 
   function localGetData() {
+    return $q.resolve(buildLocalPayload());
+  }
+
+  function buildLocalPayload() {
     var seed = readSeed();
     var seedVersion = (seed && seed.version) || 0;
     var stored = loadStoredMethodologies(seedVersion);
@@ -155,7 +159,7 @@
     }
 
     cacheLookups(payload);
-    return $q.resolve(payload);
+    return payload;
   }
 
   function fromServerData(d) {
@@ -191,6 +195,8 @@
         serverApi = api;
       }
     },
+    // Sync harness path - avoids a Loading… → content flash on first paint when there's no SN server.
+    readLocalData: buildLocalPayload,
     getData: function () {
       if (!serverApi) {
         return localGetData();

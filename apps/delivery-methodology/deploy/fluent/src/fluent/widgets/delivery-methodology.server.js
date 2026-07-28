@@ -8,7 +8,7 @@
 var DMContentModel = (function () {
   'use strict';
 
-  // Choice values on the content.type field — keep in sync with deploy.manifest.js / SCHEMA.md.
+  // Choice values on the content.type field - keep in sync with deploy.manifest.js / SCHEMA.md.
   var ALLOWED_TYPES = {
     methodology: true,
     phase: true,
@@ -119,7 +119,12 @@ var DMContentModel = (function () {
     methodologies.forEach(function (m) {
       pushRow(rows, 'methodology', null, m.name, m.order, {
         id: m.id,
-        description: m.description || ''
+        title: m.title || '',
+        summary: m.summary || '',
+        description: m.description || '',
+        feedbackUrl: m.feedbackUrl || '',
+        feedbackLabel: m.feedbackLabel || '',
+        diagramUrl: m.diagramUrl || ''
       }, m.id);
 
       (m.phases || []).forEach(function (p) {
@@ -317,7 +322,12 @@ var DMContentModel = (function () {
         id: mid,
         name: mRow.name,
         order: mRow.order,
+        title: mRow.content.title || '',
+        summary: mRow.content.summary || '',
         description: mRow.content.description || '',
+        feedbackUrl: mRow.content.feedbackUrl || '',
+        feedbackLabel: mRow.content.feedbackLabel || '',
+        diagramUrl: mRow.content.diagramUrl || '',
         phases: kids(mid, 'phase').map(function (pRow) {
           var pid = pRow.content.id || pRow.clientId;
           return {
