@@ -71,6 +71,7 @@
   --radius-round: 50px;
   --shadow-sm: 2px 2px 4px 0 rgba(0, 0, 0, 0.15);
   --shadow: var(--shadow-sm);
+  --shadow-inset: 0 4px 4px 0 rgba(0, 28, 54, 0.2) inset;
   --focus-ring: 2px solid var(--hs-teal);
   --focus-ring-offset: 2px;
   --hs-border-tertiary: #c5dce7;
@@ -395,6 +396,9 @@
 }.dm-widget .theme-toggle svg {
   width: 16px;
   height: 16px;
+}/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */.dm-widget .nav-btn:focus-visible, .dm-widget .theme-toggle:focus-visible, .dm-widget .edit-pencil:focus-visible, .dm-widget .struct-icon-btn:focus-visible, .dm-widget .meth-tab:focus-visible, .dm-widget .vtab:focus-visible, .dm-widget .loe-mode-btn:focus-visible, .dm-widget .btn:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }.dm-widget .pagehdr-title {
   margin-bottom: 14px;
 }.dm-widget .pagehdr-title h1 {
@@ -517,16 +521,16 @@
   }.dm-widget .views {
     justify-content: space-between;
   }
-}.dm-widget .meth-intro {
+}.dm-widget .meth-intro, .dm-widget .sp-brief {
   margin: 0 0 18px;
   border-bottom: 1px solid var(--line-soft);
-}.dm-widget .meth-intro-bar {
+}.dm-widget .meth-intro-bar, .dm-widget .sp-brief-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   min-height: 36px;
-}.dm-widget .meth-intro-toggle {
+}.dm-widget .meth-intro-toggle, .dm-widget .sp-brief-toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -538,20 +542,31 @@
   cursor: pointer;
   text-align: left;
   font: inherit;
-}.dm-widget .meth-intro-toggle:hover {
+}.dm-widget .meth-intro-toggle:hover, .dm-widget .sp-brief-toggle:hover {
   color: var(--ink);
-}.dm-widget .meth-intro-chevron {
+}.dm-widget .meth-intro-chevron, .dm-widget .sp-brief-chevron {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
   transition: transform 0.18s ease;
   transform: rotate(90deg);
-}.dm-widget .meth-intro.collapsed .meth-intro-chevron {
+}.dm-widget .meth-intro.collapsed .meth-intro-chevron, .dm-widget .sp-brief.collapsed .sp-brief-chevron {
   transform: rotate(0deg);
-}.dm-widget .meth-intro-heading {
+}.dm-widget .meth-intro-heading, .dm-widget .sp-brief-heading {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.01em;
+}.dm-widget .sp-brief-body {
+  padding: 4px 0 16px 24px;
+}.dm-widget .sp-brief-body .sec:first-child {
+  margin-top: 0;
+}.dm-widget .sp-brief-body .lede {
+  margin-top: 0;
+}.dm-widget .sp-brief-body .sec {
+  margin-top: 14px;
+}.dm-widget .sp-brief-toggle:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }.dm-widget .meth-intro-feedback {
   flex-shrink: 0;
   color: var(--hs-teal);
@@ -1073,7 +1088,7 @@
   margin-bottom: 12px;
 }.dm-widget .editing .main {
   background: repeating-linear-gradient(45deg, transparent, transparent 22px, rgba(255, 210, 63, 0.045) 22px, rgba(255, 210, 63, 0.045) 23px);
-}.dm-widget .editing .pagehdr, .dm-widget .editing .journey-chrome {
+}.dm-widget .editing .pagehdr, .dm-widget .editing .methodology-chrome {
   opacity: 0.5;
   filter: blur(2.5px) saturate(0.7);
   pointer-events: none;
@@ -1400,6 +1415,8 @@
   white-space: nowrap;
 }.dm-widget table.ttbl thead th.pcol.orphan {
   opacity: 0.7;
+}/* External (customer) job-title columns: dashed underline matches rolechip.ext / ◇ signal. */.dm-widget table.ttbl thead th.pcol.ext {
+  border-bottom-style: dashed;
 }.dm-widget table.ttbl td.cell {
   font-family: var(--font-mono);
   font-weight: 700;
@@ -1986,9 +2003,14 @@
   border-radius: 6px;
   padding: 5px 12px;
   cursor: pointer;
-}.dm-widget .loe-mode-btn.on {
-  background: var(--gradient-pill);
-  color: var(--on-gradient-ink);
+  transition: background 0.12s, color 0.12s;
+}.dm-widget .loe-mode-btn:hover {
+  color: var(--ink);
+}/* In-panel selected signal - same family as .participant-chip.on (teal + soft wash).
+   surface-2 disappeared against .metacard's identical fill; gradient pill is too loud here. */.dm-widget .loe-mode-btn.on {
+  background: var(--chip-on-bg);
+  color: var(--teal);
+  box-shadow: inset 0 0 0 1px var(--teal);
 }.dm-widget .loe-mode.mtg-toggle {
   margin: 10px 0 0;
 }.dm-widget .loe-edit-row {

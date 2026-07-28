@@ -1,5 +1,4 @@
-/* Reference view job-aids index. Methodology view also uses jobAidScope for per-task chips. */
-angular.module('deliveryMethodology').factory('ReferenceService', [function () {
+[function () {
   'use strict';
 
   var jobAids = [];
@@ -43,4 +42,4 @@ angular.module('deliveryMethodology').factory('ReferenceService', [function () {
     refresh: refresh,
     readState: readState
   };
-}]);
+}]

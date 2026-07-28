@@ -680,12 +680,14 @@ button {
     justify-content: space-between;
   }
 }
-.meth-intro {
+.meth-intro,
+.sp-brief {
   margin: 0 0 18px;
   border-bottom: 1px solid var(--line-soft);
 }
 
-.meth-intro-bar {
+.meth-intro-bar,
+.sp-brief-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -693,7 +695,8 @@ button {
   min-height: 36px;
 }
 
-.meth-intro-toggle {
+.meth-intro-toggle,
+.sp-brief-toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -707,11 +710,13 @@ button {
   font: inherit;
 }
 
-.meth-intro-toggle:hover {
+.meth-intro-toggle:hover,
+.sp-brief-toggle:hover {
   color: var(--ink);
 }
 
-.meth-intro-chevron {
+.meth-intro-chevron,
+.sp-brief-chevron {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
@@ -719,14 +724,37 @@ button {
   transform: rotate(90deg);
 }
 
-.meth-intro.collapsed .meth-intro-chevron {
+.meth-intro.collapsed .meth-intro-chevron,
+.sp-brief.collapsed .sp-brief-chevron {
   transform: rotate(0deg);
 }
 
-.meth-intro-heading {
+.meth-intro-heading,
+.sp-brief-heading {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+.sp-brief-body {
+  padding: 4px 0 16px 24px;
+}
+
+.sp-brief-body .sec:first-child {
+  margin-top: 0;
+}
+
+.sp-brief-body .lede {
+  margin-top: 0;
+}
+
+.sp-brief-body .sec {
+  margin-top: 14px;
+}
+
+.sp-brief-toggle:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .meth-intro-feedback {
@@ -1458,7 +1486,7 @@ h1.sp-title {
   background: repeating-linear-gradient(45deg, transparent, transparent 22px, rgba(255, 210, 63, 0.045) 22px, rgba(255, 210, 63, 0.045) 23px);
 }
 
-.editing .pagehdr, .editing .journey-chrome {
+.editing .pagehdr, .editing .methodology-chrome {
   opacity: 0.5;
   filter: blur(2.5px) saturate(0.7);
   pointer-events: none;

@@ -1,7 +1,4 @@
-/* In-app back/forward, view/methodology/sub-phase navigation, and deep links.
-   Bind host hooks once after the controller's location helpers exist - avoids DI cycles
-   with Raci/Search/WhatsNew. */
-angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', function ($timeout) {
+['$timeout', function ($timeout) {
   'use strict';
 
   var navStack = [];
@@ -211,4 +208,4 @@ angular.module('deliveryMethodology').factory('NavigationService', ['$timeout', 
     getResumeMap: getResumeMap,
     setResumeMap: setResumeMap
   };
-}]);
+}]

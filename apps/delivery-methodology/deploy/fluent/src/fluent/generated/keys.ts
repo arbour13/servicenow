@@ -73,6 +73,54 @@ declare global {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e8b8715401b8715402b87154"
                     }
+                    "ChangelogDiffService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8f7371912f7371913f73719"
+                    }
+                    "RaciGridService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8304eff10304eff11304eff"
+                    }
+                    "NavigationService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8c274e8d7c274e8d8c274e8"
+                    }
+                    "SearchService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8498b43c3498b43c4498b43"
+                    }
+                    "WhatsNewService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8a6d8b29aa6d8b29ba6d8b2"
+                    }
+                    "ReferenceService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e87b8295c07b8295c17b8295"
+                    }
+                    "IdSeqService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8108a2fe7108a2fe8108a2f"
+                    }
+                    "IconService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8efa70012efa70013efa700"
+                    }
+                    "TipService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8e4182670e4182671e41826"
+                    }
+                    "JargonService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc"
+                    }
+                    "ContentEditService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e83cdfcde83cdfcde93cdfcd"
+                    }
+                    "StructureEditService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8ba87332eba87332fba8733"
+                    }
                     "widget": {
                         table: "sp_widget"
                         id: "a4b5c6d7e8ac99e07aac99e07bac99e0"

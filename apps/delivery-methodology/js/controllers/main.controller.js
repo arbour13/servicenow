@@ -1,6 +1,6 @@
 /* Mirrors the standalone prototype's (delivery-methodology.html) render*() logic 1:1, translated
    from innerHTML-string building into controller state + declarative template bindings
-   (index.html). All views (Journey read + edit, RACI grid/by-role, Reference, What's New, Search)
+   (index.html). All views (Methodology read + edit, RACI grid/by-role, Reference, What's New, Search)
    are ported. */
 angular.module('deliveryMethodology').controller('MainController', [
   'DataService', '$timeout', '$q', 'ThemeService',
@@ -139,6 +139,54 @@ angular.module('deliveryMethodology').controller('MainController', [
     return String(methodology.description).split(/\n\s*\n/).map(function (paragraph) {
       return paragraph.replace(/\s+/g, ' ').trim();
     }).filter(Boolean);
+  };
+
+  // Sub-phase Overview + Objective share one collapse (same pattern as About). Preference is
+  // per sub-phase so collapsing Kickoff does not hide IPKT's briefing.
+  var SP_BRIEF_COLLAPSED_KEY = 'gf-dm-sp-brief-collapsed';
+  var spBriefCollapsedById = {};
+
+  function loadSpBriefCollapsed() {
+    try {
+      var raw = window.localStorage.getItem(SP_BRIEF_COLLAPSED_KEY);
+      if (!raw) {
+        return {};
+      }
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+      return {};
+    } catch (loadError) {
+      return {};
+    }
+  }
+
+  function storeSpBriefCollapsed() {
+    try {
+      window.localStorage.setItem(SP_BRIEF_COLLAPSED_KEY, JSON.stringify(spBriefCollapsedById));
+    } catch (storeError) {
+      /* storage unavailable - preference is session-only */
+    }
+  }
+
+  spBriefCollapsedById = loadSpBriefCollapsed();
+
+  c.hasSpBrief = function (subPhase) {
+    return !!(subPhase && (subPhase.overview || subPhase.objective));
+  };
+
+  c.isSpBriefCollapsed = function (subPhaseId) {
+    return !!spBriefCollapsedById[subPhaseId];
+  };
+
+  c.toggleSpBrief = function (subPhaseId) {
+    if (spBriefCollapsedById[subPhaseId]) {
+      delete spBriefCollapsedById[subPhaseId];
+    } else {
+      spBriefCollapsedById[subPhaseId] = true;
+    }
+    storeSpBriefCollapsed();
   };
   c.tip = TipService.tip;
   c.tipMouseOver = function ($event) { TipService.tipMouseOver($event); };
@@ -332,7 +380,7 @@ angular.module('deliveryMethodology').controller('MainController', [
     return 0;
   };
   // Phase index for a specific methodology (active uses c.subPhaseId; hidden uses the remembered
-  // last visit). Used by the per-methodology ng-show journey chrome so a hidden meth's filmstrip
+  // last visit). Used by the per-methodology ng-show methodology chrome so a hidden meth's filmstrip
   // stays on the right phase instead of tracking the active meth's sub-phase.
   c.phaseIndexInMeth = function (m) {
     if (!m || !m.phases || !m.phases.length) { return 0; }
@@ -348,7 +396,7 @@ angular.module('deliveryMethodology').controller('MainController', [
   c.phaseColor = function (i) { return PHASE_COLORS[i % PHASE_COLORS.length]; };
   c.subPhaseIconPaths = function (sp) { return IconService.pathsFor(sp); };
 
-  c.view = 'journey';
+  c.view = 'methodology';
 
   function denyWhileEditing() {
     showToast('Finish editing first');
@@ -409,7 +457,7 @@ angular.module('deliveryMethodology').controller('MainController', [
   c.clearSearch = clearSearch;
 
   c.showMethSwitch = function () {
-    return (c.view === 'journey' || c.view === 'raci') && c.methodologies.length > 1;
+    return (c.view === 'methodology' || c.view === 'raci') && c.methodologies.length > 1;
   };
   c.pageTitle = function () {
     if (c.view === 'raci') { return 'RACI'; }

@@ -1,12 +1,10 @@
-api.controller = function (DataService, $sce, $timeout, ThemeService) {
+api.controller = function (
+    DataService, $timeout, $q, ThemeService,
+    RaciGridService, NavigationService, SearchService, WhatsNewService, ReferenceService,
+    IdSeqService, IconService, TipService, JargonService, ContentEditService, StructureEditService
+  ) {
   'use strict';
   var c = this;
-
-  function escapeHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
 
   // Init with this app's own key prefix so its stored preference doesn't collide with any other
   // app's. c.theme is a thin display mirror the template reads; this app has no separate
@@ -54,10 +52,12 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   }
 
   // Persist via DataService; surface server/local failures instead of fire-and-forget.
+  // Reject after the error toast so callers can withhold success UI / keep edit drafts open.
   function persistMethodologies() {
     return DataService.saveData(c.methodologies).then(null, function (err) {
       var msg = (err && err.error) ? err.error : 'Could not save changes.';
       showToast(msg);
+      return $q.reject(err);
     });
   }
 
@@ -66,60 +66,6 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   // resolved live at the point of use, tracking whichever theme is active rather than freezing the
   // dark-mode brights (same fix as jobTitleColor() above).
   var PHASE_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--p5)'];
-  // Icon library for sub-phase filmstrip cards. Seeded sub-phases pick one via sp.icon;
-  // subPhaseIconKey() remains only as a fallback for legacy/localStorage rows that lack icon.
-  var SUBPHASE_ICONS = {
-    exchange: '<path d="M17 3l4 4-4 4"/><path d="M21 7H8"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h13"/>',
-    flag: '<path d="M5 21V4"/><path d="M5 4h13l-2.5 4L18 12H5"/>',
-    users: '<circle cx="8.5" cy="8" r="3"/><path d="M2.5 20a6 6 0 0 1 12 0"/><circle cx="17" cy="8.5" r="2.3"/><path d="M15 20a5 5 0 0 1 7-4.5"/>',
-    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
-    code: '<path d="M8 9l-4 3 4 3"/><path d="M16 9l4 3-4 3"/><path d="M13 7l-2 10"/>',
-    shield: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
-    clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h6"/>',
-    cloud: '<path d="M7 18a4 4 0 0 1-1-7.9 5 5 0 0 1 9.6-1.7A4.5 4.5 0 0 1 17 18H7z"/><path d="M12 17v-6M9.5 13.5L12 11l2.5 2.5"/>',
-    check: '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 5-5"/>',
-    doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
-    inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
-    message: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
-    door: '<path d="M13 4h3a2 2 0 0 1 2 2v14H4V6a2 2 0 0 1 2-2h3"/><path d="M10 4v16"/><path d="M15 12h.01"/>',
-    presentation: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="M12 16v5"/><path d="M8 21h8"/><path d="M7 8l3 3 5-5"/>',
-    archive: '<path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/>',
-    scales: '<path d="M12 3v18"/><path d="M5 6h14"/><path d="M5 6l-3 7a3 3 0 0 0 6 0L5 6"/><path d="M19 6l-3 7a3 3 0 0 0 6 0l-3-7"/>',
-    list: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
-    flask: '<path d="M9 3h6"/><path d="M10 3v7.5L5.5 19a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3L14 10.5V3"/><path d="M8.5 14h7"/>',
-    rocket: '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
-    stamp: '<path d="M12 3v8"/><path d="M8.5 8.5L12 12l3.5-3.5"/><rect x="5" y="14" width="14" height="7" rx="1"/><path d="M8 17h8"/>',
-    lifebuoy: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
-    refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/>',
-    briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/>'
-  };
-  // Cached once per icon key, not per sub-phase or per call: $sce.trustAsHtml() returns a new
-  // wrapper object every invocation, and binding that directly into ng-bind-html from a
-  // ng-repeat has the exact same infinite-digest problem as c.loc below - a fresh, non-equal
-  // reference every digest never lets the watch settle.
-  var ICON_HTML = {};
-  Object.keys(SUBPHASE_ICONS).forEach(function (k) { ICON_HTML[k] = $sce.trustAsHtml(SUBPHASE_ICONS[k]); });
-
-  // Fallback only - seeded rows carry sp.icon. Used for legacy localStorage data and brand-new
-  // structure-edit stubs that haven't picked an icon yet.
-  function subPhaseIconKey(name) {
-    var n = String(name || '').toLowerCase();
-    if (/ipkt|pre-kickoff|touchpoint/.test(n)) { return 'exchange'; }
-    if (/kickoff/.test(n)) { return 'flag'; }
-    if (/team/.test(n)) { return 'users'; }
-    if (/workshop|check-in/.test(n)) { return 'calendar'; }
-    if (/build/.test(n)) { return 'code'; }
-    if (/uat|validation|readiness|signoff/.test(n)) { return 'shield'; }
-    if (/sprint|planning|scope|refinement/.test(n)) { return 'clipboard'; }
-    if (/deploy|go live|hypercare|preparedness/.test(n)) { return 'cloud'; }
-    if (/retrospective|closure|lesson/.test(n)) { return 'check'; }
-    return 'doc';
-  }
-
-  function iconKeyFor(sp) {
-    if (sp && sp.icon && ICON_HTML[sp.icon]) { return sp.icon; }
-    return subPhaseIconKey(sp && sp.name);
-  }
 
   c.raciLetters = ['R', 'A', 'C', 'I'];
   c.raciNames = { R: 'Responsible', A: 'Accountable', C: 'Consulted', I: 'Informed' };
@@ -129,19 +75,10 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   };
   c.raciHex = { R: '#01cc52', A: '#e5c20b', C: '#3ec2f8', I: '#bdc2cb' };
 
-  /* ================= Jargon term highlighting + tooltip engine =================
-     Ported from the prototype's withJargon()/wireTooltips(). Two independent pieces:
-     - jargonHtml(text): wraps glossary terms (IPKT, RTM, SOW, ...) in a `.jargon-term` span
-       carrying data-tip-name/data-tip, memoized per (text, c.showJargon) so the same
-       $sce.trustAsHtml-wrapped value is returned on repeat calls - a fresh trusted-html object
-       every digest is the same infinite-digest trap as ICON_HTML above.
-     - the tip itself (c.tip) is driven by event delegation on the app root (see
-       c.tipMouseOver/Out in index.html) rather than per-element ng-mouseenter directives,
-       because jargon-term spans are raw DOM inserted via ng-bind-html and were never compiled by
-       Angular - a single delegated listener picks up data-tip attributes regardless of whether
-       Angular or ng-bind-html's raw innerHTML produced them. */
-  var JARGON = {};
   c.showJargon = false;
+  c.jargonHtml = function (text) {
+    return JargonService.jargonHtml(text, c.showJargon);
+  };
 
   // Methodology intro panel: expanded until the user collapses it once, then remember collapsed
   // (per methodology) in localStorage. Expanding again updates the preference so it stays open.
@@ -195,88 +132,65 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       return paragraph.replace(/\s+/g, ' ').trim();
     }).filter(Boolean);
   };
-  var jargonCache = {};
-  function jargonHtml(text) {
-    if (!text) { return $sce.trustAsHtml(''); }
-    var key = (c.showJargon ? '1' : '0') + '|' + text;
-    if (jargonCache[key]) { return jargonCache[key]; }
-    var html = escapeHtml(text);
-    var terms = Object.keys(JARGON);
-    if (c.showJargon && terms.length) {
-      var re = new RegExp('\\b(' + terms.map(function (t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')\\b', 'g');
-      html = html.replace(re, function (m) {
-        return '<span class="jargon-term" data-tip-name="' + escapeHtml(m) + '" data-tip="' + escapeHtml(JARGON[m]) + '">' + escapeHtml(m) + '</span>';
-      });
-    }
-    var trusted = $sce.trustAsHtml(html);
-    jargonCache[key] = trusted;
-    return trusted;
-  }
-  c.jargonHtml = jargonHtml;
 
-  // Shows after a short hover delay (skips tooltips for elements the cursor just passes over on
-  // its way somewhere else) and, once shown, sits anchored to the hovered element rather than
-  // chasing the cursor - both were called out as making the tooltip feel twitchy when sweeping
-  // across a row of chips. Jargon terms (.jargon-term) are the one exception - a reader is
-  // hovering those specifically to look up a definition, not passing over them on the way to
-  // something else, so they show immediately with no delay.
-  var TIP_DELAY_MS = 400;
-  var tipDelay = null;
-  c.tip = { show: false, name: '', text: '', x: 0, y: 0 };
-  function positionTipNear(el) {
-    var tipEl = document.getElementById('dm-tip');
-    if (!tipEl) { return; }
-    var r = el.getBoundingClientRect();
-    var tr = tipEl.getBoundingClientRect();
-    var pad = 10;
-    var x = r.left + r.width / 2 - tr.width / 2;
-    var y = r.top - tr.height - pad;
-    if (y < 8) { y = r.bottom + pad; }
-    if (x < 8) { x = 8; }
-    if (x + tr.width > window.innerWidth - 8) { x = window.innerWidth - tr.width - 8; }
-    c.tip.x = x;
-    c.tip.y = y;
+  // Sub-phase Overview + Objective share one collapse (same pattern as About). Preference is
+  // per sub-phase so collapsing Kickoff does not hide IPKT's briefing.
+  var SP_BRIEF_COLLAPSED_KEY = 'gf-dm-sp-brief-collapsed';
+  var spBriefCollapsedById = {};
+
+  function loadSpBriefCollapsed() {
+    try {
+      var raw = window.localStorage.getItem(SP_BRIEF_COLLAPSED_KEY);
+      if (!raw) {
+        return {};
+      }
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+      return {};
+    } catch (loadError) {
+      return {};
+    }
   }
-  function showTip(el) {
-    c.tip.name = el.getAttribute('data-tip-name') || '';
-    c.tip.text = el.getAttribute('data-tip') || '';
-    c.tip.show = true;
-    $timeout(function () { positionTipNear(el); }, 0);
+
+  function storeSpBriefCollapsed() {
+    try {
+      window.localStorage.setItem(SP_BRIEF_COLLAPSED_KEY, JSON.stringify(spBriefCollapsedById));
+    } catch (storeError) {
+      /* storage unavailable - preference is session-only */
+    }
   }
-  c.tipMouseOver = function ($event) {
-    var el = $event.target.closest && $event.target.closest('[data-tip]');
-    if (!el) { return; }
-    if (tipDelay) { $timeout.cancel(tipDelay); tipDelay = null; }
-    if (el.classList.contains('jargon-term')) {
-      showTip(el);
+
+  spBriefCollapsedById = loadSpBriefCollapsed();
+
+  c.hasSpBrief = function (subPhase) {
+    return !!(subPhase && (subPhase.overview || subPhase.objective));
+  };
+
+  c.isSpBriefCollapsed = function (subPhaseId) {
+    return !!spBriefCollapsedById[subPhaseId];
+  };
+
+  c.toggleSpBrief = function (subPhaseId) {
+    if (spBriefCollapsedById[subPhaseId]) {
+      delete spBriefCollapsedById[subPhaseId];
     } else {
-      tipDelay = $timeout(function () { showTip(el); }, TIP_DELAY_MS);
+      spBriefCollapsedById[subPhaseId] = true;
     }
+    storeSpBriefCollapsed();
   };
-  c.tipMouseOut = function ($event) {
-    var el = $event.target.closest && $event.target.closest('[data-tip]');
-    if (el) {
-      if (tipDelay) { $timeout.cancel(tipDelay); tipDelay = null; }
-      c.tip.show = false;
-    }
-  };
-  // Clicking a data-tip element (edit-pencil, a reorder/delete button, the theme toggle...) very
-  // often re-renders the DOM it's sitting in (ng-if swaps the whole panel to the edit view, a row
-  // gets removed, etc.) - the element mouseout was hovering never fires because it's gone, not
-  // moved away from, so the tooltip is otherwise left showing, stuck, over whatever's now there.
-  c.dismissTip = function () {
-    if (tipDelay) { $timeout.cancel(tipDelay); tipDelay = null; }
-    c.tip.show = false;
-  };
+  c.tip = TipService.tip;
+  c.tipMouseOver = function ($event) { TipService.tipMouseOver($event); };
+  c.tipMouseOut = function ($event) { TipService.tipMouseOut($event); };
+  c.dismissTip = function () { TipService.dismissTip(); };
 
   c.loading = true;
   c.jobTitles = [];
   c.methodologies = [];
   c.methodologyId = null;
   c.subPhaseId = null;
-  // Last-opened sub-phase per methodology. Lets Project ↔ GRS (and back) resume where you were,
-  // and keeps each methodology's pre-mounted filmstrip on the right phase while it's hidden.
-  var methSubPhaseById = {};
+  // Last-opened sub-phase per methodology lives on NavigationService (resume map).
   // c.loc (not a c.currentLoc() function) is deliberate: findSubPhase() below builds a fresh
   // {meth, phase, phaseIndex, sp} wrapper object on every call, so binding it directly into the
   // template as a function call (ng-if="c.currentLoc()") never reference-equals its previous
@@ -319,15 +233,17 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     c.methodologies = d.methodologies || [];
     backfillParticipants(c.methodologies);
     // Legacy localStorage rows may predate sp.icon - fill from the name heuristic once.
+    // sid is display-only and not stored on the content table - always derive from position.
     c.methodologies.forEach(function (m) {
+      IdSeqService.recomputeSids(m);
       m.phases.forEach(function (p) {
         p.subPhases.forEach(function (s) {
-          if (!s.icon || !ICON_HTML[s.icon]) { s.icon = subPhaseIconKey(s.name); }
+          IconService.ensureIcon(s);
         });
       });
     });
-    seedIdCounters();
-    JARGON = d.jargon || {};
+    IdSeqService.seedFromMethodologies(c.methodologies);
+    JargonService.setGlossary(d.jargon || {});
 
     if (!c.methodologies.length) {
       c.methodologyId = null;
@@ -338,7 +254,7 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
 
     c.methodologyId = c.methodologies[0].id;
     c.subPhaseId = firstContentSubPhase(curMeth());
-    methSubPhaseById[c.methodologyId] = c.subPhaseId;
+    NavigationService.remember(c.methodologyId, c.subPhaseId);
     refreshLoc();
     refreshWhatsNew();
     refreshJobAids();
@@ -436,24 +352,16 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       return { id: jt.id, abbr: jt.abbr, name: jt.name, description: jt.description, external: jt.external, orphan: partIds.indexOf(id) < 0 };
     }).filter(Boolean);
   };
-  c.participantOn = function (id) { return (c.editSp.participants || []).indexOf(id) >= 0; };
-  c.toggleParticipant = function (id) {
-    if (!c.editSp.participants) { c.editSp.participants = []; }
-    var i = c.editSp.participants.indexOf(id);
-    if (i >= 0) { c.editSp.participants.splice(i, 1); } else { c.editSp.participants.push(id); }
-  };
-  // Participants selected above but not actually given a RACI letter on any task yet - called out
-  // in the picker so an editor notices a name they added and then never followed through on.
-  c.idleParticipants = function () {
-    var used = {};
-    (c.editSp.tasks || []).forEach(function (t) {
-      Object.keys(t.raci || {}).forEach(function (id) { if (t.raci[id] && t.raci[id].length) { used[id] = true; } });
-    });
-    return c.participantsOf(c.editSp).filter(function (r) { return !used[r.id]; });
-  };
-  c.unreadCount = function (sp) {
-    return (sp.changelog || []).filter(function (c) { return !c.read; }).length;
-  };
+  c.participantOn = function (id) { return ContentEditService.participantOn(id); };
+  c.toggleParticipant = function (id) { ContentEditService.toggleParticipant(id); };
+  c.idleParticipants = function () { return ContentEditService.idleParticipants(); };
+  c.unreadCount = function (sp) { return WhatsNewService.unreadCount(sp); };
+  c.unreadEntries = function (sp) { return WhatsNewService.unreadEntries(sp); };
+  function markRead(sp) { return WhatsNewService.markRead(sp, c.methodologies); }
+  // Entries just marked read by the most recent openSubPhase - the read-panel shows these once.
+  c.justRead = [];
+  c.anyUnread = function () { return WhatsNewService.anyUnread(c.methodologies); };
+  c.phaseHasUnread = function (p) { return WhatsNewService.phaseHasUnread(p); };
 
   c.curMeth = curMeth;
   c.phaseIndexOfSub = function (subId) {
@@ -464,11 +372,11 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     return 0;
   };
   // Phase index for a specific methodology (active uses c.subPhaseId; hidden uses the remembered
-  // last visit). Used by the per-methodology ng-show journey chrome so a hidden meth's filmstrip
+  // last visit). Used by the per-methodology ng-show methodology chrome so a hidden meth's filmstrip
   // stays on the right phase instead of tracking the active meth's sub-phase.
   c.phaseIndexInMeth = function (m) {
     if (!m || !m.phases || !m.phases.length) { return 0; }
-    var subId = (m.id === c.methodologyId) ? c.subPhaseId : methSubPhaseById[m.id];
+    var subId = (m.id === c.methodologyId) ? c.subPhaseId : NavigationService.remembered(m.id);
     if (!subId) { return 0; }
     for (var i = 0; i < m.phases.length; i++) {
       if (m.phases[i].subPhases.some(function (s) { return s.id === subId; })) { return i; }
@@ -478,88 +386,70 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   c.activePhaseIndex = function () { return c.phaseIndexOfSub(c.subPhaseId); };
   c.activeColor = function () { return PHASE_COLORS[c.activePhaseIndex() % PHASE_COLORS.length]; };
   c.phaseColor = function (i) { return PHASE_COLORS[i % PHASE_COLORS.length]; };
-  c.phaseHasUnread = function (p) { return p.subPhases.some(function (s) { return c.unreadCount(s) > 0; }); };
-  c.subPhaseIconPaths = function (sp) { return ICON_HTML[iconKeyFor(sp)]; };
+  c.subPhaseIconPaths = function (sp) { return IconService.pathsFor(sp); };
 
-  // read/unread - a single global flag per changelog entry, matching the prototype's current
-  // data model exactly. Phase 3's per-user Acknowledgement design (see the mockup) replaces this
-  // once real GlideRecord data + logged-in users exist - nothing to fake here against mock data.
-  function unreadEntries(sp) { return (sp.changelog || []).filter(function (c) { return !c.read; }); }
-  c.unreadEntries = unreadEntries;
-  function markRead(sp) {
-    var entries = unreadEntries(sp);
-    entries.forEach(function (c) { c.read = true; });
-    refreshWhatsNew();
-    if (entries.length) { persistMethodologies(); }
-    return entries;
-  }
-  // Entries just marked read by the most recent openSubPhase - the read-panel shows these once,
-  // in a "What changed" banner, so a change you hadn't seen yet doesn't just silently vanish from
-  // the unread badge with no trace of what it was.
-  c.justRead = [];
-  c.anyUnread = function () {
-    return c.methodologies.some(function (m) { return m.phases.some(function (p) { return p.subPhases.some(function (s) { return unreadEntries(s).length > 0; }); }); });
-  };
+  c.view = 'methodology';
 
-  c.view = 'journey';
+  function denyWhileEditing() {
+    showToast('Finish editing first');
+  }
+  function isEditing() {
+    return !!(ContentEditService.isEditing() || StructureEditService.isEditing());
+  }
+  function syncSearch() {
+    var state = SearchService.readState();
+    c.searchResultsList = state.searchResultsList;
+    c.searchQuery = state.searchQuery;
+  }
+  function syncWhatsNew() {
+    c.whatsNew = WhatsNewService.readState().whatsNew;
+  }
+  function syncJobAids() {
+    c.jobAids = ReferenceService.readState().jobAids;
+  }
+  function syncRg() {
+    var state = RaciGridService.readState();
+    c.raciMode = state.raciMode;
+    c.rgActivePhases = state.rgActivePhases;
+    c.rgGridFocusJob = state.rgGridFocusJob;
+    c.rgByRoleFocusJob = state.rgByRoleFocusJob;
+    c.rg = state.rg;
+  }
+  function rgContext() {
+    return { methodology: curMeth(), sortJobTitleIds: c.sortJobTitleIds, hasContent: hasContent };
+  }
+  function refreshRg() {
+    RaciGridService.refresh(rgContext());
+    syncRg();
+  }
+  function refreshWhatsNew() {
+    WhatsNewService.refresh(c.methodologies);
+    syncWhatsNew();
+  }
+  function refreshJobAids() {
+    ReferenceService.refresh(c.methodologies, c.sortJobTitleIds, c.jobTitleById);
+    syncJobAids();
+  }
+  function clearSearch() {
+    SearchService.clear();
+    syncSearch();
+  }
+  function pushNav() { NavigationService.push(); }
+  function applyDeepLinkFromUrl() { return NavigationService.applyDeepLinkFromUrl(); }
 
-  /* In-app back/forward: stack of {view, methodologyId, subPhaseId}. Pushed on real
-     navigation; goBack/goForward restore without re-pushing (navSilent). */
-  var navStack = [];
-  var navIndex = -1;
-  var navSilent = false;
-  function navSnapshot() {
-    return { view: c.view, methodologyId: c.methodologyId, subPhaseId: c.subPhaseId };
-  }
-  function navSame(a, b) {
-    return !!(a && b && a.view === b.view && a.methodologyId === b.methodologyId && a.subPhaseId === b.subPhaseId);
-  }
-  function pushNav() {
-    if (navSilent || c.loading) { return; }
-    var snap = navSnapshot();
-    if (!snap.methodologyId) { return; }
-    if (navIndex >= 0 && navSame(navStack[navIndex], snap)) { return; }
-    navStack = navStack.slice(0, navIndex + 1);
-    navStack.push(snap);
-    navIndex = navStack.length - 1;
-  }
-  function applyNav(snap) {
-    navSilent = true;
-    c.clearSearch();
-    c.view = snap.view;
-    c.methodologyId = snap.methodologyId;
-    c.subPhaseId = snap.subPhaseId;
-    if (snap.methodologyId && snap.subPhaseId) { methSubPhaseById[snap.methodologyId] = snap.subPhaseId; }
-    refreshLoc();
-    if (c.loc) { c.justRead = markRead(c.loc.sp); }
-    if (c.view === 'raci') { refreshRg(); }
-    navSilent = false;
-  }
-  c.canGoBack = function () { return navIndex > 0; };
-  c.canGoForward = function () { return navIndex >= 0 && navIndex < navStack.length - 1; };
-  c.goBack = function () {
-    if (c.editMode) { showToast('Finish editing first'); return; }
-    if (!c.canGoBack()) { return; }
-    navIndex -= 1;
-    applyNav(navStack[navIndex]);
-  };
-  c.goForward = function () {
-    if (c.editMode) { showToast('Finish editing first'); return; }
-    if (!c.canGoForward()) { return; }
-    navIndex += 1;
-    applyNav(navStack[navIndex]);
-  };
+  c.canGoBack = function () { return NavigationService.canGoBack(); };
+  c.canGoForward = function () { return NavigationService.canGoForward(); };
+  c.goBack = function () { NavigationService.goBack(); };
+  c.goForward = function () { NavigationService.goForward(); };
+  c.setView = function (v) { NavigationService.setView(v); };
+  c.switchMethodology = function (id) { NavigationService.switchMethodology(id); };
+  c.selectPhase = function (phaseIndex) { NavigationService.selectPhase(phaseIndex); };
+  c.openSubPhase = function (id) { NavigationService.openSubPhase(id); };
+  c.jumpTo = function (subId, methId, elKey) { NavigationService.jumpTo(subId, methId, elKey); };
+  c.clearSearch = clearSearch;
 
-  c.setView = function (v) {
-    if (c.editMode) { showToast('Finish editing first'); return; }
-    c.view = v;
-    if (v === 'raci') { refreshRg(); }
-    // Switching tabs dismisses an open search popup without changing where you were browsing.
-    c.clearSearch();
-    pushNav();
-  };
   c.showMethSwitch = function () {
-    return (c.view === 'journey' || c.view === 'raci') && c.methodologies.length > 1;
+    return (c.view === 'methodology' || c.view === 'raci') && c.methodologies.length > 1;
   };
   c.pageTitle = function () {
     if (c.view === 'raci') { return 'RACI'; }
@@ -568,7 +458,13 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     return 'Methodology';
   };
   c.pageSub = function () {
-    if (c.view === 'raci') { return 'Every task and every job title in ' + c.curMeth().name + '. Focus a column to see one role across the whole engagement.'; }
+    if (c.view === 'raci') {
+      var raciMethodology = curMeth();
+      if (!raciMethodology) {
+        return 'Every task and every job title across the engagement. Focus a column to see one role.';
+      }
+      return 'Every task and every job title in ' + raciMethodology.name + '. Focus a column to see one role across the whole engagement.';
+    }
     if (c.view === 'whatsnew') { return 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.'; }
     if (c.view === 'reference') { return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.'; }
     var methodology = curMeth();
@@ -581,84 +477,6 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     return 'GlideFast\'s playbook for delivering an engagement end to end.';
   };
 
-  c.switchMethodology = function (id) {
-    if (c.editMode) { showToast('Finish editing first'); return; }
-    if (id === c.methodologyId) { return; }
-    if (c.methodologyId && c.subPhaseId) { methSubPhaseById[c.methodologyId] = c.subPhaseId; }
-    c.methodologyId = id;
-    var resume = methSubPhaseById[id];
-    var loc = resume ? c.findSubPhase(resume) : null;
-    if (!loc || loc.meth.id !== id) { resume = firstContentSubPhase(curMeth()); }
-    c.openSubPhase(resume);
-    if (c.view === 'raci') { refreshRg(); }
-  };
-  c.selectPhase = function (phaseIndex) {
-    if (c.editMode) { return; }
-    var p = curMeth().phases[phaseIndex];
-    if (!p.subPhases.length) { return; } // structure editing can leave a phase empty - nothing to open
-    var written = p.subPhases.find(hasContent);
-    c.openSubPhase((written || p.subPhases[0]).id);
-  };
-  c.openSubPhase = function (id) {
-    if (c.editMode) { return; }
-    c.subPhaseId = id;
-    if (c.methodologyId) { methSubPhaseById[c.methodologyId] = id; }
-    refreshLoc();
-    c.justRead = c.loc ? markRead(c.loc.sp) : [];
-    pushNav();
-  };
-  // Scroll to a deep-link target inside the open sub-phase panel and pulse it (same treatment as
-  // ?sub=&el= in the standalone prototype). elKey is e.g. "task:<id>".
-  function focusJumpTarget(elKey) {
-    if (!elKey) { return; }
-    $timeout(function () {
-      var nodes = document.querySelectorAll('.main [data-el]');
-      var target = null;
-      for (var i = 0; i < nodes.length; i++) {
-        if (nodes[i].getAttribute('data-el') === elKey) { target = nodes[i]; break; }
-      }
-      if (!target) { return; }
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      target.classList.remove('jump-hl');
-      void target.offsetWidth;
-      target.classList.add('jump-hl');
-      $timeout(function () { target.classList.remove('jump-hl'); }, 2000);
-    }, 0);
-  }
-  // Used by RACI / What's New / Search results, which can point at a sub-phase in the OTHER
-  // methodology - switches methodology first if needed, then opens + marks read, then returns to
-  // the Journey view so the destination is actually visible. Optional elKey (e.g. "task:…")
-  // scrolls to and pulses that element inside the sub-phase panel.
-  c.jumpTo = function (subId, methId, elKey) {
-    if (c.editMode) { return; }
-    if (methId && methId !== c.methodologyId) { c.methodologyId = methId; }
-    c.view = 'journey';
-    c.clearSearch();
-    c.openSubPhase(subId);
-    focusJumpTarget(elKey);
-  };
-  function applyDeepLinkFromUrl() {
-    try {
-      var params = new URLSearchParams(window.location.search || '');
-      var subId = params.get('sub');
-      if (!subId) { return false; }
-      var loc = c.findSubPhase(subId);
-      if (!loc) { return false; }
-      c.methodologyId = loc.meth.id;
-      c.view = 'journey';
-      c.openSubPhase(subId);
-      focusJumpTarget(params.get('el'));
-      return true;
-    } catch (err) {
-      return false;
-    }
-  }
-
-  /* ================= Structure editing (methodologies + phases + sub-phases) =================
-     Same working-copy model as sub-phase content edit: enter takes a snapshot of the full tree
-     (+ selection), mutations run on the live tree without persisting, Save commits, Cancel
-     restores the snapshot. addSubPhase is the exception - it commits structure first so the new
-     stub can open straight into content edit. */
   c.structureEditUiEnabled = true;
   c.structureEditMode = false;
   c.structureSnapshot = null;
@@ -667,8 +485,6 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     $timeout(function () {
       var bar = document.querySelector('.main .edit-bar');
       if (!bar) { return; }
-      // Land exactly at the sticky stick point (not viewport y=0). scrollIntoView({block:'start'})
-      // overshoots past where position:sticky pins the bar.
       var stickyTop = parseFloat(window.getComputedStyle(bar).top) || 0;
       var target = Math.max(0, window.scrollY + bar.getBoundingClientRect().top - stickyTop);
       window.scrollTo({ top: target, behavior: 'smooth' });
@@ -679,241 +495,40 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 0);
   }
-  function enterStructureEdit() {
-    c.structureSnapshot = deepClone(c.methodologies);
-    c.structureNavSnapshot = {
-      methodologyId: c.methodologyId,
-      subPhaseId: c.subPhaseId,
-      methSubPhaseById: Object.assign({}, methSubPhaseById),
-      rgActivePhases: c.rgActivePhases ? Object.assign({}, c.rgActivePhases) : null
-    };
-    c.structureEditMode = true;
-    scrollToEditBar();
+  function syncStructure() {
+    var structureState = StructureEditService.readState();
+    c.structureEditUiEnabled = structureState.structureEditUiEnabled;
+    c.structureEditMode = structureState.structureEditMode;
+    c.structureSnapshot = structureState.structureSnapshot;
+    c.structureNavSnapshot = structureState.structureNavSnapshot;
   }
-  function exitStructureEdit() {
-    c.structureSnapshot = null;
-    c.structureNavSnapshot = null;
-    c.structureEditMode = false;
-  }
+  syncStructure();
   c.toggleStructureEdit = function () {
-    if (!c.canEdit) { denyEdit(); return; }
-    if (c.editMode) { showToast('Finish editing first'); return; }
-    if (c.structureEditMode) { return; }
-    enterStructureEdit();
+    StructureEditService.toggleStructureEdit();
+    syncStructure();
   };
   c.cancelStructureEdit = function () {
-    if (c.structureSnapshot) {
-      c.methodologies = deepClone(c.structureSnapshot);
-      if (c.structureNavSnapshot) {
-        c.methodologyId = c.structureNavSnapshot.methodologyId;
-        c.subPhaseId = c.structureNavSnapshot.subPhaseId;
-        methSubPhaseById = Object.assign({}, c.structureNavSnapshot.methSubPhaseById);
-        c.rgActivePhases = c.structureNavSnapshot.rgActivePhases
-          ? Object.assign({}, c.structureNavSnapshot.rgActivePhases)
-          : null;
-      }
-    }
-    exitStructureEdit();
-    refreshLoc();
-    refreshWhatsNew();
-    refreshJobAids();
-    if (c.view === 'raci') { refreshRg(); }
-    showToast('Structure edit cancelled - changes reverted');
-    scrollPageToTop();
+    StructureEditService.cancelStructureEdit();
+    syncStructure();
   };
-  c.saveStructureEdit = function () {
-    c.methodologies.forEach(function (methodology) {
-      if (!methodology || !String(methodology.name || '').trim()) { methodology.name = 'Untitled'; }
-      (methodology.phases || []).forEach(function (phase) {
-        if (!phase || !String(phase.name || '').trim()) { phase.name = 'Untitled'; }
-        (phase.subPhases || []).forEach(function (sp) {
-          if (!sp || !String(sp.name || '').trim()) { sp.name = 'Untitled'; }
-        });
-      });
-    });
-    exitStructureEdit();
-    persistMethodologies();
-    refreshLoc();
-    refreshWhatsNew();
-    refreshJobAids();
-    if (c.view === 'raci') { refreshRg(); }
-    pushNav();
-    showToast('Structure saved');
-    scrollPageToTop();
-  };
-  c.renameMethodology = function (methodology) {
-    if (!methodology || !String(methodology.name || '').trim()) {
-      methodology.name = 'Untitled';
-    }
-  };
+  c.saveStructureEdit = function () { StructureEditService.saveStructureEdit(); };
+  c.renameMethodology = function (methodology) { StructureEditService.renameMethodology(methodology); };
   c.addMethodology = function () {
-    if (!c.canEdit) { denyEdit(); return; }
-    if (c.editMode) { showToast('Finish editing first'); return; }
-    if (!c.structureEditMode) { enterStructureEdit(); }
-    var methodologyId = 'meth' + (methodologySeq++);
-    var phase = {
-      id: 'phase' + (phaseSeq++),
-      name: 'New Phase',
-      order: 1,
-      subPhases: []
-    };
-    var subPhase = DataService.blankSubPhase('subphase' + (subPhaseSeq++), '', 'New Sub-Phase', 1);
-    subPhase.changelog.push({
-      id: 'c' + (changelogSeq++),
-      ts: TODAY,
-      text: 'Sub-phase created',
-      read: false
-    });
-    phase.subPhases.push(subPhase);
-    var methodology = {
-      id: methodologyId,
-      name: 'New Methodology',
-      order: c.methodologies.length + 1,
-      summary: '',
-      description: '',
-      feedbackUrl: '',
-      feedbackLabel: 'Provide Feedback',
-      diagramUrl: '',
-      phases: [phase]
-    };
-    c.methodologies.push(methodology);
-    recomputeSids(methodology);
-    rgEnsureActivePhases();
-    c.rgActivePhases[phase.id] = true;
-    c.methodologyId = methodologyId;
-    methSubPhaseById[methodologyId] = subPhase.id;
-    c.subPhaseId = subPhase.id;
-    refreshLoc();
-    c.justRead = markRead(c.loc.sp);
-    refreshWhatsNew();
-    if (c.view === 'raci') { refreshRg(); }
-    pushNav();
+    StructureEditService.addMethodology();
+    syncStructure();
   };
-  c.deleteMethodology = function () {
-    if (!c.canEdit) { denyEdit(); return; }
-    if (c.editMode) { showToast('Finish editing first'); return; }
-    if (c.methodologies.length <= 1) {
-      showToast('Keep at least one methodology');
-      return;
-    }
-    var methodology = curMeth();
-    if (!methodology) {
-      return;
-    }
-    if (!window.confirm('Remove methodology “' + methodology.name + '” and all of its phases from this draft? Cancel structure edit to undo.')) {
-      return;
-    }
-    var index = c.methodologies.findIndex(function (item) { return item.id === methodology.id; });
-    if (index < 0) {
-      return;
-    }
-    c.methodologies.splice(index, 1);
-    delete methSubPhaseById[methodology.id];
-    var next = c.methodologies[Math.max(0, index - 1)] || c.methodologies[0];
-    c.methodologyId = next.id;
-    c.subPhaseId = methSubPhaseById[next.id] || firstContentSubPhase(next);
-    methSubPhaseById[next.id] = c.subPhaseId;
-    refreshLoc();
-    refreshWhatsNew();
-    if (c.view === 'raci') { refreshRg(); }
-    pushNav();
-  };
-  c.renamePhase = function (phase) {
-    if (!phase || !String(phase.name || '').trim()) { phase.name = 'Untitled'; }
-  };
-  c.renameSubPhase = function (sp) {
-    if (!sp || !String(sp.name || '').trim()) { sp.name = 'Untitled'; }
-  };
-  c.addPhase = function () {
-    var m = curMeth();
-    var phase = { id: 'phase' + (phaseSeq++), name: 'New Phase', order: m.phases.length + 1, subPhases: [] };
-    var subPhase = DataService.blankSubPhase('subphase' + (subPhaseSeq++), '', 'New Sub-Phase', 1);
-    subPhase.changelog.push({
-      id: 'c' + (changelogSeq++),
-      ts: TODAY,
-      text: 'Sub-phase created',
-      read: false
-    });
-    phase.subPhases.push(subPhase);
-    m.phases.push(phase);
-    recomputeSids(m);
-    rgEnsureActivePhases();
-    c.rgActivePhases[phase.id] = true;
-    c.subPhaseId = subPhase.id;
-    methSubPhaseById[m.id] = subPhase.id;
-    refreshLoc();
-  };
-  // Commits the structure draft first, then lands in the new sub-phase's content editor -
-  // selectPhase deliberately skips unwritten sub-phases, so without this the stub would be hard to reach.
-  c.addSubPhase = function (phaseIndex) {
-    var m = curMeth();
-    var p = m.phases[phaseIndex];
-    var sp = DataService.blankSubPhase('subphase' + (subPhaseSeq++), '', 'New Sub-Phase', p.subPhases.length + 1);
-    sp.changelog.push({ id: 'c' + (changelogSeq++), ts: TODAY, text: 'Sub-phase created', read: false });
-    p.subPhases.push(sp);
-    recomputeSids(m);
-    exitStructureEdit();
-    persistMethodologies();
-    c.subPhaseId = sp.id;
-    methSubPhaseById[m.id] = sp.id;
-    refreshLoc();
-    c.justRead = markRead(c.loc.sp);
-    refreshWhatsNew();
-    if (c.view === 'raci') { refreshRg(); }
-    c.enterEdit();
-  };
-  c.movePhase = function (index, dir) {
-    var m = curMeth();
-    var j = dir === 'up' ? index - 1 : index + 1;
-    if (j < 0 || j >= m.phases.length) { return; }
-    var tmp = m.phases[index]; m.phases[index] = m.phases[j]; m.phases[j] = tmp;
-    recomputeSids(m);
-  };
+  c.deleteMethodology = function () { StructureEditService.deleteMethodology(); };
+  c.renamePhase = function (phase) { StructureEditService.renamePhase(phase); };
+  c.renameSubPhase = function (sp) { StructureEditService.renameSubPhase(sp); };
+  c.addPhase = function () { StructureEditService.addPhase(); };
+  c.addSubPhase = function (phaseIndex) { StructureEditService.addSubPhase(phaseIndex); };
+  c.movePhase = function (index, dir) { StructureEditService.movePhase(index, dir); };
   c.moveSubPhase = function (phaseIndex, index, dir) {
-    var m = curMeth();
-    var arr = m.phases[phaseIndex].subPhases;
-    var j = dir === 'up' ? index - 1 : index + 1;
-    if (j < 0 || j >= arr.length) { return; }
-    var tmp = arr[index]; arr[index] = arr[j]; arr[j] = tmp;
-    recomputeSids(m);
+    StructureEditService.moveSubPhase(phaseIndex, index, dir);
   };
-  c.deletePhase = function (index) {
-    var m = curMeth();
-    if (m.phases.length <= 1) { showToast('A methodology needs at least one phase'); return; }
-    var phase = m.phases[index];
-    if (!window.confirm('Remove phase “' + phase.name + '” and all ' + phase.subPhases.length + ' of its sub-phases from this draft? Cancel structure edit to undo.')) { return; }
-    var removedIds = phase.subPhases.map(function (s) { return s.id; });
-    m.phases.splice(index, 1);
-    recomputeSids(m);
-    delete c.rgActivePhases[phase.id];
-    if (removedIds.indexOf(c.subPhaseId) >= 0) {
-      c.subPhaseId = firstContentSubPhase(m);
-      refreshLoc();
-    }
-    refreshWhatsNew();
-    if (c.view === 'raci') { refreshRg(); }
-  };
+  c.deletePhase = function (index) { StructureEditService.deletePhase(index); };
   c.deleteSubPhase = function (phaseIndex, index) {
-    var m = curMeth();
-    var arr = m.phases[phaseIndex].subPhases;
-    var sp = arr[index];
-    if (!window.confirm('Remove sub-phase “' + sp.name + '” from this draft? Cancel structure edit to undo.')) { return; }
-    var wasOpen = sp.id === c.subPhaseId;
-    arr.splice(index, 1);
-    recomputeSids(m);
-    if (wasOpen) {
-      var next = arr[index] || arr[index - 1];
-      if (next) {
-        c.subPhaseId = next.id;
-        methSubPhaseById[m.id] = next.id;
-      } else {
-        c.subPhaseId = firstContentSubPhase(m);
-        methSubPhaseById[m.id] = c.subPhaseId;
-      }
-      refreshLoc();
-    }
-    refreshWhatsNew();
-    if (c.view === 'raci') { refreshRg(); }
+    StructureEditService.deleteSubPhase(phaseIndex, index);
   };
 
   // Level of effort - one row for "all participants", or one row per role in byRole mode; only
@@ -947,63 +562,8 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   };
 
   c.jobAidScope = function (t, j) {
-    if (!j.roles || !j.roles.length) { return []; }
-    return c.sortJobTitleIds(j.roles).map(c.jobTitleById).filter(Boolean);
+    return ReferenceService.jobAidScope(t, j, c.sortJobTitleIds, c.jobTitleById);
   };
-
-  /* ================= Edit mode =================
-     Editing happens on a working COPY (c.editSp), not the live sub-phase - Cancel just discards
-     it, Save diffs it against a second copy taken at entry (c.editSnapshot) to auto-generate the
-     changelog, then replaces the real sub-phase in place. This is the Angular-native equivalent
-     of the prototype's live-edit-plus-snapshot-revert approach: two-way ng-model binding makes
-     editing a plain object trivial, so there's no need to mutate live data just to get that. */
-  var TODAY = (function () {
-    var d = new Date();
-    var month = d.getMonth() + 1;
-    var day = d.getDate();
-    return d.getFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
-  })();
-  // Id counters for records created during editing (meetings, job aids, changelog entries, tasks).
-  // These MUST start above the highest id already present in seed + persisted data - otherwise a
-  // freshly minted 'mt1' collides with a seeded 'mt1', which Angular's ng-repeat rejects
-  // ("Duplicates in a repeater") and the edit panel throws. seedIdCounters() (called once data has
-  // loaded) scans all existing ids and bumps each counter past the max. Seed task ids are
-  // hand-authored strings like 'd2-1-1-t1' (never match the 't'+digits shape addTask mints), so
-  // taskSeq only ever needs to out-run OTHER counter-minted task ids from prior sessions.
-  // phaseSeq/subPhaseSeq/methodologySeq mint ids for structure edits.
-  // 'phase'/'subphase'/'meth' are prefixes no seed id uses (seed ids are hand-authored dash-joined
-  // strings like 'd2-initiate'/'d2-1-1'/'delivery2'), so a freshly minted 'phase1' can never collide
-  // with one - seedIdCounters() below still bumps past any that a PRIOR session already created
-  // and persisted.
-  var taskSeq = 1, jaSeq = 1, meetingSeq = 1, changelogSeq = 1000, phaseSeq = 1, subPhaseSeq = 1, methodologySeq = 1;
-  function idNum(prefix, id) {
-    if (typeof id !== 'string' || id.indexOf(prefix) !== 0) { return 0; }
-    var n = parseInt(id.slice(prefix.length), 10);
-    return isNaN(n) ? 0 : n;
-  }
-  function seedIdCounters() {
-    c.methodologies.forEach(function (m) {
-      methodologySeq = Math.max(methodologySeq, idNum('meth', m.id) + 1);
-      m.phases.forEach(function (p) {
-        phaseSeq = Math.max(phaseSeq, idNum('phase', p.id) + 1);
-        p.subPhases.forEach(function (s) {
-          subPhaseSeq = Math.max(subPhaseSeq, idNum('subphase', s.id) + 1);
-          (s.meetings || []).forEach(function (x) { meetingSeq = Math.max(meetingSeq, idNum('mt', x.id) + 1); });
-          (s.changelog || []).forEach(function (x) { changelogSeq = Math.max(changelogSeq, idNum('c', x.id) + 1); });
-          (s.tasks || []).forEach(function (t) { taskSeq = Math.max(taskSeq, idNum('t', t.id) + 1); (t.jobAids || []).forEach(function (j) { jaSeq = Math.max(jaSeq, idNum('ja', j.id) + 1); }); });
-        });
-      });
-    });
-  }
-  // sid ('1.1', '2.3', ...) is DISPLAY-ONLY and now derived from position rather than
-  // hand-authored, so it stays correct through inserts/deletes/reorders instead of drifting -
-  // called after every structural mutation to a methodology's phase/sub-phase arrays.
-  function recomputeSids(meth) {
-    meth.phases.forEach(function (p, pi) {
-      p.subPhases.forEach(function (s, si) { s.sid = (pi + 1) + '.' + (si + 1); });
-    });
-  }
-  function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
   c.editMode = false;
   c.editSp = null;
@@ -1011,15 +571,18 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
   c.tmpLoeRole = '';
   c.tmpAddJt = {};
 
+  function syncEdit() {
+    var editState = ContentEditService.readState();
+    c.editMode = editState.editMode;
+    c.editSp = editState.editSp;
+    c.editSnapshot = editState.editSnapshot;
+    c.tmpAddJt = editState.tmpAddJt;
+  }
+  syncEdit();
+
   c.enterEdit = function () {
-    if (!c.canEdit) { denyEdit(); return; }
-    if (c.structureEditMode) { return; }
-    c.editSnapshot = deepClone(c.loc.sp);
-    c.editSp = deepClone(c.loc.sp);
-    c.tmpLoeRole = '';
-    c.tmpAddJt = {};
-    c.editMode = true;
-    scrollToEditBar();
+    ContentEditService.enterEdit();
+    syncEdit();
   };
   c.fcardKey = function ($event, s) {
     if ($event.key === 'Enter' || $event.key === ' ') {
@@ -1028,441 +591,72 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     }
   };
   c.cancelEdit = function () {
-    c.editMode = false;
-    c.editSp = null;
-    c.editSnapshot = null;
-    showToast('Edit cancelled - changes reverted');
-    scrollPageToTop();
+    ContentEditService.cancelEdit();
+    syncEdit();
   };
-  // A job aid's roles list is only meaningful when it's a SUBSET of the task's current RACI
-  // roles ("applies to some, not all"). If someone adds/removes RACI roles after a job aid was
-  // scoped to specific roles and it now happens to cover every remaining role again, collapse it
-  // back to [] (= "all roles") so it doesn't silently drift into a stale, no-longer-partial list.
-  function collapseJobAidRoles(sp) {
-    (sp.tasks || []).forEach(function (t) {
-      var roleIds = c.sortJobTitleIds(Object.keys(t.raci || {}));
-      (t.jobAids || []).forEach(function (j) {
-        if (Array.isArray(j.roles) && j.roles.length && roleIds.length && roleIds.every(function (rid) { return j.roles.indexOf(rid) >= 0; })) {
-          j.roles = [];
-        }
-      });
-    });
-  }
   c.saveEdit = function () {
-    collapseJobAidRoles(c.editSp);
-    var changes = describeChanges(c.editSnapshot, c.editSp);
-    var entries = [];
-    if (changes.length) {
-      if (!c.editSp.changelog) { c.editSp.changelog = []; }
-      entries = changes.map(function (text) { return { id: 'c' + (changelogSeq++), ts: TODAY, text: text, read: false }; });
-      c.editSp.changelog.unshift.apply(c.editSp.changelog, entries);
-    }
-    var idx = c.loc.phase.subPhases.findIndex(function (s) { return s.id === c.editSp.id; });
-    c.loc.phase.subPhases[idx] = c.editSp;
-    c.editMode = false;
-    c.editSp = null;
-    c.editSnapshot = null;
-    c.justRead = entries;
-    refreshLoc();
-    refreshWhatsNew();
-    refreshJobAids();
-    persistMethodologies();
-    showToast(changes.length ? ('Saved - ' + changes.length + ' change' + (changes.length > 1 ? 's' : '') + ' detected and logged automatically') : 'Saved - no changes detected');
-    scrollPageToTop();
+    ContentEditService.saveEdit();
   };
-
-  // ---- change diffing (ported from the prototype's describeChanges/diffLoe/diffMeetings/diffRaci) ----
-  function truncateText(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
-  // True only for a PURE reorder: same items, same counts, different positions. Returns false (not
-  // "unknown") whenever an add/remove is present, so callers can safely check this after their own
-  // add/remove diff came up empty without double-reporting.
-  function idSequenceChanged(beforeIds, afterIds) {
-    if (beforeIds.length !== afterIds.length) { return false; }
-    var sortedB = beforeIds.slice().sort(), sortedA = afterIds.slice().sort();
-    for (var i = 0; i < sortedB.length; i++) { if (sortedB[i] !== sortedA[i]) { return false; } }
-    for (var i2 = 0; i2 < beforeIds.length; i2++) { if (beforeIds[i2] !== afterIds[i2]) { return true; } }
-    return false;
-  }
-  // Multiset-based (not indexOf-based) so a duplicate string added/removed is counted correctly -
-  // e.g. before=['ROM','ROM'], after=['ROM'] correctly reports one removal instead of nothing. Falls
-  // back to a reorder entry when every count matches but the position order doesn't.
-  function diffListField(before, after, label) {
-    before = before || []; after = after || [];
-    var out = [];
-    var bCount = {}, aCount = {};
-    before.forEach(function (x) { bCount[x] = (bCount[x] || 0) + 1; });
-    after.forEach(function (x) { aCount[x] = (aCount[x] || 0) + 1; });
-    Object.keys(bCount).concat(Object.keys(aCount)).filter(function (v, i, a) { return a.indexOf(v) === i; }).forEach(function (x) {
-      var diff = (aCount[x] || 0) - (bCount[x] || 0);
-      for (var i = 0; i < diff; i++) { out.push(label + ' added: “' + truncateText(x, 60) + '”'); }
-      for (var i2 = 0; i2 < -diff; i2++) { out.push(label + ' removed: “' + truncateText(x, 60) + '”'); }
-    });
-    if (!out.length && idSequenceChanged(before, after)) { out.push(label + 's reordered'); }
-    return out;
-  }
-  function diffRaci(before, after, taskLabel) {
-    before = before || {}; after = after || {};
-    var ids = Object.keys(before).concat(Object.keys(after)).filter(function (v, i, a) { return a.indexOf(v) === i; });
-    var out = [];
-    ids.forEach(function (id) {
-      var b = (before[id] || []).join(''), a = (after[id] || []).join('');
-      if (b === a) { return; }
-      var jt = c.jobTitleById(id), abbr = jt ? jt.abbr : id;
-      if (!b) { out.push('RACI added on “' + taskLabel + '”: ' + abbr + ' (' + a + ')'); }
-      else if (!a) { out.push('RACI removed on “' + taskLabel + '”: ' + abbr); }
-      else { out.push('RACI changed on “' + taskLabel + '”: ' + abbr + ' ' + b + ' → ' + a); }
-    });
-    return out;
-  }
-  function loeEntrySame(a, b) {
-    a = a || {}; b = b || {};
-    return (a.text || '') === (b.text || '') && !!a.billable === !!b.billable && !!a.optional === !!b.optional;
-  }
-  function diffLoe(before, after) {
-    before = before || { mode: 'all', all: {}, roles: {} };
-    after = after || { mode: 'all', all: {}, roles: {} };
-    var out = [];
-    if (before.mode !== after.mode) { out.push(after.mode === 'all' ? 'Level of effort set to one value for all participants' : 'Level of effort broken out per role'); }
-    if (after.mode === 'all') {
-      if (!loeEntrySame(before.all, after.all)) { out.push('Level of effort updated (all participants)'); }
-    } else {
-      var ids = Object.keys(before.roles || {}).concat(Object.keys(after.roles || {})).filter(function (v, i, a) { return a.indexOf(v) === i; });
-      ids.forEach(function (id) {
-        var b = (before.roles || {})[id], a = (after.roles || {})[id];
-        if (loeEntrySame(b, a)) { return; }
-        // Switching to "Per role" auto-seeds every participant with a default entry (empty text,
-        // role-default billable/optional flags) so the picker has rows to show - that seeding alone
-        // isn't a user-authored change. Only log it once real text exists on either side; a
-        // flag-only difference on an otherwise-empty row is noise, not content.
-        if (!(b && b.text) && !(a && a.text)) { return; }
-        var jt = c.jobTitleById(id);
-        out.push('Level of effort updated for ' + (jt ? jt.abbr : id));
-      });
-    }
-    return out;
-  }
-  function meetingLabel(m) {
-    var parts = [];
-    var sb = m.scheduledBy && c.jobTitleById(m.scheduledBy);
-    var lb = m.ledBy && c.jobTitleById(m.ledBy);
-    if (sb) { parts.push('scheduled by ' + sb.abbr); }
-    if (lb) { parts.push('led by ' + lb.abbr); }
-    return parts.length ? parts.join(', ') : 'meeting';
-  }
-  function meetingSame(a, b) { return a.name === b.name && a.scheduledBy === b.scheduledBy && a.ledBy === b.ledBy && !!a.external === !!b.external; }
-  function diffMeetings(before, after) {
-    var out = [];
-    var beforeById = {}; (before || []).forEach(function (m) { beforeById[m.id] = m; });
-    var afterById = {}; (after || []).forEach(function (m) { afterById[m.id] = m; });
-    (after || []).forEach(function (m) {
-      if (!beforeById[m.id]) { out.push('Meeting added: “' + meetingLabel(m) + '”'); return; }
-      if (!meetingSame(beforeById[m.id], m)) { out.push('Meeting edited: “' + meetingLabel(m) + '”'); }
-    });
-    (before || []).forEach(function (m) { if (!afterById[m.id]) { out.push('Meeting removed: “' + meetingLabel(m) + '”'); } });
-    if (!out.length && idSequenceChanged((before || []).map(function (m) { return m.id; }), (after || []).map(function (m) { return m.id; }))) { out.push('Meetings reordered'); }
-    return out;
-  }
-  function diffParticipants(before, after) {
-    before = before || []; after = after || [];
-    var out = [];
-    after.filter(function (id) { return before.indexOf(id) < 0; }).forEach(function (id) {
-      var jt = c.jobTitleById(id); out.push('Participant added: ' + (jt ? jt.abbr : id));
-    });
-    before.filter(function (id) { return after.indexOf(id) < 0; }).forEach(function (id) {
-      var jt = c.jobTitleById(id); out.push('Participant removed: ' + (jt ? jt.abbr : id));
-    });
-    return out;
-  }
-  function describeChanges(before, after) {
-    var changes = [];
-    if (before.name !== after.name) { changes.push('Renamed to “' + after.name + '”'); }
-    if (before.overview !== after.overview) { changes.push('Overview edited'); }
-    if (before.objective !== after.objective) { changes.push('Objective edited'); }
-    changes = changes.concat(diffParticipants(before.participants, after.participants));
-    changes = changes.concat(diffLoe(before.levelOfEffort, after.levelOfEffort));
-    changes = changes.concat(diffMeetings(before.meetings, after.meetings));
-    changes = changes.concat(diffListField(before.inputs, after.inputs, 'Input'));
-    changes = changes.concat(diffListField(before.deliverables, after.deliverables, 'Deliverable'));
-    changes = changes.concat(diffListField(before.comments, after.comments, 'Comment'));
-    var beforeTasks = {}; (before.tasks || []).forEach(function (t) { beforeTasks[t.id] = t; });
-    var afterTasks = {}; (after.tasks || []).forEach(function (t) { afterTasks[t.id] = t; });
-    (after.tasks || []).forEach(function (t) {
-      var label = truncateText(t.text, 50);
-      if (!beforeTasks[t.id]) { changes.push('Task added: “' + label + '”'); return; }
-      var bt = beforeTasks[t.id];
-      if (bt.text !== t.text) { changes.push('Task edited: “' + label + '”'); }
-      if (JSON.stringify(bt.jobAids || []) !== JSON.stringify(t.jobAids || [])) { changes.push('Job aids updated on “' + label + '”'); }
-      changes = changes.concat(diffRaci(bt.raci, t.raci, label));
-    });
-    (before.tasks || []).forEach(function (t) { if (!afterTasks[t.id]) { changes.push('Task removed: “' + truncateText(t.text, 50) + '”'); } });
-    if (idSequenceChanged((before.tasks || []).map(function (t) { return t.id; }), (after.tasks || []).map(function (t) { return t.id; }))) { changes.push('Tasks reordered'); }
-    return changes;
-  }
-
-  // ---- list fields: comments / inputs / deliverables (plain string arrays) ----
-  c.addListItem = function (kind) { c.editSp[kind].push(''); };
-  c.removeListItem = function (kind, i) { c.editSp[kind].splice(i, 1); };
-  c.moveListItem = function (kind, i, dir) {
-    var arr = c.editSp[kind];
-    var j = dir === 'up' ? i - 1 : i + 1;
-    if (j < 0 || j >= arr.length) { return; }
-    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  c.addListItem = function (kind) { ContentEditService.addListItem(kind); };
+  c.removeListItem = function (kind, index) { ContentEditService.removeListItem(kind, index); };
+  c.moveListItem = function (kind, index, dir) { ContentEditService.moveListItem(kind, index, dir); };
+  c.setLoeMode = function (mode) { ContentEditService.setLoeMode(mode); };
+  c.loeAvailableRoles = function () { return ContentEditService.loeAvailableRoles(); };
+  c.addLoeRole = function () { ContentEditService.addLoeRole(); };
+  c.removeLoeRole = function (roleId) { ContentEditService.removeLoeRole(roleId); };
+  c.setLoeFlag = function (entry, value) { ContentEditService.setLoeFlag(entry, value); };
+  c.loeRoleOrphan = function (roleId) { return ContentEditService.loeRoleOrphan(roleId); };
+  c.loeRoleRows = function () { return ContentEditService.loeRoleRows(); };
+  c.addMeeting = function () { ContentEditService.addMeeting(); };
+  c.removeMeeting = function (index) { ContentEditService.removeMeeting(index); };
+  c.moveMeeting = function (index, dir) { ContentEditService.moveMeeting(index, dir); };
+  c.internalRoles = function () { return ContentEditService.internalRoles(); };
+  c.meetingPersonOrphan = function (roleId) { return ContentEditService.meetingPersonOrphan(roleId); };
+  c.addTask = function () { ContentEditService.addTask(); };
+  c.removeTask = function (index) { ContentEditService.removeTask(index); };
+  c.moveTask = function (index, dir) { ContentEditService.moveTask(index, dir); };
+  c.taskRaciRoles = function (task) { return ContentEditService.taskRaciRoles(task); };
+  c.taskRoleOrphan = function (roleId) { return ContentEditService.taskRoleOrphan(roleId); };
+  c.taskAvailableRoles = function (task) { return ContentEditService.taskAvailableRoles(task); };
+  c.taskCoreTeamMissing = function (task) { return ContentEditService.taskCoreTeamMissing(task); };
+  c.toggleRaci = function (task, roleId, letter) { ContentEditService.toggleRaci(task, roleId, letter); };
+  c.removeTaskRole = function (task, roleId) { ContentEditService.removeTaskRole(task, roleId); };
+  c.addTaskRole = function (task, roleId) { ContentEditService.addTaskRole(task, roleId); };
+  c.addJobAid = function (task) { ContentEditService.addJobAid(task); };
+  c.removeJobAid = function (task, index) { ContentEditService.removeJobAid(task, index); };
+  c.toggleJobAidRole = function (task, jobAid, roleId) {
+    ContentEditService.toggleJobAidRole(task, jobAid, roleId);
   };
-
-  // ---- level of effort ----
-  var LOE_ROLE_DEFAULTS = {
-    em: { billable: true, optional: false }, bpc: { billable: true, optional: false },
-    arch: { billable: true, optional: false }, tc: { billable: true, optional: false }, ux: { billable: true, optional: false },
-    ae: { billable: false, optional: false }, sa: { billable: false, optional: false },
-    es: { billable: false, optional: true }
-  };
-  function defaultLoeEntry(roleId) {
-    var d = LOE_ROLE_DEFAULTS[roleId] || { billable: false, optional: false };
-    return { text: '', billable: d.billable, optional: d.optional };
-  }
-  c.setLoeMode = function (mode) {
-    c.editSp.levelOfEffort.mode = mode;
-    if (mode === 'byRole' && !Object.keys(c.editSp.levelOfEffort.roles || {}).length) {
-      if (!c.editSp.levelOfEffort.roles) { c.editSp.levelOfEffort.roles = {}; }
-      c.participantsOf(c.editSp).filter(function (r) { return !r.external; }).forEach(function (r) {
-        c.editSp.levelOfEffort.roles[r.id] = defaultLoeEntry(r.id);
-      });
-    }
-  };
-  // Only sub-phase participants are offered here - matches taskAvailableRoles below and the
-  // meeting scheduled/led-by pickers, all three now scoped to the same explicit roster instead of
-  // the full job title list.
-  c.loeAvailableRoles = function () {
-    var used = Object.keys(c.editSp.levelOfEffort.roles || {});
-    return c.participantsOf(c.editSp).filter(function (r) { return !r.external && used.indexOf(r.id) < 0; });
-  };
-  c.addLoeRole = function () {
-    if (!c.tmpLoeRole) { return; }
-    if (!c.editSp.levelOfEffort.roles) { c.editSp.levelOfEffort.roles = {}; }
-    c.editSp.levelOfEffort.roles[c.tmpLoeRole] = defaultLoeEntry(c.tmpLoeRole);
-    c.tmpLoeRole = '';
-  };
-  c.removeLoeRole = function (roleId) { delete c.editSp.levelOfEffort.roles[roleId]; };
-  c.setLoeFlag = function (entry, val) {
-    if (val === 'optional') { entry.optional = true; entry.billable = false; }
-    else if (val === 'mandatory') { entry.optional = false; }
-    else if (val === 'billable' && !entry.optional) { entry.billable = true; }
-    else if (val === 'nonbillable' && !entry.optional) { entry.billable = false; }
-  };
-  // True once a role that had a per-role LOE row stops being a participant (removed after the
-  // fact) - the row itself is left alone (data isn't silently dropped), just flagged.
-  c.loeRoleOrphan = function (roleId) { return (c.editSp.participants || []).indexOf(roleId) < 0; };
-  c.loeRoleRows = function () {
-    return c.sortJobTitleIds(Object.keys(c.editSp.levelOfEffort.roles || {})).map(c.jobTitleById).filter(Boolean);
-  };
-
-  // ---- meetings ----
-  c.addMeeting = function () { c.editSp.meetings.push({ id: 'mt' + (meetingSeq++), name: '', scheduledBy: '', ledBy: '', external: false }); };
-  c.removeMeeting = function (i) { c.editSp.meetings.splice(i, 1); };
-  c.moveMeeting = function (i, dir) {
-    var arr = c.editSp.meetings;
-    var j = dir === 'up' ? i - 1 : i + 1;
-    if (j < 0 || j >= arr.length) { return; }
-    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-  };
-  c.internalRoles = function () {
-    return c.participantsOf(c.editSp).filter(function (r) { return !r.external; });
-  };
-  // Assignment (a task RACI letter, an LOE row, meeting scheduled/led-by) referencing a job title
-  // that's since been unselected from Participants above - left in place rather than silently
-  // dropped, but flagged wherever it's shown so it doesn't read as a live option.
-  c.meetingPersonOrphan = function (roleId) {
-    return !!roleId && (c.editSp.participants || []).indexOf(roleId) < 0;
-  };
-
-  // ---- tasks ----
-  c.addTask = function () { c.editSp.tasks.push({ id: 't' + (taskSeq++), order: c.editSp.tasks.length + 1, text: '', jobAids: [], raci: {} }); };
-  c.removeTask = function (i) { c.editSp.tasks.splice(i, 1); };
-  c.moveTask = function (i, dir) {
-    var arr = c.editSp.tasks;
-    var j = dir === 'up' ? i - 1 : i + 1;
-    if (j < 0 || j >= arr.length) { return; }
-    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-    arr.forEach(function (t, k) { t.order = k + 1; });
-  };
-  c.taskRaciRoles = function (t) { return c.sortJobTitleIds(Object.keys(t.raci || {})).map(c.jobTitleById).filter(Boolean); };
-  c.taskRoleOrphan = function (roleId) { return (c.editSp.participants || []).indexOf(roleId) < 0; };
-  var CORE_TEAM = ['em', 'bpc', 'arch', 'tc'];
-  c.taskAvailableRoles = function (t) {
-    var used = Object.keys(t.raci || {});
-    return c.participantsOf(c.editSp).filter(function (r) { return used.indexOf(r.id) < 0; });
-  };
-  c.taskCoreTeamMissing = function (t) {
-    var used = Object.keys(t.raci || {});
-    var participating = c.editSp.participants || [];
-    return CORE_TEAM.some(function (id) { return participating.indexOf(id) >= 0 && used.indexOf(id) < 0; });
-  };
-  c.toggleRaci = function (t, roleId, letter) {
-    var arr = t.raci[roleId] || (t.raci[roleId] = []);
-    var i = arr.indexOf(letter);
-    if (i >= 0) { arr.splice(i, 1); } else { arr.push(letter); arr.sort(function (a, b) { return c.raciLetters.indexOf(a) - c.raciLetters.indexOf(b); }); }
-  };
-  c.removeTaskRole = function (t, roleId) { delete t.raci[roleId]; };
-  c.addTaskRole = function (t, roleId) {
-    if (!roleId) { return; }
-    if (roleId === '__core__') {
-      var participating = c.editSp.participants || [];
-      CORE_TEAM.forEach(function (id) { if (participating.indexOf(id) >= 0 && !t.raci[id]) { t.raci[id] = []; } });
-      return;
-    }
-    if (!t.raci[roleId]) { t.raci[roleId] = []; }
-  };
-  c.addJobAid = function (t) { if (!Array.isArray(t.jobAids)) { t.jobAids = []; } t.jobAids.push({ id: 'ja' + (jaSeq++), url: '', roles: [] }); };
-  c.removeJobAid = function (t, i) { t.jobAids.splice(i, 1); };
-  // toggle relative to the DISPLAYED state (all roles selected when j.roles is empty), not the
-  // raw array - clicking one role while "all" is showing should exclude just that one, not
-  // collapse the scope down to only the one clicked. Collapses back to [] ("all") if every role
-  // ends up selected again.
-  c.toggleJobAidRole = function (t, j, roleId) {
-    var roleIds = c.sortJobTitleIds(Object.keys(t.raci || {}));
-    var arr = (j.roles && j.roles.length) ? j.roles.slice() : roleIds.slice();
-    var i = arr.indexOf(roleId);
-    if (i >= 0) { arr.splice(i, 1); } else { arr.push(roleId); }
-    j.roles = (roleIds.length && roleIds.every(function (r) { return arr.indexOf(r) >= 0; })) ? [] : arr;
-  };
-  c.jobAidRoleOn = function (t, j, roleId) {
-    return !j.roles || !j.roles.length || j.roles.indexOf(roleId) >= 0;
+  c.jobAidRoleOn = function (task, jobAid, roleId) {
+    return ContentEditService.jobAidRoleOn(task, jobAid, roleId);
   };
 
   /* ================= RACI grid =================
-     Same rule as c.loc up top: c.rg is a plain property, recomputed by refreshRg() on every
-     state change, NEVER a function called from the template. rgGroups()/rgCounts() etc. used to
-     do exactly that (verified independently - not just by analogy - by hitting the actual
-     $rootScope:infdig error), each building a fresh object/array per call. */
+     Stable c.rg mirror - RaciGridService owns the engine; syncRg copies into template state. */
+  c.rgHoverCol = null;
   c.raciMode = 'grid';
   c.rgActivePhases = null;
-  // Grid column focus and By Role job picker keep separate selections so switching modes
-  // doesn't wipe or inherit the other view's focus.
   c.rgGridFocusJob = null;
   c.rgByRoleFocusJob = null;
-  c.rgHoverCol = null;
   c.rg = { ids: [], counts: {}, groups: [], byRoleGroups: [] };
+  syncRg();
 
-  // Keyed by phase ID, not name - a name key meant renaming a phase silently reset its RACI filter
-  // (the old name's entry just went stale) and two same-named phases would collapse into one chip.
-  function rgEnsureActivePhases() {
-    var ids = curMeth().phases.map(function (p) { return p.id; });
-    if (!c.rgActivePhases || Object.keys(c.rgActivePhases).some(function (id) { return ids.indexOf(id) < 0; })) {
-      c.rgActivePhases = {};
-      ids.forEach(function (id) { c.rgActivePhases[id] = true; });
-    }
-  }
-  function refreshRg() {
-    rgEnsureActivePhases();
-    var ids = [];
-    curMeth().phases.forEach(function (p) { p.subPhases.forEach(function (s) {
-      if (hasContent(s)) { s.tasks.forEach(function (t) { Object.keys(t.raci || {}).forEach(function (id) { if (ids.indexOf(id) < 0) { ids.push(id); } }); }); }
-    }); });
-    ids = c.sortJobTitleIds(ids);
-    if (c.rgGridFocusJob && ids.indexOf(c.rgGridFocusJob) < 0) {
-      c.rgGridFocusJob = null;
-    }
-    // By Role mode always shows *someone's* tasks rather than an empty "no job titles" state -
-    // auto-focus the first job title the first time this mode is opened, and re-validate the
-    // focus any time it becomes stale (e.g. after switching methodology to one where that id
-    // has no tasks).
-    if (c.raciMode === 'byrole' && (!c.rgByRoleFocusJob || ids.indexOf(c.rgByRoleFocusJob) < 0)) {
-      c.rgByRoleFocusJob = ids[0] || null;
-    }
+  c.rgTogglePhase = function (id) { RaciGridService.togglePhase(id, rgContext()); syncRg(); };
+  c.rgToggleCol = function (id) { RaciGridService.toggleCol(id, rgContext()); syncRg(); };
+  c.rgClearFocus = function () { RaciGridService.clearFocus(rgContext()); syncRg(); };
+  c.rgSetMode = function (mode) { RaciGridService.setMode(mode, rgContext()); syncRg(); };
+  c.rgSelectByRole = function (id) { RaciGridService.selectByRole(id, rgContext()); syncRg(); };
 
-    var counts = {};
-    curMeth().phases.forEach(function (p) {
-      if (!c.rgActivePhases[p.id]) { return; }
-      p.subPhases.forEach(function (s) { if (hasContent(s)) { s.tasks.forEach(function (t) { Object.keys(t.raci || {}).forEach(function (id) { counts[id] = (counts[id] || 0) + t.raci[id].length; }); }); } });
-    });
-
-    var groups = [];
-    var byRoleGroups = [];
-    curMeth().phases.forEach(function (p, pi) {
-      if (!c.rgActivePhases[p.id]) { return; }
-      var color = PHASE_COLORS[pi % PHASE_COLORS.length];
-      p.subPhases.filter(hasContent).forEach(function (s) {
-        var rows = c.rgGridFocusJob ? s.tasks.filter(function (t) { return t.raci[c.rgGridFocusJob]; }) : s.tasks;
-        if (rows.length) {
-          groups.push({ phase: p, sp: s, color: color, rows: rows.map(function (t) {
-            return { task: t };
-          }) });
-        }
-        if (c.rgByRoleFocusJob) {
-          var matched = s.tasks.filter(function (t) { return t.raci[c.rgByRoleFocusJob]; });
-          if (matched.length) { byRoleGroups.push({ phase: p, sp: s, color: color, tasks: matched }); }
-        }
-      });
-    });
-    c.rg = { ids: ids, counts: counts, groups: groups, byRoleGroups: byRoleGroups };
-  }
-  c.rgTogglePhase = function (id) { rgEnsureActivePhases(); c.rgActivePhases[id] = !c.rgActivePhases[id]; refreshRg(); };
-  c.rgToggleCol = function (id) { c.rgGridFocusJob = (c.rgGridFocusJob === id) ? null : id; refreshRg(); };
-  c.rgClearFocus = function () { c.rgGridFocusJob = null; refreshRg(); };
-  c.rgSetMode = function (mode) { c.raciMode = mode; refreshRg(); };
-  c.rgSelectByRole = function (id) { c.rgByRoleFocusJob = id; refreshRg(); };
-
-  /* ================= What's New =================
-     c.whatsNew is a stable property, recomputed by refreshWhatsNew() whenever read/unread state
-     actually changes (load, openSubPhase's markRead, saveEdit's new entries) - NOT a function
-     bound into ng-repeat. Same fresh-array-of-fresh-objects trap as c.loc/c.rg above. */
+  /* ================= What's New / Reference / Search ================= */
   c.whatsNew = [];
-  function refreshWhatsNew() {
-    var items = [];
-    c.methodologies.forEach(function (m) {
-      m.phases.forEach(function (p, pi) {
-        p.subPhases.forEach(function (s) {
-          unreadEntries(s).forEach(function (entry) { items.push({ m: m, p: p, pi: pi, s: s, entry: entry, color: PHASE_COLORS[pi % PHASE_COLORS.length] }); });
-        });
-      });
-    });
-    items.sort(function (a, b) { return Date.parse(b.entry.ts) - Date.parse(a.entry.ts); });
-    c.whatsNew = items;
-  }
-  c.fmtDate = function (d) {
-    var parts = String(d).split('-');
-    if (parts.length !== 3) { return d; }
-    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return months[+parts[1] - 1] + ' ' + (+parts[2]) + ', ' + parts[0];
-  };
-  c.daysAgo = function (dateStr) { return Math.round((Date.parse(TODAY) - Date.parse(dateStr)) / 86400000); };
+  c.fmtDate = function (d) { return WhatsNewService.fmtDate(d); };
+  c.daysAgo = function (dateStr) { return WhatsNewService.daysAgo(dateStr); };
 
-  /* ================= Reference =================
-     c.jobAids - same treatment; only changes when tasks/job aids are edited (saveEdit). */
   c.jobAids = [];
-  function refreshJobAids() {
-    var aids = [];
-    c.methodologies.forEach(function (m) { m.phases.forEach(function (p) { p.subPhases.forEach(function (s) {
-      (s.tasks || []).forEach(function (t) { (t.jobAids || []).forEach(function (j) {
-        if (j.url) { aids.push({ m: m, p: p, s: s, t: t, j: j, scope: c.jobAidScope(t, j) }); }
-      }); });
-    }); }); });
-    c.jobAids = aids;
-  }
-
-  /* ================= Search =================
-     Fixed overlay modal - the header search input and theme toggle never move. Opening/closing
-     without picking a result leaves c.view (and scroll position under the dimmed page) alone.
-     c.searchResultsList is rebuilt only by c.runSearch() (ng-change), not every digest. */
-  // $sce.trustAsHtml is safe here because each result's snippetHtml is trusted once per search,
-  // not once per digest cycle.
-  function makeSnippet(hay, q) {
-    var clean = hay.replace(/\n+/g, ' · ');
-    var i = clean.toLowerCase().indexOf(q);
-    if (i < 0) { return $sce.trustAsHtml(escapeHtml(clean.slice(0, 120))); }
-    var start = Math.max(0, i - 40);
-    var seg = clean.slice(start, i + q.length + 60);
-    var html = (start > 0 ? '…' : '') + escapeHtml(seg.slice(0, i - start)) + '<mark>' + escapeHtml(seg.slice(i - start, i - start + q.length)) + '</mark>' + escapeHtml(seg.slice(i - start + q.length)) + '…';
-    return $sce.trustAsHtml(html);
-  }
 
   c.searchQuery = '';
   c.searchResultsList = [];
-  c.searchOpen = function () { return !!(c.searchQuery || '').trim(); };
-  c.clearSearch = function () {
-    c.searchQuery = '';
-    c.searchResultsList = [];
-  };
+  c.searchOpen = function () { return SearchService.isOpen() || !!(c.searchQuery || '').trim(); };
   c.searchKeydown = function ($event) {
     if ($event.key === 'Escape') {
       c.clearSearch();
@@ -1473,23 +667,100 @@ api.controller = function (DataService, $sce, $timeout, ThemeService) {
     c.jumpTo(r.s.id, r.m.id);
   };
   c.runSearch = function () {
-    var trimmed = (c.searchQuery || '').trim();
-    if (trimmed.length >= 1 && c.editMode) {
-      showToast('Finish editing first');
-      c.clearSearch();
-      return;
-    }
-    var q = trimmed.toLowerCase();
-    if (q.length < 2) { c.searchResultsList = []; return; }
-    var results = [];
-    c.methodologies.forEach(function (m) { m.phases.forEach(function (p) { p.subPhases.forEach(function (s) {
-      var hay = [s.name, s.overview, s.objective].concat(s.comments || [], s.inputs || [], s.deliverables || [], (s.tasks || []).map(function (t) { return t.text; })).join('  ');
-      if (hay.toLowerCase().indexOf(q) >= 0) {
-        results.push({ m: m, p: p, s: s, snippetHtml: makeSnippet(hay, q) });
-      }
-    }); }); });
-    c.searchResultsList = results;
+    SearchService.setQuery(c.searchQuery);
+    SearchService.run(c.methodologies, { isEditing: isEditing, onDenyEditing: denyWhileEditing });
+    syncSearch();
   };
+
+  ContentEditService.bind({
+    canEdit: function () { return c.canEdit; },
+    denyEdit: denyEdit,
+    showToast: showToast,
+    isStructureEditing: StructureEditService.isEditing,
+    getLoc: function () { return c.loc; },
+    persistMethodologies: persistMethodologies,
+    jobTitleById: c.jobTitleById,
+    sortJobTitleIds: c.sortJobTitleIds,
+    participantsOf: c.participantsOf,
+    raciLetters: function () { return c.raciLetters; },
+    scrollToEditBar: scrollToEditBar,
+    scrollPageToTop: scrollPageToTop,
+    getTmpLoeRole: function () { return c.tmpLoeRole; },
+    clearTmpLoeRole: function () { c.tmpLoeRole = ''; },
+    afterSaveSuccess: function (entries) {
+      syncEdit();
+      c.justRead = entries;
+      refreshLoc();
+      refreshWhatsNew();
+      refreshJobAids();
+    },
+    afterSaveFailure: function () {
+      syncEdit();
+    },
+    refreshLoc: refreshLoc
+  });
+
+  StructureEditService.bind({
+    canEdit: function () { return c.canEdit; },
+    denyEdit: denyEdit,
+    showToast: showToast,
+    isContentEditing: ContentEditService.isEditing,
+    getMethodologies: function () { return c.methodologies; },
+    setMethodologies: function (methodologies) { c.methodologies = methodologies; },
+    getMethodologyId: function () { return c.methodologyId; },
+    setMethodologyId: function (id) { c.methodologyId = id; },
+    getSubPhaseId: function () { return c.subPhaseId; },
+    setSubPhaseId: function (id) { c.subPhaseId = id; },
+    getView: function () { return c.view; },
+    curMeth: curMeth,
+    firstContentSubPhase: firstContentSubPhase,
+    persistMethodologies: persistMethodologies,
+    scrollToEditBar: scrollToEditBar,
+    scrollPageToTop: scrollPageToTop,
+    refreshLoc: refreshLoc,
+    refreshWhatsNew: refreshWhatsNew,
+    refreshJobAids: refreshJobAids,
+    refreshRgIfRaci: function () {
+      if (c.view === 'raci') { refreshRg(); }
+    },
+    syncRg: syncRg,
+    pushNav: pushNav,
+    getRgActivePhasesMirror: function () { return c.rgActivePhases; },
+    markReadCurrent: function () {
+      if (c.loc) { c.justRead = markRead(c.loc.sp); }
+    },
+    enterContentEdit: function () {
+      ContentEditService.enterEdit();
+      syncEdit();
+      syncStructure();
+    },
+    afterSaveSuccess: syncStructure
+  });
+
+  NavigationService.bind({
+    isEditing: isEditing,
+    onDenyEditing: denyWhileEditing,
+    isLoading: function () { return c.loading; },
+    getView: function () { return c.view; },
+    setView: function (v) { c.view = v; },
+    getMethodologyId: function () { return c.methodologyId; },
+    setMethodologyId: function (id) { c.methodologyId = id; },
+    getSubPhaseId: function () { return c.subPhaseId; },
+    setSubPhaseId: function (id) { c.subPhaseId = id; },
+    clearSearch: clearSearch,
+    refreshLoc: refreshLoc,
+    afterOpenSubPhase: function () {
+      c.justRead = c.loc ? markRead(c.loc.sp) : [];
+      syncWhatsNew();
+    },
+    refreshRgIfRaci: function () {
+      if (c.view === 'raci') { refreshRg(); }
+    },
+    findSubPhase: function (id) { return c.findSubPhase(id); },
+    firstContentSubPhase: firstContentSubPhase,
+    hasContent: hasContent,
+    curMeth: curMeth
+  });
 
   // Bootstrap after all helpers/counters exist. Harness hydrates sync (seed + localStorage) so the
   // first paint isn't Loading… → jump; instance loads stay async via the server.

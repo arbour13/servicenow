@@ -40,8 +40,8 @@
       <div class="pagehdr">
         <div class="pagehdr-top">
           <div class="views" role="tablist">
-            <button type="button" class="vtab" ng-class="{on: c.view === 'journey'}"
-              ng-click="c.setView('journey')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            <button type="button" class="vtab" ng-class="{on: c.view === 'methodology'}"
+              ng-click="c.setView('methodology')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2">
                 <path d="M3 12h4l3-8 4 16 3-8h4"></path>
               </svg><span>Methodology</span></button>
@@ -109,12 +109,12 @@
           <p class="pg-sub">{{c.pageSub()}}</p>
         </div>
         <div class="pagehdr-controls"
-          ng-if="(c.view === 'journey' || c.view === 'raci') && (c.showMethSwitch() || (c.view === 'journey' && c.structureEditUiEnabled && c.canEdit))">
+          ng-if="(c.view === 'methodology' || c.view === 'raci') && (c.showMethSwitch() || (c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit))">
           <div class="meth-switch" ng-if="c.showMethSwitch()">
             <button type="button" class="meth-tab" ng-class="{active: m.id === c.methodologyId}"
               ng-repeat="m in c.methodologies track by m.id" ng-click="c.switchMethodology(m.id)">{{m.name}}</button>
           </div>
-          <button type="button" class="struct-icon-btn" ng-if="c.view === 'journey' && c.structureEditUiEnabled && c.canEdit"
+          <button type="button" class="struct-icon-btn" ng-if="c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit"
             ng-class="{on: c.structureEditMode}" ng-click="c.toggleStructureEdit()"
             data-tip="Edit structure"
             aria-label="Edit structure"
@@ -128,10 +128,10 @@
         </div>
       </div>
 
-      <div ng-if="c.view === 'journey'">
-        <!-- One mounted journey chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
+      <div ng-if="c.view === 'methodology'">
+        <!-- One mounted methodology chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
          toggles visibility instead of destroying/rebuilding every station + film card. -->
-        <div class="journey-chrome" ng-repeat="m in c.methodologies track by m.id" ng-show="m.id === c.methodologyId">
+        <div class="methodology-chrome" ng-repeat="m in c.methodologies track by m.id" ng-show="m.id === c.methodologyId">
           <div class="meth-intro" ng-class="{collapsed: c.isMethIntroCollapsed(m.id)}">
             <div class="meth-intro-bar">
               <button type="button" class="meth-intro-toggle" ng-click="c.toggleMethIntro(m.id)"
@@ -306,10 +306,25 @@
               </div>
             </div>
 
-            <h4 class="sec" ng-if="c.loc.sp.overview">Overview</h4>
-            <p class="lede" ng-if="c.loc.sp.overview" ng-bind-html="c.jargonHtml(c.loc.sp.overview)"></p>
-            <h4 class="sec" ng-if="c.loc.sp.objective">Objective</h4>
-            <p class="obj" ng-if="c.loc.sp.objective" ng-bind-html="c.jargonHtml(c.loc.sp.objective)"></p>
+            <div class="sp-brief" ng-if="c.hasSpBrief(c.loc.sp)"
+              ng-class="{collapsed: c.isSpBriefCollapsed(c.loc.sp.id)}">
+              <div class="sp-brief-bar">
+                <button type="button" class="sp-brief-toggle" ng-click="c.toggleSpBrief(c.loc.sp.id)"
+                  aria-expanded="{{!c.isSpBriefCollapsed(c.loc.sp.id)}}">
+                  <svg class="sp-brief-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                  <span class="sp-brief-heading">Context</span>
+                </button>
+              </div>
+              <div class="sp-brief-body" ng-if="!c.isSpBriefCollapsed(c.loc.sp.id)">
+                <h4 class="sec" ng-if="c.loc.sp.overview">Overview</h4>
+                <p class="lede" ng-if="c.loc.sp.overview" ng-bind-html="c.jargonHtml(c.loc.sp.overview)"></p>
+                <h4 class="sec" ng-if="c.loc.sp.objective">Objective</h4>
+                <p class="obj" ng-if="c.loc.sp.objective" ng-bind-html="c.jargonHtml(c.loc.sp.objective)"></p>
+              </div>
+            </div>
 
             <div class="setup-block">
               <span class="section-label">Comments</span>

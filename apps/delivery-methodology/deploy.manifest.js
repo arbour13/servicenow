@@ -10,12 +10,12 @@
    manifest directly. Operator how-to: ../../tools/sn-deployment-packager/README.md.
 
    SCOPE: ONE WIDGET, deliberately, for now. The recorded plan (2026-07-24) is a four-widget split -
-   one per main view: Journey, RACI, Reference, What's New. That is still the plan; it is NOT
+   one per main view: Methodology, RACI, Reference, What's New. That is still the plan; it is NOT
    abandoned. It is blocked on APP restructuring, not on packaging: this app is currently a single
-   MainController with internal view switching (c.view === 'journey' | 'raci' | 'reference' |
+   MainController with internal view switching (c.view === 'methodology' | 'raci' | 'reference' |
    'whatsnew'), and four widgets would need four controllers, four templates, and a shared state
    service - separate widgets don't share an Angular scope, so cross-view navigation that works
-   today as a plain function call (c.jumpTo, RACI row -> that sub-phase in Journey) becomes
+   today as a plain function call (c.jumpTo, RACI row -> that sub-phase in Methodology) becomes
    cross-widget communication that doesn't exist yet.
    The packager is the smaller half of that problem: core.js's deriveSysIds() has a single
    hardcoded 'widget' seed and buildRecordModel pushes exactly one sp_widget + one sp_instance, so
@@ -35,7 +35,7 @@
 
   return {
     manifest: {
-      // SN app / portal / widget display name. Journey page h1 is "Methodology" (matches the
+      // SN app / portal / widget display name. Methodology page h1 is "Methodology" (matches the
       // view tab); "Delivery 2.0" lives as portal pageTitle / browser tab - brand chrome for
       // stakeholders, not the in-app section heading. Scope / urlSuffix / folder stay as
       // delivery-methodology tech identity so renaming display text does not mint a second
