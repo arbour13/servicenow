@@ -598,9 +598,15 @@ button {
 }
 
 /* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
-   color rule regardless of declaration order - the element carries both classes. */
+   faint color - the element carries both classes. Match in-panel control weight (loe-mode /
+   chips): readable ink on the panel, teal when the aid is on. */
 .loe-billable-toggle.jargon-toggle {
-  color: var(--ink-2);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.loe-billable-toggle.jargon-toggle:has(input:checked) {
+  color: var(--teal);
 }
 
 .pagehdr-controls {
@@ -2081,15 +2087,6 @@ table.ttbl .jobaid {
   height: 18px;
 }
 
-.section-label.mono {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--hs-mint);
-  margin: 0 0 6px;
-}
-
 .btn {
   height: 34px;
   padding: 0 20px;
@@ -2935,6 +2932,39 @@ select.edit-in option {
 
 .vtab.on svg {
   stroke: var(--teal);
+}
+
+/* In-view layout switch (RACI Grid / By Role) - same chip-on family as .loe-mode-btn, not
+   page-level view chrome. Keeps icon tabs but demotes hierarchy under Methodology/RACI/…. */
+.views.secondary {
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.views.secondary .vtab {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  color: var(--ink-faint);
+}
+
+.views.secondary .vtab:hover {
+  color: var(--ink);
+}
+
+.views.secondary .vtab svg {
+  width: 14px;
+  height: 14px;
+}
+
+.views.secondary .vtab.on {
+  background: var(--chip-on-bg);
+  color: var(--teal);
+  box-shadow: inset 0 0 0 1px var(--teal);
+}
+
+.views.secondary .vtab.on svg {
+  stroke: currentColor;
 }
 
 .empty {

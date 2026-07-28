@@ -474,7 +474,7 @@
           <input class="edit-in title-in" ng-model="c.editSp.name">
           <div class="spacer-lg"></div>
 
-          <p class="section-label mono">Overview</p>
+          <h4 class="sec">Overview</h4>
           <textarea class="edit-in" rows="4" ng-model="c.editSp.overview"></textarea>
           <h4 class="sec">Objective</h4>
           <textarea class="edit-in" rows="4" ng-model="c.editSp.objective"></textarea>
@@ -771,7 +771,7 @@
       </div>
 
       <div ng-if="c.view === 'raci'">
-        <div class="views" role="tablist" aria-label="RACI layout">
+        <div class="views secondary" role="tablist" aria-label="RACI layout">
           <button type="button" class="vtab" role="tab" ng-class="{on: c.raciMode === 'grid'}"
             ng-click="c.rgSetMode('grid')" aria-selected="{{c.raciMode === 'grid'}}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
