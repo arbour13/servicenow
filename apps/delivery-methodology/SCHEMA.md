@@ -81,7 +81,7 @@ to reference — always a `job_title` row — lives inside `content` as a plain 
 | `deliverable` | a `sub_phase` row | the deliverable text | `{}` |
 | `comment` | a `sub_phase` row | the comment text | `{}` |
 | `participant` | a `sub_phase` row | — | `{ job_title }` *(soft ref)* |
-| `meeting` | a `sub_phase` row | — | `{ id, scheduledBy, ledBy, external }` *(soft refs)* |
+| `meeting` | a `sub_phase` row | meeting title | `{ id, scheduledBy, ledBy, external }` *(soft refs)* |
 | `level_of_effort` | a `sub_phase` row | — | `{ job_title, text, billable, optional }` *(`job_title: null` = all)* |
 | `changelog_entry` | a `sub_phase` row | — | `{ id, ts, text }` — **no global `read` flag** |
 | `job_title` | `null` | full name | `{ id, abbreviation, description, external }` |

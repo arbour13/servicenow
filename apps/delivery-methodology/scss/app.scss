@@ -72,6 +72,7 @@
   --radius-round: 50px;
   --shadow-sm: 2px 2px 4px 0 rgba(0, 0, 0, 0.15);
   --shadow: var(--shadow-sm);
+  --shadow-inset: 0 4px 4px 0 rgba(0, 28, 54, 0.2) inset;
   --focus-ring: 2px solid var(--hs-teal);
   --focus-ring-offset: 2px;
   --hs-border-tertiary: #c5dce7;
@@ -493,6 +494,19 @@ button {
 .theme-toggle svg {
   width: 16px;
   height: 16px;
+}
+
+/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */
+.nav-btn:focus-visible,
+.theme-toggle:focus-visible,
+.edit-pencil:focus-visible,
+.struct-icon-btn:focus-visible,
+.meth-tab:focus-visible,
+.vtab:focus-visible,
+.loe-mode-btn:focus-visible,
+.btn:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .pagehdr-title {
@@ -1903,6 +1917,11 @@ table.ttbl thead th.pcol.orphan {
   opacity: 0.7;
 }
 
+/* External (customer) job-title columns: dashed underline matches rolechip.ext / ◇ signal. */
+table.ttbl thead th.pcol.ext {
+  border-bottom-style: dashed;
+}
+
 table.ttbl td.cell {
   font-family: var(--font-mono);
   font-weight: 700;
@@ -2716,11 +2735,12 @@ select.edit-in option {
   color: var(--ink);
 }
 
-/* Same muted selected treatment as .vtab.on - gradient pill is for primary chrome
-   (methodology switch), not in-panel mode toggles. */
+/* In-panel selected signal - same family as .participant-chip.on (teal + soft wash).
+   surface-2 disappeared against .metacard's identical fill; gradient pill is too loud here. */
 .loe-mode-btn.on {
-  background: var(--surface-2);
-  color: var(--ink);
+  background: var(--chip-on-bg);
+  color: var(--teal);
+  box-shadow: inset 0 0 0 1px var(--teal);
 }
 
 .loe-mode.mtg-toggle {

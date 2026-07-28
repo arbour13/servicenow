@@ -151,7 +151,7 @@ var DMContentModel = (function () {
             pushRow(rows, 'participant', sp.id, '', idx + 1, { job_title: roleId }, null);
           });
           (sp.meetings || []).forEach(function (mt, idx) {
-            pushRow(rows, 'meeting', sp.id, '', idx + 1, {
+            pushRow(rows, 'meeting', sp.id, mt.name || '', idx + 1, {
               id: mt.id,
               scheduledBy: mt.scheduledBy || null,
               ledBy: mt.ledBy || null,
@@ -382,6 +382,7 @@ var DMContentModel = (function () {
                 meetings: kids(sid, 'meeting').map(function (r) {
                   return {
                     id: r.content.id || r.clientId,
+                    name: r.name || '',
                     scheduledBy: r.content.scheduledBy || null,
                     ledBy: r.content.ledBy || null,
                     external: !!r.content.external

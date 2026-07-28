@@ -2,7 +2,7 @@
    from innerHTML-string building into controller state + declarative template bindings
    (index.html). All views (Journey read + edit, RACI grid/by-role, Reference, What's New, Search)
    are ported. */
-angular.module('deliveryMethodology').controller('MainController', ['DataService', '$sce', '$timeout', 'ThemeService', function (DataService, $sce, $timeout, ThemeService) {
+angular.module('deliveryMethodology').controller('MainController', ['DataService', '$sce', '$timeout', '$q', 'ThemeService', function (DataService, $sce, $timeout, $q, ThemeService) {
   'use strict';
   var c = this;
 
@@ -58,10 +58,12 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   }
 
   // Persist via DataService; surface server/local failures instead of fire-and-forget.
+  // Reject after the error toast so callers can withhold success UI / keep edit drafts open.
   function persistMethodologies() {
     return DataService.saveData(c.methodologies).then(null, function (err) {
       var msg = (err && err.error) ? err.error : 'Could not save changes.';
       showToast(msg);
+      return $q.reject(err);
     });
   }
 
@@ -323,7 +325,9 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     c.methodologies = d.methodologies || [];
     backfillParticipants(c.methodologies);
     // Legacy localStorage rows may predate sp.icon - fill from the name heuristic once.
+    // sid is display-only and not stored on the content table - always derive from position.
     c.methodologies.forEach(function (m) {
+      recomputeSids(m);
       m.phases.forEach(function (p) {
         p.subPhases.forEach(function (s) {
           if (!s.icon || !ICON_HTML[s.icon]) { s.icon = subPhaseIconKey(s.name); }
@@ -485,16 +489,14 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   c.phaseHasUnread = function (p) { return p.subPhases.some(function (s) { return c.unreadCount(s) > 0; }); };
   c.subPhaseIconPaths = function (sp) { return ICON_HTML[iconKeyFor(sp)]; };
 
-  // read/unread - a single global flag per changelog entry, matching the prototype's current
-  // data model exactly. Phase 3's per-user Acknowledgement design (see the mockup) replaces this
-  // once real GlideRecord data + logged-in users exist - nothing to fake here against mock data.
+  // read/unread - session-only until SCHEMA's per-user preference I/O lands. Do not persist:
+  // dehydrate drops `read`, and a full-table rewrite on every open would buy nothing on instance.
   function unreadEntries(sp) { return (sp.changelog || []).filter(function (c) { return !c.read; }); }
   c.unreadEntries = unreadEntries;
   function markRead(sp) {
     var entries = unreadEntries(sp);
     entries.forEach(function (c) { c.read = true; });
     refreshWhatsNew();
-    if (entries.length) { persistMethodologies(); }
     return entries;
   }
   // Entries just marked read by the most recent openSubPhase - the read-panel shows these once,
@@ -541,21 +543,27 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   }
   c.canGoBack = function () { return navIndex > 0; };
   c.canGoForward = function () { return navIndex >= 0 && navIndex < navStack.length - 1; };
+  function denyWhileEditing() {
+    showToast('Finish editing first');
+  }
+  function isEditing() {
+    return !!(c.editMode || c.structureEditMode);
+  }
   c.goBack = function () {
-    if (c.editMode) { showToast('Finish editing first'); return; }
+    if (isEditing()) { denyWhileEditing(); return; }
     if (!c.canGoBack()) { return; }
     navIndex -= 1;
     applyNav(navStack[navIndex]);
   };
   c.goForward = function () {
-    if (c.editMode) { showToast('Finish editing first'); return; }
+    if (isEditing()) { denyWhileEditing(); return; }
     if (!c.canGoForward()) { return; }
     navIndex += 1;
     applyNav(navStack[navIndex]);
   };
 
   c.setView = function (v) {
-    if (c.editMode) { showToast('Finish editing first'); return; }
+    if (isEditing()) { denyWhileEditing(); return; }
     c.view = v;
     if (v === 'raci') { refreshRg(); }
     // Switching tabs dismisses an open search popup without changing where you were browsing.
@@ -572,7 +580,13 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     return 'Methodology';
   };
   c.pageSub = function () {
-    if (c.view === 'raci') { return 'Every task and every job title in ' + c.curMeth().name + '. Focus a column to see one role across the whole engagement.'; }
+    if (c.view === 'raci') {
+      var raciMethodology = curMeth();
+      if (!raciMethodology) {
+        return 'Every task and every job title across the engagement. Focus a column to see one role.';
+      }
+      return 'Every task and every job title in ' + raciMethodology.name + '. Focus a column to see one role across the whole engagement.';
+    }
     if (c.view === 'whatsnew') { return 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.'; }
     if (c.view === 'reference') { return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.'; }
     var methodology = curMeth();
@@ -586,7 +600,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   };
 
   c.switchMethodology = function (id) {
-    if (c.editMode) { showToast('Finish editing first'); return; }
+    if (isEditing()) { denyWhileEditing(); return; }
     if (id === c.methodologyId) { return; }
     if (c.methodologyId && c.subPhaseId) { methSubPhaseById[c.methodologyId] = c.subPhaseId; }
     c.methodologyId = id;
@@ -597,14 +611,14 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     if (c.view === 'raci') { refreshRg(); }
   };
   c.selectPhase = function (phaseIndex) {
-    if (c.editMode) { return; }
+    if (isEditing()) { return; }
     var p = curMeth().phases[phaseIndex];
     if (!p.subPhases.length) { return; } // structure editing can leave a phase empty - nothing to open
     var written = p.subPhases.find(hasContent);
     c.openSubPhase((written || p.subPhases[0]).id);
   };
   c.openSubPhase = function (id) {
-    if (c.editMode) { return; }
+    if (isEditing()) { return; }
     c.subPhaseId = id;
     if (c.methodologyId) { methSubPhaseById[c.methodologyId] = id; }
     refreshLoc();
@@ -634,7 +648,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   // the Journey view so the destination is actually visible. Optional elKey (e.g. "task:…")
   // scrolls to and pulses that element inside the sub-phase panel.
   c.jumpTo = function (subId, methId, elKey) {
-    if (c.editMode) { return; }
+    if (isEditing()) { return; }
     if (methId && methId !== c.methodologyId) { c.methodologyId = methId; }
     c.view = 'journey';
     c.clearSearch();
@@ -735,15 +749,16 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
         });
       });
     });
-    exitStructureEdit();
-    persistMethodologies();
-    refreshLoc();
-    refreshWhatsNew();
-    refreshJobAids();
-    if (c.view === 'raci') { refreshRg(); }
-    pushNav();
-    showToast('Structure saved');
-    scrollPageToTop();
+    persistMethodologies().then(function () {
+      exitStructureEdit();
+      refreshLoc();
+      refreshWhatsNew();
+      refreshJobAids();
+      if (c.view === 'raci') { refreshRg(); }
+      pushNav();
+      showToast('Structure saved');
+      scrollPageToTop();
+    });
   };
   c.renameMethodology = function (methodology) {
     if (!methodology || !String(methodology.name || '').trim()) {
@@ -856,15 +871,16 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     sp.changelog.push({ id: 'c' + (changelogSeq++), ts: TODAY, text: 'Sub-phase created', read: false });
     p.subPhases.push(sp);
     recomputeSids(m);
-    exitStructureEdit();
-    persistMethodologies();
-    c.subPhaseId = sp.id;
-    methSubPhaseById[m.id] = sp.id;
-    refreshLoc();
-    c.justRead = markRead(c.loc.sp);
-    refreshWhatsNew();
-    if (c.view === 'raci') { refreshRg(); }
-    c.enterEdit();
+    persistMethodologies().then(function () {
+      exitStructureEdit();
+      c.subPhaseId = sp.id;
+      methSubPhaseById[m.id] = sp.id;
+      refreshLoc();
+      c.justRead = markRead(c.loc.sp);
+      refreshWhatsNew();
+      if (c.view === 'raci') { refreshRg(); }
+      c.enterEdit();
+    });
   };
   c.movePhase = function (index, dir) {
     var m = curMeth();
@@ -1056,23 +1072,32 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     collapseJobAidRoles(c.editSp);
     var changes = describeChanges(c.editSnapshot, c.editSp);
     var entries = [];
-    if (changes.length) {
-      if (!c.editSp.changelog) { c.editSp.changelog = []; }
-      entries = changes.map(function (text) { return { id: 'c' + (changelogSeq++), ts: TODAY, text: text, read: false }; });
-      c.editSp.changelog.unshift.apply(c.editSp.changelog, entries);
-    }
     var idx = c.loc.phase.subPhases.findIndex(function (s) { return s.id === c.editSp.id; });
-    c.loc.phase.subPhases[idx] = c.editSp;
-    c.editMode = false;
-    c.editSp = null;
-    c.editSnapshot = null;
-    c.justRead = entries;
-    refreshLoc();
-    refreshWhatsNew();
-    refreshJobAids();
-    persistMethodologies();
-    showToast(changes.length ? ('Saved - ' + changes.length + ' change' + (changes.length > 1 ? 's' : '') + ' detected and logged automatically') : 'Saved - no changes detected');
-    scrollPageToTop();
+    var previous = deepClone(c.editSnapshot);
+    var toSave = deepClone(c.editSp);
+    if (changes.length) {
+      if (!toSave.changelog) { toSave.changelog = []; }
+      entries = changes.map(function (text) {
+        return { id: 'c' + (changelogSeq++), ts: TODAY, text: text, read: false };
+      });
+      toSave.changelog.unshift.apply(toSave.changelog, entries);
+    }
+    c.loc.phase.subPhases[idx] = toSave;
+    persistMethodologies().then(function () {
+      c.editMode = false;
+      c.editSp = null;
+      c.editSnapshot = null;
+      c.justRead = entries;
+      refreshLoc();
+      refreshWhatsNew();
+      refreshJobAids();
+      showToast(changes.length ? ('Saved - ' + changes.length + ' change' + (changes.length > 1 ? 's' : '') + ' detected and logged automatically') : 'Saved - no changes detected');
+      scrollPageToTop();
+    }, function () {
+      // Keep the editor open with the user's draft; restore the live tree to match the server.
+      c.loc.phase.subPhases[idx] = previous;
+      refreshLoc();
+    });
   };
 
   // ---- change diffing (ported from the prototype's describeChanges/diffLoe/diffMeetings/diffRaci) ----
@@ -1146,6 +1171,7 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
     return out;
   }
   function meetingLabel(m) {
+    if (m && m.name) { return m.name; }
     var parts = [];
     var sb = m.scheduledBy && c.jobTitleById(m.scheduledBy);
     var lb = m.ledBy && c.jobTitleById(m.ledBy);
@@ -1478,8 +1504,8 @@ angular.module('deliveryMethodology').controller('MainController', ['DataService
   };
   c.runSearch = function () {
     var trimmed = (c.searchQuery || '').trim();
-    if (trimmed.length >= 1 && c.editMode) {
-      showToast('Finish editing first');
+    if (trimmed.length >= 1 && isEditing()) {
+      denyWhileEditing();
       c.clearSearch();
       return;
     }

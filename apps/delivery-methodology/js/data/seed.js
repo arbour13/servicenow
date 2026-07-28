@@ -105,7 +105,7 @@
                 'Pre-Sales Solutions Consultant - Initiator & Facilitator of the meeting.',
                 'Executive Sponsor at A/VP Level - Documented in the project channel.'
               ],
-              meetings: [{ id: 'mt-d212-1', scheduledBy: 'ae', ledBy: 'pssc', external: false }],
+              meetings: [{ id: 'mt-d212-1', name: 'IPKT', scheduledBy: 'ae', ledBy: 'pssc', external: false }],
               inputs: [
                 'IPKT Doc',
                 'ROM',
@@ -145,7 +145,7 @@
                 'Sales Executive schedules the online meeting & introduces the team',
                 'Engagement Manager facilitates the meeting'
               ],
-              meetings: [{ id: 'mt-d213-1', scheduledBy: 'ae', ledBy: 'em', external: true }],
+              meetings: [{ id: 'mt-d213-1', name: 'Customer Pre-Kickoff', scheduledBy: 'ae', ledBy: 'em', external: true }],
               inputs: [
                 'Customer Pre-Kickoff deck',
                 'Startup checklist pre-modified by EM, Architect & BPC',
@@ -180,7 +180,7 @@
                 roles: {}
               },
               comments: ['Engagement Manager facilitates the meeting.'],
-              meetings: [{ id: 'mt-d214-1', scheduledBy: 'em', ledBy: 'em', external: false }],
+              meetings: [{ id: 'mt-d214-1', name: 'Get to Know the Team', scheduledBy: 'em', ledBy: 'em', external: false }],
               inputs: [
                 'Customized Get to Know You Deck',
                 'Notes & Summaries from IPKT and Pre-Kickoff Customer Meeting',
@@ -213,7 +213,7 @@
                 'Executive Sponsor documented in the project channel',
                 'Training Program Manager included if training is included in SoW'
               ],
-              meetings: [{ id: 'mt-d215-1', scheduledBy: 'em', ledBy: 'em', external: true }],
+              meetings: [{ id: 'mt-d215-1', name: 'Kickoff', scheduledBy: 'em', ledBy: 'em', external: true }],
               inputs: [
                 'Project kickoff deck (tailored in advance by EM, BPC, and Architect)'
               ],
@@ -252,7 +252,7 @@
                 }
               },
               comments: ['BPC facilitates readiness and logistics.'],
-              meetings: [{ id: 'mt-d221-1', scheduledBy: 'bpc', ledBy: 'bpc', external: false }],
+              meetings: [{ id: 'mt-d221-1', name: 'Pre-Workshop Planning', scheduledBy: 'bpc', ledBy: 'bpc', external: false }],
               inputs: [
                 'Customer demo instance',
                 'Completed customer value statement',
@@ -293,7 +293,7 @@
                 'BPC facilitates logistics. Include design team representatives, if part of the engagement',
                 'TC attendance will be determined during workshop pre-planning'
               ],
-              meetings: [{ id: 'mt-d222-1', scheduledBy: 'em', ledBy: 'bpc', external: true }],
+              meetings: [{ id: 'mt-d222-1', name: 'Customer Workshops', scheduledBy: 'em', ledBy: 'bpc', external: true }],
               inputs: [
                 'Customer demo instance',
                 'Tailored workshop decks',
@@ -337,7 +337,7 @@
               comments: [
                 'Remember to keep the momentum going and communicate clearly to customer next steps and timing needed to prepare user stories for review'
               ],
-              meetings: [{ id: 'mt-d223-1', scheduledBy: 'bpc', ledBy: 'bpc', external: false }],
+              meetings: [{ id: 'mt-d223-1', name: 'Post Workshop', scheduledBy: 'bpc', ledBy: 'bpc', external: false }],
               inputs: [
                 'Epics & themes from the workshop',
                 'Draft Requirements Traceability Matrix (RTM)',
@@ -376,7 +376,7 @@
               comments: [
                 'Client alignment is critical for us to be successful. Ensure we clear all blockers and have a proper path forward to execute.'
               ],
-              meetings: [{ id: 'mt-d224-1', scheduledBy: 'em', ledBy: 'em', external: true }],
+              meetings: [{ id: 'mt-d224-1', name: 'Scope Rebalancing', scheduledBy: 'em', ledBy: 'em', external: true }],
               inputs: ['Completed RTM'],
               deliverables: [
                 'Update RIDAC',
@@ -403,7 +403,7 @@
                 }
               },
               comments: [],
-              meetings: [{ id: 'mt-d225-1', scheduledBy: 'bpc', ledBy: 'bpc', external: false }],
+              meetings: [{ id: 'mt-d225-1', name: 'Refinement & Sprint Planning', scheduledBy: 'bpc', ledBy: 'bpc', external: false }],
               inputs: [
                 'Stories in-scope from customer scope re-balancing meeting',
                 'Initial project plan'
@@ -441,7 +441,7 @@
                 }
               },
               comments: [],
-              meetings: [{ id: 'mt-d226-1', scheduledBy: 'bpc', ledBy: 'bpc', external: true }],
+              meetings: [{ id: 'mt-d226-1', name: 'Sprint Planning with Customer', scheduledBy: 'bpc', ledBy: 'bpc', external: true }],
               inputs: [
                 'Draft sprint plan within customer’s agile/project planning tool',
                 'Draft High-Level Design (HLD)'
@@ -561,7 +561,7 @@
               comments: [
                 'User Acceptance Testing is critical because it validates that the configured solution meets business requirements and workflows before go-live, reducing the risk of defects and ensuring user adoption.'
               ],
-              meetings: [{ id: 'mt-d241-1', scheduledBy: 'em', ledBy: 'em', external: true }],
+              meetings: [{ id: 'mt-d241-1', name: 'UAT', scheduledBy: 'em', ledBy: 'em', external: true }],
               inputs: ['UAT strategy & plan from kick off'],
               deliverables: [
                 'Progress and status reports throughout UAT phase',
@@ -585,7 +585,7 @@
                 roles: {}
               },
               comments: [],
-              meetings: [{ id: 'mt-d242-1', scheduledBy: 'em', ledBy: 'em', external: true }],
+              meetings: [{ id: 'mt-d242-1', name: 'Go Live Preparedness', scheduledBy: 'em', ledBy: 'em', external: true }],
               inputs: [
                 'UAT signoff',
                 'RTM document complete',
@@ -618,7 +618,7 @@
                 roles: {}
               },
               comments: [],
-              meetings: [{ id: 'mt-d243-1', scheduledBy: 'em', ledBy: 'em', external: true }],
+              meetings: [{ id: 'mt-d243-1', name: 'Customer Signoff & Go Live Readiness', scheduledBy: 'em', ledBy: 'em', external: true }],
               inputs: ['UAT signoff'],
               deliverables: ['Summary email & customer sign off'],
               tasks: [
@@ -644,7 +644,7 @@
                 }
               },
               comments: [],
-              meetings: [{ id: 'mt-d244-1', scheduledBy: 'em', ledBy: 'em', external: false }],
+              meetings: [{ id: 'mt-d244-1', name: 'Deploy', scheduledBy: 'em', ledBy: 'em', external: false }],
               inputs: [
                 'Run book',
                 'Update sets',
@@ -679,7 +679,7 @@
                 }
               },
               comments: [],
-              meetings: [{ id: 'mt-d245-1', scheduledBy: 'em', ledBy: 'em', external: false }],
+              meetings: [{ id: 'mt-d245-1', name: 'Hypercare', scheduledBy: 'em', ledBy: 'em', external: false }],
               inputs: ['Hypercare plan & schedule'],
               deliverables: [
                 'Hypercare summary & status emails',
@@ -707,7 +707,7 @@
                 roles: {}
               },
               comments: [],
-              meetings: [{ id: 'mt-d251-1', scheduledBy: 'em', ledBy: 'em', external: false }],
+              meetings: [{ id: 'mt-d251-1', name: 'Internal Closure Meeting', scheduledBy: 'em', ledBy: 'em', external: false }],
               inputs: ['Internal closure deck template'],
               deliverables: [
                 'Revised external closure deck',
@@ -742,7 +742,7 @@
                 'This retrospective is client facing, be cognizant of what is shared externally.',
                 'This retrospective can be combined with the customer closure meeting and celebration based on customer preference'
               ],
-              meetings: [{ id: 'mt-d252-1', scheduledBy: 'em', ledBy: 'em', external: true }],
+              meetings: [{ id: 'mt-d252-1', name: 'Customer Retrospective', scheduledBy: 'em', ledBy: 'em', external: true }],
               inputs: [
                 'Customer retrospective deck',
                 'Customer closure and celebration deck'
@@ -775,7 +775,7 @@
                 }
               },
               comments: [],
-              meetings: [{ id: 'mt-d253-1', scheduledBy: 'em', ledBy: 'em', external: true }],
+              meetings: [{ id: 'mt-d253-1', name: 'Customer Closure Meeting', scheduledBy: 'em', ledBy: 'em', external: true }],
               inputs: ['Customer closure deck'],
               deliverables: [
                 'Archive project documentation for future reference',
@@ -852,7 +852,7 @@
 
 
   root.DMSeed = {
-    version: 19,
+    version: 20,
     jobTitles: JOB_TITLES,
     methodologies: METHODOLOGIES,
     jargon: JARGON,
