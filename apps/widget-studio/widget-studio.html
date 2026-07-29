@@ -4953,6 +4953,15 @@ class Component extends DCLogic {
         h('div',{onClick:e=>{ const inp=e.currentTarget.parentNode.querySelector('input'); setC(inp.value); },style:{padding:'7px 12px',fontSize:12,fontWeight:600,color:'#fff',background:t.accentFill,borderRadius:6,cursor:'pointer'}},'Add'))
     );
   }
+  // N equal solid bars in a fixed-width box — the Preset column-count glyphs. Same solid-fill
+  // convention as gl()'s display icons (block/flex/grid), so a 3-column preset reads as a denser
+  // version of the same visual language rather than a new one. Bars shrink as the count grows; the
+  // box width stays constant so the row doesn't jitter between counts.
+  gridColsIcon(n){ const h=React.createElement;
+    const gap=n>4?1.5:2; const w=(18-gap*(n-1))/n;
+    return h('div',{style:{display:'flex',gap,width:18,height:13}},
+      Array.from({length:n},(_,i)=>h('div',{key:i,style:{width:w,height:13,borderRadius:1,background:'currentColor'}})));
+  }
   // Split a grid-template value into individual tracks, respecting parentheses (minmax(…), repeat(…)).
   splitTracks(str){ str=(str||'').trim(); if(!str) { return []; } const out=[]; let depth=0,cur=''; for(const ch of str){ if(ch==='(') { depth++; } else if(ch===')') { depth--; } if(/\s/.test(ch)&&depth===0){ if(cur){out.push(cur);cur='';} } else { cur+=ch; } } if(cur) { out.push(cur); } return out; }
   // Grid editor (reference): Fixed/Auto columns, per-track lists for columns & rows, auto-fill/auto-fit +
@@ -4960,11 +4969,23 @@ class Component extends DCLogic {
   gridEditor(node,t){ const h=React.createElement;
     const gtc=this.csVal(node,'gridTemplateColumns')||'';
     const am=gtc.match(/repeat\(\s*(auto-fit|auto-fill)\s*,\s*minmax\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)\s*\)/i);
-    const colMode=am?'auto':'fixed';
     const autoMode=am?am[1].toLowerCase():'auto-fill';
     const autoMin=am?am[2].trim():'200px';
     const autoMax=am?am[3].trim():'1fr';
-    const cols=colMode==='fixed'?(this.splitTracks(gtc).length?this.splitTracks(gtc):['1fr']):['1fr','1fr','1fr'];
+    const cols=!am?(this.splitTracks(gtc).length?this.splitTracks(gtc):['1fr']):['1fr','1fr','1fr'];
+    // Three column modes. PRESET (N equal 1fr tracks, picked by icon) is the common case and the
+    // default read; FIXED is the escape hatch for uneven tracks and is the only mode that shows the
+    // raw per-track list; AUTO is repeat(auto-fill|auto-fit, minmax(…)). Preset vs Fixed is DERIVED
+    // from the value — all-equal tracks within the preset range read as Preset — with a per-node
+    // override so choosing Fixed on an even grid sticks instead of snapping back (same derived-value
+    // + `_granOv`-style override pattern the spacing/border grain switches use).
+    const presetMax=6;
+    const derivedColMode = am ? 'auto'
+      : (cols.every(c=>c==='1fr') && cols.length<=presetMax ? 'preset' : 'fixed');
+    const cmKey=node.id+':gridcols';
+    this._gridColModeOv=this._gridColModeOv||{};
+    if(this._gridColModeOv[cmKey]==='auto' || derivedColMode==='auto') { delete this._gridColModeOv[cmKey]; }
+    const colMode=this._gridColModeOv[cmKey]||derivedColMode;
     const rows=this.splitTracks(this.csVal(node,'gridTemplateRows')||'');
     const setCols=arr=>this.setCS(node,'gridTemplateColumns',arr.length?arr.join(' '):'');
     const setRows=arr=>this.setCS(node,'gridTemplateRows',arr.length?arr.join(' '):'');
@@ -4974,26 +4995,28 @@ class Component extends DCLogic {
       h('input',{value:arr[i],spellCheck:false,onChange:e=>{ const nx=arr.slice(); nx[i]=e.target.value; setter(nx); },style:trackMini}),
       h('span',{onClick:()=>{ if(arr.length>min){ const nx=arr.slice(); nx.splice(i,1); setter(nx); } },style:{display:arr.length>min?'flex':'none',width:20,height:20,alignItems:'center',justifyContent:'center',borderRadius:4,cursor:'pointer',color:t.faint,fontSize:14,flex:'0 0 auto'}},'×'));
     const addBtn=(label,onClick)=>h('div',{onClick,style:{display:'flex',alignItems:'center',justifyContent:'center',marginTop:6,padding:'5px 0',border:'1px dashed '+t.border,borderRadius:6,cursor:'pointer',color:t.muted,fontSize:11.5,fontWeight:500}},label);
-    const previewCols=colMode==='auto'?['1fr','1fr','1fr']:cols;
-    const prevRows=rows.length?rows:['auto'];
-    const preview=h('div',{style:{display:'grid',gridTemplateColumns:previewCols.map(()=>'1fr').join(' '),gridTemplateRows:prevRows.map(()=>'22px').join(' '),gap:3,padding:6,background:t.segBg,border:'1px solid '+t.border,borderRadius:7,marginTop:8}},
-      previewCols.flatMap((_,ci)=>prevRows.map((_,ri)=>h('div',{key:ci+'-'+ri,style:{background:t.accentSoft,border:'1px dashed '+(this.dark?t.accent:'#bcd6f5'),borderRadius:3,minHeight:18}}))));
-    const els=[h('div',{key:'gp'}, this.lbl(t,'Grid template'), preview)];
-    const setColMode=v=>{ if(v===colMode) { return; } if(v==='auto') { this.setCS(node,'gridTemplateColumns',autoTemplate); } else { this.setCS(node,'gridTemplateColumns',cols.join(' ')); } };
-    els.push(h('div',{key:'colhdr',style:{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'18px 0 6px'}},
-      h('span',{style:{fontSize:11,fontWeight:600,color:t.muted}},'Columns'),
-      h('div',{style:{width:120}}, this.segTextSlider(t,[{v:'fixed',l:'Fixed'},{v:'auto',l:'Auto'}],colMode,setColMode,{pad:'3px 0'}))));
-    if(colMode==='fixed'){
-      // "How many columns" is the first question a grid asks, and equal columns is overwhelmingly the
-      // answer — so lead with a count picker and keep the per-track list below for the cases that
-      // actually need uneven tracks. Routed through setGridColumns (NOT the raw setCols) because
-      // dropping the count has to clamp any child pinned past the new last column and re-normalize
-      // source order; setCols alone would leave those children pointing at columns that no longer exist.
-      const colCount=Math.max(1,Math.min(6,cols.length));
-      const evenNow=cols.every(c=>c===cols[0]);
-      els.push(h('div',{key:'colcount',style:{marginBottom:8}},
-        this.segTextSlider(t,[1,2,3,4,5,6].map(n=>({v:n,l:String(n)})), evenNow?colCount:0,
-          n=>this.setGridColumns(node, new Array(n).fill('1fr').join(' ')), {aria:'Column count',pad:'5px 0'})));
+    const els=[];
+    const setColMode=v=>{ if(v===colMode) { return; }
+      if(v==='auto'){ delete this._gridColModeOv[cmKey]; this.setCS(node,'gridTemplateColumns',autoTemplate); return; }
+      // Preset normalises to N equal tracks (through setGridColumns, so children pinned past the new
+      // last column get clamped); Fixed keeps whatever tracks exist and just reveals the raw list.
+      if(v==='preset'){ delete this._gridColModeOv[cmKey];
+        this.setGridColumns(node, new Array(Math.max(1,Math.min(presetMax,cols.length))).fill('1fr').join(' ')); return; }
+      this._gridColModeOv[cmKey]='fixed';
+      if(am) { this.setCS(node,'gridTemplateColumns',cols.join(' ')); }
+      this.forceUpdate(); };
+    els.push(h('div',{key:'colhdr',style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8,gap:8}},
+      h('span',{style:{fontSize:11,fontWeight:600,color:t.muted,flex:'0 0 auto'}},'Columns'),
+      h('div',{style:{width:168}}, this.segTextSlider(t,[{v:'preset',l:'Preset'},{v:'fixed',l:'Fixed'},{v:'auto',l:'Auto'}],colMode,setColMode,{aria:'Column mode',pad:'3px 0'}))));
+    if(colMode==='preset'){
+      // "How many columns" is the first question a grid asks, and N equal columns is overwhelmingly
+      // the answer — so it's a one-click icon row, not a track list to hand-author. Glyphs rather than
+      // numerals because the icon shows the resulting shape, which is what's actually being chosen.
+      const colCount=Math.max(1,Math.min(presetMax,cols.length));
+      els.push(h('div',{key:'colpreset'},
+        this.iconSlider(t, Array.from({length:presetMax},(_,i)=>({v:i+1,title:(i+1)+(i?' columns':' column'),icon:this.gridColsIcon(i+1)})),
+          colCount, n=>this.setGridColumns(node, new Array(n).fill('1fr').join(' ')), 'Column preset')));
+    } else if(colMode==='fixed'){
       els.push(h('div',{key:'coltracks',style:{display:'flex',flexDirection:'column',gap:5}}, cols.map((c,i)=>trackRow(cols,i,setCols,1))));
       els.push(addBtn('+ Add column',()=>setCols(cols.concat('1fr'))));
     } else {
