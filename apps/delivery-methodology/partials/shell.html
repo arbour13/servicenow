@@ -123,7 +123,7 @@
             <div class="pagehdr-controls"
               ng-if="(c.view === 'methodology' || c.view === 'raci') && (c.showMethodologySwitch() || (c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit))">
               <div class="methodology-switch" ng-if="c.showMethodologySwitch()">
-                <button type="button" class="methodology-tab" ng-class="{active: methodology.id === c.methodologyId}"
+                <button type="button" class="methodology-tab" ng-class="{on: methodology.id === c.methodologyId}"
                   ng-repeat="methodology in c.methodologies track by methodology.id" ng-click="c.switchMethodology(methodology.id)">{{methodology.name}}</button>
               </div>
               <button type="button" class="struct-icon-btn" ng-if="c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit"

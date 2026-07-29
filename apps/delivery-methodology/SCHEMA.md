@@ -94,9 +94,10 @@ to reference — always a `job_title` row — lives inside `content` as a plain 
 ## Resolved design decisions
 
 1. **Table name:** `content` (scoped `x_<scope>_content`).
-2. **Changelog read state:** per-user via **user preference** (e.g. `dm.changelog.seen` → JSON map
-   of changelog row sys_ids). Preference I/O lands with the data-scripting follow-up. No
-   ack type; no global `content.read`.
+2. **Changelog read state:** per-user via **user preference** `dm.changelog.seen` → JSON map of
+   changelog **content.id** values (stable client ids that survive full-replace save; not row
+   sys_ids, which change on recreate). Harness uses the same key in localStorage. No ack type; no
+   global `content.read`.
 3. **Cascade delete:** Fluent `parent` column `cascadeRule: 'cascade'` — platform deletes
    descendants when a parent row is deleted. Soft refs inside JSON are not cascaded.
 4. **`icon`:** on `sub_phase` content as `{ overview, objective, icon }`.
@@ -119,7 +120,6 @@ participants (often backfilled client-side from RACI).
 
 ## Follow-up (not this pass)
 
-- User-preference read/write for What's New (`dm.changelog.seen`)
 - Optional install-time seed (today: first editor load persists the client seed)
 
 Server load/save follows GlideFast scripting standards: `GlideRecordSecure`, server-side

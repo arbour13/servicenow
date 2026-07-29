@@ -5,7 +5,11 @@
   var jargonCache = {};
 
   function escapeHtml(text) {
-    return String(text == null ? '' : text)
+    var value = '';
+    if (text != null) {
+      value = String(text);
+    }
+    return value
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
@@ -19,7 +23,10 @@
     if (!text) {
       return $sce.trustAsHtml('');
     }
-    var cacheKey = (showJargon ? '1' : '0') + '|' + text;
+    var cacheKey = '0|' + text;
+    if (showJargon) {
+      cacheKey = '1|' + text;
+    }
     if (jargonCache[cacheKey]) {
       return jargonCache[cacheKey];
     }

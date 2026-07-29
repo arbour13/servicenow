@@ -48,22 +48,32 @@
     navIndex = navStack.length - 1;
   }
 
-  function apply(snap) {
-    navSilent = true;
-    clearSearchOverlay();
-    AppStateService.setView(snap.view);
-    AppStateService.setMethodologyId(snap.methodologyId);
-    AppStateService.setSubPhaseId(snap.subPhaseId);
-    if (snap.methodologyId && snap.subPhaseId) {
-      methodologySubPhaseById[snap.methodologyId] = snap.subPhaseId;
+  function refreshRaciGridIfNeeded() {
+    if (hooks.refreshRaciGridIfNeeded) {
+      hooks.refreshRaciGridIfNeeded();
     }
-    AppStateService.refreshLocation();
+  }
+
+  function afterOpenSubPhase() {
     if (hooks.afterOpenSubPhase) {
       hooks.afterOpenSubPhase();
     }
-    if (hooks.refreshRgIfRaci) {
-      hooks.refreshRgIfRaci();
-    }
+  }
+
+  function apply(snap) {
+    navSilent = true;
+    clearSearchOverlay();
+    AppStateService.batch(function () {
+      AppStateService.setView(snap.view);
+      AppStateService.setMethodologyId(snap.methodologyId);
+      AppStateService.setSubPhaseId(snap.subPhaseId);
+      if (snap.methodologyId && snap.subPhaseId) {
+        methodologySubPhaseById[snap.methodologyId] = snap.subPhaseId;
+      }
+      AppStateService.refreshLocation();
+      afterOpenSubPhase();
+    });
+    refreshRaciGridIfNeeded();
     navSilent = false;
   }
 
@@ -117,8 +127,8 @@
       return;
     }
     AppStateService.setView(view);
-    if (view === 'raci' && hooks.refreshRgIfRaci) {
-      hooks.refreshRgIfRaci();
+    if (view === 'raci') {
+      refreshRaciGridIfNeeded();
     }
     clearSearchOverlay();
     push();
@@ -137,7 +147,6 @@
     if (currentMethodologyId && currentSubPhaseId) {
       methodologySubPhaseById[currentMethodologyId] = currentSubPhaseId;
     }
-    AppStateService.setMethodologyId(methodologyId);
     var resume = methodologySubPhaseById[methodologyId];
     var location = resume && MethodologyDomainService.findSubPhase(AppStateService.getMethodologies(), resume);
     if (!location || location.methodology.id !== methodologyId) {
@@ -145,22 +154,31 @@
         MethodologyDomainService.currentMethodology(AppStateService.getMethodologies(), methodologyId)
       );
     }
-    openSubPhaseUnlocked(resume);
-    if (AppStateService.getView() === 'raci' && hooks.refreshRgIfRaci) {
-      hooks.refreshRgIfRaci();
+    AppStateService.batch(function () {
+      AppStateService.setMethodologyId(methodologyId);
+      AppStateService.setSubPhaseId(resume);
+      if (methodologyId && resume) {
+        methodologySubPhaseById[methodologyId] = resume;
+      }
+      AppStateService.refreshLocation();
+      afterOpenSubPhase();
+    });
+    push();
+    if (AppStateService.getView() === 'raci') {
+      refreshRaciGridIfNeeded();
     }
   }
 
   function openSubPhaseUnlocked(subPhaseId) {
-    AppStateService.setSubPhaseId(subPhaseId);
-    var methodologyId = AppStateService.getMethodologyId();
-    if (methodologyId) {
-      methodologySubPhaseById[methodologyId] = subPhaseId;
-    }
-    AppStateService.refreshLocation();
-    if (hooks.afterOpenSubPhase) {
-      hooks.afterOpenSubPhase();
-    }
+    AppStateService.batch(function () {
+      AppStateService.setSubPhaseId(subPhaseId);
+      var methodologyId = AppStateService.getMethodologyId();
+      if (methodologyId) {
+        methodologySubPhaseById[methodologyId] = subPhaseId;
+      }
+      AppStateService.refreshLocation();
+      afterOpenSubPhase();
+    });
     push();
   }
 
@@ -230,12 +248,21 @@
     if (denyIfEditing()) {
       return;
     }
-    if (methodologyId && methodologyId !== AppStateService.getMethodologyId()) {
-      AppStateService.setMethodologyId(methodologyId);
-    }
-    AppStateService.setView('methodology');
     clearSearchOverlay();
-    openSubPhaseUnlocked(subPhaseId);
+    AppStateService.batch(function () {
+      if (methodologyId && methodologyId !== AppStateService.getMethodologyId()) {
+        AppStateService.setMethodologyId(methodologyId);
+      }
+      AppStateService.setView('methodology');
+      AppStateService.setSubPhaseId(subPhaseId);
+      var activeMethodologyId = AppStateService.getMethodologyId();
+      if (activeMethodologyId) {
+        methodologySubPhaseById[activeMethodologyId] = subPhaseId;
+      }
+      AppStateService.refreshLocation();
+      afterOpenSubPhase();
+    });
+    push();
     focusJumpTarget(elementKey);
   }
 
@@ -250,9 +277,15 @@
       if (!location) {
         return false;
       }
-      AppStateService.setMethodologyId(location.methodology.id);
-      AppStateService.setView('methodology');
-      openSubPhase(subPhaseId);
+      AppStateService.batch(function () {
+        AppStateService.setMethodologyId(location.methodology.id);
+        AppStateService.setView('methodology');
+        AppStateService.setSubPhaseId(subPhaseId);
+        methodologySubPhaseById[location.methodology.id] = subPhaseId;
+        AppStateService.refreshLocation();
+        afterOpenSubPhase();
+      });
+      push();
       focusJumpTarget(params.get('el'));
       return true;
     } catch (deepLinkError) {

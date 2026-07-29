@@ -231,7 +231,7 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
     NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);
   };
-  c.fcardKey = function ($event, subPhase) {
+  c.onFilmstripCardKeydown = function ($event, subPhase) {
     if ($event.key === 'Enter' || $event.key === ' ') {
       $event.preventDefault();
       c.openSubPhase(subPhase.id);

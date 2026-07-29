@@ -1,8 +1,10 @@
 @charset "UTF-8";
-/* Ported verbatim from the standalone prototype's <style> block, so this reads as a faithful
-   1:1 port rather than a fresh restyle.
-   Written as valid plain CSS (a subset of SCSS) - no $variables/nesting used yet, so
-   css/app.css is just a direct copy for now. A real sass build gets wired once that changes. */
+/* Palette literals live in _tokens.scss as $var: value !default so a host theme (or future
+   sharedScssPartials) can override at compile time. Runtime light/dark still swaps via the
+   CSS custom properties below. */
+/* Sass !default palette tokens for Delivery Methodology.
+   Compile-time overrides (future sharedScssPartials / host theme) can redefine these before
+   app.scss emits :root custom properties. Runtime light/dark still swaps via CSS variables. */
 :root {
   --hs-navy-0: #0a2136;
   --hs-navy-2: #0b2d45;
@@ -684,7 +686,7 @@ button {
   color: var(--ink);
 }
 
-.methodology-tab.active {
+.methodology-tab.on {
   background: var(--gradient-pill);
   color: var(--on-gradient-ink);
   box-shadow: var(--shadow-inset);
@@ -3546,7 +3548,7 @@ select.edit-in option {
    the Grid tab used to be colour-coded per phase, which read as "why are these all different
    colours?" rather than as a plain multi-select filter. Both now use one uniform selected look
    (soft tint + ring + checkmark) instead of borrowing an identity colour that isn't the point here. */
-.jt-pick-btn.active {
+.jt-pick-btn.on {
   background: var(--chip-on-bg);
   color: var(--teal);
   border-color: var(--teal);
@@ -3559,7 +3561,7 @@ select.edit-in option {
   color: var(--hs-mint);
 }
 
-.jt-pick-btn.active .abbr {
+.jt-pick-btn.on .abbr {
   color: var(--teal);
 }
 
@@ -3582,7 +3584,7 @@ select.edit-in option {
   transition: width 0.18s ease, margin-right 0.18s ease, opacity 0.16s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.jt-pick-btn.active .jt-check {
+.jt-pick-btn.on .jt-check {
   width: 12px;
   margin-right: 0;
   opacity: 1;
@@ -3969,3 +3971,5 @@ select.edit-in option {
   font-size: 10.5px;
   color: var(--ink-2);
 }
+
+/*# sourceMappingURL=app.css.map */

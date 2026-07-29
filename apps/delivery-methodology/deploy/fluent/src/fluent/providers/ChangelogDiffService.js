@@ -17,7 +17,10 @@
 
   function abbreviationFor(jobTitleById, roleId) {
     var jobTitle = jobTitleById(roleId);
-    return jobTitle ? jobTitle.abbr : roleId;
+    if (jobTitle) {
+      return jobTitle.abbr;
+    }
+    return roleId;
   }
 
   // True only for a pure reorder: same ids/counts, different positions.

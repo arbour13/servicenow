@@ -172,7 +172,10 @@
       methodologies: serverData.methodologies || [],
       jargon: serverData.jargon || {},
       referenceSections: serverData.referenceSections || [],
-      contentRevision: serverData.contentRevision != null ? String(serverData.contentRevision) : ''
+      contentRevision: serverData.contentRevision != null ? String(serverData.contentRevision) : '',
+      changelogSeen: serverData.changelogSeen && typeof serverData.changelogSeen === 'object'
+        ? serverData.changelogSeen
+        : {}
     };
   }
 
@@ -268,6 +271,28 @@
         }
 
         return responseData;
+      });
+    },
+    // Persist What's New read map. Harness is localStorage-only (WhatsNewService); SN writes
+    // the dm.changelog.seen user preference. Failures are ignored — unread UI still works in-session.
+    saveChangelogSeen: function (seenMap) {
+      if (!serverApi) {
+        return $q.resolve({
+          saved: true
+        });
+      }
+
+      return serverApi.get({
+        action: 'saveChangelogSeen',
+        changelogSeen: seenMap || {}
+      }).then(function () {
+        return {
+          saved: true
+        };
+      }, function () {
+        return {
+          saved: false
+        };
       });
     },
     resetData: function () {

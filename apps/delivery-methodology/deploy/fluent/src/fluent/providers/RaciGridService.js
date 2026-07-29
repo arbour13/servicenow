@@ -208,7 +208,7 @@
     return refresh(context);
   }
 
-  function toggleCol(roleId, context) {
+  function toggleColumn(roleId, context) {
     if (gridFocusRoleId === roleId) {
       gridFocusRoleId = null;
     } else {
@@ -250,7 +250,7 @@
     deactivatePhase: deactivatePhase,
     refresh: refresh,
     togglePhase: togglePhase,
-    toggleCol: toggleCol,
+    toggleColumn: toggleColumn,
     clearFocus: clearFocus,
     setMode: setMode,
     selectByRole: selectByRole,

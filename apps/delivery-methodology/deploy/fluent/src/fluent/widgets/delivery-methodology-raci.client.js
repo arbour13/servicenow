@@ -63,7 +63,7 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
     syncRaciGrid();
   };
   c.toggleRaciColumn = function (roleId) {
-    RaciGridService.toggleCol(roleId, raciGridContext());
+    RaciGridService.toggleColumn(roleId, raciGridContext());
     syncRaciGrid();
   };
   c.clearRaciFocus = function () {

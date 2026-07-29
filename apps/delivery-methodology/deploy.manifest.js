@@ -250,11 +250,9 @@
 },
     // Inline serverScriptSource omitted — hosts concatenate files.contentModel + files.serverScript.
 
-    // This app authors its own complete palette as CSS custom properties rather than consuming the
-    // suite's shared $token !default partials, so there is nothing to inline. NOTE: a full
-    // "adopt the host portal's theme" refactor is planned (convert ~60 hardcoded custom properties
-    // to $token: value !default) - when that lands, this key gains
-    // ['../../tools/theme-foundation/_tokens.scss'].
+    // App-local scss/_tokens.scss supplies $var: value !default for the core palette (compiled
+    // into :root custom properties). A future host-portal / shared foundation pass can set this
+    // to ['../../tools/theme-foundation/_tokens.scss'] (or equivalent) to override at package time.
     sharedScssPartials: undefined,
 
     // Show the "Deploy target instance" panel (URL / user / password / Detect Prefix). This app's

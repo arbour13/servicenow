@@ -5,7 +5,11 @@
   var searchResultsList = [];
 
   function escapeHtml(text) {
-    return String(text == null ? '' : text)
+    var value = '';
+    if (text != null) {
+      value = String(text);
+    }
+    return value
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }

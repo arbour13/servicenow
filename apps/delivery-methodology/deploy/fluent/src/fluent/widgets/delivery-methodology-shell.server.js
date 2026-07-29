@@ -713,18 +713,21 @@ if (typeof self !== 'undefined') {
 
 /* Widget server script: load/save the scoped content table.
    Prefixed at package time with js/lib/url-policy.js + js/lib/content-model.js
-   (DMUrlPolicy, DMContentModel). input.action: load (default) | save.
+   (DMUrlPolicy, DMContentModel). input.action: load (default) | save | saveChangelogSeen.
    One GlideRecordSecure per function. */
 (function () {
   data.canEdit = gs.hasRole('delivery_methodology_editor') || gs.hasRole('delivery_methodology_admin');
   data.error = '';
   data.empty = false;
   data.saved = false;
+  data.changelogSeen = {};
 
   var logPrefix = 'Delivery Methodology content: ';
+  var changelogSeenPreference = 'dm.changelog.seen';
   var allowedActions = {
     load: true,
-    save: true
+    save: true,
+    saveChangelogSeen: true
   };
   var maximumSaveRows = 5000;
 
@@ -949,12 +952,53 @@ if (typeof self !== 'undefined') {
     return String(list.length) + ':' + String(hash);
   }
 
+  function readChangelogSeenPreference() {
+    try {
+      var raw = gs.getUser().getPreference(changelogSeenPreference);
+      if (!raw) {
+        return {};
+      }
+      var parsed = JSON.parse(String(raw));
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+      }
+      return parsed;
+    } catch (preferenceError) {
+      gs.warn(logPrefix + 'could not read ' + changelogSeenPreference + ' - ' + preferenceError);
+      return {};
+    }
+  }
+
+  function writeChangelogSeenPreference(seenMap) {
+    try {
+      var map = seenMap;
+      if (!map || typeof map !== 'object' || Array.isArray(map)) {
+        map = {};
+      }
+      var cleaned = {};
+      Object.keys(map).forEach(function (entryId) {
+        if (map[entryId]) {
+          cleaned[String(entryId)] = true;
+        }
+      });
+      gs.getUser().savePreference(changelogSeenPreference, JSON.stringify(cleaned));
+      data.changelogSeen = cleaned;
+      data.saved = true;
+      return true;
+    } catch (preferenceError) {
+      data.error = 'Could not save changelog read preference.';
+      gs.warn(logPrefix + 'could not write ' + changelogSeenPreference + ' - ' + preferenceError);
+      return false;
+    }
+  }
+
   function publishContentToClient(payload) {
     data.methodologies = (payload && payload.methodologies) || [];
     data.jobTitles = (payload && payload.jobTitles) || [];
     data.jargon = (payload && payload.jargon) || {};
     data.referenceSections = (payload && payload.referenceSections) || [];
     data.contentRevision = contentRevision(getAllContentRecords());
+    data.changelogSeen = readChangelogSeenPreference();
 
     data.empty = !(data.methodologies && data.methodologies.length);
 
@@ -994,6 +1038,26 @@ if (typeof self !== 'undefined') {
     return '';
   }
 
+  function jobTitleIdFromRow(row) {
+    // Soft refs store bare job-title ids (`arch`); dehydrate uses clientId `jt:arch` only as a
+    // row identity helper — never treat that prefix as the soft-ref key.
+    if (row && row.content && row.content.id) {
+      return String(row.content.id);
+    }
+    return '';
+  }
+
+  function validateSoftJobTitleRef(value, jobTitleIds, fieldLabel, rowIndex) {
+    if (value == null || value === '') {
+      return '';
+    }
+    var roleId = String(value);
+    if (!jobTitleIds[roleId]) {
+      return 'Unknown job_title soft ref "' + roleId + '" in ' + fieldLabel + ' at row ' + rowIndex + '.';
+    }
+    return '';
+  }
+
   function validateFlatRows(flatRows) {
     if (!Array.isArray(flatRows)) {
       return 'Dehydrated rows must be an array.';
@@ -1003,12 +1067,57 @@ if (typeof self !== 'undefined') {
       return 'Save exceeds the maximum of ' + maximumSaveRows + ' content rows.';
     }
 
-    for (var index = 0; index < flatRows.length; index++) {
-      var row = flatRows[index];
-      var type = row && row.type;
+    var jobTitleIds = {};
+    var index;
+    var row;
+    var type;
+    var softRefError;
+
+    for (index = 0; index < flatRows.length; index++) {
+      row = flatRows[index];
+      type = row && row.type;
 
       if (!type || (DMContentModel.ALLOWED_TYPES && !DMContentModel.ALLOWED_TYPES[type])) {
         return 'Disallowed or missing content type at row ' + index + ': ' + type;
+      }
+
+      if (type === 'job_title') {
+        var jobTitleId = jobTitleIdFromRow(row);
+        if (!jobTitleId) {
+          return 'job_title row ' + index + ' is missing an id.';
+        }
+        jobTitleIds[jobTitleId] = true;
+      }
+    }
+
+    for (index = 0; index < flatRows.length; index++) {
+      row = flatRows[index];
+      type = row && row.type;
+      var content = (row && row.content) || {};
+
+      if (type === 'participant' || type === 'raci' || type === 'job_aid_role') {
+        softRefError = validateSoftJobTitleRef(content.job_title, jobTitleIds, type + '.job_title', index);
+        if (softRefError) {
+          return softRefError;
+        }
+      }
+
+      if (type === 'level_of_effort' && content.job_title != null && content.job_title !== '') {
+        softRefError = validateSoftJobTitleRef(content.job_title, jobTitleIds, 'level_of_effort.job_title', index);
+        if (softRefError) {
+          return softRefError;
+        }
+      }
+
+      if (type === 'meeting') {
+        softRefError = validateSoftJobTitleRef(content.scheduledBy, jobTitleIds, 'meeting.scheduledBy', index);
+        if (softRefError) {
+          return softRefError;
+        }
+        softRefError = validateSoftJobTitleRef(content.ledBy, jobTitleIds, 'meeting.ledBy', index);
+        if (softRefError) {
+          return softRefError;
+        }
       }
     }
 
@@ -1137,6 +1246,11 @@ if (typeof self !== 'undefined') {
     data.error = 'Unknown action.';
     gs.warn(logPrefix + 'rejected action=' + action);
     loadContent();
+    return;
+  }
+
+  if (action === 'saveChangelogSeen') {
+    writeChangelogSeenPreference(input && input.changelogSeen);
     return;
   }
 

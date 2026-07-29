@@ -51,7 +51,7 @@
             <div class="fcard" ng-repeat="subPhase in phase.subPhases track by subPhase.id"
               ng-class="{on: subPhase.id === c.subPhaseId, stub: !c.hasContent(subPhase)}"
               style="--pc: {{c.phaseColor($parent.$index)}};" role="button" tabindex="0" ng-click="c.openSubPhase(subPhase.id)"
-              ng-keydown="c.fcardKey($event, subPhase)">
+              ng-keydown="c.onFilmstripCardKeydown($event, subPhase)">
               <div class="fcard-head">
                 <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.subPhaseIconPaths(subPhase)"></svg></span>
@@ -77,7 +77,8 @@
           <div ng-if="!c.currentMethodology()">
             <p class="struct-toolbar-hint">This engagement has no methodologies yet. Add one to start building
               phases and sub-phases.</p>
-            <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()">+ Add
+            <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()"
+              ng-disabled="c.isSaving">+ Add
               methodology</button>
           </div>
 
@@ -94,7 +95,8 @@
                 data-tip="Delete this methodology" aria-label="Delete this methodology"
                 ng-disabled="c.methodologies.length <= 1">&times;</button>
             </div>
-            <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()">+ Add
+            <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()"
+              ng-disabled="c.isSaving">+ Add
               methodology</button>
             <div class="struct-phase" ng-repeat="phase in c.currentMethodology().phases track by phase.id">
               <div class="struct-phase-head">
@@ -133,11 +135,13 @@
                       data-tip="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>
                   </span>
                 </div>
-                <button type="button" class="add-item-btn tight" ng-click="c.addSubPhase($index)">+ Add
+                <button type="button" class="add-item-btn tight" ng-click="c.addSubPhase($index)"
+                  ng-disabled="c.isSaving">+ Add
                   sub-phase</button>
               </div>
             </div>
-            <button type="button" class="add-item-btn struct-add-phase" ng-click="c.addPhase()">+ Add phase</button>
+            <button type="button" class="add-item-btn struct-add-phase" ng-click="c.addPhase()"
+              ng-disabled="c.isSaving">+ Add phase</button>
           </div>
         </div>
 
@@ -211,14 +215,14 @@
 
             <div class="plegend" ng-if="c.participantsOf(c.location.subPhase).length">
               <span class="plabel">Participants</span>
-              <span class="rolechip" ng-class="{ext: r.external}" ng-repeat="r in c.participantsOf(c.location.subPhase)"
+              <span class="rolechip" ng-class="{ext: r.external}" ng-repeat="r in c.participantsOf(c.location.subPhase) track by r.id"
                 data-tip-name="{{r.name}}" data-tip="{{r.description}}">{{r.external ? '&#9671; ' :
                 ''}}{{r.abbr}}</span>
             </div>
 
             <div class="setup-block" ng-if="c.location.levelOfEffortRows.rows.length">
               <span class="section-label">Level of Effort</span>
-              <div class="loe-all" ng-if="c.location.levelOfEffortRows.mode === 'all'" ng-repeat="row in c.location.levelOfEffortRows.rows">
+              <div class="loe-all" ng-if="c.location.levelOfEffortRows.mode === 'all'" ng-repeat="row in c.location.levelOfEffortRows.rows track by $index">
                 <span class="loe-role">{{row.label}}</span>
                 <span class="eff" ng-class="{none: !row.text}">{{row.text || '-'}}</span>
                 <span class="tags">
@@ -227,7 +231,7 @@
                 </span>
               </div>
               <div class="loe2" ng-if="c.location.levelOfEffortRows.mode === 'roles'">
-                <div class="row" ng-repeat="row in c.location.levelOfEffortRows.rows">
+                <div class="row" ng-repeat="row in c.location.levelOfEffortRows.rows track by row.label">
                   <span class="loe-role" style="--c: {{row.color}}" data-tip-name="{{row.name}}"
                     data-tip="{{row.description}}">{{row.label}}</span>
                   <span class="eff">{{row.text}}</span>
@@ -242,7 +246,7 @@
             <div class="setup-block" ng-if="c.location.subPhase.meetings.length">
               <span class="section-label">Meetings</span>
               <div class="mtg-list">
-                <div class="mtg-card" ng-repeat="meeting in c.location.subPhase.meetings">
+                <div class="mtg-card" ng-repeat="meeting in c.location.subPhase.meetings track by meeting.id">
                   <div class="mtg-head">
                     <span class="mtg-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('calendar')"></svg></span>
@@ -278,24 +282,24 @@
                       <tr>
                         <th class="tname">Task</th>
                         <th class="pcol" ng-class="{ext: r.external, orphan: r.orphan}"
-                          ng-repeat="r in c.location.taskTableRoles" style="--c: {{c.jobTitleColor(r.id)}}"
+                          ng-repeat="r in c.location.taskTableRoles track by r.id" style="--c: {{c.jobTitleColor(r.id)}}"
                           data-tip-name="{{r.name}}"
                           data-tip="{{r.orphan ? 'No longer a participant' : r.description}}">{{r.external ? '&#9671; '
                           : ''}}{{r.abbr}}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr ng-repeat="t in c.location.subPhase.tasks" data-el="task:{{t.id}}">
+                      <tr ng-repeat="t in c.location.subPhase.tasks track by t.id" data-el="task:{{t.id}}">
                         <td class="tname">
                           <span ng-bind-html="c.jargonHtml(t.text)"></span>
                           <div class="ja" ng-repeat="j in t.jobAids track by j.id" ng-if="c.safeHref(j.url)">
                             <a class="jobaid" ng-href="{{c.safeHref(j.url)}}" target="_blank" rel="noopener">&#8599; Job Aid</a>
-                            <span class="ja-scope" ng-repeat="r in c.jobAidScope(t, j)"
+                            <span class="ja-scope" ng-repeat="r in c.jobAidScope(t, j) track by r.id"
                               style="--c: {{c.jobTitleColor(r.id)}}" data-tip-name="{{r.name}}"
                               data-tip="{{r.description}}">{{r.external ? '&#9671; ' : ''}}{{r.abbr}}</span>
                           </div>
                         </td>
-                        <td class="cell" ng-repeat="r in c.location.taskTableRoles"
+                        <td class="cell" ng-repeat="r in c.location.taskTableRoles track by r.id"
                           ng-class="{off: !(t.raci[r.id] && t.raci[r.id].length)}"
                           ng-attr-data-tip-name="{{t.raci[r.id] && t.raci[r.id].length ? r.abbr : undefined}}"
                           ng-attr-data-tip="{{t.raci[r.id] && t.raci[r.id].length ? c.raciTip(t.raci[r.id]) : undefined}}">
@@ -352,13 +356,13 @@
                 assigned below (tasks, level of effort, meetings).</p>
               <div class="participant-picker">
                 <button type="button" class="participant-chip" ng-class="{on: c.participantOn(r.id), ext: r.external}"
-                  ng-repeat="r in c.jobTitles" ng-click="c.toggleParticipant(r.id)" data-tip="{{r.description}}"><svg
+                  ng-repeat="r in c.jobTitles track by r.id" ng-click="c.toggleParticipant(r.id)" data-tip="{{r.description}}"><svg
                     class="chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"
                     stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('checkmark')"></svg><span class="chip-abbr">{{r.external ? '&#9671; ' : ''}}{{r.abbr}}</span><span
                     class="chip-name">{{r.name}}</span></button>
               </div>
               <p class="participants-idle-hint" ng-if="c.idleParticipants().length"><span class="idle-dot"></span>Not
-                yet assigned to a task: <span ng-repeat="r in c.idleParticipants()" data-tip-name="{{r.name}}"
+                yet assigned to a task: <span ng-repeat="r in c.idleParticipants() track by r.id" data-tip-name="{{r.name}}"
                   data-tip="{{r.description}}">{{r.abbr}}{{$last ? '' : ', '}}</span></p>
             </div>
 
@@ -396,7 +400,7 @@
 
               <div ng-if="c.editSubPhase.levelOfEffort.mode === 'byRole'">
                 <p class="loe-roles-hint" ng-if="!c.loeRoleRows().length">No roles added yet - add one below.</p>
-                <div class="loe-edit-row" ng-class="{orphan: c.loeRoleOrphan(r.id)}" ng-repeat="r in c.loeRoleRows()">
+                <div class="loe-edit-row" ng-class="{orphan: c.loeRoleOrphan(r.id)}" ng-repeat="r in c.loeRoleRows() track by r.id">
                   <span class="loe-abbr" data-tip-name="{{r.name}}" data-tip="{{r.description}}">{{r.abbr}}</span>
                   <span class="orphan-badge" ng-if="c.loeRoleOrphan(r.id)">Not a participant</span>
                   <input class="edit-in" placeholder="e.g. 2 hours" ng-model="c.editSubPhase.levelOfEffort.roles[r.id].text">
@@ -424,7 +428,7 @@
                 <div class="add-jt-row" ng-if="c.loeAvailableRoles().length">
                   <select class="edit-in" ng-model="c.tmpLevelOfEffortRoleId" ng-change="c.addLoeRole()">
                     <option value="">+ Add role&hellip;</option>
-                    <option ng-repeat="r in c.loeAvailableRoles()" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
+                    <option ng-repeat="r in c.loeAvailableRoles() track by r.id" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
                   </select>
                 </div>
               </div>
@@ -474,14 +478,14 @@
               <div class="mtg-field">
                 <select class="edit-in" ng-model="meeting.scheduledBy">
                   <option value="">Scheduled by&hellip;</option>
-                  <option ng-repeat="r in c.internalRoles()" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
+                  <option ng-repeat="r in c.internalRoles() track by r.id" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
                 </select>
                 <span class="orphan-badge" ng-if="c.meetingPersonOrphan(meeting.scheduledBy)">Not a participant</span>
               </div>
               <div class="mtg-field">
                 <select class="edit-in" ng-model="meeting.ledBy">
                   <option value="">Led by&hellip;</option>
-                  <option ng-repeat="r in c.internalRoles()" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
+                  <option ng-repeat="r in c.internalRoles() track by r.id" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
                 </select>
                 <span class="orphan-badge" ng-if="c.meetingPersonOrphan(meeting.ledBy)">Not a participant</span>
               </div>
@@ -538,7 +542,7 @@
               <span class="raci-edit-lbl">Responsibility (RACI)</span>
               <div class="raci-matrix">
                 <div class="raci-matrix-row" ng-class="{orphan: c.taskRoleOrphan(r.id)}"
-                  ng-repeat="r in c.taskRaciRoles(t)">
+                  ng-repeat="r in c.taskRaciRoles(t) track by r.id">
                   <span class="raci-row-name"><span class="abbr">{{r.abbr}}</span>{{r.name}}<span class="orphan-badge"
                       ng-if="c.taskRoleOrphan(r.id)">Not a participant</span></span>
                   <button type="button" class="raci-toggle"
@@ -553,7 +557,7 @@
                     <option value="">+ Add job title&hellip;</option>
                     <option value="__core__" ng-if="c.taskCoreTeamMissing(t)">+ Core technical team (EM, BPC, ARCH, TC)
                     </option>
-                    <option ng-repeat="r in c.taskAvailableRoles(t)" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
+                    <option ng-repeat="r in c.taskAvailableRoles(t) track by r.id" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
                   </select>
                 </div>
               </div>
@@ -572,7 +576,7 @@
                   <div class="ja-roles">
                     <span class="ja-roles-lbl">Applies to:</span>
                     <button type="button" class="ja-rolechip"
-                      ng-class="{on: c.jobAidRoleOn(t, j, r.id), ext: r.external}" ng-repeat="r in c.taskRaciRoles(t)"
+                      ng-class="{on: c.jobAidRoleOn(t, j, r.id), ext: r.external}" ng-repeat="r in c.taskRaciRoles(t) track by r.id"
                       ng-click="c.toggleJobAidRole(t, j, r.id)" data-tip-name="{{r.name}}"
                       data-tip="{{r.description}}"><svg class="ja-check" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('checkmark')"></svg><span ng-if="r.external">&#9671; </span>{{r.abbr}}</button>

@@ -479,6 +479,10 @@
       return;
     }
     var array = methodology.phases[phaseIndex].subPhases;
+    if (array.length <= 1) {
+      MessagingService.toast('A phase needs at least one sub-phase');
+      return;
+    }
     var subPhase = array[index];
     MessagingService.confirm({
       title: 'Remove sub-phase?',

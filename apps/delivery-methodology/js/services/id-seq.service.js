@@ -22,7 +22,10 @@ angular.module('deliveryMethodology').factory('IdSeqService', [function () {
   }
 
   function idNum(prefix, id) {
-    if (typeof id !== 'string' || id.indexOf(prefix) !== 0) {
+    if (typeof id !== 'string') {
+      return 0;
+    }
+    if (id.indexOf(prefix) !== 0) {
       return 0;
     }
     var number = parseInt(id.slice(prefix.length), 10);

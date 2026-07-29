@@ -55,8 +55,8 @@ api.controller = function (
   function refreshRaciGrid() {
     RaciGridService.refresh(raciGridContext());
   }
-  function refreshWhatsNew() {
-    WhatsNewService.refresh(c.methodologies);
+  function refreshWhatsNew(serverSeen) {
+    WhatsNewService.hydrateSeen(c.methodologies, serverSeen);
   }
   function refreshJobAids() {
     ReferenceService.refresh(c.methodologies, sortJobTitleIds, function (jobTitleId) {
@@ -262,7 +262,7 @@ api.controller = function (
         AppStateService.setJustRead([]);
       }
     },
-    refreshRgIfRaci: function () {
+    refreshRaciGridIfNeeded: function () {
       if (AppStateService.getView() === 'raci') {
         refreshRaciGrid();
       }
@@ -273,9 +273,10 @@ api.controller = function (
     AppStateService.applyLoadedData(data, {
       canEdit: c.data && c.data.canEdit,
       onAfterLoad: function (result) {
+        // Stamp changelog read flags from user preference + localStorage before What's New refresh.
+        refreshWhatsNew(data && data.changelogSeen);
         if (!result.empty) {
           NavigationService.remember(result.methodologyId, result.subPhaseId);
-          refreshWhatsNew();
           refreshJobAids();
           refreshRaciGrid();
           if (!NavigationService.applyDeepLinkFromUrl()) {

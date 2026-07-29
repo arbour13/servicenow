@@ -1,14 +1,33 @@
 [
   'ChangelogDiffService', 'IdSeqService', 'MessagingService', 'AppStateService', 'MethodologyDomainService',
-  'RaciGridService', '$rootScope',
+  'RaciGridService', 'WhatsNewService', '$rootScope',
   function (
     ChangelogDiffService, IdSeqService, MessagingService, AppStateService, MethodologyDomainService,
-    RaciGridService, $rootScope
+    RaciGridService, WhatsNewService, $rootScope
   ) {
   'use strict';
 
   function notify() {
     $rootScope.$broadcast('dm-state');
+  }
+
+  // Template helpers used to allocate fresh arrays every digest. Cache until the next mutator.
+  var derived = {
+    idleParticipants: null,
+    loeRoleRows: null,
+    loeAvailableRoles: null,
+    internalRoles: null,
+    taskRaciRolesByTaskId: null,
+    taskAvailableRolesByTaskId: null
+  };
+
+  function invalidateDerived() {
+    derived.idleParticipants = null;
+    derived.loeRoleRows = null;
+    derived.loeAvailableRoles = null;
+    derived.internalRoles = null;
+    derived.taskRaciRolesByTaskId = null;
+    derived.taskAvailableRolesByTaskId = null;
   }
 
   var LOE_ROLE_DEFAULTS = {
@@ -140,6 +159,7 @@
     state.tmpAddJobTitle = {};
     AppStateService.setTmpLevelOfEffortRoleId('');
     state.editMode = true;
+    invalidateDerived();
     MessagingService.scrollToEditBar();
     notify();
   }
@@ -148,6 +168,7 @@
     state.editMode = false;
     state.editSubPhase = null;
     state.editSnapshot = null;
+    invalidateDerived();
     MessagingService.toast('Edit cancelled - changes reverted');
     MessagingService.scrollPageToTop();
     notify();
@@ -187,6 +208,10 @@
       state.editMode = false;
       state.editSubPhase = null;
       state.editSnapshot = null;
+      invalidateDerived();
+      if (entries.length) {
+        WhatsNewService.rememberSeenEntries(entries);
+      }
       if (hooks.afterSaveSuccess) {
         hooks.afterSaveSuccess(entries, changes.length);
       }
@@ -225,28 +250,34 @@
     } else {
       state.editSubPhase.participants.push(roleId);
     }
+    invalidateDerived();
   }
 
   function idleParticipants() {
-    var used = {};
-    (state.editSubPhase.tasks || []).forEach(function (task) {
-      Object.keys(task.raci || {}).forEach(function (roleId) {
-        if (task.raci[roleId] && task.raci[roleId].length) {
-          used[roleId] = true;
-        }
+    if (!derived.idleParticipants) {
+      var used = {};
+      (state.editSubPhase.tasks || []).forEach(function (task) {
+        Object.keys(task.raci || {}).forEach(function (roleId) {
+          if (task.raci[roleId] && task.raci[roleId].length) {
+            used[roleId] = true;
+          }
+        });
       });
-    });
-    return participantsOf(state.editSubPhase).filter(function (role) {
-      return !used[role.id];
-    });
+      derived.idleParticipants = participantsOf(state.editSubPhase).filter(function (role) {
+        return !used[role.id];
+      });
+    }
+    return derived.idleParticipants;
   }
 
   function addListItem(kind) {
     state.editSubPhase[kind].push('');
+    invalidateDerived();
   }
 
   function removeListItem(kind, index) {
     state.editSubPhase[kind].splice(index, 1);
+    invalidateDerived();
   }
 
   function moveListItem(kind, index, direction) {
@@ -263,6 +294,7 @@
     var temporary = array[index];
     array[index] = array[swapIndex];
     array[swapIndex] = temporary;
+    invalidateDerived();
   }
 
   function setLoeMode(mode) {
@@ -277,13 +309,17 @@
         state.editSubPhase.levelOfEffort.roles[role.id] = defaultLoeEntry(role.id);
       });
     }
+    invalidateDerived();
   }
 
   function loeAvailableRoles() {
-    var used = Object.keys(state.editSubPhase.levelOfEffort.roles || {});
-    return participantsOf(state.editSubPhase).filter(function (role) {
-      return !role.external && used.indexOf(role.id) < 0;
-    });
+    if (!derived.loeAvailableRoles) {
+      var used = Object.keys(state.editSubPhase.levelOfEffort.roles || {});
+      derived.loeAvailableRoles = participantsOf(state.editSubPhase).filter(function (role) {
+        return !role.external && used.indexOf(role.id) < 0;
+      });
+    }
+    return derived.loeAvailableRoles;
   }
 
   function addLoeRole() {
@@ -296,10 +332,12 @@
     }
     state.editSubPhase.levelOfEffort.roles[roleId] = defaultLoeEntry(roleId);
     AppStateService.setTmpLevelOfEffortRoleId('');
+    invalidateDerived();
   }
 
   function removeLoeRole(roleId) {
     delete state.editSubPhase.levelOfEffort.roles[roleId];
+    invalidateDerived();
   }
 
   function setLoeFlag(entry, value) {
@@ -320,8 +358,11 @@
   }
 
   function loeRoleRows() {
-    return sortJobTitleIds(Object.keys(state.editSubPhase.levelOfEffort.roles || {}))
-      .map(jobTitleById).filter(Boolean);
+    if (!derived.loeRoleRows) {
+      derived.loeRoleRows = sortJobTitleIds(Object.keys(state.editSubPhase.levelOfEffort.roles || {}))
+        .map(jobTitleById).filter(Boolean);
+    }
+    return derived.loeRoleRows;
   }
 
   function addMeeting() {
@@ -332,10 +373,12 @@
       ledBy: '',
       external: false
     });
+    invalidateDerived();
   }
 
   function removeMeeting(index) {
     state.editSubPhase.meetings.splice(index, 1);
+    invalidateDerived();
   }
 
   function moveMeeting(index, direction) {
@@ -352,12 +395,16 @@
     var temporary = array[index];
     array[index] = array[swapIndex];
     array[swapIndex] = temporary;
+    invalidateDerived();
   }
 
   function internalRoles() {
-    return participantsOf(state.editSubPhase).filter(function (role) {
-      return !role.external;
-    });
+    if (!derived.internalRoles) {
+      derived.internalRoles = participantsOf(state.editSubPhase).filter(function (role) {
+        return !role.external;
+      });
+    }
+    return derived.internalRoles;
   }
 
   function meetingPersonOrphan(roleId) {
@@ -372,10 +419,12 @@
       jobAids: [],
       raci: {}
     });
+    invalidateDerived();
   }
 
   function removeTask(index) {
     state.editSubPhase.tasks.splice(index, 1);
+    invalidateDerived();
   }
 
   function moveTask(index, direction) {
@@ -395,10 +444,21 @@
     array.forEach(function (task, orderIndex) {
       task.order = orderIndex + 1;
     });
+    invalidateDerived();
   }
 
   function taskRaciRoles(task) {
-    return sortJobTitleIds(Object.keys(task.raci || {})).map(jobTitleById).filter(Boolean);
+    if (!task) {
+      return [];
+    }
+    if (!derived.taskRaciRolesByTaskId) {
+      derived.taskRaciRolesByTaskId = {};
+    }
+    if (!derived.taskRaciRolesByTaskId[task.id]) {
+      derived.taskRaciRolesByTaskId[task.id] = sortJobTitleIds(Object.keys(task.raci || {}))
+        .map(jobTitleById).filter(Boolean);
+    }
+    return derived.taskRaciRolesByTaskId[task.id];
   }
 
   function taskRoleOrphan(roleId) {
@@ -406,10 +466,19 @@
   }
 
   function taskAvailableRoles(task) {
-    var used = Object.keys(task.raci || {});
-    return participantsOf(state.editSubPhase).filter(function (role) {
-      return used.indexOf(role.id) < 0;
-    });
+    if (!task) {
+      return [];
+    }
+    if (!derived.taskAvailableRolesByTaskId) {
+      derived.taskAvailableRolesByTaskId = {};
+    }
+    if (!derived.taskAvailableRolesByTaskId[task.id]) {
+      var used = Object.keys(task.raci || {});
+      derived.taskAvailableRolesByTaskId[task.id] = participantsOf(state.editSubPhase).filter(function (role) {
+        return used.indexOf(role.id) < 0;
+      });
+    }
+    return derived.taskAvailableRolesByTaskId[task.id];
   }
 
   function taskCoreTeamMissing(task) {
@@ -431,10 +500,12 @@
         return RACI_LETTERS.indexOf(left) - RACI_LETTERS.indexOf(right);
       });
     }
+    invalidateDerived();
   }
 
   function removeTaskRole(task, roleId) {
     delete task.raci[roleId];
+    invalidateDerived();
   }
 
   function addTaskRole(task, roleId) {
@@ -448,11 +519,13 @@
           task.raci[coreRoleId] = [];
         }
       });
+      invalidateDerived();
       return;
     }
     if (!task.raci[roleId]) {
       task.raci[roleId] = [];
     }
+    invalidateDerived();
   }
 
   function addJobAid(task) {
@@ -464,10 +537,12 @@
       url: '',
       roles: []
     });
+    invalidateDerived();
   }
 
   function removeJobAid(task, index) {
     task.jobAids.splice(index, 1);
+    invalidateDerived();
   }
 
   function toggleJobAidRole(task, jobAid, roleId) {
@@ -492,6 +567,7 @@
     } else {
       jobAid.roles = array;
     }
+    invalidateDerived();
   }
 
   function jobAidRoleOn(task, jobAid, roleId) {

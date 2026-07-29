@@ -1,8 +1,9 @@
 [
-  'MethodologyDomainService',
-  function (MethodologyDomainService) {
+  'MethodologyDomainService', 'DataService',
+  function (MethodologyDomainService, DataService) {
   'use strict';
 
+  var PREFERENCE_KEY = 'dm.changelog.seen';
   var TODAY = (function () {
     var date = new Date();
     var month = date.getMonth() + 1;
@@ -19,6 +20,83 @@
   })();
 
   var whatsNew = [];
+  var seenMap = {};
+
+  function readLocalSeen() {
+    try {
+      var raw = window.localStorage.getItem(PREFERENCE_KEY);
+      if (!raw) {
+        return {};
+      }
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+      }
+      return parsed;
+    } catch (readError) {
+      return {};
+    }
+  }
+
+  function writeLocalSeen(map) {
+    try {
+      window.localStorage.setItem(PREFERENCE_KEY, JSON.stringify(map || {}));
+    } catch (writeError) {
+      /* storage unavailable - session map still applies until reload */
+    }
+  }
+
+  function mergeSeen(into, from) {
+    Object.keys(from || {}).forEach(function (entryId) {
+      if (from[entryId]) {
+        into[entryId] = true;
+      }
+    });
+    return into;
+  }
+
+  function persistSeen() {
+    writeLocalSeen(seenMap);
+    DataService.saveChangelogSeen(seenMap);
+  }
+
+  function applySeenToMethodologies(methodologies) {
+    (methodologies || []).forEach(function (methodology) {
+      (methodology.phases || []).forEach(function (phase) {
+        (phase.subPhases || []).forEach(function (subPhase) {
+          (subPhase.changelog || []).forEach(function (entry) {
+            if (entry && entry.id && seenMap[entry.id]) {
+              entry.read = true;
+            }
+          });
+        });
+      });
+    });
+  }
+
+  // Call after content load. Merges server preference (if any) with localStorage, stamps entry.read.
+  function hydrateSeen(methodologies, serverSeen) {
+    seenMap = {};
+    mergeSeen(seenMap, readLocalSeen());
+    mergeSeen(seenMap, serverSeen);
+    writeLocalSeen(seenMap);
+    applySeenToMethodologies(methodologies);
+    return refresh(methodologies);
+  }
+
+  function rememberSeenEntries(entries) {
+    var changed = false;
+    (entries || []).forEach(function (entry) {
+      if (entry && entry.id && !seenMap[entry.id]) {
+        seenMap[entry.id] = true;
+        entry.read = true;
+        changed = true;
+      }
+    });
+    if (changed) {
+      persistSeen();
+    }
+  }
 
   function unreadEntries(subPhase) {
     return (subPhase.changelog || []).filter(function (entry) {
@@ -75,7 +153,13 @@
     var entries = unreadEntries(subPhase);
     entries.forEach(function (entry) {
       entry.read = true;
+      if (entry.id) {
+        seenMap[entry.id] = true;
+      }
     });
+    if (entries.length) {
+      persistSeen();
+    }
     refresh(methodologies);
     return entries;
   }
@@ -110,6 +194,8 @@
     anyUnread: anyUnread,
     phaseHasUnread: phaseHasUnread,
     markRead: markRead,
+    rememberSeenEntries: rememberSeenEntries,
+    hydrateSeen: hydrateSeen,
     refresh: refresh,
     formatDate: formatDate,
     daysAgo: daysAgo,

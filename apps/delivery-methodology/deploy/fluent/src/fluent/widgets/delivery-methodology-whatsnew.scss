@@ -1,24 +1,24 @@
-/* Ported verbatim from the standalone prototype's <style> block, so this reads as a faithful
-   1:1 port rather than a fresh restyle.
-   Written as valid plain CSS (a subset of SCSS) - no $variables/nesting used yet, so
-   css/app.css is just a direct copy for now. A real sass build gets wired once that changes. */.dm-widget {
-  --hs-navy-0: #0a2136;
-  --hs-navy-2: #0b2d45;
-  --hs-navy-3: #013c56;
-  --hs-line: rgba(197, 220, 231, 0.35);
-  --hs-line-soft: rgba(197, 220, 231, 0.18);
-  --hs-teal: #00e0ac;
+/* Palette literals live in _tokens.scss as $var: value !default so a host theme (or future
+   sharedScssPartials) can override at compile time. Runtime light/dark still swaps via the
+   CSS custom properties below. */
+@import 'tokens';.dm-widget {
+  --hs-navy-0: #{$hs-navy-0};
+  --hs-navy-2: #{$hs-navy-2};
+  --hs-navy-3: #{$hs-navy-3};
+  --hs-line: #{$hs-line};
+  --hs-line-soft: #{$hs-line-soft};
+  --hs-teal: #{$hs-teal};
   /* True alias, not a second literal - this token predates the light rebase and its own naming
      ("real theme uses one accent, not two") already says it should just track --hs-teal, which is
      exactly what's needed now: --hs-teal darkens for light-mode contrast, and every existing
      --hs-mint text/border usage (jargon underline, links, icons) needs to darken with it rather
      than staying frozen at the bright dark-mode-only hex. */
   --hs-mint: var(--hs-teal);
-  --ink: #ffffff;
-  --ink-soft: #c5dce7;
+  --ink: #{$ink};
+  --ink-soft: #{$ink-soft};
   --ink-2: var(--ink-soft);
-  --ink-faint: #7d97a8;
-  --text-on-primary: #0a2136;
+  --ink-faint: #{$ink-faint};
+  --text-on-primary: #{$text-on-primary};
   --paper: var(--hs-navy-0);
   --surface: linear-gradient(160deg, var(--hs-navy-2) 0%, var(--hs-navy-0) 100%);
   --surface-flat: var(--hs-navy-2);
@@ -32,7 +32,7 @@
   /* Stronger wash / border tint for billable pills, focus bars, edit ordinals. Light mode overrides. */
   --teal-wash-strong: rgba(0, 224, 172, 0.18);
   --teal-line: rgba(0, 224, 172, 0.35);
-  --gradient-pill: linear-gradient(90deg, #21fbc8 0%, #3ec2f8 100%);
+  --gradient-pill: linear-gradient(90deg, #{$p2} 0%, #{$p4} 100%);
   --gradient-pill-hover: linear-gradient(90deg, #a7ffeb 0%, #49c6fa 100%);
   /* Text sitting ON --gradient-pill. Split out of --text-on-primary because that token has two
      jobs that must NOT move together: on the BRIGHT RACI fills (.raci-toggle.on, .rg-legend .sw)
@@ -46,7 +46,7 @@
      meaningfully from the pale aqua card these chips sit on (max ~1.1:1), whereas the teal ring
      lands at 6.1-7.8:1. The tint is an assist, not the signal. */
   --chip-on-bg: rgba(0, 224, 172, 0.1);
-  --gradient-card: linear-gradient(135deg, #275b63 0%, #0d435f 100%);
+  --gradient-card: linear-gradient(135deg, #{$card-mix-1} 0%, #{$card-mix-2} 100%);
   --gradient-card-2: linear-gradient(135deg, #327374 0%, #0c506e 100%);
   /* How much of --pc gets mixed into .fcard.on's background (see the rule itself, further down).
      Tokenized because the SAME percentage against a dark-mode-bright --pc vs a light-mode-dark --pc
@@ -57,15 +57,15 @@
   --fcard-on-mix-1: 32%;
   --fcard-on-mix-2: 20%;
   --shadow-md: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
-  --r-r: #01cc52;
-  --r-a: #e5c20b;
-  --r-c: #3ec2f8;
-  --r-i: #bdc2cb;
-  --p1: #00e0ac;
-  --p2: #21fbc8;
-  --p3: #8ef1ff;
-  --p4: #3ec2f8;
-  --p5: #b1f5ff;
+  --r-r: #{$r-r};
+  --r-a: #{$r-a};
+  --r-c: #{$r-c};
+  --r-i: #{$r-i};
+  --p1: #{$p1};
+  --p2: #{$p2};
+  --p3: #{$p3};
+  --p4: #{$p4};
+  --p5: #{$p5};
   --font-display: 'Montserrat', system-ui, 'Segoe UI', sans-serif;
   --font-body: 'Montserrat', system-ui, 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
@@ -77,7 +77,7 @@
   --shadow-inset: 0 4px 4px 0 rgba(0, 28, 54, 0.2) inset;
   --focus-ring: 2px solid var(--hs-teal);
   --focus-ring-offset: 2px;
-  --hs-border-tertiary: #c5dce7;
+  --hs-border-tertiary: #{$ink-soft};
   /* RGB triple (no alpha) so #{'rgba(var(--wash-rgb), X)'} calls elsewhere can override just the base
      color per theme while each call site keeps its own already-tuned alpha. Used for subtle
      hover/divider washes on the app's OWN theme-tracking surfaces (page/panel backgrounds) -
@@ -98,16 +98,16 @@
      fixed dark background regardless of the app theme (.fcard's gradient-card, .pchange's
      gradient-card-2) - deliberately NEVER redefined in the light block below, so these components
      don't go illegible when the rest of the page switches to light. */
-  --on-accent-ink: #ffffff;
-  --on-accent-soft: #c5dce7;
-  --on-accent-faint: #7d97a8;
+  --on-accent-ink: #{$on-accent-ink};
+  --on-accent-soft: #{$on-accent-soft};
+  --on-accent-faint: #{$on-accent-faint};
   --on-accent-rgb: 255, 255, 255;
   /* The two #{'color-mix()'} stops .fcard.on blends the active phase color (--pc) into, and the digit
      color on an active phase-color station fill - both were hardcoded hex before, which silently
      froze them to dark-mode values once --p1..--p5 became theme-aware. */
-  --card-mix-1: #275b63;
-  --card-mix-2: #0d435f;
-  --on-phase-ink: #06121c;
+  --card-mix-1: #{$card-mix-1};
+  --card-mix-2: #{$card-mix-2};
+  --on-phase-ink: #{$on-phase-ink};
   /* .fcard's 1px border box already exists in dark mode - it's just transparent, since dark
      separates the card from the page purely by fill contrast. Tokenising the colour (not adding
      a rule) lets light mode make that same border visible without changing width/style/radius -
@@ -516,7 +516,7 @@
   transition: background 0.12s, color 0.12s;
 }.dm-widget .methodology-tab:hover {
   color: var(--ink);
-}.dm-widget .methodology-tab.active {
+}.dm-widget .methodology-tab.on {
   background: var(--gradient-pill);
   color: var(--on-gradient-ink);
   box-shadow: var(--shadow-inset);
@@ -2542,7 +2542,7 @@
 }/* Same on/off treatment as .participant-chip - the phase filter chips right below this picker on
    the Grid tab used to be colour-coded per phase, which read as "why are these all different
    colours?" rather than as a plain multi-select filter. Both now use one uniform selected look
-   (soft tint + ring + checkmark) instead of borrowing an identity colour that isn't the point here. */.dm-widget .jt-pick-btn.active {
+   (soft tint + ring + checkmark) instead of borrowing an identity colour that isn't the point here. */.dm-widget .jt-pick-btn.on {
   background: var(--chip-on-bg);
   color: var(--teal);
   border-color: var(--teal);
@@ -2551,7 +2551,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--hs-mint);
-}.dm-widget .jt-pick-btn.active .abbr {
+}.dm-widget .jt-pick-btn.on .abbr {
   color: var(--teal);
 }.dm-widget .jt-pick-btn .jt-pick-count {
   font-family: var(--font-mono);
@@ -2567,7 +2567,7 @@
   opacity: 0;
   transform: scale(0.4) rotate(-20deg);
   transition: width 0.18s ease, margin-right 0.18s ease, opacity 0.16s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-}.dm-widget .jt-pick-btn.active .jt-check {
+}.dm-widget .jt-pick-btn.on .jt-check {
   width: 12px;
   margin-right: 0;
   opacity: 1;

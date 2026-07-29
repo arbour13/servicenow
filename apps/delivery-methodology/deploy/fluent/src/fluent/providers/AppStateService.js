@@ -18,6 +18,21 @@
     $rootScope.$broadcast('dm-state');
   }
 
+  // Run several setters as one logical update (one dm-state at the end). Nested batch() calls
+  // keep silence until the outermost finishes so nav gestures do not fan out 4–5 broadcasts.
+  function batch(work) {
+    var wasSilenced = silenced;
+    silenced = true;
+    try {
+      work();
+    } finally {
+      silenced = wasSilenced;
+      if (!silenced) {
+        notify();
+      }
+    }
+  }
+
   var state = {
     methodologies: [],
     jobTitles: [],
@@ -319,6 +334,7 @@
     applyLoadedData: applyLoadedData,
     readState: readState,
     bindActiveView: bindActiveView,
-    subscribe: subscribe
+    subscribe: subscribe,
+    batch: batch
   };
 }]
