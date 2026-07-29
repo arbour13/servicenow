@@ -4955,8 +4955,10 @@ class Component extends DCLogic {
   }
   // N equal solid bars in a fixed-width box — the Preset column-count glyphs. Same solid-fill
   // convention as gl()'s display icons (block/flex/grid), so a 3-column preset reads as a denser
-  // version of the same visual language rather than a new one. Bars shrink as the count grows; the
-  // box width stays constant so the row doesn't jitter between counts.
+  // version of the same visual language rather than a new one. (An n x 2 cell grid was tried, to say
+  // "grid" rather than "columns" — but past 4 columns each cell drops under 2px wide and reads as a
+  // tick anyway, so it bought nothing at the counts where it mattered.) Bars shrink as the count
+  // grows; the box width stays constant so the row doesn't jitter between counts.
   gridColsIcon(n){ const h=React.createElement;
     const gap=n>4?1.5:2; const w=(18-gap*(n-1))/n;
     return h('div',{style:{display:'flex',gap,width:18,height:13}},
