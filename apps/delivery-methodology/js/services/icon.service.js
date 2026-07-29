@@ -123,12 +123,17 @@ angular.module('deliveryMethodology').factory('IconService', ['$sce', function (
     }
   }
 
+  function bind(controller) {
+    controller.icon = paths;
+  }
+
   return {
     paths: paths,
     pathsFor: pathsFor,
     keyFor: keyFor,
     fallbackKey: fallbackKey,
     hasKey: hasKey,
-    ensureIcon: ensureIcon
+    ensureIcon: ensureIcon,
+    bind: bind
   };
 }]);

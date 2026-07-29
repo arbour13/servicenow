@@ -1,15 +1,29 @@
-[function () {
+[
+  'MethodologyDomainService',
+  function (MethodologyDomainService) {
   'use strict';
 
-  var PHASE_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--p5)'];
+  var RACI_LETTERS = ['R', 'A', 'C', 'I'];
+  var RACI_NAMES = {
+    R: 'Responsible',
+    A: 'Accountable',
+    C: 'Consulted',
+    I: 'Informed'
+  };
+  var RACI_HEX = {
+    R: '#01cc52',
+    A: '#e5c20b',
+    C: '#3ec2f8',
+    I: '#bdc2cb'
+  };
 
   var raciMode = 'grid';
-  var rgActivePhases = null;
-  var rgGridFocusJob = null;
-  var rgByRoleFocusJob = null;
-  var rg = {
-    ids: [],
-    counts: {},
+  var activePhases = null;
+  var gridFocusRoleId = null;
+  var byRoleFocusRoleId = null;
+  var raciGrid = {
+    roleIds: [],
+    roleCounts: {},
     groups: [],
     byRoleGroups: []
   };
@@ -17,19 +31,26 @@
   function readState() {
     return {
       raciMode: raciMode,
-      rgActivePhases: rgActivePhases,
-      rgGridFocusJob: rgGridFocusJob,
-      rgByRoleFocusJob: rgByRoleFocusJob,
-      rg: rg
+      activePhases: activePhases,
+      gridFocusRoleId: gridFocusRoleId,
+      byRoleFocusRoleId: byRoleFocusRoleId,
+      raciGrid: raciGrid
     };
   }
 
   function getActivePhases() {
-    return rgActivePhases ? Object.assign({}, rgActivePhases) : null;
+    if (activePhases) {
+      return Object.assign({}, activePhases);
+    }
+    return null;
   }
 
   function setActivePhases(map) {
-    rgActivePhases = map ? Object.assign({}, map) : null;
+    if (map) {
+      activePhases = Object.assign({}, map);
+    } else {
+      activePhases = null;
+    }
   }
 
   function ensureActivePhases(methodology) {
@@ -39,35 +60,35 @@
     var phaseIds = methodology.phases.map(function (phase) {
       return phase.id;
     });
-    var needsReset = !rgActivePhases
-      || Object.keys(rgActivePhases).some(function (phaseId) {
+    var needsReset = !activePhases
+      || Object.keys(activePhases).some(function (phaseId) {
         return phaseIds.indexOf(phaseId) < 0;
       });
     if (!needsReset) {
       return;
     }
-    rgActivePhases = {};
+    activePhases = {};
     phaseIds.forEach(function (phaseId) {
-      rgActivePhases[phaseId] = true;
+      activePhases[phaseId] = true;
     });
   }
 
   // Structure edits (add/delete a phase) call these directly instead of round-tripping through a
-  // controller-owned "rgActivePhases mirror" - in the multi-widget split, structure edits happen in
+  // controller-owned "activePhases mirror" - in the multi-widget split, structure edits happen in
   // the Methodology widget while this state belongs to the RACI widget, so there is no single
   // controller left that could hand back such a mirror. ensureActivePhases() alone does not cover
   // "a phase was just ADDED to an already-active methodology" (it only resets on phase REMOVAL),
   // hence the explicit add/remove pair here.
   function activatePhase(phaseId) {
-    if (!rgActivePhases) {
-      rgActivePhases = {};
+    if (!activePhases) {
+      activePhases = {};
     }
-    rgActivePhases[phaseId] = true;
+    activePhases[phaseId] = true;
   }
 
   function deactivatePhase(phaseId) {
-    if (rgActivePhases) {
-      delete rgActivePhases[phaseId];
+    if (activePhases) {
+      delete activePhases[phaseId];
     }
   }
 
@@ -76,9 +97,9 @@
     var sortJobTitleIds = context && context.sortJobTitleIds;
     var hasContent = context && context.hasContent;
     if (!methodology || !sortJobTitleIds || !hasContent) {
-      rg = {
-        ids: [],
-        counts: {},
+      raciGrid = {
+        roleIds: [],
+        roleCounts: {},
         groups: [],
         byRoleGroups: []
       };
@@ -104,16 +125,16 @@
     });
     roleIds = sortJobTitleIds(roleIds);
 
-    if (rgGridFocusJob && roleIds.indexOf(rgGridFocusJob) < 0) {
-      rgGridFocusJob = null;
+    if (gridFocusRoleId && roleIds.indexOf(gridFocusRoleId) < 0) {
+      gridFocusRoleId = null;
     }
-    if (raciMode === 'byrole' && (!rgByRoleFocusJob || roleIds.indexOf(rgByRoleFocusJob) < 0)) {
-      rgByRoleFocusJob = roleIds[0] || null;
+    if (raciMode === 'byrole' && (!byRoleFocusRoleId || roleIds.indexOf(byRoleFocusRoleId) < 0)) {
+      byRoleFocusRoleId = roleIds[0] || null;
     }
 
-    var counts = {};
+    var roleCounts = {};
     methodology.phases.forEach(function (phase) {
-      if (!rgActivePhases[phase.id]) {
+      if (!activePhases[phase.id]) {
         return;
       }
       phase.subPhases.forEach(function (subPhase) {
@@ -122,7 +143,7 @@
         }
         (subPhase.tasks || []).forEach(function (task) {
           Object.keys(task.raci || {}).forEach(function (roleId) {
-            counts[roleId] = (counts[roleId] || 0) + task.raci[roleId].length;
+            roleCounts[roleId] = (roleCounts[roleId] || 0) + task.raci[roleId].length;
           });
         });
       });
@@ -131,15 +152,15 @@
     var groups = [];
     var byRoleGroups = [];
     methodology.phases.forEach(function (phase, phaseIndex) {
-      if (!rgActivePhases[phase.id]) {
+      if (!activePhases[phase.id]) {
         return;
       }
-      var color = PHASE_COLORS[phaseIndex % PHASE_COLORS.length];
+      var color = MethodologyDomainService.phaseColor(phaseIndex);
       phase.subPhases.filter(hasContent).forEach(function (subPhase) {
         var rows;
-        if (rgGridFocusJob) {
+        if (gridFocusRoleId) {
           rows = subPhase.tasks.filter(function (task) {
-            return task.raci[rgGridFocusJob];
+            return task.raci[gridFocusRoleId];
           });
         } else {
           rows = subPhase.tasks;
@@ -147,7 +168,7 @@
         if (rows.length) {
           groups.push({
             phase: phase,
-            sp: subPhase,
+            subPhase: subPhase,
             color: color,
             rows: rows.map(function (task) {
               return {
@@ -156,14 +177,14 @@
             })
           });
         }
-        if (rgByRoleFocusJob) {
+        if (byRoleFocusRoleId) {
           var matched = subPhase.tasks.filter(function (task) {
-            return task.raci[rgByRoleFocusJob];
+            return task.raci[byRoleFocusRoleId];
           });
           if (matched.length) {
             byRoleGroups.push({
               phase: phase,
-              sp: subPhase,
+              subPhase: subPhase,
               color: color,
               tasks: matched
             });
@@ -172,9 +193,9 @@
       });
     });
 
-    rg = {
-      ids: roleIds,
-      counts: counts,
+    raciGrid = {
+      roleIds: roleIds,
+      roleCounts: roleCounts,
       groups: groups,
       byRoleGroups: byRoleGroups
     };
@@ -183,21 +204,21 @@
 
   function togglePhase(phaseId, context) {
     ensureActivePhases(context && context.methodology);
-    rgActivePhases[phaseId] = !rgActivePhases[phaseId];
+    activePhases[phaseId] = !activePhases[phaseId];
     return refresh(context);
   }
 
   function toggleCol(roleId, context) {
-    if (rgGridFocusJob === roleId) {
-      rgGridFocusJob = null;
+    if (gridFocusRoleId === roleId) {
+      gridFocusRoleId = null;
     } else {
-      rgGridFocusJob = roleId;
+      gridFocusRoleId = roleId;
     }
     return refresh(context);
   }
 
   function clearFocus(context) {
-    rgGridFocusJob = null;
+    gridFocusRoleId = null;
     return refresh(context);
   }
 
@@ -207,11 +228,20 @@
   }
 
   function selectByRole(roleId, context) {
-    rgByRoleFocusJob = roleId;
+    byRoleFocusRoleId = roleId;
     return refresh(context);
   }
 
+  function bindLegend(controller) {
+    controller.raciLetters = RACI_LETTERS;
+    controller.raciNames = RACI_NAMES;
+    controller.raciHex = RACI_HEX;
+  }
+
   return {
+    LETTERS: RACI_LETTERS,
+    NAMES: RACI_NAMES,
+    HEX: RACI_HEX,
     readState: readState,
     getActivePhases: getActivePhases,
     setActivePhases: setActivePhases,
@@ -223,6 +253,7 @@
     toggleCol: toggleCol,
     clearFocus: clearFocus,
     setMode: setMode,
-    selectByRole: selectByRole
+    selectByRole: selectByRole,
+    bindLegend: bindLegend
   };
 }]

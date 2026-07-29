@@ -1,6 +1,10 @@
 [
-  'ChangelogDiffService', 'IdSeqService', 'MessagingService', 'AppStateService', 'MethodologyDomainService', '$rootScope',
-  function (ChangelogDiffService, IdSeqService, MessagingService, AppStateService, MethodologyDomainService, $rootScope) {
+  'ChangelogDiffService', 'IdSeqService', 'MessagingService', 'AppStateService', 'MethodologyDomainService',
+  'RaciGridService', '$rootScope',
+  function (
+    ChangelogDiffService, IdSeqService, MessagingService, AppStateService, MethodologyDomainService,
+    RaciGridService, $rootScope
+  ) {
   'use strict';
 
   function notify() {
@@ -43,18 +47,22 @@
   };
 
   var CORE_TEAM = ['em', 'bpc', 'arch', 'tc'];
-  var RACI_LETTERS = ['R', 'A', 'C', 'I'];
+  var RACI_LETTERS = RaciGridService.LETTERS;
 
   var hooks = {};
   var state = {
     editMode: false,
-    editSp: null,
+    editSubPhase: null,
     editSnapshot: null,
-    tmpAddJt: {}
+    tmpAddJobTitle: {}
   };
 
   function bind(hostHooks) {
-    hooks = hostHooks || {};
+    if (hostHooks) {
+      hooks = hostHooks;
+    } else {
+      hooks = {};
+    }
   }
 
   function jobTitleById(jobTitleId) {
@@ -76,14 +84,14 @@
   function readState() {
     return {
       editMode: state.editMode,
-      editSp: state.editSp,
+      editSubPhase: state.editSubPhase,
       editSnapshot: state.editSnapshot,
-      tmpAddJt: state.tmpAddJt
+      tmpAddJobTitle: state.tmpAddJobTitle
     };
   }
 
-  function getEditSp() {
-    return state.editSp;
+  function getEditSubPhase() {
+    return state.editSubPhase;
   }
 
   function getEditSnapshot() {
@@ -122,15 +130,15 @@
     if (hooks.isStructureEditing && hooks.isStructureEditing()) {
       return;
     }
-    var location = AppStateService.getLoc();
-    if (!location || !location.sp) {
+    var location = AppStateService.getLocation();
+    if (!location || !location.subPhase) {
       MessagingService.toast('Nothing to edit yet');
       return;
     }
-    state.editSnapshot = IdSeqService.deepClone(location.sp);
-    state.editSp = IdSeqService.deepClone(location.sp);
-    state.tmpAddJt = {};
-    AppStateService.setTmpLoeRole('');
+    state.editSnapshot = IdSeqService.deepClone(location.subPhase);
+    state.editSubPhase = IdSeqService.deepClone(location.subPhase);
+    state.tmpAddJobTitle = {};
+    AppStateService.setTmpLevelOfEffortRoleId('');
     state.editMode = true;
     MessagingService.scrollToEditBar();
     notify();
@@ -138,7 +146,7 @@
 
   function cancelEdit() {
     state.editMode = false;
-    state.editSp = null;
+    state.editSubPhase = null;
     state.editSnapshot = null;
     MessagingService.toast('Edit cancelled - changes reverted');
     MessagingService.scrollPageToTop();
@@ -149,15 +157,15 @@
     if (!AppStateService.tryBeginSave()) {
       return;
     }
-    collapseJobAidRoles(state.editSp);
-    var changes = ChangelogDiffService.describeChanges(state.editSnapshot, state.editSp, jobTitleById);
+    collapseJobAidRoles(state.editSubPhase);
+    var changes = ChangelogDiffService.describeChanges(state.editSnapshot, state.editSubPhase, jobTitleById);
     var entries = [];
-    var location = AppStateService.getLoc();
+    var location = AppStateService.getLocation();
     var index = location.phase.subPhases.findIndex(function (subPhase) {
-      return subPhase.id === state.editSp.id;
+      return subPhase.id === state.editSubPhase.id;
     });
     var previous = IdSeqService.deepClone(state.editSnapshot);
-    var toSave = IdSeqService.deepClone(state.editSp);
+    var toSave = IdSeqService.deepClone(state.editSubPhase);
     if (changes.length) {
       if (!toSave.changelog) {
         toSave.changelog = [];
@@ -177,7 +185,7 @@
     location.phase.subPhases[index] = toSave;
     AppStateService.persistMethodologies().then(function () {
       state.editMode = false;
-      state.editSp = null;
+      state.editSubPhase = null;
       state.editSnapshot = null;
       if (hooks.afterSaveSuccess) {
         hooks.afterSaveSuccess(entries, changes.length);
@@ -198,51 +206,51 @@
       if (hooks.afterSaveFailure) {
         hooks.afterSaveFailure(previous, index);
       }
-      AppStateService.refreshLoc();
+      AppStateService.refreshLocation();
       notify();
     });
   }
 
   function participantOn(roleId) {
-    return (state.editSp.participants || []).indexOf(roleId) >= 0;
+    return (state.editSubPhase.participants || []).indexOf(roleId) >= 0;
   }
 
   function toggleParticipant(roleId) {
-    if (!state.editSp.participants) {
-      state.editSp.participants = [];
+    if (!state.editSubPhase.participants) {
+      state.editSubPhase.participants = [];
     }
-    var index = state.editSp.participants.indexOf(roleId);
+    var index = state.editSubPhase.participants.indexOf(roleId);
     if (index >= 0) {
-      state.editSp.participants.splice(index, 1);
+      state.editSubPhase.participants.splice(index, 1);
     } else {
-      state.editSp.participants.push(roleId);
+      state.editSubPhase.participants.push(roleId);
     }
   }
 
   function idleParticipants() {
     var used = {};
-    (state.editSp.tasks || []).forEach(function (task) {
+    (state.editSubPhase.tasks || []).forEach(function (task) {
       Object.keys(task.raci || {}).forEach(function (roleId) {
         if (task.raci[roleId] && task.raci[roleId].length) {
           used[roleId] = true;
         }
       });
     });
-    return participantsOf(state.editSp).filter(function (role) {
+    return participantsOf(state.editSubPhase).filter(function (role) {
       return !used[role.id];
     });
   }
 
   function addListItem(kind) {
-    state.editSp[kind].push('');
+    state.editSubPhase[kind].push('');
   }
 
   function removeListItem(kind, index) {
-    state.editSp[kind].splice(index, 1);
+    state.editSubPhase[kind].splice(index, 1);
   }
 
   function moveListItem(kind, index, direction) {
-    var array = state.editSp[kind];
+    var array = state.editSubPhase[kind];
     var swapIndex;
     if (direction === 'up') {
       swapIndex = index - 1;
@@ -258,40 +266,40 @@
   }
 
   function setLoeMode(mode) {
-    state.editSp.levelOfEffort.mode = mode;
-    if (mode === 'byRole' && !Object.keys(state.editSp.levelOfEffort.roles || {}).length) {
-      if (!state.editSp.levelOfEffort.roles) {
-        state.editSp.levelOfEffort.roles = {};
+    state.editSubPhase.levelOfEffort.mode = mode;
+    if (mode === 'byRole' && !Object.keys(state.editSubPhase.levelOfEffort.roles || {}).length) {
+      if (!state.editSubPhase.levelOfEffort.roles) {
+        state.editSubPhase.levelOfEffort.roles = {};
       }
-      participantsOf(state.editSp).filter(function (role) {
+      participantsOf(state.editSubPhase).filter(function (role) {
         return !role.external;
       }).forEach(function (role) {
-        state.editSp.levelOfEffort.roles[role.id] = defaultLoeEntry(role.id);
+        state.editSubPhase.levelOfEffort.roles[role.id] = defaultLoeEntry(role.id);
       });
     }
   }
 
   function loeAvailableRoles() {
-    var used = Object.keys(state.editSp.levelOfEffort.roles || {});
-    return participantsOf(state.editSp).filter(function (role) {
+    var used = Object.keys(state.editSubPhase.levelOfEffort.roles || {});
+    return participantsOf(state.editSubPhase).filter(function (role) {
       return !role.external && used.indexOf(role.id) < 0;
     });
   }
 
   function addLoeRole() {
-    var roleId = AppStateService.getTmpLoeRole();
+    var roleId = AppStateService.getTmpLevelOfEffortRoleId();
     if (!roleId) {
       return;
     }
-    if (!state.editSp.levelOfEffort.roles) {
-      state.editSp.levelOfEffort.roles = {};
+    if (!state.editSubPhase.levelOfEffort.roles) {
+      state.editSubPhase.levelOfEffort.roles = {};
     }
-    state.editSp.levelOfEffort.roles[roleId] = defaultLoeEntry(roleId);
-    AppStateService.setTmpLoeRole('');
+    state.editSubPhase.levelOfEffort.roles[roleId] = defaultLoeEntry(roleId);
+    AppStateService.setTmpLevelOfEffortRoleId('');
   }
 
   function removeLoeRole(roleId) {
-    delete state.editSp.levelOfEffort.roles[roleId];
+    delete state.editSubPhase.levelOfEffort.roles[roleId];
   }
 
   function setLoeFlag(entry, value) {
@@ -308,16 +316,16 @@
   }
 
   function loeRoleOrphan(roleId) {
-    return (state.editSp.participants || []).indexOf(roleId) < 0;
+    return (state.editSubPhase.participants || []).indexOf(roleId) < 0;
   }
 
   function loeRoleRows() {
-    return sortJobTitleIds(Object.keys(state.editSp.levelOfEffort.roles || {}))
+    return sortJobTitleIds(Object.keys(state.editSubPhase.levelOfEffort.roles || {}))
       .map(jobTitleById).filter(Boolean);
   }
 
   function addMeeting() {
-    state.editSp.meetings.push({
+    state.editSubPhase.meetings.push({
       id: IdSeqService.next('meeting'),
       name: '',
       scheduledBy: '',
@@ -327,11 +335,11 @@
   }
 
   function removeMeeting(index) {
-    state.editSp.meetings.splice(index, 1);
+    state.editSubPhase.meetings.splice(index, 1);
   }
 
   function moveMeeting(index, direction) {
-    var array = state.editSp.meetings;
+    var array = state.editSubPhase.meetings;
     var swapIndex;
     if (direction === 'up') {
       swapIndex = index - 1;
@@ -347,19 +355,19 @@
   }
 
   function internalRoles() {
-    return participantsOf(state.editSp).filter(function (role) {
+    return participantsOf(state.editSubPhase).filter(function (role) {
       return !role.external;
     });
   }
 
   function meetingPersonOrphan(roleId) {
-    return !!roleId && (state.editSp.participants || []).indexOf(roleId) < 0;
+    return !!roleId && (state.editSubPhase.participants || []).indexOf(roleId) < 0;
   }
 
   function addTask() {
-    state.editSp.tasks.push({
+    state.editSubPhase.tasks.push({
       id: IdSeqService.next('task'),
-      order: state.editSp.tasks.length + 1,
+      order: state.editSubPhase.tasks.length + 1,
       text: '',
       jobAids: [],
       raci: {}
@@ -367,11 +375,11 @@
   }
 
   function removeTask(index) {
-    state.editSp.tasks.splice(index, 1);
+    state.editSubPhase.tasks.splice(index, 1);
   }
 
   function moveTask(index, direction) {
-    var array = state.editSp.tasks;
+    var array = state.editSubPhase.tasks;
     var swapIndex;
     if (direction === 'up') {
       swapIndex = index - 1;
@@ -394,19 +402,19 @@
   }
 
   function taskRoleOrphan(roleId) {
-    return (state.editSp.participants || []).indexOf(roleId) < 0;
+    return (state.editSubPhase.participants || []).indexOf(roleId) < 0;
   }
 
   function taskAvailableRoles(task) {
     var used = Object.keys(task.raci || {});
-    return participantsOf(state.editSp).filter(function (role) {
+    return participantsOf(state.editSubPhase).filter(function (role) {
       return used.indexOf(role.id) < 0;
     });
   }
 
   function taskCoreTeamMissing(task) {
     var used = Object.keys(task.raci || {});
-    var participating = state.editSp.participants || [];
+    var participating = state.editSubPhase.participants || [];
     return CORE_TEAM.some(function (roleId) {
       return participating.indexOf(roleId) >= 0 && used.indexOf(roleId) < 0;
     });
@@ -434,7 +442,7 @@
       return;
     }
     if (roleId === '__core__') {
-      var participating = state.editSp.participants || [];
+      var participating = state.editSubPhase.participants || [];
       CORE_TEAM.forEach(function (coreRoleId) {
         if (participating.indexOf(coreRoleId) >= 0 && !task.raci[coreRoleId]) {
           task.raci[coreRoleId] = [];
@@ -495,7 +503,7 @@
     state: state,
     isEditing: isEditing,
     readState: readState,
-    getEditSp: getEditSp,
+    getEditSubPhase: getEditSubPhase,
     getEditSnapshot: getEditSnapshot,
     enterEdit: enterEdit,
     cancelEdit: cancelEdit,

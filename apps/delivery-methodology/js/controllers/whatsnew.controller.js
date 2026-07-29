@@ -6,13 +6,12 @@ angular.module('deliveryMethodology').controller('DmWhatsNewController', [
   'use strict';
   var c = this;
 
-  c.isActiveView = function () {
-    return !AppStateService.getLoading() && AppStateService.getView() === 'whatsnew';
-  };
+  AppStateService.bindActiveView(c, 'whatsnew');
+  WhatsNewService.bindFormatters(c);
 
-  c.jumpTo = function (subId, methId) { NavigationService.jumpTo(subId, methId); };
-  c.fmtDate = function (d) { return WhatsNewService.fmtDate(d); };
-  c.daysAgo = function (dateStr) { return WhatsNewService.daysAgo(dateStr); };
+  c.jumpTo = function (subPhaseId, methodologyId) {
+    NavigationService.jumpTo(subPhaseId, methodologyId);
+  };
 
   function syncAppState() {
     var appState = AppStateService.readState();
@@ -27,8 +26,7 @@ angular.module('deliveryMethodology').controller('DmWhatsNewController', [
     syncWhatsNew();
   }
   syncAll();
-  var unsubscribeDmState = $rootScope.$on('dm-state', syncAll);
-  $scope.$on('$destroy', unsubscribeDmState);
+  AppStateService.subscribe($rootScope, $scope, syncAll);
 
   // Enter this view with a stale list (e.g. entries changed while on another view) - refresh once
   // up front so the list is never a run behind the current content.

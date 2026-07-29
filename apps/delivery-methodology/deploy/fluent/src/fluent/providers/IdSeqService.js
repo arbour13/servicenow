@@ -33,7 +33,13 @@
 
   function seedFromMethodologies(methodologies) {
     (methodologies || []).forEach(function (methodology) {
-      methodologySeq = Math.max(methodologySeq, idNum('meth', methodology.id) + 1);
+      // Prefer the full 'methodology' prefix; still honor legacy 'methN' ids so harness
+      // localStorage / older drafts do not reset the counter to 1.
+      methodologySeq = Math.max(
+        methodologySeq,
+        idNum('methodology', methodology.id) + 1,
+        idNum('meth', methodology.id) + 1
+      );
       (methodology.phases || []).forEach(function (phase) {
         phaseSeq = Math.max(phaseSeq, idNum('phase', phase.id) + 1);
         (phase.subPhases || []).forEach(function (subPhase) {
@@ -75,7 +81,7 @@
       return 'subphase' + (subPhaseSeq++);
     }
     if (kind === 'methodology') {
-      return 'meth' + (methodologySeq++);
+      return 'methodology' + (methodologySeq++);
     }
     return '';
   }

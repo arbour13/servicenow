@@ -74,19 +74,20 @@
               builds itself from the tasks - add a job aid to a task and it appears here.</p>
             <p class="empty" ng-if="!c.jobAids.length">No job aids yet.</p>
             <div class="ref-aids" ng-if="c.jobAids.length">
-              <div class="ref-aid" ng-repeat="a in c.jobAids">
-                <a class="jobaid" href="{{a.j.url}}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none"
+              <div class="ref-aid" ng-repeat="aid in c.jobAids">
+                <a class="jobaid" href="{{aid.jobAid.url}}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('externalLink')"></svg>Job Aid</a>
                 <div class="ref-aid-body">
-                  <div class="ref-aid-task" ng-bind-html="c.jargonHtml(a.t.text)"></div>
-                  <button type="button" class="ref-aid-crumb" ng-click="c.jumpTo(a.s.id, a.m.id)">{{a.m.name}} &rsaquo;
-                    {{a.p.name}} &rsaquo; {{a.s.sid}} {{a.s.name}} &#8599;</button>
+                  <div class="ref-aid-task" ng-bind-html="c.jargonHtml(aid.task.text)"></div>
+                  <button type="button" class="ref-aid-crumb"
+                    ng-click="c.jumpTo(aid.subPhase.id, aid.methodology.id)">{{aid.methodology.name}} &rsaquo;
+                    {{aid.phase.name}} &rsaquo; {{aid.subPhase.sid}} {{aid.subPhase.name}} &#8599;</button>
                   <div class="ref-aid-scope">
                     <span>Applies to:</span>
-                    <span ng-if="!a.scope.length" class="ref-allroles">All roles</span>
-                    <span class="ja-scope" ng-repeat="r in a.scope" style="--c: {{c.jobTitleColor(r.id)}}"
-                      data-tip-name="{{r.name}}" data-tip="{{r.description}}">{{r.external ? '&#9671; ' :
-                      ''}}{{r.abbr}}</span>
+                    <span ng-if="!aid.scope.length" class="ref-allroles">All roles</span>
+                    <span class="ja-scope" ng-repeat="role in aid.scope" style="--c: {{c.jobTitleColor(role.id)}}"
+                      data-tip-name="{{role.name}}" data-tip="{{role.description}}">{{role.external ? '&#9671; ' :
+                      ''}}{{role.abbr}}</span>
                   </div>
                 </div>
               </div>

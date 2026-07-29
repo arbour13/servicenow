@@ -24,49 +24,144 @@
     methodologyId: null,
     subPhaseId: null,
     view: 'methodology',
-    loc: null,
+    location: null,
     canEdit: true,
     loading: true,
     isSaving: false,
     justRead: [],
-    tmpLoeRole: ''
+    tmpLevelOfEffortRoleId: ''
   };
 
-  function getMethodologies() { return state.methodologies; }
-  function setMethodologies(methodologies) { state.methodologies = methodologies || []; notify(); }
-  function getJobTitles() { return state.jobTitles; }
-  function setJobTitles(jobTitles) { state.jobTitles = jobTitles || []; notify(); }
-  function getJargon() { return state.jargon; }
-  function setJargon(jargon) { state.jargon = jargon || {}; notify(); }
-  function getReferenceSections() { return state.referenceSections; }
-  function setReferenceSections(referenceSections) { state.referenceSections = referenceSections || []; notify(); }
-  function getMethodologyId() { return state.methodologyId; }
-  function setMethodologyId(methodologyId) { state.methodologyId = methodologyId; notify(); }
-  function getSubPhaseId() { return state.subPhaseId; }
-  function setSubPhaseId(subPhaseId) { state.subPhaseId = subPhaseId; notify(); }
-  function getView() { return state.view; }
-  function setView(view) { state.view = view; notify(); }
-  function getLoc() { return state.loc; }
-  function setLoc(location) { state.loc = location; notify(); }
-  function getCanEdit() { return state.canEdit; }
-  function setCanEdit(canEdit) { state.canEdit = canEdit !== false; notify(); }
-  function getLoading() { return state.loading; }
-  function setLoading(loading) { state.loading = !!loading; notify(); }
-  function getIsSaving() { return state.isSaving; }
-  function setIsSaving(isSaving) { state.isSaving = !!isSaving; notify(); }
-  function getJustRead() { return state.justRead; }
-  function setJustRead(justRead) { state.justRead = justRead || []; notify(); }
-  function getTmpLoeRole() { return state.tmpLoeRole; }
-  function setTmpLoeRole(tmpLoeRole) { state.tmpLoeRole = tmpLoeRole || ''; notify(); }
-
-  function refreshLoc() {
-    state.loc = MethodologyDomainService.findSubPhase(state.methodologies, state.subPhaseId);
-    if (state.loc) {
-      state.loc.loeRows = MethodologyDomainService.computeLoeRows(state.jobTitles, state.loc.sp);
-      state.loc.taskTableRoles = MethodologyDomainService.taskTableRoles(state.jobTitles, state.loc.sp);
+  function getMethodologies() {
+    return state.methodologies;
+  }
+  function setMethodologies(methodologies) {
+    if (methodologies) {
+      state.methodologies = methodologies;
+    } else {
+      state.methodologies = [];
     }
     notify();
-    return state.loc;
+  }
+  function getJobTitles() {
+    return state.jobTitles;
+  }
+  function setJobTitles(jobTitles) {
+    if (jobTitles) {
+      state.jobTitles = jobTitles;
+    } else {
+      state.jobTitles = [];
+    }
+    notify();
+  }
+  function getJargon() {
+    return state.jargon;
+  }
+  function setJargon(jargon) {
+    if (jargon) {
+      state.jargon = jargon;
+    } else {
+      state.jargon = {};
+    }
+    notify();
+  }
+  function getReferenceSections() {
+    return state.referenceSections;
+  }
+  function setReferenceSections(referenceSections) {
+    if (referenceSections) {
+      state.referenceSections = referenceSections;
+    } else {
+      state.referenceSections = [];
+    }
+    notify();
+  }
+  function getMethodologyId() {
+    return state.methodologyId;
+  }
+  function setMethodologyId(methodologyId) {
+    state.methodologyId = methodologyId;
+    notify();
+  }
+  function getSubPhaseId() {
+    return state.subPhaseId;
+  }
+  function setSubPhaseId(subPhaseId) {
+    state.subPhaseId = subPhaseId;
+    notify();
+  }
+  function getView() {
+    return state.view;
+  }
+  function setView(view) {
+    state.view = view;
+    notify();
+  }
+  function getLocation() {
+    return state.location;
+  }
+  function setLocation(location) {
+    state.location = location;
+    notify();
+  }
+  function getCanEdit() {
+    return state.canEdit;
+  }
+  function setCanEdit(canEdit) {
+    state.canEdit = canEdit !== false;
+    notify();
+  }
+  function getLoading() {
+    return state.loading;
+  }
+  function setLoading(loading) {
+    state.loading = !!loading;
+    notify();
+  }
+  function getIsSaving() {
+    return state.isSaving;
+  }
+  function setIsSaving(isSaving) {
+    state.isSaving = !!isSaving;
+    notify();
+  }
+  function getJustRead() {
+    return state.justRead;
+  }
+  function setJustRead(justRead) {
+    if (justRead) {
+      state.justRead = justRead;
+    } else {
+      state.justRead = [];
+    }
+    notify();
+  }
+  function getTmpLevelOfEffortRoleId() {
+    return state.tmpLevelOfEffortRoleId;
+  }
+  function setTmpLevelOfEffortRoleId(tmpLevelOfEffortRoleId) {
+    if (tmpLevelOfEffortRoleId) {
+      state.tmpLevelOfEffortRoleId = tmpLevelOfEffortRoleId;
+    } else {
+      state.tmpLevelOfEffortRoleId = '';
+    }
+    notify();
+  }
+
+  function refreshLocation() {
+    state.location = MethodologyDomainService.findSubPhase(state.methodologies, state.subPhaseId);
+    if (state.location) {
+      state.location.levelOfEffortRows = MethodologyDomainService.computeLoeRows(
+        state.jobTitles,
+        state.location.subPhase
+      );
+      state.location.taskTableRoles = MethodologyDomainService.taskTableRoles(
+        state.jobTitles,
+        state.location.subPhase
+      );
+    }
+    notify();
+    return state.location;
   }
 
   function tryBeginSave() {
@@ -122,7 +217,7 @@
     if (!state.methodologies.length) {
       setMethodologyId(null);
       setSubPhaseId(null);
-      refreshLoc();
+      refreshLocation();
       setLoading(false);
       silenced = false;
       notify();
@@ -138,9 +233,9 @@
 
     setMethodologyId(state.methodologies[0].id);
     setSubPhaseId(MethodologyDomainService.firstContentSubPhase(
-      MethodologyDomainService.curMeth(state.methodologies, state.methodologyId)
+      MethodologyDomainService.currentMethodology(state.methodologies, state.methodologyId)
     ));
-    refreshLoc();
+    refreshLocation();
     setLoading(false);
     silenced = false;
     notify();
@@ -164,13 +259,27 @@
       methodologyId: state.methodologyId,
       subPhaseId: state.subPhaseId,
       view: state.view,
-      loc: state.loc,
+      location: state.location,
       canEdit: state.canEdit,
       loading: state.loading,
       isSaving: state.isSaving,
       justRead: state.justRead,
-      tmpLoeRole: state.tmpLoeRole
+      tmpLevelOfEffortRoleId: state.tmpLevelOfEffortRoleId
     };
+  }
+
+  // View widgets share the same isActiveView / dm-state subscribe pattern - attach once here
+  // instead of copying the three-line blocks into every controller.
+  function bindActiveView(controller, viewName) {
+    controller.isActiveView = function () {
+      return !getLoading() && getView() === viewName;
+    };
+  }
+
+  function subscribe($rootScope, $scope, syncAll) {
+    var unsubscribe = $rootScope.$on('dm-state', syncAll);
+    $scope.$on('$destroy', unsubscribe);
+    return unsubscribe;
   }
 
   return {
@@ -188,8 +297,8 @@
     setSubPhaseId: setSubPhaseId,
     getView: getView,
     setView: setView,
-    getLoc: getLoc,
-    setLoc: setLoc,
+    getLocation: getLocation,
+    setLocation: setLocation,
     getCanEdit: getCanEdit,
     setCanEdit: setCanEdit,
     getLoading: getLoading,
@@ -198,12 +307,14 @@
     setIsSaving: setIsSaving,
     getJustRead: getJustRead,
     setJustRead: setJustRead,
-    getTmpLoeRole: getTmpLoeRole,
-    setTmpLoeRole: setTmpLoeRole,
-    refreshLoc: refreshLoc,
+    getTmpLevelOfEffortRoleId: getTmpLevelOfEffortRoleId,
+    setTmpLevelOfEffortRoleId: setTmpLevelOfEffortRoleId,
+    refreshLocation: refreshLocation,
     tryBeginSave: tryBeginSave,
     persistMethodologies: persistMethodologies,
     applyLoadedData: applyLoadedData,
-    readState: readState
+    readState: readState,
+    bindActiveView: bindActiveView,
+    subscribe: subscribe
   };
 }]

@@ -47,11 +47,11 @@
               <p class="hsearch-empty" ng-if="(c.searchQuery || '').trim().length < 2">Type at least two characters.</p>
               <p class="hsearch-empty" ng-if="(c.searchQuery || '').trim().length >= 2 && !c.searchResultsList.length">No
                 matches.</p>
-              <button type="button" class="search-result" role="option" ng-repeat="r in c.searchResultsList"
-                ng-click="c.pickSearchResult(r)">
-                <div class="sr-loc">{{r.m.name}} &rsaquo; {{r.p.name}} &rsaquo; {{r.s.sid}}</div>
-                <div class="sr-title">{{r.s.name}}</div>
-                <div class="sr-snip" ng-bind-html="r.snippetHtml"></div>
+              <button type="button" class="search-result" role="option" ng-repeat="result in c.searchResultsList"
+                ng-click="c.pickSearchResult(result)">
+                <div class="sr-loc">{{result.methodology.name}} &rsaquo; {{result.phase.name}} &rsaquo; {{result.subPhase.sid}}</div>
+                <div class="sr-title">{{result.subPhase.name}}</div>
+                <div class="sr-snip" ng-bind-html="result.snippetHtml"></div>
               </button>
             </div>
           </div>
@@ -115,10 +115,10 @@
               <p class="pg-sub">{{c.pageSub()}}</p>
             </div>
             <div class="pagehdr-controls"
-              ng-if="(c.view === 'methodology' || c.view === 'raci') && (c.showMethSwitch() || (c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit))">
-              <div class="meth-switch" ng-if="c.showMethSwitch()">
-                <button type="button" class="meth-tab" ng-class="{active: m.id === c.methodologyId}"
-                  ng-repeat="m in c.methodologies track by m.id" ng-click="c.switchMethodology(m.id)">{{m.name}}</button>
+              ng-if="(c.view === 'methodology' || c.view === 'raci') && (c.showMethodologySwitch() || (c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit))">
+              <div class="methodology-switch" ng-if="c.showMethodologySwitch()">
+                <button type="button" class="methodology-tab" ng-class="{active: methodology.id === c.methodologyId}"
+                  ng-repeat="methodology in c.methodologies track by methodology.id" ng-click="c.switchMethodology(methodology.id)">{{methodology.name}}</button>
               </div>
               <button type="button" class="struct-icon-btn" ng-if="c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit"
                 ng-class="{on: c.structureEditMode}" ng-click="c.toggleStructureEdit()"

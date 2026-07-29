@@ -22,14 +22,15 @@ more — it was split into:
 Each widget is its own Angular scope/controller instance — there is no parent-child relationship
 between Shell and the four view widgets. Cross-widget sync happens through shared singleton
 services plus an explicit broadcast: `AppStateService` injects `$rootScope` and calls
-`$rootScope.$broadcast('dm-state')` from every mutator (`setView`, `setSubPhaseId`, `refreshLoc`,
-`applyLoadedData`, …); every controller listens with `$rootScope.$on('dm-state', syncAll)`
-and mirrors the fields it needs onto `c`. Services whose own mutators already run inside an
-Angular digest (e.g. `ContentEditService`'s field mutators, which rely on the shared `editSp`
-object reference; `TipService`, which relies on `$timeout`'s implicit digest) intentionally do
-**not** broadcast — see the mutators themselves for per-service reasoning before adding more
-broadcasts. Since `$rootScope` outlives any one widget's controller, every controller injects
-`$scope` alongside `$rootScope` and unsubscribes its own listener on teardown:
+`$rootScope.$broadcast('dm-state')` from every mutator (`setView`, `setSubPhaseId`,
+`refreshLocation`, `applyLoadedData`, …); every controller listens with
+`$rootScope.$on('dm-state', syncAll)` and mirrors the fields it needs onto `c`. Services whose
+own mutators already run inside an Angular digest (e.g. `ContentEditService`'s field mutators,
+which rely on the shared `editSubPhase` object reference; `TipService`, which relies on
+`$timeout`'s implicit digest) intentionally do **not** broadcast — see the mutators themselves
+for per-service reasoning before adding more broadcasts. Since `$rootScope` outlives any one
+widget's controller, every controller injects `$scope` alongside `$rootScope` and unsubscribes
+its own listener on teardown:
 `var unsubscribe = $rootScope.$on('dm-state', syncAll); $scope.$on('$destroy', unsubscribe);` —
 without this, a destroyed widget's stale listener keeps firing (and leaking) every time any other
 widget broadcasts.
@@ -45,17 +46,22 @@ keeps `editing` / `search-active` classes for the chrome it still owns (pagehdr,
 `tools/sn-deployment-packager/manifest.schema.md`); `shell` is the only entry with
 `serverScript: true` — the other four get the packager's noop server script stub.
 
-## Template-facing API (accepted debt)
+## Template-facing API
 
-Each widget's template binds a short public surface on its own `c`:
+Each widget's template binds a full-name public surface on its own `c` (suite Scripting style —
+no abbreviation keys):
 
-- Session / location: `c.loc`, `c.loc.sp`, `c.view`, `c.methodologyId`, `c.subPhaseId`
-- RACI grid mirrors: `c.rg`, `c.rgActivePhases`, `c.rgGridFocusJob`, `c.rgByRoleFocusJob`, `c.raciMode`
-- Edit mirrors: `c.editSp`, `c.editMode`, structure mirrors
+- Session / location: `c.location`, `c.location.subPhase`, `c.view`, `c.methodologyId`,
+  `c.subPhaseId`, `c.currentMethodology()`
+- RACI: `c.raciGrid` (`roleIds` / `roleCounts` / `groups` / `byRoleGroups`), `c.activePhases`,
+  `c.gridFocusRoleId`, `c.byRoleFocusRoleId`, `c.raciMode`, plus `toggleRaciPhase` /
+  `toggleRaciColumn` / `clearRaciFocus` / `setRaciMode` / `selectRaciByRole`
+- Edit: `c.editSubPhase`, `c.editMode`, `c.tmpAddJobTitle`, `c.tmpLevelOfEffortRoleId`,
+  structure mirrors (`c.structureEditMode`, …)
+- Search / What's New / Reference payloads use `methodology` / `phase` / `subPhase` (not `m`/`p`/`s`)
 
-These short names are **intentional public API** for HTML bindings. Do not mass-rename them in the
-templates unless doing a dedicated binding pass. New JavaScript (services, packager touches) follows
-suite Scripting style: full names, braced blocks, multi-line object literals.
+CSS class names (`.rg-table`, `.sp-brief`, …) and persisted content fields (`sid`, `abbr`) are
+separate from this binding API and were not renamed.
 
 ## Source layout
 
@@ -69,9 +75,14 @@ suite Scripting style: full names, braced blocks, multi-line object literals.
   pagehdr chrome and a view widget's content used to double up on the same `.app` padding when
   both were plain `.app`, producing an oversized gap under the pagehdr.
 - Session spine: `AppStateService`; tree lookups: `MethodologyDomainService`
-- Icons: `IconService` owns both sub-phase filmstrip glyphs (`pathsFor(sp)` →
-  `c.subPhaseIconPaths`) and chrome UI glyphs (`paths('chevronUp')` → `c.icon`). Templates keep
+- Icons: `IconService` owns both sub-phase filmstrip glyphs (`pathsFor` → `c.subPhaseIconPaths`)
+  and chrome UI glyphs (`paths('chevronUp')` → `c.icon` via `IconService.bind(c)`). Templates keep
   the outer `<svg …>` shell (stroke/size/class) and inject path markup with `ng-bind-html`.
+- Shared controller chrome (DRY): `TipService.bind(c)` attaches tip / tipMouseOver / tipMouseOut /
+  dismissTip (do not re-wrap those per controller); `AppStateService.bindActiveView(c, view)` +
+  `AppStateService.subscribe($rootScope, $scope, syncAll)` for view gating and dm-state teardown;
+  `RaciGridService.bindLegend(c)` for RACI letter/name/hex maps; `MethodologyDomainService.phaseColor`
+  is the single phase-color source (Whats New / RACI grid / Methodology filmstrip).
 - Packager inlines each widget's `templatePartial` (wrapped with the `.app app--view`/`ng-if`
   shell shown above) or `templateFile` (used as-is, for `shell.html`) per `manifest.widgets[]` —
   see `tools/sn-deployment-packager/manifest.schema.md`.

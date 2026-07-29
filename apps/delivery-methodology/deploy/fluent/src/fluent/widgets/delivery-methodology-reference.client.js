@@ -5,24 +5,27 @@ api.controller = function (
   'use strict';
   var c = this;
 
-  c.icon = IconService.paths;
-
-  c.isActiveView = function () {
-    return !AppStateService.getLoading() && AppStateService.getView() === 'reference';
-  };
-
-  c.tip = TipService.tip;
-  c.tipMouseOver = function ($event) { TipService.tipMouseOver($event); };
-  c.tipMouseOut = function ($event) { TipService.tipMouseOut($event); };
-  c.dismissTip = function () { TipService.dismissTip(); };
+  AppStateService.bindActiveView(c, 'reference');
+  TipService.bind(c);
+  IconService.bind(c);
 
   c.showJargon = false;
-  c.jargonHtml = function (text) { return JargonService.jargonHtml(text, c.showJargon); };
-  c.jobTitleColor = function (id) { return MethodologyDomainService.jobTitleColor(c.jobTitles, id); };
-  c.jumpTo = function (subId, methId) { NavigationService.jumpTo(subId, methId); };
+  c.jargonHtml = function (text) {
+    return JargonService.jargonHtml(text, c.showJargon);
+  };
+  c.jobTitleColor = function (jobTitleId) {
+    return MethodologyDomainService.jobTitleColor(c.jobTitles, jobTitleId);
+  };
+  c.jumpTo = function (subPhaseId, methodologyId) {
+    NavigationService.jumpTo(subPhaseId, methodologyId);
+  };
 
-  function sortJobTitleIds(ids) { return MethodologyDomainService.sortJobTitleIds(c.jobTitles, ids); }
-  function jobTitleById(id) { return MethodologyDomainService.jobTitleById(c.jobTitles, id); }
+  function sortJobTitleIds(jobTitleIds) {
+    return MethodologyDomainService.sortJobTitleIds(c.jobTitles, jobTitleIds);
+  }
+  function jobTitleById(jobTitleId) {
+    return MethodologyDomainService.jobTitleById(c.jobTitles, jobTitleId);
+  }
 
   function syncAppState() {
     var appState = AppStateService.readState();
@@ -38,8 +41,7 @@ api.controller = function (
     syncJobAids();
   }
   syncAll();
-  var unsubscribeDmState = $rootScope.$on('dm-state', syncAll);
-  $scope.$on('$destroy', unsubscribeDmState);
+  AppStateService.subscribe($rootScope, $scope, syncAll);
 
   // Enter this view with a stale index (e.g. job aids changed while on another view) - refresh
   // once up front so the index is never a run behind the current content.

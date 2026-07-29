@@ -99,7 +99,9 @@ the small `opts` bag `buildParts` takes. Fluent emit is `fluent.js`'s `assembleF
       // Exactly one of templatePartial / templateFile, OR neither for the shell widget:
       templatePartial: 'partials/methodology.html',  // a bare fragment (no outer wrapper div) -
                                        // the packager wraps it as
-                                       // `<div class="{widgetScopeClass}"><div class="app"
+                                       // `<div class="{widgetScopeClass}"><div class="app app--view"
+                                       // id="dm-panel-<id>" role="tabpanel"
+                                       // aria-labelledby="dm-tab-<id>"
                                        // ng-if="c.isActiveView()">...fragment...</div></div>`
       // templateFile: 'partials/some-full-fragment.html', // a fragment that already authors its
                                        // OWN root div/attributes (e.g. always-visible chrome) -

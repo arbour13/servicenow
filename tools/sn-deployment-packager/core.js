@@ -569,9 +569,19 @@
   // Wraps a raw view-partial fragment for a non-shell widget: the packager decides the outer
   // div and the ng-if that gates it on AppState's current view (see manifest.schema.md's
   // widgets[] doc) - the partial file itself stays the same bare fragment the harness ng-includes.
-  function wrapPartialTemplate(scopeClass, partialBody) {
+  // When opts.widgetId is set (multi-widget view widgets), the inner div also gets the harness's
+  // tabpanel wiring (id=dm-panel-<id>, role=tabpanel, aria-labelledby=dm-tab-<id>) so Shell tabs'
+  // aria-controls resolve after deploy — not only in index.html.
+  function wrapPartialTemplate(scopeClass, partialBody, opts) {
+    opts = opts || {};
     // app--view: no top padding - Shell's .app--chrome already owns the page top gutter.
-    var inner = '<div class="app app--view" ng-if="c.isActiveView()">\n' +
+    var panelAttrs = ' class="app app--view" ng-if="c.isActiveView()"';
+    if (opts.widgetId) {
+      var panelId = 'dm-panel-' + opts.widgetId;
+      var tabId = 'dm-tab-' + opts.widgetId;
+      panelAttrs += ' id="' + panelId + '" role="tabpanel" aria-labelledby="' + tabId + '"';
+    }
+    var inner = '<div' + panelAttrs + '>\n' +
       String(partialBody).replace(/^\n/, '').replace(/\n$/, '') + '\n  </div>';
     return '<div class="' + scopeClass + '">\n' + inner + '\n</div>';
   }
@@ -643,7 +653,7 @@
       if (w.templatePartial) {
         var partialBody = widgetSources.templateTexts && widgetSources.templateTexts[w.id];
         if (partialBody == null) { throw new Error('No template partial source provided for widget "' + w.id + '"'); }
-        widgetTemplate = wrapPartialTemplate(manifest.widgetScopeClass, partialBody);
+        widgetTemplate = wrapPartialTemplate(manifest.widgetScopeClass, partialBody, { widgetId: w.id });
       } else if (w.templateFile) {
         var fileBody = widgetSources.templateTexts && widgetSources.templateTexts[w.id];
         if (fileBody == null) { throw new Error('No template file source provided for widget "' + w.id + '"'); }

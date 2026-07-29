@@ -414,7 +414,7 @@
 }.dm-widget .theme-toggle svg {
   width: 16px;
   height: 16px;
-}/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */.dm-widget .nav-btn:focus-visible, .dm-widget .theme-toggle:focus-visible, .dm-widget .edit-pencil:focus-visible, .dm-widget .struct-icon-btn:focus-visible, .dm-widget .meth-tab:focus-visible, .dm-widget .vtab:focus-visible, .dm-widget .loe-mode-btn:focus-visible, .dm-widget .btn:focus-visible, .dm-widget .participant-chip:focus-visible, .dm-widget .ja-rolechip:focus-visible, .dm-widget .rg-pchip:focus-visible, .dm-widget .jt-pick-btn:focus-visible, .dm-widget .raci-toggle:focus-visible, .dm-widget .reorder-btn:focus-visible, .dm-widget .field-x:focus-visible, .dm-widget .x-btn:focus-visible, .dm-widget .add-item-btn:focus-visible, .dm-widget .loe-flag-btn:focus-visible, .dm-widget .meth-intro-toggle:focus-visible, .dm-widget .sp-brief-toggle:focus-visible, .dm-widget .loe-billable-toggle.jargon-toggle:focus-within {
+}/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */.dm-widget .nav-btn:focus-visible, .dm-widget .theme-toggle:focus-visible, .dm-widget .edit-pencil:focus-visible, .dm-widget .struct-icon-btn:focus-visible, .dm-widget .methodology-tab:focus-visible, .dm-widget .vtab:focus-visible, .dm-widget .loe-mode-btn:focus-visible, .dm-widget .btn:focus-visible, .dm-widget .participant-chip:focus-visible, .dm-widget .ja-rolechip:focus-visible, .dm-widget .rg-pchip:focus-visible, .dm-widget .jt-pick-btn:focus-visible, .dm-widget .raci-toggle:focus-visible, .dm-widget .reorder-btn:focus-visible, .dm-widget .field-x:focus-visible, .dm-widget .x-btn:focus-visible, .dm-widget .add-item-btn:focus-visible, .dm-widget .loe-flag-btn:focus-visible, .dm-widget .methodology-intro-toggle:focus-visible, .dm-widget .sp-brief-toggle:focus-visible, .dm-widget .loe-billable-toggle.jargon-toggle:focus-within {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
 }.dm-widget .pagehdr-title {
@@ -495,7 +495,7 @@
   gap: 16px;
   flex-wrap: wrap;
   margin-top: 20px;
-}.dm-widget .meth-switch {
+}.dm-widget .methodology-switch {
   display: inline-flex;
   gap: 4px;
   background: var(--navy-2);
@@ -503,7 +503,7 @@
   border-radius: 24px;
   border: 1px solid var(--line);
   flex-shrink: 0;
-}.dm-widget .meth-tab {
+}.dm-widget .methodology-tab {
   border: none;
   background: transparent;
   color: var(--ink-soft);
@@ -514,19 +514,19 @@
   border-radius: 20px;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
-}.dm-widget .meth-tab:hover {
+}.dm-widget .methodology-tab:hover {
   color: var(--ink);
-}.dm-widget .meth-tab.active {
+}.dm-widget .methodology-tab.active {
   background: var(--gradient-pill);
   color: var(--on-gradient-ink);
   box-shadow: var(--shadow-inset);
-}.dm-widget .meth-tab.meth-add {
+}.dm-widget .methodology-tab.methodology-add {
   color: var(--hs-teal);
   font-weight: 600;
-}.dm-widget .meth-tab.meth-add:hover {
+}.dm-widget .methodology-tab.methodology-add:hover {
   color: var(--ink);
   background: #{'color-mix(in srgb, var(--hs-teal) 12%, transparent)'};
-}.dm-widget .meth-tabs {
+}.dm-widget .methodology-tabs {
   display: inline-flex;
   margin-bottom: 18px;
 }@media (max-width: 620px) {.dm-widget .pagehdr-top {
@@ -545,16 +545,16 @@
   }.dm-widget .views {
     justify-content: space-between;
   }
-}.dm-widget .meth-intro, .dm-widget .sp-brief {
+}.dm-widget .methodology-intro, .dm-widget .sp-brief {
   margin: 0 0 18px;
   border-bottom: 1px solid var(--line-soft);
-}.dm-widget .meth-intro-bar, .dm-widget .sp-brief-bar {
+}.dm-widget .methodology-intro-bar, .dm-widget .sp-brief-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   min-height: 36px;
-}.dm-widget .meth-intro-toggle, .dm-widget .sp-brief-toggle {
+}.dm-widget .methodology-intro-toggle, .dm-widget .sp-brief-toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -566,17 +566,17 @@
   cursor: pointer;
   text-align: left;
   font: inherit;
-}.dm-widget .meth-intro-toggle:hover, .dm-widget .sp-brief-toggle:hover {
+}.dm-widget .methodology-intro-toggle:hover, .dm-widget .sp-brief-toggle:hover {
   color: var(--ink);
-}.dm-widget .meth-intro-chevron, .dm-widget .sp-brief-chevron {
+}.dm-widget .methodology-intro-chevron, .dm-widget .sp-brief-chevron {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
   transition: transform 0.18s ease;
   transform: rotate(90deg);
-}.dm-widget .meth-intro.collapsed .meth-intro-chevron, .dm-widget .sp-brief.collapsed .sp-brief-chevron {
+}.dm-widget .methodology-intro.collapsed .methodology-intro-chevron, .dm-widget .sp-brief.collapsed .sp-brief-chevron {
   transform: rotate(0deg);
-}.dm-widget .meth-intro-heading, .dm-widget .sp-brief-heading {
+}.dm-widget .methodology-intro-heading, .dm-widget .sp-brief-heading {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -588,49 +588,49 @@
   margin-top: 0;
 }.dm-widget .sp-brief-body .sec {
   margin-top: 14px;
-}.dm-widget .meth-intro-feedback {
+}.dm-widget .methodology-intro-feedback {
   flex-shrink: 0;
   color: var(--hs-teal);
   font-size: 12.5px;
   font-weight: 600;
   text-decoration: none;
-}.dm-widget .meth-intro-feedback:hover {
+}.dm-widget .methodology-intro-feedback:hover {
   text-decoration: underline;
   text-underline-offset: 2px;
-}.dm-widget .meth-intro-body {
+}.dm-widget .methodology-intro-body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
   padding: 4px 0 16px 24px;
-}.dm-widget .meth-intro-body.has-diagram {
+}.dm-widget .methodology-intro-body.has-diagram {
   grid-template-columns: #{'minmax(0, 1.4fr)'} #{'minmax(0, 1fr)'};
-}.dm-widget .meth-intro-copy {
+}.dm-widget .methodology-intro-copy {
   min-width: 0;
-}.dm-widget .meth-intro-copy p {
+}.dm-widget .methodology-intro-copy p {
   margin: 0 0 10px;
   color: var(--ink-soft);
   font-size: 13.5px;
   line-height: 1.55;
   max-width: 80ch;
-}.dm-widget .meth-intro-body.has-diagram .meth-intro-copy p {
+}.dm-widget .methodology-intro-body.has-diagram .methodology-intro-copy p {
   max-width: none;
-}.dm-widget .meth-intro-copy p:last-child {
+}.dm-widget .methodology-intro-copy p:last-child {
   margin-bottom: 0;
-}.dm-widget .meth-intro-empty {
+}.dm-widget .methodology-intro-empty {
   color: var(--ink-faint);
   font-style: italic;
-}.dm-widget .meth-intro-diagram {
+}.dm-widget .methodology-intro-diagram {
   min-width: 0;
   align-self: start;
   background: #fff;
   border-radius: 10px;
   padding: 10px;
-}.dm-widget .meth-intro-diagram img {
+}.dm-widget .methodology-intro-diagram img {
   display: block;
   width: 100%;
   height: auto;
   border-radius: 4px;
-}@media (max-width: 900px) {.dm-widget .meth-intro-body.has-diagram {
+}@media (max-width: 900px) {.dm-widget .methodology-intro-body.has-diagram {
     grid-template-columns: 1fr;
   }
 }.dm-widget .road {

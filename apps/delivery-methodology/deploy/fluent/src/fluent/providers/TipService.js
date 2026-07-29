@@ -84,12 +84,20 @@
     return tip;
   }
 
+  function bind(controller) {
+    controller.tip = tip;
+    controller.tipMouseOver = tipMouseOver;
+    controller.tipMouseOut = tipMouseOut;
+    controller.dismissTip = dismissTip;
+  }
+
   return {
     TIP_DELAY_MS: TIP_DELAY_MS,
     tip: tip,
     readState: readState,
     tipMouseOver: tipMouseOver,
     tipMouseOut: tipMouseOut,
-    dismissTip: dismissTip
+    dismissTip: dismissTip,
+    bind: bind
   };
 }]

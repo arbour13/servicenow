@@ -1,9 +1,9 @@
         <p class="empty" ng-if="!c.whatsNew.length">Nothing unread. You&rsquo;re caught up.</p>
-        <button type="button" class="whatsnew-item" ng-repeat="it in c.whatsNew" ng-click="c.jumpTo(it.s.id, it.m.id)">
+        <button type="button" class="whatsnew-item" ng-repeat="item in c.whatsNew" ng-click="c.jumpTo(item.subPhase.id, item.methodology.id)">
           <div class="wn-top">
-            <span class="wn-loc" ng-style="{background: it.color}">{{it.m.name}} &middot; {{it.s.sid}}</span>
-            <span class="wn-title">{{it.s.name}}</span>
-            <span class="wn-date">{{c.fmtDate(it.entry.ts)}} &middot; {{c.daysAgo(it.entry.ts)}}d ago</span>
+            <span class="wn-loc" ng-style="{background: item.color}">{{item.methodology.name}} &middot; {{item.subPhase.sid}}</span>
+            <span class="wn-title">{{item.subPhase.name}}</span>
+            <span class="wn-date">{{c.formatDate(item.entry.ts)}} &middot; {{c.daysAgo(item.entry.ts)}}d ago</span>
           </div>
-          <div class="wn-summary">{{it.entry.text}}</div>
+          <div class="wn-summary">{{item.entry.text}}</div>
         </button>

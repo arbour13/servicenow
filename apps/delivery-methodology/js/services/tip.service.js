@@ -1,4 +1,9 @@
-/* Delegated tooltip engine for data-tip and jargon-term elements. */
+/* Delegated tooltip engine for data-tip and jargon-term elements.
+
+   Controllers that host tip-delegation attrs (ng-mouseover / ng-mouseout / ng-click on their
+   root) call TipService.bind(c) once - do not re-wrap tipMouseOver / tipMouseOut / dismissTip
+   per controller. The tip *element* (#dm-tip) lives only in Shell; every widget still needs the
+   handlers because each has its own DOM subtree. */
 angular.module('deliveryMethodology').factory('TipService', ['$timeout', function ($timeout) {
   'use strict';
 
@@ -85,12 +90,20 @@ angular.module('deliveryMethodology').factory('TipService', ['$timeout', functio
     return tip;
   }
 
+  function bind(controller) {
+    controller.tip = tip;
+    controller.tipMouseOver = tipMouseOver;
+    controller.tipMouseOut = tipMouseOut;
+    controller.dismissTip = dismissTip;
+  }
+
   return {
     TIP_DELAY_MS: TIP_DELAY_MS,
     tip: tip,
     readState: readState,
     tipMouseOver: tipMouseOver,
     tipMouseOut: tipMouseOut,
-    dismissTip: dismissTip
+    dismissTip: dismissTip,
+    bind: bind
   };
 }]);

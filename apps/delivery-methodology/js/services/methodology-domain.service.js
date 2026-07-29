@@ -3,6 +3,12 @@ angular.module('deliveryMethodology').factory('MethodologyDomainService', [funct
   'use strict';
 
   var JOB_TITLE_ORDER = ['em', 'bpc', 'arch', 'tc', 'ux'];
+  // CSS var references (not literal hexes) so consumers stay theme-aware.
+  var PHASE_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--p5)'];
+
+  function phaseColor(phaseIndex) {
+    return PHASE_COLORS[phaseIndex % PHASE_COLORS.length];
+  }
 
   function hasContent(subPhase) {
     return !!(subPhase && (subPhase.overview || subPhase.objective
@@ -30,7 +36,7 @@ angular.module('deliveryMethodology').factory('MethodologyDomainService', [funct
     return null;
   }
 
-  function curMeth(methodologies, methodologyId) {
+  function currentMethodology(methodologies, methodologyId) {
     return (methodologies || []).find(function (methodology) {
       return methodology.id === methodologyId;
     });
@@ -44,7 +50,10 @@ angular.module('deliveryMethodology').factory('MethodologyDomainService', [funct
 
   function jobTitleColor(jobTitles, jobTitleId) {
     var jobTitle = jobTitleById(jobTitles, jobTitleId);
-    return (jobTitle && jobTitle.external) ? 'var(--ink-soft)' : 'var(--ink-soft)';
+    if (jobTitle && jobTitle.external) {
+      return 'var(--ink-soft)';
+    }
+    return 'var(--ink-soft)';
   }
 
   function isExternalJobTitle(jobTitles, jobTitleId) {
@@ -57,11 +66,22 @@ angular.module('deliveryMethodology').factory('MethodologyDomainService', [funct
       var leftExternal = isExternalJobTitle(jobTitles, leftId);
       var rightExternal = isExternalJobTitle(jobTitles, rightId);
       if (leftExternal !== rightExternal) {
-        return leftExternal ? 1 : -1;
+        if (leftExternal) {
+          return 1;
+        }
+        return -1;
       }
       var leftIndex = JOB_TITLE_ORDER.indexOf(leftId);
       var rightIndex = JOB_TITLE_ORDER.indexOf(rightId);
-      return (leftIndex === -1 ? 999 : leftIndex) - (rightIndex === -1 ? 999 : rightIndex);
+      var leftRank = 999;
+      var rightRank = 999;
+      if (leftIndex !== -1) {
+        leftRank = leftIndex;
+      }
+      if (rightIndex !== -1) {
+        rightRank = rightIndex;
+      }
+      return leftRank - rightRank;
     });
   }
 
@@ -75,10 +95,10 @@ angular.module('deliveryMethodology').factory('MethodologyDomainService', [funct
         });
         if (subPhase) {
           return {
-            meth: methodology,
+            methodology: methodology,
             phase: phase,
             phaseIndex: phaseIndex,
-            sp: subPhase
+            subPhase: subPhase
           };
         }
       }
@@ -191,7 +211,7 @@ angular.module('deliveryMethodology').factory('MethodologyDomainService', [funct
   return {
     hasContent: hasContent,
     firstContentSubPhase: firstContentSubPhase,
-    curMeth: curMeth,
+    currentMethodology: currentMethodology,
     jobTitleById: jobTitleById,
     jobTitleColor: jobTitleColor,
     sortJobTitleIds: sortJobTitleIds,
@@ -201,6 +221,7 @@ angular.module('deliveryMethodology').factory('MethodologyDomainService', [funct
     taskTableRoles: taskTableRoles,
     computeLoeRows: computeLoeRows,
     backfillParticipants: backfillParticipants,
-    deriveParticipantIdsFromTasks: deriveParticipantIdsFromTasks
+    deriveParticipantIdsFromTasks: deriveParticipantIdsFromTasks,
+    phaseColor: phaseColor
   };
 }]);

@@ -1,20 +1,31 @@
 /* What's New aggregation and session read/unread helpers.
    Mutates changelog entry.read in memory only - never persists (SCHEMA prefs later). */
-angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
+angular.module('deliveryMethodology').factory('WhatsNewService', [
+  'MethodologyDomainService',
+  function (MethodologyDomainService) {
   'use strict';
 
-  var PHASE_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--p5)'];
   var TODAY = (function () {
     var date = new Date();
     var month = date.getMonth() + 1;
     var day = date.getDate();
-    return date.getFullYear() + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
+    var monthPart = String(month);
+    var dayPart = String(day);
+    if (month < 10) {
+      monthPart = '0' + month;
+    }
+    if (day < 10) {
+      dayPart = '0' + day;
+    }
+    return date.getFullYear() + '-' + monthPart + '-' + dayPart;
   })();
 
   var whatsNew = [];
 
   function unreadEntries(subPhase) {
-    return (subPhase.changelog || []).filter(function (entry) { return !entry.read; });
+    return (subPhase.changelog || []).filter(function (entry) {
+      return !entry.read;
+    });
   }
 
   function unreadCount(subPhase) {
@@ -32,7 +43,9 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
   }
 
   function phaseHasUnread(phase) {
-    return (phase.subPhases || []).some(function (subPhase) { return unreadCount(subPhase) > 0; });
+    return (phase.subPhases || []).some(function (subPhase) {
+      return unreadCount(subPhase) > 0;
+    });
   }
 
   function refresh(methodologies) {
@@ -42,12 +55,12 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
         (phase.subPhases || []).forEach(function (subPhase) {
           unreadEntries(subPhase).forEach(function (entry) {
             items.push({
-              m: methodology,
-              p: phase,
-              pi: phaseIndex,
-              s: subPhase,
+              methodology: methodology,
+              phase: phase,
+              phaseIndex: phaseIndex,
+              subPhase: subPhase,
               entry: entry,
-              color: PHASE_COLORS[phaseIndex % PHASE_COLORS.length]
+              color: MethodologyDomainService.phaseColor(phaseIndex)
             });
           });
         });
@@ -62,12 +75,14 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
 
   function markRead(subPhase, methodologies) {
     var entries = unreadEntries(subPhase);
-    entries.forEach(function (entry) { entry.read = true; });
+    entries.forEach(function (entry) {
+      entry.read = true;
+    });
     refresh(methodologies);
     return entries;
   }
 
-  function fmtDate(dateStr) {
+  function formatDate(dateStr) {
     var parts = String(dateStr).split('-');
     if (parts.length !== 3) {
       return dateStr;
@@ -86,6 +101,11 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
     };
   }
 
+  function bindFormatters(controller) {
+    controller.formatDate = formatDate;
+    controller.daysAgo = daysAgo;
+  }
+
   return {
     unreadEntries: unreadEntries,
     unreadCount: unreadCount,
@@ -93,8 +113,9 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
     phaseHasUnread: phaseHasUnread,
     markRead: markRead,
     refresh: refresh,
-    fmtDate: fmtDate,
+    formatDate: formatDate,
     daysAgo: daysAgo,
-    readState: readState
+    readState: readState,
+    bindFormatters: bindFormatters
   };
 }]);

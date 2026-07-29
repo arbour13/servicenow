@@ -31,7 +31,9 @@ angular.module('deliveryMethodology').factory('ThemeService', [function () {
       /* storage unavailable */
     }
   }
-  function applyApp() { document.documentElement.setAttribute('data-theme', appTheme); }
+  function applyApp() {
+    document.documentElement.setAttribute('data-theme', appTheme);
+  }
 
   var svc = {
     // Call once before use, with this app's own localStorage key prefix. A manual choice (stored)

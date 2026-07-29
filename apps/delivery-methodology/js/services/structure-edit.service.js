@@ -5,7 +5,7 @@
    Cross-widget note: every structural mutation broadcasts ($rootScope.$broadcast('dm-state'))
    because it can touch AppState (methodologyId/subPhaseId), and refreshDerived() below updates
    WhatsNewService/ReferenceService/RaciGridService's OWN internal state - none of which
-   automatically refreshes another widget's mirrored `c.whatsNew`/`c.jobAids`/`c.rg` copies without
+   automatically refreshes another widget's mirrored `c.whatsNew`/`c.jobAids`/`c.raciGrid` copies without
    this broadcast. */
 angular.module('deliveryMethodology').factory('StructureEditService', [
   'DataService', 'IdSeqService', 'NavigationService', 'RaciGridService', 'MessagingService',
@@ -29,11 +29,15 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
   };
 
   function bind(hostHooks) {
-    hooks = hostHooks || {};
+    if (hostHooks) {
+      hooks = hostHooks;
+    } else {
+      hooks = {};
+    }
   }
 
-  function curMeth() {
-    return MethodologyDomainService.curMeth(
+  function currentMethodology() {
+    return MethodologyDomainService.currentMethodology(
       AppStateService.getMethodologies(),
       AppStateService.getMethodologyId()
     );
@@ -54,7 +58,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     ReferenceService.refresh(methodologies, sortJobTitleIds, jobTitleById);
     if (AppStateService.getView() === 'raci') {
       RaciGridService.refresh({
-        methodology: curMeth(),
+        methodology: currentMethodology(),
         sortJobTitleIds: sortJobTitleIds,
         hasContent: MethodologyDomainService.hasContent
       });
@@ -65,11 +69,11 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
   }
 
   function markReadCurrent() {
-    var location = AppStateService.getLoc();
-    if (!location || !location.sp) {
+    var location = AppStateService.getLocation();
+    if (!location || !location.subPhase) {
       return;
     }
-    var entries = WhatsNewService.markRead(location.sp, AppStateService.getMethodologies());
+    var entries = WhatsNewService.markRead(location.subPhase, AppStateService.getMethodologies());
     AppStateService.setJustRead(entries);
   }
 
@@ -91,8 +95,8 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     state.structureNavSnapshot = {
       methodologyId: AppStateService.getMethodologyId(),
       subPhaseId: AppStateService.getSubPhaseId(),
-      methSubPhaseById: NavigationService.getResumeMap(),
-      rgActivePhases: RaciGridService.getActivePhases(),
+      methodologySubPhaseById: NavigationService.getResumeMap(),
+      activePhases: RaciGridService.getActivePhases(),
       navHistory: NavigationService.getHistory()
     };
     state.structureEditMode = true;
@@ -129,13 +133,13 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       if (state.structureNavSnapshot) {
         AppStateService.setMethodologyId(state.structureNavSnapshot.methodologyId);
         AppStateService.setSubPhaseId(state.structureNavSnapshot.subPhaseId);
-        NavigationService.setResumeMap(state.structureNavSnapshot.methSubPhaseById);
+        NavigationService.setResumeMap(state.structureNavSnapshot.methodologySubPhaseById);
         NavigationService.setHistory(state.structureNavSnapshot.navHistory);
-        RaciGridService.setActivePhases(state.structureNavSnapshot.rgActivePhases);
+        RaciGridService.setActivePhases(state.structureNavSnapshot.activePhases);
       }
     }
     exitStructureEdit();
-    AppStateService.refreshLoc();
+    AppStateService.refreshLocation();
     refreshDerived();
     MessagingService.toast('Structure edit cancelled - changes reverted');
     MessagingService.scrollPageToTop();
@@ -187,7 +191,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     var coercedNames = coerceBlankNames(methodologies);
     AppStateService.persistMethodologies().then(function () {
       exitStructureEdit();
-      AppStateService.refreshLoc();
+      AppStateService.refreshLocation();
       refreshDerived();
       NavigationService.push();
       if (hooks.afterSaveSuccess) {
@@ -257,7 +261,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     AppStateService.setSubPhaseId(subPhase.id);
     RaciGridService.ensureActivePhases(methodology);
     RaciGridService.activatePhase(phase.id);
-    AppStateService.refreshLoc();
+    AppStateService.refreshLocation();
     markReadCurrent();
     refreshDerived();
     NavigationService.push();
@@ -278,7 +282,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       MessagingService.toast('Keep at least one methodology');
       return;
     }
-    var methodology = curMeth();
+    var methodology = currentMethodology();
     if (!methodology) {
       return;
     }
@@ -303,7 +307,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       AppStateService.setMethodologyId(next.id);
       AppStateService.setSubPhaseId(NavigationService.remembered(next.id) || MethodologyDomainService.firstContentSubPhase(next));
       NavigationService.remember(next.id, AppStateService.getSubPhaseId());
-      AppStateService.refreshLoc();
+      AppStateService.refreshLocation();
       refreshDerived();
       NavigationService.push();
       notify();
@@ -325,7 +329,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
   }
 
   function addPhase() {
-    var methodology = curMeth();
+    var methodology = currentMethodology();
     if (!methodology) {
       MessagingService.toast('Add a methodology first');
       return;
@@ -350,16 +354,30 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     RaciGridService.activatePhase(phase.id);
     AppStateService.setSubPhaseId(subPhase.id);
     NavigationService.remember(methodology.id, subPhase.id);
-    AppStateService.refreshLoc();
+    AppStateService.refreshLocation();
     notify();
   }
 
+  // Keep sibling .order dense and aligned with array position. Hydrate sorts by .order, so a
+  // swap/add that only mutates the array (and leaves stale .order) is undone on every SN reload.
+  function renumberPhaseOrders(methodology) {
+    (methodology.phases || []).forEach(function (phase, orderIndex) {
+      phase.order = orderIndex + 1;
+    });
+  }
+
+  function renumberSubPhaseOrders(phase) {
+    (phase.subPhases || []).forEach(function (subPhase, orderIndex) {
+      subPhase.order = orderIndex + 1;
+    });
+  }
+
+  // Draft-only, same as addPhase: stays in structure edit until Save. (Previously this path
+  // force-persisted the whole draft and jumped into content edit, so Cancel could no longer
+  // undo prior structure changes.)
   function addSubPhase(phaseIndex) {
-    var methodology = curMeth();
+    var methodology = currentMethodology();
     if (!methodology) {
-      return;
-    }
-    if (!AppStateService.tryBeginSave()) {
       return;
     }
     var phase = methodology.phases[phaseIndex];
@@ -376,32 +394,16 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       read: false
     });
     phase.subPhases.push(subPhase);
+    renumberSubPhaseOrders(phase);
     IdSeqService.recomputeSids(methodology);
-    AppStateService.persistMethodologies().then(function () {
-      exitStructureEdit();
-      AppStateService.setSubPhaseId(subPhase.id);
-      NavigationService.remember(methodology.id, subPhase.id);
-      AppStateService.refreshLoc();
-      markReadCurrent();
-      refreshDerived();
-      if (hooks.enterContentEdit) {
-        hooks.enterContentEdit();
-      }
-      notify();
-    }, function () {
-      // Keep the new sub-phase in the open structure draft; only roll back the sid numbers
-      // if the host wants a sync. Persist toast already fired.
-      IdSeqService.recomputeSids(methodology);
-      if (hooks.afterSaveFailure) {
-        hooks.afterSaveFailure();
-      }
-      AppStateService.refreshLoc();
-      notify();
-    });
+    AppStateService.setSubPhaseId(subPhase.id);
+    NavigationService.remember(methodology.id, subPhase.id);
+    AppStateService.refreshLocation();
+    notify();
   }
 
   function movePhase(index, direction) {
-    var methodology = curMeth();
+    var methodology = currentMethodology();
     if (!methodology) {
       return;
     }
@@ -417,12 +419,13 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     var temporary = methodology.phases[index];
     methodology.phases[index] = methodology.phases[swapIndex];
     methodology.phases[swapIndex] = temporary;
+    renumberPhaseOrders(methodology);
     IdSeqService.recomputeSids(methodology);
     notify();
   }
 
   function moveSubPhase(phaseIndex, index, direction) {
-    var methodology = curMeth();
+    var methodology = currentMethodology();
     if (!methodology) {
       return;
     }
@@ -439,12 +442,13 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     var temporary = array[index];
     array[index] = array[swapIndex];
     array[swapIndex] = temporary;
+    renumberSubPhaseOrders(methodology.phases[phaseIndex]);
     IdSeqService.recomputeSids(methodology);
     notify();
   }
 
   function deletePhase(index) {
-    var methodology = curMeth();
+    var methodology = currentMethodology();
     if (!methodology) {
       return;
     }
@@ -466,11 +470,12 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
         return subPhase.id;
       });
       methodology.phases.splice(index, 1);
+      renumberPhaseOrders(methodology);
       IdSeqService.recomputeSids(methodology);
       RaciGridService.deactivatePhase(phase.id);
       if (removedIds.indexOf(AppStateService.getSubPhaseId()) >= 0) {
         AppStateService.setSubPhaseId(MethodologyDomainService.firstContentSubPhase(methodology));
-        AppStateService.refreshLoc();
+        AppStateService.refreshLocation();
       }
       refreshDerived();
       notify();
@@ -478,7 +483,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
   }
 
   function deleteSubPhase(phaseIndex, index) {
-    var methodology = curMeth();
+    var methodology = currentMethodology();
     if (!methodology) {
       return;
     }
@@ -495,6 +500,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       }
       var wasOpen = subPhase.id === AppStateService.getSubPhaseId();
       array.splice(index, 1);
+      renumberSubPhaseOrders(methodology.phases[phaseIndex]);
       IdSeqService.recomputeSids(methodology);
       if (wasOpen) {
         var next = array[index] || array[index - 1];
@@ -505,7 +511,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
           AppStateService.setSubPhaseId(MethodologyDomainService.firstContentSubPhase(methodology));
           NavigationService.remember(methodology.id, AppStateService.getSubPhaseId());
         }
-        AppStateService.refreshLoc();
+        AppStateService.refreshLocation();
       }
       refreshDerived();
       notify();

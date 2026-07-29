@@ -52,8 +52,12 @@ angular.module('deliveryMethodology').factory('ChangelogDiffService', [function 
     var beforeCount = {};
     var afterCount = {};
 
-    before.forEach(function (item) { beforeCount[item] = (beforeCount[item] || 0) + 1; });
-    after.forEach(function (item) { afterCount[item] = (afterCount[item] || 0) + 1; });
+    before.forEach(function (item) {
+      beforeCount[item] = (beforeCount[item] || 0) + 1;
+    });
+    after.forEach(function (item) {
+      afterCount[item] = (afterCount[item] || 0) + 1;
+    });
 
     uniqueKeys(Object.keys(beforeCount).concat(Object.keys(afterCount))).forEach(function (item) {
       var delta = (afterCount[item] || 0) - (beforeCount[item] || 0);
@@ -259,12 +263,20 @@ angular.module('deliveryMethodology').factory('ChangelogDiffService', [function 
   }
 
   function describeChanges(before, after, jobTitleById) {
-    var resolveJobTitle = jobTitleById || function () { return null; };
+    var resolveJobTitle = jobTitleById || function () {
+      return null;
+    };
     var changes = [];
 
-    if (before.name !== after.name) { changes.push('Renamed to “' + after.name + '”'); }
-    if (before.overview !== after.overview) { changes.push('Overview edited'); }
-    if (before.objective !== after.objective) { changes.push('Objective edited'); }
+    if (before.name !== after.name) {
+      changes.push('Renamed to “' + after.name + '”');
+    }
+    if (before.overview !== after.overview) {
+      changes.push('Overview edited');
+    }
+    if (before.objective !== after.objective) {
+      changes.push('Objective edited');
+    }
 
     changes = changes.concat(describeParticipantChanges(before.participants, after.participants, resolveJobTitle));
     changes = changes.concat(describeLevelOfEffortChanges(before.levelOfEffort, after.levelOfEffort, resolveJobTitle));

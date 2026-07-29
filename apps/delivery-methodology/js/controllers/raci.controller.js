@@ -2,7 +2,7 @@
    Visible only when AppState.view === 'raci' (see isActiveView). Owns RaciGridService's mode/
    filter/focus state end to end - StructureEditService.refreshDerived() may recompute the grid's
    groups when structure changes elsewhere (Methodology widget), which is why this controller
-   re-syncs c.rg on every 'dm-state' broadcast rather than only after its own actions. */
+   re-syncs c.raciGrid on every 'dm-state' broadcast rather than only after its own actions. */
 angular.module('deliveryMethodology').controller('DmRaciController', [
   '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'RaciGridService', 'TipService',
   'IconService',
@@ -11,30 +11,25 @@ angular.module('deliveryMethodology').controller('DmRaciController', [
   'use strict';
   var c = this;
 
-  c.icon = IconService.paths;
+  c.hoverColumnRoleId = null;
+  AppStateService.bindActiveView(c, 'raci');
+  TipService.bind(c);
+  IconService.bind(c);
+  RaciGridService.bindLegend(c);
 
-  c.isActiveView = function () {
-    return !AppStateService.getLoading() && AppStateService.getView() === 'raci';
-  };
-
-  c.tip = TipService.tip;
-  c.tipMouseOver = function ($event) { TipService.tipMouseOver($event); };
-  c.tipMouseOut = function ($event) { TipService.tipMouseOut($event); };
-  c.dismissTip = function () { TipService.dismissTip(); };
-
-  c.raciLetters = ['R', 'A', 'C', 'I'];
-  c.raciNames = { R: 'Responsible', A: 'Accountable', C: 'Consulted', I: 'Informed' };
-  c.raciHex = { R: '#01cc52', A: '#e5c20b', C: '#3ec2f8', I: '#bdc2cb' };
-
-  function curMeth() {
-    return MethodologyDomainService.curMeth(c.methodologies, c.methodologyId);
+  function currentMethodology() {
+    return MethodologyDomainService.currentMethodology(c.methodologies, c.methodologyId);
   }
-  c.curMeth = curMeth;
-  c.jobTitleById = function (id) { return MethodologyDomainService.jobTitleById(c.jobTitles, id); };
-  function sortJobTitleIds(ids) { return MethodologyDomainService.sortJobTitleIds(c.jobTitles, ids); }
-  function rgContext() {
+  c.currentMethodology = currentMethodology;
+  c.jobTitleById = function (jobTitleId) {
+    return MethodologyDomainService.jobTitleById(c.jobTitles, jobTitleId);
+  };
+  function sortJobTitleIds(jobTitleIds) {
+    return MethodologyDomainService.sortJobTitleIds(c.jobTitles, jobTitleIds);
+  }
+  function raciGridContext() {
     return {
-      methodology: curMeth(),
+      methodology: currentMethodology(),
       sortJobTitleIds: sortJobTitleIds,
       hasContent: MethodologyDomainService.hasContent
     };
@@ -47,32 +42,48 @@ angular.module('deliveryMethodology').controller('DmRaciController', [
     c.methodologyId = appState.methodologyId;
     c.loading = appState.loading;
   }
-  function syncRg() {
+  function syncRaciGrid() {
     var state = RaciGridService.readState();
     c.raciMode = state.raciMode;
-    c.rgActivePhases = state.rgActivePhases;
-    c.rgGridFocusJob = state.rgGridFocusJob;
-    c.rgByRoleFocusJob = state.rgByRoleFocusJob;
-    c.rg = state.rg;
+    c.activePhases = state.activePhases;
+    c.gridFocusRoleId = state.gridFocusRoleId;
+    c.byRoleFocusRoleId = state.byRoleFocusRoleId;
+    c.raciGrid = state.raciGrid;
   }
   function syncAll() {
     syncAppState();
-    syncRg();
+    syncRaciGrid();
   }
   syncAll();
-  var unsubscribeDmState = $rootScope.$on('dm-state', syncAll);
-  $scope.$on('$destroy', unsubscribeDmState);
+  AppStateService.subscribe($rootScope, $scope, syncAll);
 
   // Enter this view with a stale grid (e.g. tasks changed while on another view) - refresh once
   // up front so the grid is never a run behind the current methodology.
-  RaciGridService.refresh(rgContext());
-  syncRg();
+  RaciGridService.refresh(raciGridContext());
+  syncRaciGrid();
 
-  c.jumpTo = function (subId, methId, elKey) { NavigationService.jumpTo(subId, methId, elKey); };
+  c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
+    NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);
+  };
 
-  c.rgTogglePhase = function (id) { RaciGridService.togglePhase(id, rgContext()); syncRg(); };
-  c.rgToggleCol = function (id) { RaciGridService.toggleCol(id, rgContext()); syncRg(); };
-  c.rgClearFocus = function () { RaciGridService.clearFocus(rgContext()); syncRg(); };
-  c.rgSetMode = function (mode) { RaciGridService.setMode(mode, rgContext()); syncRg(); };
-  c.rgSelectByRole = function (id) { RaciGridService.selectByRole(id, rgContext()); syncRg(); };
+  c.toggleRaciPhase = function (phaseId) {
+    RaciGridService.togglePhase(phaseId, raciGridContext());
+    syncRaciGrid();
+  };
+  c.toggleRaciColumn = function (roleId) {
+    RaciGridService.toggleCol(roleId, raciGridContext());
+    syncRaciGrid();
+  };
+  c.clearRaciFocus = function () {
+    RaciGridService.clearFocus(raciGridContext());
+    syncRaciGrid();
+  };
+  c.setRaciMode = function (mode) {
+    RaciGridService.setMode(mode, raciGridContext());
+    syncRaciGrid();
+  };
+  c.selectRaciByRole = function (roleId) {
+    RaciGridService.selectByRole(roleId, raciGridContext());
+    syncRaciGrid();
+  };
 }]);

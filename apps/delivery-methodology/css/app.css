@@ -528,7 +528,7 @@ button {
 .theme-toggle:focus-visible,
 .edit-pencil:focus-visible,
 .struct-icon-btn:focus-visible,
-.meth-tab:focus-visible,
+.methodology-tab:focus-visible,
 .vtab:focus-visible,
 .loe-mode-btn:focus-visible,
 .btn:focus-visible,
@@ -542,7 +542,7 @@ button {
 .x-btn:focus-visible,
 .add-item-btn:focus-visible,
 .loe-flag-btn:focus-visible,
-.meth-intro-toggle:focus-visible,
+.methodology-intro-toggle:focus-visible,
 .sp-brief-toggle:focus-visible,
 .loe-billable-toggle.jargon-toggle:focus-within {
   outline: var(--focus-ring);
@@ -657,7 +657,7 @@ button {
   margin-top: 20px;
 }
 
-.meth-switch {
+.methodology-switch {
   display: inline-flex;
   gap: 4px;
   background: var(--navy-2);
@@ -667,7 +667,7 @@ button {
   flex-shrink: 0;
 }
 
-.meth-tab {
+.methodology-tab {
   border: none;
   background: transparent;
   color: var(--ink-soft);
@@ -680,27 +680,27 @@ button {
   transition: background 0.12s, color 0.12s;
 }
 
-.meth-tab:hover {
+.methodology-tab:hover {
   color: var(--ink);
 }
 
-.meth-tab.active {
+.methodology-tab.active {
   background: var(--gradient-pill);
   color: var(--on-gradient-ink);
   box-shadow: var(--shadow-inset);
 }
 
-.meth-tab.meth-add {
+.methodology-tab.methodology-add {
   color: var(--hs-teal);
   font-weight: 600;
 }
 
-.meth-tab.meth-add:hover {
+.methodology-tab.methodology-add:hover {
   color: var(--ink);
   background: color-mix(in srgb, var(--hs-teal) 12%, transparent);
 }
 
-.meth-tabs {
+.methodology-tabs {
   display: inline-flex;
   margin-bottom: 18px;
 }
@@ -730,13 +730,13 @@ button {
     justify-content: space-between;
   }
 }
-.meth-intro,
+.methodology-intro,
 .sp-brief {
   margin: 0 0 18px;
   border-bottom: 1px solid var(--line-soft);
 }
 
-.meth-intro-bar,
+.methodology-intro-bar,
 .sp-brief-bar {
   display: flex;
   align-items: center;
@@ -745,7 +745,7 @@ button {
   min-height: 36px;
 }
 
-.meth-intro-toggle,
+.methodology-intro-toggle,
 .sp-brief-toggle {
   display: inline-flex;
   align-items: center;
@@ -760,12 +760,12 @@ button {
   font: inherit;
 }
 
-.meth-intro-toggle:hover,
+.methodology-intro-toggle:hover,
 .sp-brief-toggle:hover {
   color: var(--ink);
 }
 
-.meth-intro-chevron,
+.methodology-intro-chevron,
 .sp-brief-chevron {
   width: 16px;
   height: 16px;
@@ -774,12 +774,12 @@ button {
   transform: rotate(90deg);
 }
 
-.meth-intro.collapsed .meth-intro-chevron,
+.methodology-intro.collapsed .methodology-intro-chevron,
 .sp-brief.collapsed .sp-brief-chevron {
   transform: rotate(0deg);
 }
 
-.meth-intro-heading,
+.methodology-intro-heading,
 .sp-brief-heading {
   font-size: 13px;
   font-weight: 600;
@@ -802,7 +802,7 @@ button {
   margin-top: 14px;
 }
 
-.meth-intro-feedback {
+.methodology-intro-feedback {
   flex-shrink: 0;
   color: var(--hs-teal);
   font-size: 12.5px;
@@ -810,27 +810,27 @@ button {
   text-decoration: none;
 }
 
-.meth-intro-feedback:hover {
+.methodology-intro-feedback:hover {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.meth-intro-body {
+.methodology-intro-body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
   padding: 4px 0 16px 24px;
 }
 
-.meth-intro-body.has-diagram {
+.methodology-intro-body.has-diagram {
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
 }
 
-.meth-intro-copy {
+.methodology-intro-copy {
   min-width: 0;
 }
 
-.meth-intro-copy p {
+.methodology-intro-copy p {
   margin: 0 0 10px;
   color: var(--ink-soft);
   font-size: 13.5px;
@@ -838,20 +838,20 @@ button {
   max-width: 80ch;
 }
 
-.meth-intro-body.has-diagram .meth-intro-copy p {
+.methodology-intro-body.has-diagram .methodology-intro-copy p {
   max-width: none;
 }
 
-.meth-intro-copy p:last-child {
+.methodology-intro-copy p:last-child {
   margin-bottom: 0;
 }
 
-.meth-intro-empty {
+.methodology-intro-empty {
   color: var(--ink-faint);
   font-style: italic;
 }
 
-.meth-intro-diagram {
+.methodology-intro-diagram {
   min-width: 0;
   align-self: start;
   background: #fff;
@@ -859,7 +859,7 @@ button {
   padding: 10px;
 }
 
-.meth-intro-diagram img {
+.methodology-intro-diagram img {
   display: block;
   width: 100%;
   height: auto;
@@ -867,7 +867,7 @@ button {
 }
 
 @media (max-width: 900px) {
-  .meth-intro-body.has-diagram {
+  .methodology-intro-body.has-diagram {
     grid-template-columns: 1fr;
   }
 }

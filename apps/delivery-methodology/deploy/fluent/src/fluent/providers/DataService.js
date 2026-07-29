@@ -162,12 +162,12 @@
     return payload;
   }
 
-  function fromServerData(d) {
+  function fromServerData(serverData) {
     return {
-      jobTitles: d.jobTitles || [],
-      methodologies: d.methodologies || [],
-      jargon: d.jargon || {},
-      referenceSections: d.referenceSections || []
+      jobTitles: serverData.jobTitles || [],
+      methodologies: serverData.methodologies || [],
+      jargon: serverData.jargon || {},
+      referenceSections: serverData.referenceSections || []
     };
   }
 
@@ -208,16 +208,16 @@
       return serverApi.get({
         action: 'load'
       }).then(function (response) {
-        var d = (response && response.data) || {};
+        var responseData = (response && response.data) || {};
 
-        if (d.error && !(d.methodologies && d.methodologies.length)) {
-          return rejectServerError(d, 'Could not load content.');
+        if (responseData.error && !(responseData.methodologies && responseData.methodologies.length)) {
+          return rejectServerError(responseData, 'Could not load content.');
         }
 
         // Empty methodologies is valid (fresh instance). Still keep job titles / jargon /
         // referenceSections from the response - emptyPayload() would wipe those lookups.
         // Harness-only DMSeed is never applied here (absent in production).
-        var payload = fromServerData(d);
+        var payload = fromServerData(responseData);
         cacheLookups(payload);
         return payload;
       }, function () {
@@ -237,25 +237,25 @@
       }
 
       return serverApi.get(savePayload(methodologies)).then(function (response) {
-        var d = (response && response.data) || {};
+        var responseData = (response && response.data) || {};
 
-        if (d.error || d.saved === false) {
-          return rejectServerError(d);
+        if (responseData.error || responseData.saved === false) {
+          return rejectServerError(responseData);
         }
 
-        if (d.jobTitles) {
-          cachedJobTitles = d.jobTitles;
+        if (responseData.jobTitles) {
+          cachedJobTitles = responseData.jobTitles;
         }
 
-        if (d.jargon) {
-          cachedJargon = d.jargon;
+        if (responseData.jargon) {
+          cachedJargon = responseData.jargon;
         }
 
-        if (d.referenceSections) {
-          cachedReferenceSections = d.referenceSections;
+        if (responseData.referenceSections) {
+          cachedReferenceSections = responseData.referenceSections;
         }
 
-        return d;
+        return responseData;
       });
     },
     resetData: function () {

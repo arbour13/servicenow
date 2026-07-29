@@ -1,5 +1,5 @@
 <div class="dm-widget">
-<div class="app app--view" ng-if="c.isActiveView()">
+<div class="app app--view" ng-if="c.isActiveView()" id="dm-panel-raci" role="tabpanel" aria-labelledby="dm-tab-raci">
         <!-- Own tip-delegation wrapper - this is now a standalone widget, not a descendant of the
            Shell widget's .app. See ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget
            note. -->
@@ -7,11 +7,11 @@
 
         <div class="views secondary" role="tablist" aria-label="RACI layout">
           <button type="button" class="vtab" role="tab" ng-class="{on: c.raciMode === 'grid'}"
-            ng-click="c.rgSetMode('grid')" aria-selected="{{c.raciMode === 'grid'}}">
+            ng-click="c.setRaciMode('grid')" aria-selected="{{c.raciMode === 'grid'}}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" ng-bind-html="c.icon('grid')"></svg><span>Grid</span>
           </button>
           <button type="button" class="vtab" role="tab" ng-class="{on: c.raciMode === 'byrole'}"
-            ng-click="c.rgSetMode('byrole')" aria-selected="{{c.raciMode === 'byrole'}}">
+            ng-click="c.setRaciMode('byrole')" aria-selected="{{c.raciMode === 'byrole'}}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('userGroup')"></svg><span>By Role</span>
           </button>
@@ -19,35 +19,35 @@
 
         <div ng-if="c.raciMode === 'byrole'">
           <div class="jt-picker">
-            <button type="button" class="jt-pick-btn" ng-class="{active: c.rgByRoleFocusJob === id}"
-              ng-repeat="id in c.rg.ids" ng-click="c.rgSelectByRole(id)">
+            <button type="button" class="jt-pick-btn" ng-class="{active: c.byRoleFocusRoleId === id}"
+              ng-repeat="id in c.raciGrid.roleIds" ng-click="c.selectRaciByRole(id)">
               <svg class="jt-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"
                 stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('checkmark')"></svg><span class="abbr">{{c.jobTitleById(id).abbr}}</span>{{c.jobTitleById(id).name}}<span
-                class="jt-pick-count">{{c.rg.counts[id] || 0}}</span>
+                class="jt-pick-count">{{c.raciGrid.roleCounts[id] || 0}}</span>
             </button>
           </div>
-          <div ng-if="c.rgByRoleFocusJob">
-            <div class="jt-group" ng-repeat="g in c.rg.byRoleGroups">
+          <div ng-if="c.byRoleFocusRoleId">
+            <div class="jt-group" ng-repeat="group in c.raciGrid.byRoleGroups">
               <div class="jt-group-head"><span class="sid"
-                  ng-style="{background: g.color}">{{g.sp.sid}}</span>{{g.phase.name}} - {{g.sp.name}}</div>
-              <div class="jt-task" ng-repeat="t in g.tasks">
-                <span class="rt-raci"><span ng-repeat="l in t.raci[c.rgByRoleFocusJob]"
+                  ng-style="{background: group.color}">{{group.subPhase.sid}}</span>{{group.phase.name}} - {{group.subPhase.name}}</div>
+              <div class="jt-task" ng-repeat="t in group.tasks">
+                <span class="rt-raci"><span ng-repeat="l in t.raci[c.byRoleFocusRoleId]"
                     ng-class="'rl-' + l">{{l}}</span></span>
                 <button type="button" class="rt-text rg-task-link"
-                  ng-click="c.jumpTo(g.sp.id, c.methodologyId, 'task:' + t.id)">{{t.text}}</button>
+                  ng-click="c.jumpTo(group.subPhase.id, c.methodologyId, 'task:' + t.id)">{{t.text}}</button>
               </div>
             </div>
           </div>
-          <p class="empty" ng-if="!c.rgByRoleFocusJob">No job titles have tasks yet.</p>
+          <p class="empty" ng-if="!c.byRoleFocusRoleId">No job titles have tasks yet.</p>
         </div>
 
         <div ng-if="c.raciMode === 'grid'">
           <div class="rg-controls">
             <div class="rg-pfilters">
-              <button type="button" class="rg-pchip" ng-class="{on: c.rgActivePhases[p.id]}"
-                ng-repeat="p in c.curMeth().phases" ng-click="c.rgTogglePhase(p.id)">
+              <button type="button" class="rg-pchip" ng-class="{on: c.activePhases[phase.id]}"
+                ng-repeat="phase in c.currentMethodology().phases" ng-click="c.toggleRaciPhase(phase.id)">
                 <svg class="rgp-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"
-                  stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('checkmark')"></svg>{{p.name}}
+                  stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('checkmark')"></svg>{{phase.name}}
               </button>
             </div>
             <div class="rg-legend">
@@ -56,10 +56,10 @@
             </div>
           </div>
 
-          <div class="rg-focusbar" ng-if="c.rgGridFocusJob">
-            Focused on&nbsp;<b>{{c.jobTitleById(c.rgGridFocusJob).name}}</b>&nbsp;- showing only tasks where they carry a
+          <div class="rg-focusbar" ng-if="c.gridFocusRoleId">
+            Focused on&nbsp;<b>{{c.jobTitleById(c.gridFocusRoleId).name}}</b>&nbsp;- showing only tasks where they carry a
             RACI designation.
-            <button type="button" ng-click="c.rgClearFocus()">Clear focus</button>
+            <button type="button" ng-click="c.clearRaciFocus()">Clear focus</button>
           </div>
 
           <div class="rg-scroller">
@@ -67,33 +67,33 @@
               <thead>
                 <tr>
                   <th class="taskcol">Task</th>
-                  <th ng-class="{focused: c.rgGridFocusJob === id, colhi: !c.rgGridFocusJob && c.rgHoverCol === id}"
-                    ng-repeat="id in c.rg.ids" ng-click="c.rgToggleCol(id)" ng-mouseenter="c.rgHoverCol = id"
-                    ng-mouseleave="c.rgHoverCol = null" data-tip-name="{{c.jobTitleById(id).name}}"
+                  <th ng-class="{focused: c.gridFocusRoleId === id, colhi: !c.gridFocusRoleId && c.hoverColumnRoleId === id}"
+                    ng-repeat="id in c.raciGrid.roleIds" ng-click="c.toggleRaciColumn(id)" ng-mouseenter="c.hoverColumnRoleId = id"
+                    ng-mouseleave="c.hoverColumnRoleId = null" data-tip-name="{{c.jobTitleById(id).name}}"
                     data-tip="{{c.jobTitleById(id).description}}">{{c.jobTitleById(id).abbr}}<span
-                      class="cnt">{{c.rg.counts[id] || 0}}</span></th>
+                      class="cnt">{{c.raciGrid.roleCounts[id] || 0}}</span></th>
                 </tr>
               </thead>
-              <tbody ng-if="!c.rg.groups.length">
+              <tbody ng-if="!c.raciGrid.groups.length">
                 <tr>
-                  <td class="tname rg-empty-cell" colspan="{{c.rg.ids.length + 1}}">No tasks match the current filters.
+                  <td class="tname rg-empty-cell" colspan="{{c.raciGrid.roleIds.length + 1}}">No tasks match the current filters.
                   </td>
                 </tr>
               </tbody>
               <!-- one <tbody> per group (siblings under <table>, never nested inside each other) -
                  the group header + its task/detail rows repeat together as one unit per group. -->
-              <tbody ng-repeat="g in c.rg.groups">
+              <tbody ng-repeat="group in c.raciGrid.groups">
                 <tr class="rg-grouprow">
-                  <td colspan="{{c.rg.ids.length + 1}}"><span class="gsid"
-                      ng-style="{background: g.color}">{{g.sp.sid}}</span>{{g.phase.name}} - {{g.sp.name}}</td>
+                  <td colspan="{{c.raciGrid.roleIds.length + 1}}"><span class="gsid"
+                      ng-style="{background: group.color}">{{group.subPhase.sid}}</span>{{group.phase.name}} - {{group.subPhase.name}}</td>
                 </tr>
-                <tr class="taskrow" ng-repeat="row in g.rows">
+                <tr class="taskrow" ng-repeat="row in group.rows">
                   <td class="tname">
                     <button type="button" class="rg-task-link"
-                      ng-click="c.jumpTo(g.sp.id, c.methodologyId, 'task:' + row.task.id)">{{row.task.text}}</button>
+                      ng-click="c.jumpTo(group.subPhase.id, c.methodologyId, 'task:' + row.task.id)">{{row.task.text}}</button>
                   </td>
-                  <td ng-repeat="id in c.rg.ids"
-                    ng-class="{dimmed: c.rgGridFocusJob && id !== c.rgGridFocusJob, colhi: !c.rgGridFocusJob && c.rgHoverCol === id}">
+                  <td ng-repeat="id in c.raciGrid.roleIds"
+                    ng-class="{dimmed: c.gridFocusRoleId && id !== c.gridFocusRoleId, colhi: !c.gridFocusRoleId && c.hoverColumnRoleId === id}">
                     <span ng-if="row.task.raci[id]" class="rg-lt"><span ng-repeat="l in row.task.raci[id]"
                         ng-class="'rl-' + l">{{l}}</span></span>
                     <span ng-if="!row.task.raci[id]" class="rg-dash">&ndash;</span>
@@ -103,7 +103,7 @@
               <tfoot>
                 <tr class="rg-total">
                   <td class="tname">Total involvements</td>
-                  <td ng-repeat="id in c.rg.ids">{{c.rg.counts[id] || 0}}</td>
+                  <td ng-repeat="id in c.raciGrid.roleIds">{{c.raciGrid.roleCounts[id] || 0}}</td>
                 </tr>
               </tfoot>
             </table>

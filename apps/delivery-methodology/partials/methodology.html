@@ -8,57 +8,57 @@
 
         <!-- One mounted methodology chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
          toggles visibility instead of destroying/rebuilding every station + film card. -->
-        <div class="methodology-chrome" ng-repeat="m in c.methodologies track by m.id" ng-show="m.id === c.methodologyId">
-          <div class="meth-intro" ng-class="{collapsed: c.isMethIntroCollapsed(m.id)}">
-            <div class="meth-intro-bar">
-              <button type="button" class="meth-intro-toggle" ng-click="c.toggleMethIntro(m.id)"
-                aria-expanded="{{!c.isMethIntroCollapsed(m.id)}}">
-                <svg class="meth-intro-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        <div class="methodology-chrome" ng-repeat="methodology in c.methodologies track by methodology.id" ng-show="methodology.id === c.methodologyId">
+          <div class="methodology-intro" ng-class="{collapsed: c.isMethodologyIntroCollapsed(methodology.id)}">
+            <div class="methodology-intro-bar">
+              <button type="button" class="methodology-intro-toggle" ng-click="c.toggleMethodologyIntro(methodology.id)"
+                aria-expanded="{{!c.isMethodologyIntroCollapsed(methodology.id)}}">
+                <svg class="methodology-intro-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('chevronRight')"></svg>
-                <span class="meth-intro-heading">About {{m.name}}</span>
+                <span class="methodology-intro-heading">About {{methodology.name}}</span>
               </button>
-              <a class="meth-intro-feedback" ng-if="m.feedbackUrl" ng-href="{{m.feedbackUrl}}">{{m.feedbackLabel || 'Provide Feedback'}}</a>
+              <a class="methodology-intro-feedback" ng-if="methodology.feedbackUrl" ng-href="{{methodology.feedbackUrl}}">{{methodology.feedbackLabel || 'Provide Feedback'}}</a>
             </div>
-            <div class="meth-intro-body" ng-if="!c.isMethIntroCollapsed(m.id)"
-              ng-class="{'has-diagram': !!m.diagramUrl}">
-              <div class="meth-intro-copy">
-                <p ng-repeat="paragraph in c.methIntroParagraphs(m) track by $index">{{paragraph}}</p>
-                <p class="meth-intro-empty" ng-if="!c.methIntroParagraphs(m).length">About content for this methodology hasn&rsquo;t been written yet.</p>
+            <div class="methodology-intro-body" ng-if="!c.isMethodologyIntroCollapsed(methodology.id)"
+              ng-class="{'has-diagram': !!methodology.diagramUrl}">
+              <div class="methodology-intro-copy">
+                <p ng-repeat="paragraph in c.methodologyIntroParagraphs(methodology) track by $index">{{paragraph}}</p>
+                <p class="methodology-intro-empty" ng-if="!c.methodologyIntroParagraphs(methodology).length">About content for this methodology hasn&rsquo;t been written yet.</p>
               </div>
-              <div class="meth-intro-diagram" ng-if="m.diagramUrl">
-                <img ng-src="{{m.diagramUrl}}" alt="Implementation cycle">
+              <div class="methodology-intro-diagram" ng-if="methodology.diagramUrl">
+                <img ng-src="{{methodology.diagramUrl}}" alt="Implementation cycle">
               </div>
             </div>
           </div>
 
-          <div class="road" style="--stations: {{m.phases.length}}; --active: {{c.phaseIndexInMeth(m)}};">
-            <button type="button" class="station" ng-repeat="p in m.phases track by p.id"
-              ng-class="{done: $index < c.phaseIndexInMeth(m), on: $index === c.phaseIndexInMeth(m)}"
+          <div class="road" style="--stations: {{methodology.phases.length}}; --active: {{c.phaseIndexInMethodology(methodology)}};">
+            <button type="button" class="station" ng-repeat="phase in methodology.phases track by phase.id"
+              ng-class="{done: $index < c.phaseIndexInMethodology(methodology), on: $index === c.phaseIndexInMethodology(methodology)}"
               style="--nc: {{c.phaseColor($index)}};" ng-click="c.selectPhase($index)">
               <span class="station-num">{{$index + 1}}<span class="unread-dot"
-                  ng-if="c.phaseHasUnread(p)"></span></span>
-              <span class="station-name">{{p.name}}</span>
-              <span class="station-count">{{p.subPhases.length}} sub-phase{{p.subPhases.length > 1 ? 's' : ''}}</span>
+                  ng-if="c.phaseHasUnread(phase)"></span></span>
+              <span class="station-name">{{phase.name}}</span>
+              <span class="station-count">{{phase.subPhases.length}} sub-phase{{phase.subPhases.length > 1 ? 's' : ''}}</span>
             </button>
           </div>
 
-          <p class="strip-label" ng-if="m.phases.length">{{(m.phases[c.phaseIndexInMeth(m)] || {}).name}} - sub-phases</p>
+          <p class="strip-label" ng-if="methodology.phases.length">{{(methodology.phases[c.phaseIndexInMethodology(methodology)] || {}).name}} - sub-phases</p>
           <!-- Keep every phase's filmstrip mounted; ng-show swaps which strip is visible so phase
          changes (and returning to a methodology) don't rebuild the cards. -->
-          <div class="film" ng-repeat="p in m.phases track by p.id" ng-show="$index === c.phaseIndexInMeth(m)">
-            <div class="fcard" ng-repeat="s in p.subPhases track by s.id"
-              ng-class="{on: s.id === c.subPhaseId, stub: !c.hasContent(s)}"
-              style="--pc: {{c.phaseColor($parent.$index)}};" role="button" tabindex="0" ng-click="c.openSubPhase(s.id)"
-              ng-keydown="c.fcardKey($event, s)">
+          <div class="film" ng-repeat="phase in methodology.phases track by phase.id" ng-show="$index === c.phaseIndexInMethodology(methodology)">
+            <div class="fcard" ng-repeat="subPhase in phase.subPhases track by subPhase.id"
+              ng-class="{on: subPhase.id === c.subPhaseId, stub: !c.hasContent(subPhase)}"
+              style="--pc: {{c.phaseColor($parent.$index)}};" role="button" tabindex="0" ng-click="c.openSubPhase(subPhase.id)"
+              ng-keydown="c.fcardKey($event, subPhase)">
               <div class="fcard-head">
                 <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.subPhaseIconPaths(s)"></svg></span>
+                    stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.subPhaseIconPaths(subPhase)"></svg></span>
               </div>
-              <span class="fcard-sid">Sub-phase {{s.sid}}</span>
-              <div class="fcard-name">{{s.name}}</div>
-              <div class="rbadge" ng-if="c.hasContent(s) && c.unreadCount(s)">&#9679; {{c.unreadCount(s)}} new
-                change{{c.unreadCount(s) > 1 ? 's' : ''}}</div>
-              <div class="fcard-meta" ng-if="!c.hasContent(s)">Not yet written</div>
+              <span class="fcard-sid">Sub-phase {{subPhase.sid}}</span>
+              <div class="fcard-name">{{subPhase.name}}</div>
+              <div class="rbadge" ng-if="c.hasContent(subPhase) && c.unreadCount(subPhase)">&#9679; {{c.unreadCount(subPhase)}} new
+                change{{c.unreadCount(subPhase) > 1 ? 's' : ''}}</div>
+              <div class="fcard-meta" ng-if="!c.hasContent(subPhase)">Not yet written</div>
             </div>
           </div>
         </div>
@@ -66,27 +66,27 @@
         <div class="panel" ng-if="c.structureEditMode">
           <div class="edit-bar">
             <span class="flag">&#9679; Editing structure</span>
-            <span class="edit-bar-loc">{{c.curMeth() ? c.curMeth().name : 'No methodologies yet'}}</span>
+            <span class="edit-bar-loc">{{c.currentMethodology() ? c.currentMethodology().name : 'No methodologies yet'}}</span>
             <span class="spacer"></span>
             <button type="button" class="btn" ng-click="c.cancelStructureEdit()" ng-disabled="c.isSaving">Cancel</button>
             <button type="button" class="btn primary" ng-click="c.saveStructureEdit()" ng-disabled="c.isSaving">Save changes</button>
           </div>
 
-          <div ng-if="!c.curMeth()">
+          <div ng-if="!c.currentMethodology()">
             <p class="struct-toolbar-hint">This engagement has no methodologies yet. Add one to start building
               phases and sub-phases.</p>
             <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()">+ Add
               methodology</button>
           </div>
 
-          <div ng-if="c.curMeth()">
+          <div ng-if="c.currentMethodology()">
             <p class="struct-toolbar-hint">Rename the methodology, phases, and sub-phases inline. Reorder with the
-              arrows, or remove them with &times;. Changes stay in a draft until you save. Adding a new sub-phase
-              saves the structure and opens it for writing.</p>
+              arrows, or remove them with &times;. Changes stay in a draft until you save — including new phases
+              and sub-phases. Exit structure edit, then use the pencil to write content.</p>
             <div class="struct-methodology">
               <span class="struct-methodology-label">Methodology</span>
-              <input type="text" class="edit-in struct-rename" ng-model="c.curMeth().name"
-                ng-model-options="{updateOn: 'blur'}" ng-change="c.renameMethodology(c.curMeth())"
+              <input type="text" class="edit-in struct-rename" ng-model="c.currentMethodology().name"
+                ng-model-options="{updateOn: 'blur'}" ng-change="c.renameMethodology(c.currentMethodology())"
                 placeholder="Methodology name" aria-label="Methodology name">
               <button type="button" class="field-x" ng-click="c.deleteMethodology()"
                 data-tip="Delete this methodology" aria-label="Delete this methodology"
@@ -94,11 +94,11 @@
             </div>
             <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()">+ Add
               methodology</button>
-            <div class="struct-phase" ng-repeat="p in c.curMeth().phases track by p.id">
+            <div class="struct-phase" ng-repeat="phase in c.currentMethodology().phases track by phase.id">
               <div class="struct-phase-head">
                 <span class="struct-num">{{$index + 1}}</span>
-                <input type="text" class="edit-in struct-rename" ng-model="p.name" ng-model-options="{updateOn: 'blur'}"
-                  ng-change="c.renamePhase(p)" placeholder="Phase name" aria-label="Phase name">
+                <input type="text" class="edit-in struct-rename" ng-model="phase.name" ng-model-options="{updateOn: 'blur'}"
+                  ng-change="c.renamePhase(phase)" placeholder="Phase name" aria-label="Phase name">
                 <span class="struct-controls">
                   <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="c.movePhase($index, 'up')"
                     data-tip="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none"
@@ -108,14 +108,14 @@
                       stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
                   <button type="button" class="field-x" ng-click="c.deletePhase($index)"
                     data-tip="Delete phase" aria-label="Delete phase"
-                    ng-disabled="c.curMeth().phases.length <= 1">&times;</button>
+                    ng-disabled="c.currentMethodology().phases.length <= 1">&times;</button>
                 </span>
               </div>
               <div class="struct-subphase-list">
-                <div class="struct-subphase" ng-repeat="s in p.subPhases track by s.id">
-                  <span class="struct-sid">{{s.sid}}</span>
-                  <input type="text" class="edit-in struct-rename" ng-model="s.name"
-                    ng-model-options="{updateOn: 'blur'}" ng-change="c.renameSubPhase(s)" placeholder="Sub-phase name"
+                <div class="struct-subphase" ng-repeat="subPhase in phase.subPhases track by subPhase.id">
+                  <span class="struct-sid">{{subPhase.sid}}</span>
+                  <input type="text" class="edit-in struct-rename" ng-model="subPhase.name"
+                    ng-model-options="{updateOn: 'blur'}" ng-change="c.renameSubPhase(subPhase)" placeholder="Sub-phase name"
                     aria-label="Sub-phase name">
                   <span class="struct-controls">
                     <button type="button" class="reorder-btn" ng-disabled="$first"
@@ -139,18 +139,18 @@
           </div>
         </div>
 
-        <div class="panel" ng-if="c.loc && !c.editMode && !c.structureEditMode">
+        <div class="panel" ng-if="c.location && !c.editMode && !c.structureEditMode">
           <div class="sp-header">
             <div>
-              <div class="crumb">{{c.loc.phase.name}} &rsaquo; {{c.loc.sp.sid}}</div>
+              <div class="crumb">{{c.location.phase.name}} &rsaquo; {{c.location.subPhase.sid}}</div>
               <h1 class="sp-title">
-                {{c.loc.sp.name}}
-                <span class="prec" ng-if="c.unreadCount(c.loc.sp)">&#9679; {{c.unreadCount(c.loc.sp)}} new
-                  change{{c.unreadCount(c.loc.sp) > 1 ? 's' : ''}}</span>
+                {{c.location.subPhase.name}}
+                <span class="prec" ng-if="c.unreadCount(c.location.subPhase)">&#9679; {{c.unreadCount(c.location.subPhase)}} new
+                  change{{c.unreadCount(c.location.subPhase) > 1 ? 's' : ''}}</span>
               </h1>
             </div>
             <div class="sp-header-actions">
-              <label class="loe-billable-toggle jargon-toggle" ng-if="c.hasContent(c.loc.sp)"
+              <label class="loe-billable-toggle jargon-toggle" ng-if="c.hasContent(c.location.subPhase)"
                 data-tip="Highlight jargon and acronyms with hover-over definitions">
                 Explain terms <input type="checkbox" ng-model="c.showJargon">
               </label>
@@ -162,60 +162,60 @@
             </div>
           </div>
 
-          <p class="obj faint stub-hint" ng-if="!c.hasContent(c.loc.sp)">Not yet written. Use the
+          <p class="obj faint stub-hint" ng-if="!c.hasContent(c.location.subPhase)">Not yet written. Use the
             <b class="stub-hint-edit">edit <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('pencil')"></svg></b> button above to add its overview, tasks and deliverables.</p>
 
-          <div ng-if="c.hasContent(c.loc.sp)">
+          <div ng-if="c.hasContent(c.location.subPhase)">
             <div class="pchange" ng-if="c.justRead.length">
               <div><b>What changed</b> - you're seeing this because it's new since your last visit:
                 <ul class="pchange-list">
                   <li ng-repeat="change in c.justRead track by change.id">{{change.text}} <span class="pchange-ts">&middot;
-                      {{c.fmtDate(change.ts)}}</span></li>
+                      {{c.formatDate(change.ts)}}</span></li>
                 </ul>
               </div>
             </div>
 
-            <div class="sp-brief" ng-if="c.hasSpBrief(c.loc.sp)"
-              ng-class="{collapsed: c.isSpBriefCollapsed(c.loc.sp.id)}">
+            <div class="sp-brief" ng-if="c.hasSubPhaseBrief(c.location.subPhase)"
+              ng-class="{collapsed: c.isSubPhaseBriefCollapsed(c.location.subPhase.id)}">
               <div class="sp-brief-bar">
-                <button type="button" class="sp-brief-toggle" ng-click="c.toggleSpBrief(c.loc.sp.id)"
-                  aria-expanded="{{!c.isSpBriefCollapsed(c.loc.sp.id)}}">
+                <button type="button" class="sp-brief-toggle" ng-click="c.toggleSubPhaseBrief(c.location.subPhase.id)"
+                  aria-expanded="{{!c.isSubPhaseBriefCollapsed(c.location.subPhase.id)}}">
                   <svg class="sp-brief-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('chevronRight')"></svg>
                   <span class="sp-brief-heading">Context</span>
                 </button>
               </div>
-              <div class="sp-brief-body" ng-if="!c.isSpBriefCollapsed(c.loc.sp.id)">
-                <h4 class="sec" ng-if="c.loc.sp.overview">Overview</h4>
-                <p class="lede" ng-if="c.loc.sp.overview" ng-bind-html="c.jargonHtml(c.loc.sp.overview)"></p>
-                <h4 class="sec" ng-if="c.loc.sp.objective">Objective</h4>
-                <p class="obj" ng-if="c.loc.sp.objective" ng-bind-html="c.jargonHtml(c.loc.sp.objective)"></p>
+              <div class="sp-brief-body" ng-if="!c.isSubPhaseBriefCollapsed(c.location.subPhase.id)">
+                <h4 class="sec" ng-if="c.location.subPhase.overview">Overview</h4>
+                <p class="lede" ng-if="c.location.subPhase.overview" ng-bind-html="c.jargonHtml(c.location.subPhase.overview)"></p>
+                <h4 class="sec" ng-if="c.location.subPhase.objective">Objective</h4>
+                <p class="obj" ng-if="c.location.subPhase.objective" ng-bind-html="c.jargonHtml(c.location.subPhase.objective)"></p>
               </div>
             </div>
 
             <div class="setup-block">
               <span class="section-label">Comments</span>
-              <div class="notes" ng-if="c.loc.sp.comments.length">
+              <div class="notes" ng-if="c.location.subPhase.comments.length">
                 <svg viewBox="0 0 24 24" ng-bind-html="c.icon('message')"></svg>
                 <ul>
-                  <li ng-repeat="comment in c.loc.sp.comments track by $index"
+                  <li ng-repeat="comment in c.location.subPhase.comments track by $index"
                     ng-bind-html="c.jargonHtml(comment)"></li>
                 </ul>
               </div>
-              <p class="faint" ng-if="!c.loc.sp.comments.length">None yet</p>
+              <p class="faint" ng-if="!c.location.subPhase.comments.length">None yet</p>
             </div>
 
-            <div class="plegend" ng-if="c.participantsOf(c.loc.sp).length">
+            <div class="plegend" ng-if="c.participantsOf(c.location.subPhase).length">
               <span class="plabel">Participants</span>
-              <span class="rolechip" ng-class="{ext: r.external}" ng-repeat="r in c.participantsOf(c.loc.sp)"
+              <span class="rolechip" ng-class="{ext: r.external}" ng-repeat="r in c.participantsOf(c.location.subPhase)"
                 data-tip-name="{{r.name}}" data-tip="{{r.description}}">{{r.external ? '&#9671; ' :
                 ''}}{{r.abbr}}</span>
             </div>
 
-            <div class="setup-block" ng-if="c.loc.loeRows.rows.length">
+            <div class="setup-block" ng-if="c.location.levelOfEffortRows.rows.length">
               <span class="section-label">Level of Effort</span>
-              <div class="loe-all" ng-if="c.loc.loeRows.mode === 'all'" ng-repeat="row in c.loc.loeRows.rows">
+              <div class="loe-all" ng-if="c.location.levelOfEffortRows.mode === 'all'" ng-repeat="row in c.location.levelOfEffortRows.rows">
                 <span class="loe-role">{{row.label}}</span>
                 <span class="eff" ng-class="{none: !row.text}">{{row.text || '-'}}</span>
                 <span class="tags">
@@ -223,8 +223,8 @@
                   <span class="loe-pill opt" ng-if="row.optional">Optional</span>
                 </span>
               </div>
-              <div class="loe2" ng-if="c.loc.loeRows.mode === 'roles'">
-                <div class="row" ng-repeat="row in c.loc.loeRows.rows">
+              <div class="loe2" ng-if="c.location.levelOfEffortRows.mode === 'roles'">
+                <div class="row" ng-repeat="row in c.location.levelOfEffortRows.rows">
                   <span class="loe-role" style="--c: {{row.color}}" data-tip-name="{{row.name}}"
                     data-tip="{{row.description}}">{{row.label}}</span>
                   <span class="eff">{{row.text}}</span>
@@ -236,17 +236,17 @@
               </div>
             </div>
 
-            <div class="setup-block" ng-if="c.loc.sp.meetings.length">
+            <div class="setup-block" ng-if="c.location.subPhase.meetings.length">
               <span class="section-label">Meetings</span>
               <div class="mtg-list">
-                <div class="mtg-card" ng-repeat="m in c.loc.sp.meetings">
+                <div class="mtg-card" ng-repeat="meeting in c.location.subPhase.meetings">
                   <div class="mtg-head">
                     <span class="mtg-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('calendar')"></svg></span>
-                    <span class="mtg-name" ng-bind-html="c.jargonHtml(m.name || 'Untitled meeting')"></span>
-                    <span class="mtg-badge" ng-if="m.external">Customer-facing</span>
+                    <span class="mtg-name" ng-bind-html="c.jargonHtml(meeting.name || 'Untitled meeting')"></span>
+                    <span class="mtg-badge" ng-if="meeting.external">Customer-facing</span>
                   </div>
-                  <div class="mtg-meta" ng-if="c.meetingDisplay(m).meta">{{c.meetingDisplay(m).meta}}</div>
+                  <div class="mtg-meta" ng-if="c.meetingDisplay(meeting).meta">{{c.meetingDisplay(meeting).meta}}</div>
                 </div>
               </div>
             </div>
@@ -257,10 +257,10 @@
                 <div class="pshead">
                   <h5>What you need <span class="muted">- Inputs</span></h5>
                 </div>
-                <p class="ordhint" ng-if="c.loc.sp.inputs.length">In the order they&rsquo;re used</p>
+                <p class="ordhint" ng-if="c.location.subPhase.inputs.length">In the order they&rsquo;re used</p>
                 <ul class="flowlist">
-                  <li ng-repeat="x in c.loc.sp.inputs track by $index" ng-bind-html="c.jargonHtml(x)"></li>
-                  <li class="none" ng-if="!c.loc.sp.inputs.length">None yet</li>
+                  <li ng-repeat="x in c.location.subPhase.inputs track by $index" ng-bind-html="c.jargonHtml(x)"></li>
+                  <li class="none" ng-if="!c.location.subPhase.inputs.length">None yet</li>
                 </ul>
               </div>
 
@@ -269,20 +269,20 @@
                 <div class="pshead">
                   <h5>The work <span class="muted">- Tasks (who does what)</span></h5>
                 </div>
-                <div class="ttbl-wrap" ng-if="c.loc.sp.tasks.length">
+                <div class="ttbl-wrap" ng-if="c.location.subPhase.tasks.length">
                   <table class="ttbl">
                     <thead>
                       <tr>
                         <th class="tname">Task</th>
                         <th class="pcol" ng-class="{ext: r.external, orphan: r.orphan}"
-                          ng-repeat="r in c.loc.taskTableRoles" style="--c: {{c.jobTitleColor(r.id)}}"
+                          ng-repeat="r in c.location.taskTableRoles" style="--c: {{c.jobTitleColor(r.id)}}"
                           data-tip-name="{{r.name}}"
                           data-tip="{{r.orphan ? 'No longer a participant' : r.description}}">{{r.external ? '&#9671; '
                           : ''}}{{r.abbr}}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr ng-repeat="t in c.loc.sp.tasks" data-el="task:{{t.id}}">
+                      <tr ng-repeat="t in c.location.subPhase.tasks" data-el="task:{{t.id}}">
                         <td class="tname">
                           <span ng-bind-html="c.jargonHtml(t.text)"></span>
                           <div class="ja" ng-repeat="j in t.jobAids track by j.id" ng-if="j.url">
@@ -292,7 +292,7 @@
                               data-tip="{{r.description}}">{{r.external ? '&#9671; ' : ''}}{{r.abbr}}</span>
                           </div>
                         </td>
-                        <td class="cell" ng-repeat="r in c.loc.taskTableRoles"
+                        <td class="cell" ng-repeat="r in c.location.taskTableRoles"
                           ng-class="{off: !(t.raci[r.id] && t.raci[r.id].length)}"
                           ng-attr-data-tip-name="{{t.raci[r.id] && t.raci[r.id].length ? r.abbr : undefined}}"
                           ng-attr-data-tip="{{t.raci[r.id] && t.raci[r.id].length ? c.raciTip(t.raci[r.id]) : undefined}}">
@@ -302,8 +302,8 @@
                     </tbody>
                   </table>
                 </div>
-                <p ng-if="!c.loc.sp.tasks.length" class="no-tasks-hint">None yet</p>
-                <div class="rlegend" ng-if="c.loc.sp.tasks.length">
+                <p ng-if="!c.location.subPhase.tasks.length" class="no-tasks-hint">None yet</p>
+                <div class="rlegend" ng-if="c.location.subPhase.tasks.length">
                   <span class="lg" ng-repeat="l in c.raciLetters"><span class="sw"
                       ng-style="{background: c.raciHex[l]}">{{l}}</span>{{c.raciNames[l]}}</span>
                 </div>
@@ -314,33 +314,33 @@
                 <div class="pshead">
                   <h5>What you deliver <span class="muted">- Deliverables</span></h5>
                 </div>
-                <p class="ordhint" ng-if="c.loc.sp.deliverables.length">In the order they&rsquo;re delivered</p>
+                <p class="ordhint" ng-if="c.location.subPhase.deliverables.length">In the order they&rsquo;re delivered</p>
                 <ul class="flowlist">
-                  <li ng-repeat="x in c.loc.sp.deliverables track by $index" ng-bind-html="c.jargonHtml(x)"></li>
-                  <li class="none" ng-if="!c.loc.sp.deliverables.length">None yet</li>
+                  <li ng-repeat="x in c.location.subPhase.deliverables track by $index" ng-bind-html="c.jargonHtml(x)"></li>
+                  <li class="none" ng-if="!c.location.subPhase.deliverables.length">None yet</li>
                 </ul>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="panel" ng-if="c.loc && c.editMode && !c.structureEditMode">
+        <div class="panel" ng-if="c.location && c.editMode && !c.structureEditMode">
           <div class="edit-bar">
             <span class="flag">&#9679; Editing</span>
-            <span class="edit-bar-loc">{{c.loc.phase.name}} &middot; {{c.editSp.sid}} {{c.editSp.name}}</span>
+            <span class="edit-bar-loc">{{c.location.phase.name}} &middot; {{c.editSubPhase.sid}} {{c.editSubPhase.name}}</span>
             <span class="spacer"></span>
             <button type="button" class="btn" ng-click="c.cancelEdit()" ng-disabled="c.isSaving">Cancel</button>
             <button type="button" class="btn primary" ng-click="c.saveEdit()" ng-disabled="c.isSaving">Save changes</button>
           </div>
 
-          <div class="crumb">{{c.loc.phase.name}} &rsaquo; {{c.editSp.sid}}</div>
-          <input class="edit-in title-in" ng-model="c.editSp.name">
+          <div class="crumb">{{c.location.phase.name}} &rsaquo; {{c.editSubPhase.sid}}</div>
+          <input class="edit-in title-in" ng-model="c.editSubPhase.name">
           <div class="spacer-lg"></div>
 
           <h4 class="sec">Overview</h4>
-          <textarea class="edit-in" rows="4" ng-model="c.editSp.overview"></textarea>
+          <textarea class="edit-in" rows="4" ng-model="c.editSubPhase.overview"></textarea>
           <h4 class="sec">Objective</h4>
-          <textarea class="edit-in" rows="4" ng-model="c.editSp.objective"></textarea>
+          <textarea class="edit-in" rows="4" ng-model="c.editSubPhase.objective"></textarea>
 
           <div class="metagrid single-col">
             <div class="metacard">
@@ -362,64 +362,64 @@
             <div class="metacard">
               <span class="section-label">Level of Effort</span>
               <div class="loe-mode">
-                <button type="button" class="loe-mode-btn" ng-class="{on: c.editSp.levelOfEffort.mode === 'all'}"
+                <button type="button" class="loe-mode-btn" ng-class="{on: c.editSubPhase.levelOfEffort.mode === 'all'}"
                   ng-click="c.setLoeMode('all')">Same for all</button>
-                <button type="button" class="loe-mode-btn" ng-class="{on: c.editSp.levelOfEffort.mode === 'byRole'}"
+                <button type="button" class="loe-mode-btn" ng-class="{on: c.editSubPhase.levelOfEffort.mode === 'byRole'}"
                   ng-click="c.setLoeMode('byRole')">Per role</button>
               </div>
 
-              <div ng-if="c.editSp.levelOfEffort.mode === 'all'" class="loe-edit-row">
+              <div ng-if="c.editSubPhase.levelOfEffort.mode === 'all'" class="loe-edit-row">
                 <span class="loe-abbr wide">All participants</span>
-                <input class="edit-in" placeholder="e.g. 2 hours" ng-model="c.editSp.levelOfEffort.all.text">
+                <input class="edit-in" placeholder="e.g. 2 hours" ng-model="c.editSubPhase.levelOfEffort.all.text">
                 <div class="loe-flag-group">
                   <div class="loe-flag">
                     <button type="button" class="loe-flag-btn"
-                      ng-class="{on: !c.editSp.levelOfEffort.all.optional, mandatory: !c.editSp.levelOfEffort.all.optional}"
-                      ng-click="c.setLoeFlag(c.editSp.levelOfEffort.all, 'mandatory')">Mandatory</button>
+                      ng-class="{on: !c.editSubPhase.levelOfEffort.all.optional, mandatory: !c.editSubPhase.levelOfEffort.all.optional}"
+                      ng-click="c.setLoeFlag(c.editSubPhase.levelOfEffort.all, 'mandatory')">Mandatory</button>
                     <button type="button" class="loe-flag-btn"
-                      ng-class="{on: c.editSp.levelOfEffort.all.optional, optional: c.editSp.levelOfEffort.all.optional}"
-                      ng-click="c.setLoeFlag(c.editSp.levelOfEffort.all, 'optional')">Optional</button>
+                      ng-class="{on: c.editSubPhase.levelOfEffort.all.optional, optional: c.editSubPhase.levelOfEffort.all.optional}"
+                      ng-click="c.setLoeFlag(c.editSubPhase.levelOfEffort.all, 'optional')">Optional</button>
                   </div>
-                  <div class="loe-flag" ng-class="{disabled: c.editSp.levelOfEffort.all.optional}">
+                  <div class="loe-flag" ng-class="{disabled: c.editSubPhase.levelOfEffort.all.optional}">
                     <button type="button" class="loe-flag-btn"
-                      ng-class="{on: !c.editSp.levelOfEffort.all.billable, nonbillable: !c.editSp.levelOfEffort.all.billable}"
-                      ng-click="c.setLoeFlag(c.editSp.levelOfEffort.all, 'nonbillable')">Non-billable</button>
+                      ng-class="{on: !c.editSubPhase.levelOfEffort.all.billable, nonbillable: !c.editSubPhase.levelOfEffort.all.billable}"
+                      ng-click="c.setLoeFlag(c.editSubPhase.levelOfEffort.all, 'nonbillable')">Non-billable</button>
                     <button type="button" class="loe-flag-btn"
-                      ng-class="{on: c.editSp.levelOfEffort.all.billable, billable: c.editSp.levelOfEffort.all.billable}"
-                      ng-click="c.setLoeFlag(c.editSp.levelOfEffort.all, 'billable')">Billable</button>
+                      ng-class="{on: c.editSubPhase.levelOfEffort.all.billable, billable: c.editSubPhase.levelOfEffort.all.billable}"
+                      ng-click="c.setLoeFlag(c.editSubPhase.levelOfEffort.all, 'billable')">Billable</button>
                   </div>
                 </div>
               </div>
 
-              <div ng-if="c.editSp.levelOfEffort.mode === 'byRole'">
+              <div ng-if="c.editSubPhase.levelOfEffort.mode === 'byRole'">
                 <p class="loe-roles-hint" ng-if="!c.loeRoleRows().length">No roles added yet - add one below.</p>
                 <div class="loe-edit-row" ng-class="{orphan: c.loeRoleOrphan(r.id)}" ng-repeat="r in c.loeRoleRows()">
                   <span class="loe-abbr" data-tip-name="{{r.name}}" data-tip="{{r.description}}">{{r.abbr}}</span>
                   <span class="orphan-badge" ng-if="c.loeRoleOrphan(r.id)">Not a participant</span>
-                  <input class="edit-in" placeholder="e.g. 2 hours" ng-model="c.editSp.levelOfEffort.roles[r.id].text">
+                  <input class="edit-in" placeholder="e.g. 2 hours" ng-model="c.editSubPhase.levelOfEffort.roles[r.id].text">
                   <div class="loe-flag-group">
                     <div class="loe-flag">
                       <button type="button" class="loe-flag-btn"
-                        ng-class="{on: !c.editSp.levelOfEffort.roles[r.id].optional, mandatory: !c.editSp.levelOfEffort.roles[r.id].optional}"
-                        ng-click="c.setLoeFlag(c.editSp.levelOfEffort.roles[r.id], 'mandatory')">Mandatory</button>
+                        ng-class="{on: !c.editSubPhase.levelOfEffort.roles[r.id].optional, mandatory: !c.editSubPhase.levelOfEffort.roles[r.id].optional}"
+                        ng-click="c.setLoeFlag(c.editSubPhase.levelOfEffort.roles[r.id], 'mandatory')">Mandatory</button>
                       <button type="button" class="loe-flag-btn"
-                        ng-class="{on: c.editSp.levelOfEffort.roles[r.id].optional, optional: c.editSp.levelOfEffort.roles[r.id].optional}"
-                        ng-click="c.setLoeFlag(c.editSp.levelOfEffort.roles[r.id], 'optional')">Optional</button>
+                        ng-class="{on: c.editSubPhase.levelOfEffort.roles[r.id].optional, optional: c.editSubPhase.levelOfEffort.roles[r.id].optional}"
+                        ng-click="c.setLoeFlag(c.editSubPhase.levelOfEffort.roles[r.id], 'optional')">Optional</button>
                     </div>
-                    <div class="loe-flag" ng-class="{disabled: c.editSp.levelOfEffort.roles[r.id].optional}">
+                    <div class="loe-flag" ng-class="{disabled: c.editSubPhase.levelOfEffort.roles[r.id].optional}">
                       <button type="button" class="loe-flag-btn"
-                        ng-class="{on: !c.editSp.levelOfEffort.roles[r.id].billable, nonbillable: !c.editSp.levelOfEffort.roles[r.id].billable}"
-                        ng-click="c.setLoeFlag(c.editSp.levelOfEffort.roles[r.id], 'nonbillable')">Non-billable</button>
+                        ng-class="{on: !c.editSubPhase.levelOfEffort.roles[r.id].billable, nonbillable: !c.editSubPhase.levelOfEffort.roles[r.id].billable}"
+                        ng-click="c.setLoeFlag(c.editSubPhase.levelOfEffort.roles[r.id], 'nonbillable')">Non-billable</button>
                       <button type="button" class="loe-flag-btn"
-                        ng-class="{on: c.editSp.levelOfEffort.roles[r.id].billable, billable: c.editSp.levelOfEffort.roles[r.id].billable}"
-                        ng-click="c.setLoeFlag(c.editSp.levelOfEffort.roles[r.id], 'billable')">Billable</button>
+                        ng-class="{on: c.editSubPhase.levelOfEffort.roles[r.id].billable, billable: c.editSubPhase.levelOfEffort.roles[r.id].billable}"
+                        ng-click="c.setLoeFlag(c.editSubPhase.levelOfEffort.roles[r.id], 'billable')">Billable</button>
                     </div>
                   </div>
                   <button type="button" class="x-btn" ng-click="c.removeLoeRole(r.id)" data-tip="Remove role"
                     aria-label="Remove role">&times;</button>
                 </div>
                 <div class="add-jt-row" ng-if="c.loeAvailableRoles().length">
-                  <select class="edit-in" ng-model="c.tmpLoeRole" ng-change="c.addLoeRole()">
+                  <select class="edit-in" ng-model="c.tmpLevelOfEffortRoleId" ng-change="c.addLoeRole()">
                     <option value="">+ Add role&hellip;</option>
                     <option ng-repeat="r in c.loeAvailableRoles()" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
                   </select>
@@ -432,13 +432,13 @@
           <div class="sechead">
             <span class="section-label">Comments</span>
           </div>
-          <div class="list-edit-row" ng-repeat="comment in c.editSp.comments track by $index">
-            <textarea class="edit-in" rows="2" ng-model="c.editSp.comments[$index]"></textarea>
+          <div class="list-edit-row" ng-repeat="comment in c.editSubPhase.comments track by $index">
+            <textarea class="edit-in" rows="2" ng-model="c.editSubPhase.comments[$index]"></textarea>
             <div class="row-reorder">
               <button type="button" class="reorder-btn" ng-disabled="$index === 0"
                 ng-click="c.moveListItem('comments', $index, 'up')" data-tip="Move up" aria-label="Move up"><svg
                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-              <button type="button" class="reorder-btn" ng-disabled="$index === c.editSp.comments.length - 1"
+              <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.comments.length - 1"
                 ng-click="c.moveListItem('comments', $index, 'down')" data-tip="Move down" aria-label="Move down"><svg
                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
             </div>
@@ -450,7 +450,7 @@
           <div class="sechead">
             <span class="section-label">Meetings</span>
           </div>
-          <div class="task meeting" ng-repeat="m in c.editSp.meetings track by m.id">
+          <div class="task meeting" ng-repeat="meeting in c.editSubPhase.meetings track by meeting.id">
             <div class="te-head">
               <span class="te-num">{{$index + 1}}</span>
               <span class="te-tools">
@@ -458,7 +458,7 @@
                   ng-click="c.moveMeeting($index, 'up')" data-tip="Move up" aria-label="Move meeting up"><svg
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
                     stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-                <button type="button" class="reorder-btn" ng-disabled="$index === c.editSp.meetings.length - 1"
+                <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.meetings.length - 1"
                   ng-click="c.moveMeeting($index, 'down')" data-tip="Move down" aria-label="Move meeting down"><svg
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
                     stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
@@ -466,28 +466,28 @@
                   aria-label="Delete meeting">&times;</button>
               </span>
             </div>
-            <input class="edit-in te-text" placeholder="Meeting name / purpose" ng-model="m.name">
+            <input class="edit-in te-text" placeholder="Meeting name / purpose" ng-model="meeting.name">
             <div class="mtg-edit-row">
               <div class="mtg-field">
-                <select class="edit-in" ng-model="m.scheduledBy">
+                <select class="edit-in" ng-model="meeting.scheduledBy">
                   <option value="">Scheduled by&hellip;</option>
                   <option ng-repeat="r in c.internalRoles()" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
                 </select>
-                <span class="orphan-badge" ng-if="c.meetingPersonOrphan(m.scheduledBy)">Not a participant</span>
+                <span class="orphan-badge" ng-if="c.meetingPersonOrphan(meeting.scheduledBy)">Not a participant</span>
               </div>
               <div class="mtg-field">
-                <select class="edit-in" ng-model="m.ledBy">
+                <select class="edit-in" ng-model="meeting.ledBy">
                   <option value="">Led by&hellip;</option>
                   <option ng-repeat="r in c.internalRoles()" value="{{r.id}}">{{r.abbr}} - {{r.name}}</option>
                 </select>
-                <span class="orphan-badge" ng-if="c.meetingPersonOrphan(m.ledBy)">Not a participant</span>
+                <span class="orphan-badge" ng-if="c.meetingPersonOrphan(meeting.ledBy)">Not a participant</span>
               </div>
             </div>
             <div class="loe-mode mtg-toggle">
-              <button type="button" class="loe-mode-btn" ng-class="{on: !m.external}"
-                ng-click="m.external = false">Internal</button>
-              <button type="button" class="loe-mode-btn" ng-class="{on: m.external}"
-                ng-click="m.external = true">Customer-facing</button>
+              <button type="button" class="loe-mode-btn" ng-class="{on: !meeting.external}"
+                ng-click="meeting.external = false">Internal</button>
+              <button type="button" class="loe-mode-btn" ng-class="{on: meeting.external}"
+                ng-click="meeting.external = true">Customer-facing</button>
             </div>
           </div>
           <button type="button" class="add-item-btn tight" ng-click="c.addMeeting()">+ Add meeting</button>
@@ -495,13 +495,13 @@
           <div class="sechead">
             <h4 class="sec">Inputs</h4>
           </div>
-          <div class="list-edit-row" ng-repeat="x in c.editSp.inputs track by $index">
-            <textarea class="edit-in" rows="2" ng-model="c.editSp.inputs[$index]"></textarea>
+          <div class="list-edit-row" ng-repeat="x in c.editSubPhase.inputs track by $index">
+            <textarea class="edit-in" rows="2" ng-model="c.editSubPhase.inputs[$index]"></textarea>
             <div class="row-reorder">
               <button type="button" class="reorder-btn" ng-disabled="$index === 0"
                 ng-click="c.moveListItem('inputs', $index, 'up')" data-tip="Move up" aria-label="Move up"><svg
                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-              <button type="button" class="reorder-btn" ng-disabled="$index === c.editSp.inputs.length - 1"
+              <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.inputs.length - 1"
                 ng-click="c.moveListItem('inputs', $index, 'down')" data-tip="Move down" aria-label="Move down"><svg
                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
             </div>
@@ -514,7 +514,7 @@
             <h4 class="sec">Tasks</h4>
           </div>
           <div id="edit-tasks">
-            <div class="task" ng-repeat="t in c.editSp.tasks track by t.id">
+            <div class="task" ng-repeat="t in c.editSubPhase.tasks track by t.id">
               <div class="te-head">
                 <span class="te-num">{{$index + 1}}</span>
                 <span class="te-tools">
@@ -522,7 +522,7 @@
                     ng-click="c.moveTask($index, 'up')" data-tip="Move up" aria-label="Move task up"><svg
                       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
                       stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-                  <button type="button" class="reorder-btn" ng-disabled="$index === c.editSp.tasks.length - 1"
+                  <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.tasks.length - 1"
                     ng-click="c.moveTask($index, 'down')" data-tip="Move down" aria-label="Move task down"><svg
                       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
                       stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
@@ -545,8 +545,8 @@
                     aria-label="Remove job title">&times;</button>
                 </div>
                 <div class="add-jt-row" ng-if="c.taskAvailableRoles(t).length">
-                  <select class="edit-in" ng-model="c.tmpAddJt[t.id]"
-                    ng-change="c.addTaskRole(t, c.tmpAddJt[t.id]); c.tmpAddJt[t.id] = ''">
+                  <select class="edit-in" ng-model="c.tmpAddJobTitle[t.id]"
+                    ng-change="c.addTaskRole(t, c.tmpAddJobTitle[t.id]); c.tmpAddJobTitle[t.id] = ''">
                     <option value="">+ Add job title&hellip;</option>
                     <option value="__core__" ng-if="c.taskCoreTeamMissing(t)">+ Core technical team (EM, BPC, ARCH, TC)
                     </option>
@@ -584,13 +584,13 @@
           <div class="sechead">
             <h4 class="sec">Deliverables</h4>
           </div>
-          <div class="list-edit-row" ng-repeat="x in c.editSp.deliverables track by $index">
-            <textarea class="edit-in" rows="2" ng-model="c.editSp.deliverables[$index]"></textarea>
+          <div class="list-edit-row" ng-repeat="x in c.editSubPhase.deliverables track by $index">
+            <textarea class="edit-in" rows="2" ng-model="c.editSubPhase.deliverables[$index]"></textarea>
             <div class="row-reorder">
               <button type="button" class="reorder-btn" ng-disabled="$index === 0"
                 ng-click="c.moveListItem('deliverables', $index, 'up')" data-tip="Move up" aria-label="Move up"><svg
                   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-              <button type="button" class="reorder-btn" ng-disabled="$index === c.editSp.deliverables.length - 1"
+              <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.deliverables.length - 1"
                 ng-click="c.moveListItem('deliverables', $index, 'down')" data-tip="Move down"
                 aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
                   stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>

@@ -9,11 +9,15 @@ angular.module('deliveryMethodology').factory('NavigationService', [
   var navStack = [];
   var navIndex = -1;
   var navSilent = false;
-  var methSubPhaseById = {};
+  var methodologySubPhaseById = {};
   var hooks = {};
 
   function bind(hostHooks) {
-    hooks = hostHooks || {};
+    if (hostHooks) {
+      hooks = hostHooks;
+    } else {
+      hooks = {};
+    }
   }
 
   function snapshot() {
@@ -54,9 +58,9 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     AppStateService.setMethodologyId(snap.methodologyId);
     AppStateService.setSubPhaseId(snap.subPhaseId);
     if (snap.methodologyId && snap.subPhaseId) {
-      methSubPhaseById[snap.methodologyId] = snap.subPhaseId;
+      methodologySubPhaseById[snap.methodologyId] = snap.subPhaseId;
     }
-    AppStateService.refreshLoc();
+    AppStateService.refreshLocation();
     if (hooks.afterOpenSubPhase) {
       hooks.afterOpenSubPhase();
     }
@@ -133,14 +137,14 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     var currentMethodologyId = AppStateService.getMethodologyId();
     var currentSubPhaseId = AppStateService.getSubPhaseId();
     if (currentMethodologyId && currentSubPhaseId) {
-      methSubPhaseById[currentMethodologyId] = currentSubPhaseId;
+      methodologySubPhaseById[currentMethodologyId] = currentSubPhaseId;
     }
     AppStateService.setMethodologyId(methodologyId);
-    var resume = methSubPhaseById[methodologyId];
+    var resume = methodologySubPhaseById[methodologyId];
     var location = resume && MethodologyDomainService.findSubPhase(AppStateService.getMethodologies(), resume);
-    if (!location || location.meth.id !== methodologyId) {
+    if (!location || location.methodology.id !== methodologyId) {
       resume = MethodologyDomainService.firstContentSubPhase(
-        MethodologyDomainService.curMeth(AppStateService.getMethodologies(), methodologyId)
+        MethodologyDomainService.currentMethodology(AppStateService.getMethodologies(), methodologyId)
       );
     }
     openSubPhase(resume);
@@ -153,7 +157,7 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     if (hooks.isEditing && hooks.isEditing()) {
       return;
     }
-    var methodology = MethodologyDomainService.curMeth(
+    var methodology = MethodologyDomainService.currentMethodology(
       AppStateService.getMethodologies(),
       AppStateService.getMethodologyId()
     );
@@ -165,7 +169,11 @@ angular.module('deliveryMethodology').factory('NavigationService', [
       return;
     }
     var written = phase.subPhases.find(MethodologyDomainService.hasContent);
-    openSubPhase((written || phase.subPhases[0]).id);
+    if (written) {
+      openSubPhase(written.id);
+    } else {
+      openSubPhase(phase.subPhases[0].id);
+    }
   }
 
   function openSubPhase(subPhaseId) {
@@ -175,9 +183,9 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     AppStateService.setSubPhaseId(subPhaseId);
     var methodologyId = AppStateService.getMethodologyId();
     if (methodologyId) {
-      methSubPhaseById[methodologyId] = subPhaseId;
+      methodologySubPhaseById[methodologyId] = subPhaseId;
     }
-    AppStateService.refreshLoc();
+    AppStateService.refreshLocation();
     if (hooks.afterOpenSubPhase) {
       hooks.afterOpenSubPhase();
     }
@@ -240,7 +248,7 @@ angular.module('deliveryMethodology').factory('NavigationService', [
       if (!location) {
         return false;
       }
-      AppStateService.setMethodologyId(location.meth.id);
+      AppStateService.setMethodologyId(location.methodology.id);
       AppStateService.setView('methodology');
       openSubPhase(subPhaseId);
       focusJumpTarget(params.get('el'));
@@ -252,24 +260,24 @@ angular.module('deliveryMethodology').factory('NavigationService', [
 
   function remember(methodologyId, subPhaseId) {
     if (methodologyId && subPhaseId) {
-      methSubPhaseById[methodologyId] = subPhaseId;
+      methodologySubPhaseById[methodologyId] = subPhaseId;
     }
   }
 
   function remembered(methodologyId) {
-    return methSubPhaseById[methodologyId];
+    return methodologySubPhaseById[methodologyId];
   }
 
   function forget(methodologyId) {
-    delete methSubPhaseById[methodologyId];
+    delete methodologySubPhaseById[methodologyId];
   }
 
   function getResumeMap() {
-    return Object.assign({}, methSubPhaseById);
+    return Object.assign({}, methodologySubPhaseById);
   }
 
   function setResumeMap(map) {
-    methSubPhaseById = Object.assign({}, map || {});
+    methodologySubPhaseById = Object.assign({}, map || {});
   }
 
   function getHistory() {

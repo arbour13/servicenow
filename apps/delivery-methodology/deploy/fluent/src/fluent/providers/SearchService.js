@@ -21,7 +21,11 @@
     var before = escapeHtml(segment.slice(0, matchIndex - start));
     var match = escapeHtml(segment.slice(matchIndex - start, matchIndex - start + query.length));
     var after = escapeHtml(segment.slice(matchIndex - start + query.length));
-    var html = (start > 0 ? '…' : '') + before + '<mark>' + match + '</mark>' + after + '…';
+    var html = '';
+    if (start > 0) {
+      html += '…';
+    }
+    html += before + '<mark>' + match + '</mark>' + after + '…';
     return $sce.trustAsHtml(html);
   }
 
@@ -33,7 +37,11 @@
   }
 
   function setQuery(query) {
-    searchQuery = query == null ? '' : String(query);
+    if (query == null) {
+      searchQuery = '';
+    } else {
+      searchQuery = String(query);
+    }
   }
 
   function clear() {
@@ -44,6 +52,10 @@
 
   function isOpen() {
     return !!(searchQuery || '').trim();
+  }
+
+  function getQuery() {
+    return searchQuery;
   }
 
   function run(methodologies, options) {
@@ -66,13 +78,15 @@
         (phase.subPhases || []).forEach(function (subPhase) {
           var haystack = [subPhase.name, subPhase.overview, subPhase.objective]
             .concat(subPhase.comments || [], subPhase.inputs || [], subPhase.deliverables || [])
-            .concat((subPhase.tasks || []).map(function (task) { return task.text; }))
+            .concat((subPhase.tasks || []).map(function (task) {
+              return task.text;
+            }))
             .join('  ');
           if (haystack.toLowerCase().indexOf(query) >= 0) {
             results.push({
-              m: methodology,
-              p: phase,
-              s: subPhase,
+              methodology: methodology,
+              phase: phase,
+              subPhase: subPhase,
               snippetHtml: makeSnippet(haystack, query)
             });
           }
@@ -86,7 +100,7 @@
   return {
     readState: readState,
     setQuery: setQuery,
-    getQuery: function () { return searchQuery; },
+    getQuery: getQuery,
     clear: clear,
     isOpen: isOpen,
     run: run

@@ -7,8 +7,6 @@ api.controller = function (
   'use strict';
   var c = this;
 
-  c.icon = IconService.paths;
-
   ThemeService.init('deliveryMethodology');
 
   /* Deployed-widget theme plumbing. ThemeService writes data-theme to <html>, which is right in
@@ -30,7 +28,10 @@ api.controller = function (
     $timeout(stampWidgetTheme, 0);
   }
   syncTheme();
-  c.toggleTheme = function () { ThemeService.toggleApp(); syncTheme(); };
+  c.toggleTheme = function () {
+    ThemeService.toggleApp();
+    syncTheme();
+  };
 
   // Editor/admin roles set data.canEdit in the widget server script. Local harness has no server
   // payload, so default true. Read-only users (role `user` only) cannot enter edit.
@@ -38,7 +39,9 @@ api.controller = function (
 
   // Service Portal exposes c.server on the widget carrying the real server script (this one);
   // the local harness does not. Bind so getData/saveData hit the content table when deployed.
-  if (c.server) { DataService.bindServer(c.server); }
+  if (c.server) {
+    DataService.bindServer(c.server);
+  }
 
   // Live object refs - MessagingService mutates these; template binds c.toast / c.confirm.
   var messagingState = MessagingService.readState();
@@ -47,33 +50,31 @@ api.controller = function (
   c.dismissConfirm = MessagingService.dismissConfirm;
   c.acceptConfirm = MessagingService.acceptConfirm;
 
-  c.tip = TipService.tip;
-  c.tipMouseOver = function ($event) { TipService.tipMouseOver($event); };
-  c.tipMouseOut = function ($event) { TipService.tipMouseOut($event); };
-  c.dismissTip = function () { TipService.dismissTip(); };
+  TipService.bind(c);
+  IconService.bind(c);
 
-  function curMeth() {
-    return MethodologyDomainService.curMeth(c.methodologies, c.methodologyId);
+  function currentMethodology() {
+    return MethodologyDomainService.currentMethodology(c.methodologies, c.methodologyId);
   }
-  function sortJobTitleIds(ids) {
-    return MethodologyDomainService.sortJobTitleIds(c.jobTitles, ids);
+  function sortJobTitleIds(jobTitleIds) {
+    return MethodologyDomainService.sortJobTitleIds(c.jobTitles, jobTitleIds);
   }
-  function rgContext() {
+  function raciGridContext() {
     return {
-      methodology: curMeth(),
+      methodology: currentMethodology(),
       sortJobTitleIds: sortJobTitleIds,
       hasContent: MethodologyDomainService.hasContent
     };
   }
-  function refreshRg() {
-    RaciGridService.refresh(rgContext());
+  function refreshRaciGrid() {
+    RaciGridService.refresh(raciGridContext());
   }
   function refreshWhatsNew() {
     WhatsNewService.refresh(c.methodologies);
   }
   function refreshJobAids() {
-    ReferenceService.refresh(c.methodologies, sortJobTitleIds, function (id) {
-      return MethodologyDomainService.jobTitleById(c.jobTitles, id);
+    ReferenceService.refresh(c.methodologies, sortJobTitleIds, function (jobTitleId) {
+      return MethodologyDomainService.jobTitleById(c.jobTitles, jobTitleId);
     });
   }
 
@@ -106,10 +107,9 @@ api.controller = function (
   }
   syncAll();
   syncSearch();
-  var unsubscribeDmState = $rootScope.$on('dm-state', syncAll);
-  $scope.$on('$destroy', unsubscribeDmState);
+  AppStateService.subscribe($rootScope, $scope, syncAll);
 
-  c.showMethSwitch = function () {
+  c.showMethodologySwitch = function () {
     return (c.view === 'methodology' || c.view === 'raci') && c.methodologies.length > 1;
   };
   c.pageTitle = function () {
@@ -126,7 +126,7 @@ api.controller = function (
   };
   c.pageSub = function () {
     if (c.view === 'raci') {
-      var raciMethodology = curMeth();
+      var raciMethodology = currentMethodology();
       if (!raciMethodology) {
         return 'Every task and every job title across the engagement. Focus a column to see one role.';
       }
@@ -138,7 +138,7 @@ api.controller = function (
     if (c.view === 'reference') {
       return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.';
     }
-    var methodology = curMeth();
+    var methodology = currentMethodology();
     if (methodology && methodology.summary) {
       return methodology.summary;
     }
@@ -147,63 +147,104 @@ api.controller = function (
     }
     return 'GlideFast\'s playbook for delivering an engagement end to end.';
   };
-  c.anyUnread = function () { return WhatsNewService.anyUnread(c.methodologies); };
+  c.anyUnread = function () {
+    return WhatsNewService.anyUnread(c.methodologies);
+  };
 
-  c.canGoBack = function () { return NavigationService.canGoBack(); };
-  c.canGoForward = function () { return NavigationService.canGoForward(); };
-  c.goBack = function () { NavigationService.goBack(); };
-  c.goForward = function () { NavigationService.goForward(); };
-  c.setView = function (view) { NavigationService.setView(view); };
-  c.switchMethodology = function (id) { NavigationService.switchMethodology(id); };
-  c.toggleStructureEdit = function () { StructureEditService.toggleStructureEdit(); };
-  c.jumpTo = function (subId, methId, elKey) { NavigationService.jumpTo(subId, methId, elKey); };
+  c.canGoBack = function () {
+    return NavigationService.canGoBack();
+  };
+  c.canGoForward = function () {
+    return NavigationService.canGoForward();
+  };
+  c.goBack = function () {
+    NavigationService.goBack();
+  };
+  c.goForward = function () {
+    NavigationService.goForward();
+  };
+  c.setView = function (view) {
+    NavigationService.setView(view);
+  };
+  c.switchMethodology = function (methodologyId) {
+    NavigationService.switchMethodology(methodologyId);
+  };
+  c.toggleStructureEdit = function () {
+    StructureEditService.toggleStructureEdit();
+  };
+  c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
+    NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);
+  };
 
   c.searchQuery = '';
   c.searchResultsList = [];
-  c.searchOpen = function () { return SearchService.isOpen() || !!(c.searchQuery || '').trim(); };
+  c.searchOpen = function () {
+    return SearchService.isOpen() || !!(c.searchQuery || '').trim();
+  };
   c.searchKeydown = function ($event) {
     if ($event.key === 'Escape') {
       c.clearSearch();
-      ($event.target && $event.target.blur && $event.target.blur());
+      if ($event.target && $event.target.blur) {
+        $event.target.blur();
+      }
     }
   };
-  c.clearSearch = function () { SearchService.clear(); syncSearch(); };
-  c.pickSearchResult = function (result) { c.jumpTo(result.s.id, result.m.id); };
+  c.clearSearch = function () {
+    SearchService.clear();
+    syncSearch();
+  };
+  c.pickSearchResult = function (result) {
+    c.jumpTo(result.subPhase.id, result.methodology.id);
+  };
   c.runSearch = function () {
     SearchService.setQuery(c.searchQuery);
     SearchService.run(c.methodologies, {
-      isEditing: function () { return ContentEditService.isEditing() || StructureEditService.isEditing(); }
+      isEditing: function () {
+        return ContentEditService.isEditing() || StructureEditService.isEditing();
+      }
     });
     syncSearch();
   };
 
   ContentEditService.bind({
-    canEdit: function () { return AppStateService.getCanEdit(); },
+    canEdit: function () {
+      return AppStateService.getCanEdit();
+    },
     isStructureEditing: StructureEditService.isEditing,
     afterSaveSuccess: function (entries) {
       AppStateService.setJustRead(entries);
-      AppStateService.refreshLoc();
+      AppStateService.refreshLocation();
       refreshWhatsNew();
       refreshJobAids();
     }
   });
 
   StructureEditService.bind({
-    canEdit: function () { return AppStateService.getCanEdit(); },
+    canEdit: function () {
+      return AppStateService.getCanEdit();
+    },
     isContentEditing: ContentEditService.isEditing,
-    enterContentEdit: function () { ContentEditService.enterEdit(); }
+    enterContentEdit: function () {
+      ContentEditService.enterEdit();
+    }
   });
 
   NavigationService.bind({
-    isEditing: function () { return ContentEditService.isEditing() || StructureEditService.isEditing(); },
+    isEditing: function () {
+      return ContentEditService.isEditing() || StructureEditService.isEditing();
+    },
     syncSearch: syncSearch,
     afterOpenSubPhase: function () {
-      var location = AppStateService.getLoc();
-      AppStateService.setJustRead(location ? WhatsNewService.markRead(location.sp, AppStateService.getMethodologies()) : []);
+      var location = AppStateService.getLocation();
+      if (location) {
+        AppStateService.setJustRead(WhatsNewService.markRead(location.subPhase, AppStateService.getMethodologies()));
+      } else {
+        AppStateService.setJustRead([]);
+      }
     },
     refreshRgIfRaci: function () {
       if (AppStateService.getView() === 'raci') {
-        refreshRg();
+        refreshRaciGrid();
       }
     }
   });

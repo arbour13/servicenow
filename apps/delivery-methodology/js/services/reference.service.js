@@ -22,11 +22,11 @@ angular.module('deliveryMethodology').factory('ReferenceService', [function () {
                 return;
               }
               aids.push({
-                m: methodology,
-                p: phase,
-                s: subPhase,
-                t: task,
-                j: jobAid,
+                methodology: methodology,
+                phase: phase,
+                subPhase: subPhase,
+                task: task,
+                jobAid: jobAid,
                 scope: jobAidScope(task, jobAid, sortJobTitleIds, jobTitleById)
               });
             });
