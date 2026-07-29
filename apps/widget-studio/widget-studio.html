@@ -4239,7 +4239,7 @@ class Component extends DCLogic {
   // values catch up with it) lets clicking to FEWER fields show a ghost preview without writing anything —
   // "asks nothing... commits only on edit." Clicking to MORE fields is a real write: the current shared
   // value is expanded into every longhand it's splitting into, so the new fields show real values immediately.
-  spaceBand(node,t,target,inner,opts){ opts=opts||{}; const h=React.createElement;
+  spaceBand(node,t,target,opts){ opts=opts||{}; const h=React.createElement;
     const label=target==='m'?'Margin':'Padding'; const neg=target==='m';
     const propOf=s=>this.spaceProp(target,s);
     const sideKeys=['t','r','b','l'];
@@ -4295,18 +4295,23 @@ class Component extends DCLogic {
       : [field(['t'],'T'),field(['r'],'R'),field(['b'],'B'),field(['l'],'L')];
     const bandBg=target==='m'?t.segBg:t.panel;
     return this.inspBand(t,label,
-      h('div',null,
-        // Four independent sides in one flex row left each combo-field only ~46px — too narrow to read
-        // a value. A 2x2 grid (T,R / B,L — CSS shorthand order, filled by normal grid auto-placement)
-        // roughly triples each field's width; `all`/`axis` have room in a single row and stay there.
-        h('div',{style:grain==='sides'?{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}:{display:'flex',gap:6}}, rows),
-        // `inner` is itself a band and brings its own marginTop — no spacer wrapper (see inspBand).
-        inner||null),
+      // Four independent sides in one flex row left each combo-field only ~46px — too narrow to read
+      // a value. A 2x2 grid (T,R / B,L — CSS shorthand order, filled by normal grid auto-placement)
+      // roughly triples each field's width; `all`/`axis` have room in a single row and stay there.
+      h('div',{style:grain==='sides'?{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}:{display:'flex',gap:6}}, rows),
       {lead:this.stateEditDot(node,sideKeys.map(propOf),t), trail:grainSeg, bg:bandBg, first:opts.first});
   }
+  // Margin and Padding are SIBLING bands, like every other section's bands. They were nested
+  // (padding inside margin) to draw the box model, along with a dashed "Content" placeholder inside
+  // both — the last remnants of the box-model diagram the trapezoid-flattening pass removed. Both
+  // are gone: the nesting made Spacing the only nested-band section in the panel, cost the Padding
+  // fields ~18px of width for no functional reason, and the model it drew was wrong anyway (margin
+  // wrapping padding skips the border, which lives in its own section). They are peers — same
+  // control, same grain switch, same editing — so they now read as peers.
   spacingBands(node,t){ const h=React.createElement;
-    const content=h('div',{style:{marginTop:2,border:'1px dashed '+t.accent,borderRadius:5,padding:'10px 0',textAlign:'center',fontSize:9,fontWeight:600,color:t.accent,background:t.segBg}},'Content');
-    return this.spaceBand(node,t,'m', this.spaceBand(node,t,'p', content), {first:true});
+    return h('div',null,
+      this.spaceBand(node,t,'m',{first:true}),
+      this.spaceBand(node,t,'p'));
   }
   JUSTIFY_VALUES(){ return [{v:'flex-start',title:'Start'},{v:'center',title:'Center'},{v:'flex-end',title:'End'},{v:'space-between',title:'Space between'},{v:'space-around',title:'Space around'},{v:'space-evenly',title:'Space evenly'}]; }
   ALIGN_ITEMS_VALUES(){ return [{v:'flex-start',title:'Start'},{v:'center',title:'Center'},{v:'flex-end',title:'End'},{v:'stretch',title:'Stretch'},{v:'baseline',title:'Baseline'}]; }
@@ -4979,6 +4984,16 @@ class Component extends DCLogic {
       h('span',{style:{fontSize:11,fontWeight:600,color:t.muted}},'Columns'),
       h('div',{style:{width:120}}, this.segTextSlider(t,[{v:'fixed',l:'Fixed'},{v:'auto',l:'Auto'}],colMode,setColMode,{pad:'3px 0'}))));
     if(colMode==='fixed'){
+      // "How many columns" is the first question a grid asks, and equal columns is overwhelmingly the
+      // answer — so lead with a count picker and keep the per-track list below for the cases that
+      // actually need uneven tracks. Routed through setGridColumns (NOT the raw setCols) because
+      // dropping the count has to clamp any child pinned past the new last column and re-normalize
+      // source order; setCols alone would leave those children pointing at columns that no longer exist.
+      const colCount=Math.max(1,Math.min(6,cols.length));
+      const evenNow=cols.every(c=>c===cols[0]);
+      els.push(h('div',{key:'colcount',style:{marginBottom:8}},
+        this.segTextSlider(t,[1,2,3,4,5,6].map(n=>({v:n,l:String(n)})), evenNow?colCount:0,
+          n=>this.setGridColumns(node, new Array(n).fill('1fr').join(' ')), {aria:'Column count',pad:'5px 0'})));
       els.push(h('div',{key:'coltracks',style:{display:'flex',flexDirection:'column',gap:5}}, cols.map((c,i)=>trackRow(cols,i,setCols,1))));
       els.push(addBtn('+ Add column',()=>setCols(cols.concat('1fr'))));
     } else {
@@ -5272,28 +5287,6 @@ class Component extends DCLogic {
     }
     return h('div',null,els);
   }
-  // Deck flattening (Property Editor Exploration.dc.html, zone ③): every section renders flat, no
-  // card chrome. Which section LEADS depends on what the selection actually is — text (headings,
-  // p/span/a/label/li/blockquote, icon) leads with Typography; a surface (button/badge/alert/panel/
-  // card/input/select/hr) leads with Background+Border; anything else leads with Structure. This is
-  // NOT the reorder-on-select that was tried and reverted earlier — there, identical content swapped
-  // positions and fields were duplicated above their real sections (the Fill+Radius bug). Here each
-  // section is real and appears exactly once; only ITS POSITION depends on type, and within a type
-  // nothing ever moves, so each of the three layouts is its own stable, learnable panel. Classification
-  // stays coarse and tag-keyed on purpose — never usage-adaptive.
-  STYLE_LEAD_TEXT_TAGS=['h1','h2','h3','h4','h5','h6','p','span','a','label','li','blockquote'];
-  STYLE_LEAD_SURFACE_TAGS=['button','input','select','textarea','hr'];
-  STYLE_LEAD_SURFACE_TYPES={button:1,badge:1,alert:1,panel:1,card:1,input:1,select:1,checkbox:1,radio:1};
-  styleLead(node){
-    if(node.id==='root') { return 'structure'; }
-    if(node.type==='icon') { return 'text'; }
-    if(node.type==='el'){ const tg=node.data.tag;
-      if(this.STYLE_LEAD_SURFACE_TAGS.includes(tg)) { return 'surface'; }
-      if(this.STYLE_LEAD_TEXT_TAGS.includes(tg)) { return 'text'; }
-      return 'structure'; }
-    if(this.STYLE_LEAD_SURFACE_TYPES[node.type]) { return 'surface'; }
-    return 'structure'; // table, navtabs, listgroup, progress, breadcrumb, buttongroup, html
-  }
   // Provenance-dot key lists, one per top-level section — colocated here rather than computed
   // inline in designTab, since each block function is the actual authority on which CSS props it
   // touches. Layout/Spacing/Position have none: they never had a top-level dot before this pass
@@ -5305,9 +5298,6 @@ class Component extends DCLogic {
   BORDER_DOT_KEYS=['borderWidth','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','borderRadius','borderTopLeftRadius','borderTopRightRadius','borderBottomLeftRadius','borderBottomRightRadius','borderColor'];
   EFFECTS_DOT_KEYS=['opacity','mixBlendMode','boxShadow','filter','backdropFilter','cursor'];
   TRANSFORMS_DOT_KEYS=['transform','transformOrigin','perspective','transition'];
-  // Which sections start open for each lead. Spacing is open for every type — it's used constantly
-  // regardless of what's selected; everything else defaults closed unless it's the type's own lead.
-  DEFAULT_OPEN_BY_LEAD={text:['typography','spacing'],surface:['background','border','spacing'],structure:['layout','spacing']};
   // Bold uppercase label + chevron + click-to-toggle — deliberately NOT bigCard's card chrome
   // (border/shadow/rounded corners/13px inset), which reads as a narrower, denser box sitting
   // inside an otherwise-flat panel. No border-top divider either (dropped — nine full-width rules
@@ -5335,13 +5325,12 @@ class Component extends DCLogic {
   // the same reasoning that killed reorder-on-select `57f6dbc` and scroll-to-lead `1d08101`: the
   // panel's write target is the CLASS, not the element, and any class can land on any element, so
   // a `.divider` shared between an `hr` and a `p` must present identically regardless of which one
-  // you clicked). styleLead() still earns its keep through DEFAULT_OPEN_BY_LEAD — the relevant
-  // section for this type starts EXPANDED — order is the map, open state is a bookmark in it.
+  // you clicked). ALL sections now start EXPANDED, for every element type: the per-type
+  // default-open (styleLead + DEFAULT_OPEN_BY_LEAD) is gone, so what you see no longer varies with
+  // the selection at all — only what the user themselves collapses, which `_inspOpen` remembers.
   designTab(node,t){ const h=React.createElement;
-    const lead=this.styleLead(node);
-    const openSet=this.DEFAULT_OPEN_BY_LEAD[lead];
     const sec=(id,label,body,dotKeys)=>({id,key:'card:'+id,label,body,
-      dot: dotKeys?this.stateEditDot(node,dotKeys,t):null, defOpen: openSet.includes(id)});
+      dot: dotKeys?this.stateEditDot(node,dotKeys,t):null});
     const canonical=[
       sec('layout','Layout', this.layoutCore(node,t), null),
       sec('spacing','Spacing', this.spacingBands(node,t), null),
@@ -5355,7 +5344,7 @@ class Component extends DCLogic {
     ];
     return h('div',null,
       this.layerZone(node,t),
-      canonical.map((s,i)=>h('div',{key:s.key}, this.flatSection(t,s.key,s.label,s.body,{defOpen:s.defOpen,dot:s.dot,first:i===0}))),
+      canonical.map((s,i)=>h('div',{key:s.key}, this.flatSection(t,s.key,s.label,s.body,{dot:s.dot,first:i===0}))),
       this.ledger(node,t));
   }
   // The ledger: every declaration actually SET on this class, grouped by layer — the layer you're
