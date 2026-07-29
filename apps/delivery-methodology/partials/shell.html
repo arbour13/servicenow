@@ -1,0 +1,136 @@
+      <!-- Shell widget's own full-page chrome: loading, tip, toast, confirm, search overlay, and the
+         pagehdr. Kept as ONE dedicated template (not the packager's generic partial-wrap) because,
+         unlike the four view widgets, this is the entire deployed widget body - see
+         ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget note and deploy.manifest.js's
+         widgets[] entry for 'shell' (templateFile, not templatePartial). editing/search-active stay
+         on THIS .app (not a per-view one) because pagehdr/views/pagehdr-title/pagehdr-controls -
+         the only elements those classes still affect post-split - all live here now. -->
+      <div class="app app--chrome" ng-class="{editing: c.editMode || c.structureEditMode, 'search-active': c.searchOpen()}"
+        ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
+
+        <div class="dm-loading" ng-if="c.loading">Loading…</div>
+
+        <div id="dm-tip" class="tip" ng-class="{show: c.tip.show}" ng-style="{left: c.tip.x + 'px', top: c.tip.y + 'px'}">
+          <span class="tname" ng-if="c.tip.name">{{c.tip.name}}</span>{{c.tip.text}}
+        </div>
+
+        <div class="toast" ng-class="{show: c.toast.show}">{{c.toast.msg}}</div>
+
+        <div class="msg-overlay" ng-if="c.confirm.open" dm-modal="c.dismissConfirm()" dm-modal-focus="dmConfirmCancel"
+          ng-click="$event.target === $event.currentTarget && c.dismissConfirm()">
+          <div class="msg-dialog" role="dialog" aria-modal="true" aria-labelledby="dmConfirmTitle"
+            ng-click="$event.stopPropagation()">
+            <div class="msg-dialog-head">
+              <h2 id="dmConfirmTitle" class="msg-dialog-title">{{c.confirm.title}}</h2>
+              <button type="button" class="msg-dialog-x" ng-click="c.dismissConfirm()" aria-label="Close">&times;</button>
+            </div>
+            <p class="msg-dialog-body">{{c.confirm.body}}</p>
+            <div class="msg-dialog-actions">
+              <button id="dmConfirmCancel" type="button" class="btn" ng-click="c.dismissConfirm()">{{c.confirm.cancel}}</button>
+              <button type="button" class="btn danger" ng-click="c.acceptConfirm()">{{c.confirm.ok}}</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search results overlay: fixed layer so the header search + theme toggle never move.
+           Closing without picking a result leaves the underlying view exactly as it was. -->
+        <div class="search-overlay" ng-if="c.searchOpen()" ng-click="c.clearSearch()">
+          <div class="search-modal" role="dialog" aria-modal="true" aria-labelledby="dm-search-title"
+            ng-click="$event.stopPropagation()">
+            <div class="search-modal-head">
+              <h2 id="dm-search-title">{{(c.searchQuery || '').trim().length < 2 ? 'Search' : ('Results for “' +
+                  (c.searchQuery || '' ).trim() + '”' )}}</h2>
+                  <button type="button" class="search-modal-close" ng-click="c.clearSearch()"
+                    aria-label="Close search">&times;</button>
+            </div>
+            <div class="search-modal-body" role="listbox">
+              <p class="hsearch-empty" ng-if="(c.searchQuery || '').trim().length < 2">Type at least two characters.</p>
+              <p class="hsearch-empty" ng-if="(c.searchQuery || '').trim().length >= 2 && !c.searchResultsList.length">No
+                matches.</p>
+              <button type="button" class="search-result" role="option" ng-repeat="r in c.searchResultsList"
+                ng-click="c.pickSearchResult(r)">
+                <div class="sr-loc">{{r.m.name}} &rsaquo; {{r.p.name}} &rsaquo; {{r.s.sid}}</div>
+                <div class="sr-title">{{r.s.name}}</div>
+                <div class="sr-snip" ng-bind-html="r.snippetHtml"></div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="main" ng-if="!c.loading">
+
+          <div class="pagehdr">
+            <div class="pagehdr-top">
+              <div class="views" role="tablist">
+                <button type="button" class="vtab" id="dm-tab-methodology" role="tab"
+                  aria-selected="{{c.view === 'methodology'}}" aria-controls="dm-panel-methodology"
+                  ng-class="{on: c.view === 'methodology'}"
+                  ng-click="c.setView('methodology')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" ng-bind-html="c.icon('pulse')"></svg><span>Methodology</span></button>
+                <button type="button" class="vtab" id="dm-tab-raci" role="tab"
+                  aria-selected="{{c.view === 'raci'}}" aria-controls="dm-panel-raci"
+                  ng-class="{on: c.view === 'raci'}" ng-click="c.setView('raci')"><svg
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ng-bind-html="c.icon('grid')"></svg><span>RACI</span></button>
+                <button type="button" class="vtab" id="dm-tab-reference" role="tab"
+                  aria-selected="{{c.view === 'reference'}}" aria-controls="dm-panel-reference"
+                  ng-class="{on: c.view === 'reference'}"
+                  ng-click="c.setView('reference')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('book')"></svg><span>Reference</span></button>
+                <button type="button" class="vtab" id="dm-tab-whatsnew" role="tab" ng-if="c.anyUnread()"
+                  aria-selected="{{c.view === 'whatsnew'}}" aria-controls="dm-panel-whatsnew"
+                  ng-class="{on: c.view === 'whatsnew'}"
+                  ng-click="c.setView('whatsnew')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" ng-bind-html="c.icon('clock')"></svg><span>What's New</span></button>
+              </div>
+              <div class="hdr-search-group">
+                <div class="nav-history" role="group" aria-label="History">
+                  <button type="button" class="nav-btn" ng-click="c.goBack()" ng-disabled="!c.canGoBack()" data-tip="Back"
+                    aria-label="Back">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('chevronLeft')"></svg>
+                  </button>
+                  <button type="button" class="nav-btn" ng-click="c.goForward()" ng-disabled="!c.canGoForward()"
+                    data-tip="Forward" aria-label="Forward">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('chevronRight')"></svg>
+                  </button>
+                </div>
+                <div class="hsearch">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" ng-bind-html="c.icon('search')"></svg>
+                  <input type="text" placeholder="Search…" autocomplete="off" ng-model="c.searchQuery"
+                    ng-change="c.runSearch()" ng-keydown="c.searchKeydown($event)" aria-autocomplete="list"
+                    aria-controls="dm-search-modal" aria-expanded="{{c.searchOpen()}}">
+                </div>
+                <button type="button" class="theme-toggle" ng-click="c.toggleTheme()" aria-pressed="{{c.theme === 'dark'}}"
+                  aria-label="Toggle light/dark mode" data-tip="Toggle light/dark mode">
+                  <svg ng-if="c.theme === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('sun')"></svg>
+                  <svg ng-if="c.theme !== 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('moon')"></svg>
+                </button>
+              </div>
+            </div>
+            <div class="pagehdr-title">
+              <h1>{{c.pageTitle()}}</h1>
+              <p class="pg-sub">{{c.pageSub()}}</p>
+            </div>
+            <div class="pagehdr-controls"
+              ng-if="(c.view === 'methodology' || c.view === 'raci') && (c.showMethSwitch() || (c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit))">
+              <div class="meth-switch" ng-if="c.showMethSwitch()">
+                <button type="button" class="meth-tab" ng-class="{active: m.id === c.methodologyId}"
+                  ng-repeat="m in c.methodologies track by m.id" ng-click="c.switchMethodology(m.id)">{{m.name}}</button>
+              </div>
+              <button type="button" class="struct-icon-btn" ng-if="c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit"
+                ng-class="{on: c.structureEditMode}" ng-click="c.toggleStructureEdit()"
+                data-tip="Edit structure"
+                aria-label="Edit structure"
+                aria-pressed="{{c.structureEditMode}}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('pencil')"></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>

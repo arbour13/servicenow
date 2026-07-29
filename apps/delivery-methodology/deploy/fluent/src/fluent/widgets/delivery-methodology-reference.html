@@ -1,0 +1,101 @@
+<div class="dm-widget">
+<div class="app app--view" ng-if="c.isActiveView()">
+        <!-- Own tip-delegation wrapper - this is now a standalone widget, not a descendant of the
+           Shell widget's .app. See ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget
+           note. -->
+        <div ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
+
+        <div class="refdoc">
+          <div class="refdoc-toolbar">
+            <label class="loe-billable-toggle jargon-toggle"
+              data-tip="Highlight jargon and acronyms with hover-over definitions">
+              Explain terms <input type="checkbox" ng-model="c.showJargon">
+            </label>
+          </div>
+          <section class="ref-sec">
+            <h3 class="ref-h">How to use RACI</h3>
+            <p class="ref-lead">Every task in this methodology assigns each involved job title one or more RACI letters.
+              They answer one question: for this task, what is that person's relationship to the work?</p>
+            <div class="ref-raci-grid">
+              <div class="ref-raci-card"><span class="ref-raci-badge rl-R">R</span>
+                <div>
+                  <div class="ref-raci-name">Responsible</div>
+                  <div class="ref-raci-desc">Does the work. At least one per task - the people who actually carry it
+                    out.</div>
+                </div>
+              </div>
+              <div class="ref-raci-card"><span class="ref-raci-badge rl-A">A</span>
+                <div>
+                  <div class="ref-raci-name">Accountable</div>
+                  <div class="ref-raci-desc">Owns the outcome and signs off. Exactly one per task - the single point of
+                    ownership.</div>
+                </div>
+              </div>
+              <div class="ref-raci-card"><span class="ref-raci-badge rl-C">C</span>
+                <div>
+                  <div class="ref-raci-name">Consulted</div>
+                  <div class="ref-raci-desc">Two-way input. Consulted for their expertise before or while the work
+                    happens.</div>
+                </div>
+              </div>
+              <div class="ref-raci-card"><span class="ref-raci-badge rl-I">I</span>
+                <div>
+                  <div class="ref-raci-name">Informed</div>
+                  <div class="ref-raci-desc">One-way update. Kept informed of progress or completion, but not part of
+                    the doing.</div>
+                </div>
+              </div>
+            </div>
+            <ul class="ref-rules">
+              <li><b>Exactly one A per task.</b> Accountability shouldn't be shared - if two people sign off, no one
+                does.</li>
+              <li><b>R and A can be the same person</b> (shown together as <span class="rl-A">A</span> <span
+                  class="rl-R">R</span>) - they do it and own it.</li>
+              <li><b>Every task needs at least an R and an A</b> - someone doing the work, someone owning the result.
+              </li>
+              <li><b>The customer</b> appears in the RACI wherever the engagement requires their input, approval, or
+                participation.</li>
+            </ul>
+          </section>
+
+          <section class="ref-sec">
+            <h3 class="ref-h">Escalation Management</h3>
+            <div class="ref-placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" ng-bind-html="c.icon('pencil')"></svg>
+              <div><b>Not yet written.</b>
+                <p>This section will hold GlideFast's escalation guidance - when and how to raise an issue, severity
+                  tiers, and who to contact at each level. Add the real content here when it's ready.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="ref-sec">
+            <h3 class="ref-h">Job Aids index <span class="ref-count">{{c.jobAids.length}}</span></h3>
+            <p class="ref-lead">Every job aid referenced by a task, across all methodologies, in one place. This list
+              builds itself from the tasks - add a job aid to a task and it appears here.</p>
+            <p class="empty" ng-if="!c.jobAids.length">No job aids yet.</p>
+            <div class="ref-aids" ng-if="c.jobAids.length">
+              <div class="ref-aid" ng-repeat="a in c.jobAids">
+                <a class="jobaid" href="{{a.j.url}}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('externalLink')"></svg>Job Aid</a>
+                <div class="ref-aid-body">
+                  <div class="ref-aid-task" ng-bind-html="c.jargonHtml(a.t.text)"></div>
+                  <button type="button" class="ref-aid-crumb" ng-click="c.jumpTo(a.s.id, a.m.id)">{{a.m.name}} &rsaquo;
+                    {{a.p.name}} &rsaquo; {{a.s.sid}} {{a.s.name}} &#8599;</button>
+                  <div class="ref-aid-scope">
+                    <span>Applies to:</span>
+                    <span ng-if="!a.scope.length" class="ref-allroles">All roles</span>
+                    <span class="ja-scope" ng-repeat="r in a.scope" style="--c: {{c.jobTitleColor(r.id)}}"
+                      data-tip-name="{{r.name}}" data-tip="{{r.description}}">{{r.external ? '&#9671; ' :
+                      ''}}{{r.abbr}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        </div>
+  </div>
+</div>

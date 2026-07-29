@@ -45,12 +45,56 @@ Record({
 })
 
 Record({
-    $id: Now.ID['instance'],
+    $id: Now.ID['instance_shell'],
     table: 'sp_instance',
     data: {
         active: true,
         order: 1,
         sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
-        sp_widget: 'a4b5c6d7e8ac99e07aac99e07bac99e0',
+        sp_widget: 'a4b5c6d7e85271166b5271166c527116',
+    },
+})
+
+Record({
+    $id: Now.ID['instance_methodology'],
+    table: 'sp_instance',
+    data: {
+        active: true,
+        order: 2,
+        sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
+        sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a',
+    },
+})
+
+Record({
+    $id: Now.ID['instance_raci'],
+    table: 'sp_instance',
+    data: {
+        active: true,
+        order: 3,
+        sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
+        sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f',
+    },
+})
+
+Record({
+    $id: Now.ID['instance_reference'],
+    table: 'sp_instance',
+    data: {
+        active: true,
+        order: 4,
+        sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
+        sp_widget: 'a4b5c6d7e8c3931246c3931247c39312',
+    },
+})
+
+Record({
+    $id: Now.ID['instance_whatsnew'],
+    table: 'sp_instance',
+    data: {
+        active: true,
+        order: 5,
+        sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
+        sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48',
     },
 })

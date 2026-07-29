@@ -256,17 +256,34 @@ button {
   cursor: pointer;
 }
 
-/* Constrained, centered content column - identical to the standalone prototype's .page so the two
-   builds are the same width. */
+/* Constrained, centered content column. Post five-widget split there are TWO .app roots stacked
+   (Shell chrome, then the active view) - full padding on both left a ~150px void under pagehdr.
+   .app--chrome: top/side only. .app--view: side + bottom breathing room, no extra top. */
 .app {
   max-width: 1120px;
   margin: 0 auto;
   padding: 28px 40px 100px;
 }
 
+.app--chrome {
+  padding-bottom: 0;
+}
+
+.app--view {
+  padding-top: 0;
+}
+
 @media (max-width: 1000px) {
   .app {
     padding: 24px 24px 70px;
+  }
+
+  .app--chrome {
+    padding-bottom: 0;
+  }
+
+  .app--view {
+    padding-top: 0;
   }
 }
 .pagehdr {

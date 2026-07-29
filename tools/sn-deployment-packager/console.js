@@ -72,12 +72,24 @@
     });
     var sharedScssPartials = descriptor.sharedScssPartials || [];
     var files = descriptor.files || {};
+    var viewPartialEntries = Object.keys(files.viewPartials || {}).map(function (name) {
+      return { name: name, file: files.viewPartials[name] };
+    });
+    // Multi-widget apps (manifest.widgets[]) have no single files.controller - each widget brings
+    // its own controller, plus a template fragment for any widget declaring templatePartial/
+    // templateFile (a widget with neither, the shell, falls back to files.index in buildParts).
+    var widgetDefs = descriptor.manifest.widgets;
+    var isMultiWidget = Array.isArray(widgetDefs) && widgetDefs.length > 0;
+    var widgetTemplateFiles = isMultiWidget ? widgetDefs.map(function (w) { return w.templatePartial || w.templateFile || null; }) : [];
     var fetches = [
       Promise.all(providers.map(function (p) { return fetchText(root + p.file); })),
-      fetchText(root + files.controller),
+      isMultiWidget ? Promise.resolve(null) : fetchText(root + files.controller),
       fetchText(root + files.scss),
       fetchText(root + files.index),
       Promise.all(sharedScssPartials.map(function (f) { return fetchText(root + f); })),
+      Promise.all(viewPartialEntries.map(function (entry) { return fetchText(root + entry.file); })),
+      isMultiWidget ? Promise.all(widgetDefs.map(function (w) { return fetchText(root + w.controller); })) : Promise.resolve([]),
+      isMultiWidget ? Promise.all(widgetTemplateFiles.map(function (f) { return f ? fetchText(root + f) : Promise.resolve(null); })) : Promise.resolve([]),
     ];
     if (files.serverScript) {
       fetches.push(files.contentModel ? fetchText(root + files.contentModel) : Promise.resolve(''));
@@ -86,17 +98,33 @@
     return Promise.all(fetches).then(function (results) {
       var providerSrcs = {};
       providers.forEach(function (p, i) { providerSrcs[p.file] = results[0][i]; });
+      var viewPartials = {};
+      viewPartialEntries.forEach(function (entry, index) {
+        viewPartials[entry.name] = results[5][index];
+      });
       var serverScript = files.serverScript
-        ? resolveServerScript(root, descriptor, { contentModel: results[5], serverScript: results[6] })
+        ? resolveServerScript(root, descriptor, { contentModel: results[8], serverScript: results[9] })
         : descriptor.serverScriptSource;
-      return {
-        controllerSrc: results[1],
+      var sources = {
         scssSrc: results[2],
         sharedScss: results[4].join('\n'),
         indexHtml: results[3],
+        viewPartials: viewPartials,
         providerSrcs: providerSrcs,
         serverScript: serverScript,
       };
+      if (isMultiWidget) {
+        var controllerSrcs = {};
+        var templateTexts = {};
+        widgetDefs.forEach(function (w, index) {
+          controllerSrcs[w.id] = results[6][index];
+          if (results[7][index] != null) { templateTexts[w.id] = results[7][index]; }
+        });
+        sources.widgets = { controllerSrcs: controllerSrcs, templateTexts: templateTexts };
+      } else {
+        sources.controllerSrc = results[1];
+      }
+      return sources;
     });
   }
 

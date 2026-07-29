@@ -26,10 +26,36 @@
   ];
 
   function task(id, order, text, raci, jobAids) {
-    return { id: id, order: order, text: text, raci: raci, jobAids: jobAids || [] };
+    return {
+      id: id,
+      order: order,
+      text: text,
+      raci: raci,
+      jobAids: jobAids || []
+    };
   }
   function blankSubPhase(id, sid, name, order, icon) {
-    return { id: id, sid: sid, name: name, order: order, icon: icon || 'doc', changelog: [], overview: '', objective: '', participants: [], comments: [], inputs: [], deliverables: [], tasks: [], meetings: [], levelOfEffort: { mode: 'all', all: {}, roles: {} } };
+    return {
+      id: id,
+      sid: sid,
+      name: name,
+      order: order,
+      icon: icon || 'doc',
+      changelog: [],
+      overview: '',
+      objective: '',
+      participants: [],
+      comments: [],
+      inputs: [],
+      deliverables: [],
+      tasks: [],
+      meetings: [],
+      levelOfEffort: {
+        mode: 'all',
+        all: {},
+        roles: {}
+      }
+    };
   }
 
   var METHODOLOGIES = [

@@ -1,17 +1,45 @@
 [
-  'ChangelogDiffService', 'IdSeqService', 'MessagingService',
-  function (ChangelogDiffService, IdSeqService, MessagingService) {
+  'ChangelogDiffService', 'IdSeqService', 'MessagingService', 'AppStateService', 'MethodologyDomainService', '$rootScope',
+  function (ChangelogDiffService, IdSeqService, MessagingService, AppStateService, MethodologyDomainService, $rootScope) {
   'use strict';
 
+  function notify() {
+    $rootScope.$broadcast('dm-state');
+  }
+
   var LOE_ROLE_DEFAULTS = {
-    em: { billable: true, optional: false },
-    bpc: { billable: true, optional: false },
-    arch: { billable: true, optional: false },
-    tc: { billable: true, optional: false },
-    ux: { billable: true, optional: false },
-    ae: { billable: false, optional: false },
-    sa: { billable: false, optional: false },
-    es: { billable: false, optional: true }
+    em: {
+      billable: true,
+      optional: false
+    },
+    bpc: {
+      billable: true,
+      optional: false
+    },
+    arch: {
+      billable: true,
+      optional: false
+    },
+    tc: {
+      billable: true,
+      optional: false
+    },
+    ux: {
+      billable: true,
+      optional: false
+    },
+    ae: {
+      billable: false,
+      optional: false
+    },
+    sa: {
+      billable: false,
+      optional: false
+    },
+    es: {
+      billable: false,
+      optional: true
+    }
   };
 
   var CORE_TEAM = ['em', 'bpc', 'arch', 'tc'];
@@ -27,6 +55,18 @@
 
   function bind(hostHooks) {
     hooks = hostHooks || {};
+  }
+
+  function jobTitleById(jobTitleId) {
+    return MethodologyDomainService.jobTitleById(AppStateService.getJobTitles(), jobTitleId);
+  }
+
+  function sortJobTitleIds(jobTitleIds) {
+    return MethodologyDomainService.sortJobTitleIds(AppStateService.getJobTitles(), jobTitleIds);
+  }
+
+  function participantsOf(subPhase) {
+    return MethodologyDomainService.participantsOf(AppStateService.getJobTitles(), subPhase);
   }
 
   function isEditing() {
@@ -51,7 +91,10 @@
   }
 
   function defaultLoeEntry(roleId) {
-    var defaults = LOE_ROLE_DEFAULTS[roleId] || { billable: false, optional: false };
+    var defaults = LOE_ROLE_DEFAULTS[roleId] || {
+      billable: false,
+      optional: false
+    };
     return {
       text: '',
       billable: defaults.billable,
@@ -61,7 +104,7 @@
 
   function collapseJobAidRoles(subPhase) {
     (subPhase.tasks || []).forEach(function (task) {
-      var roleIds = hooks.sortJobTitleIds(Object.keys(task.raci || {}));
+      var roleIds = sortJobTitleIds(Object.keys(task.raci || {}));
       (task.jobAids || []).forEach(function (jobAid) {
         if (Array.isArray(jobAid.roles) && jobAid.roles.length && roleIds.length
           && roleIds.every(function (roleId) { return jobAid.roles.indexOf(roleId) >= 0; })) {
@@ -79,15 +122,18 @@
     if (hooks.isStructureEditing && hooks.isStructureEditing()) {
       return;
     }
-    var location = hooks.getLoc();
+    var location = AppStateService.getLoc();
+    if (!location || !location.sp) {
+      MessagingService.toast('Nothing to edit yet');
+      return;
+    }
     state.editSnapshot = IdSeqService.deepClone(location.sp);
     state.editSp = IdSeqService.deepClone(location.sp);
     state.tmpAddJt = {};
-    if (hooks.clearTmpLoeRole) {
-      hooks.clearTmpLoeRole();
-    }
+    AppStateService.setTmpLoeRole('');
     state.editMode = true;
     MessagingService.scrollToEditBar();
+    notify();
   }
 
   function cancelEdit() {
@@ -96,16 +142,17 @@
     state.editSnapshot = null;
     MessagingService.toast('Edit cancelled - changes reverted');
     MessagingService.scrollPageToTop();
+    notify();
   }
 
   function saveEdit() {
-    if (hooks.tryBeginSave && !hooks.tryBeginSave()) {
+    if (!AppStateService.tryBeginSave()) {
       return;
     }
     collapseJobAidRoles(state.editSp);
-    var changes = ChangelogDiffService.describeChanges(state.editSnapshot, state.editSp, hooks.jobTitleById);
+    var changes = ChangelogDiffService.describeChanges(state.editSnapshot, state.editSp, jobTitleById);
     var entries = [];
-    var location = hooks.getLoc();
+    var location = AppStateService.getLoc();
     var index = location.phase.subPhases.findIndex(function (subPhase) {
       return subPhase.id === state.editSp.id;
     });
@@ -128,7 +175,7 @@
       toSave.changelog.unshift.apply(toSave.changelog, entries);
     }
     location.phase.subPhases[index] = toSave;
-    hooks.persistMethodologies().then(function () {
+    AppStateService.persistMethodologies().then(function () {
       state.editMode = false;
       state.editSp = null;
       state.editSnapshot = null;
@@ -136,19 +183,23 @@
         hooks.afterSaveSuccess(entries, changes.length);
       }
       if (changes.length) {
-        MessagingService.toast('Saved - ' + changes.length + ' change' + (changes.length > 1 ? 's' : '') + ' detected and logged automatically');
+        var changeWord = 'change';
+        if (changes.length > 1) {
+          changeWord = 'changes';
+        }
+        MessagingService.toast('Saved - ' + changes.length + ' ' + changeWord + ' detected and logged automatically');
       } else {
         MessagingService.toast('Saved - no changes detected');
       }
       MessagingService.scrollPageToTop();
+      notify();
     }, function () {
       location.phase.subPhases[index] = previous;
       if (hooks.afterSaveFailure) {
         hooks.afterSaveFailure(previous, index);
       }
-      if (hooks.refreshLoc) {
-        hooks.refreshLoc();
-      }
+      AppStateService.refreshLoc();
+      notify();
     });
   }
 
@@ -177,7 +228,7 @@
         }
       });
     });
-    return hooks.participantsOf(state.editSp).filter(function (role) {
+    return participantsOf(state.editSp).filter(function (role) {
       return !used[role.id];
     });
   }
@@ -192,7 +243,12 @@
 
   function moveListItem(kind, index, direction) {
     var array = state.editSp[kind];
-    var swapIndex = direction === 'up' ? index - 1 : index + 1;
+    var swapIndex;
+    if (direction === 'up') {
+      swapIndex = index - 1;
+    } else {
+      swapIndex = index + 1;
+    }
     if (swapIndex < 0 || swapIndex >= array.length) {
       return;
     }
@@ -207,7 +263,7 @@
       if (!state.editSp.levelOfEffort.roles) {
         state.editSp.levelOfEffort.roles = {};
       }
-      hooks.participantsOf(state.editSp).filter(function (role) {
+      participantsOf(state.editSp).filter(function (role) {
         return !role.external;
       }).forEach(function (role) {
         state.editSp.levelOfEffort.roles[role.id] = defaultLoeEntry(role.id);
@@ -217,13 +273,13 @@
 
   function loeAvailableRoles() {
     var used = Object.keys(state.editSp.levelOfEffort.roles || {});
-    return hooks.participantsOf(state.editSp).filter(function (role) {
+    return participantsOf(state.editSp).filter(function (role) {
       return !role.external && used.indexOf(role.id) < 0;
     });
   }
 
   function addLoeRole() {
-    var roleId = hooks.getTmpLoeRole ? hooks.getTmpLoeRole() : '';
+    var roleId = AppStateService.getTmpLoeRole();
     if (!roleId) {
       return;
     }
@@ -231,9 +287,7 @@
       state.editSp.levelOfEffort.roles = {};
     }
     state.editSp.levelOfEffort.roles[roleId] = defaultLoeEntry(roleId);
-    if (hooks.clearTmpLoeRole) {
-      hooks.clearTmpLoeRole();
-    }
+    AppStateService.setTmpLoeRole('');
   }
 
   function removeLoeRole(roleId) {
@@ -258,8 +312,8 @@
   }
 
   function loeRoleRows() {
-    return hooks.sortJobTitleIds(Object.keys(state.editSp.levelOfEffort.roles || {}))
-      .map(hooks.jobTitleById).filter(Boolean);
+    return sortJobTitleIds(Object.keys(state.editSp.levelOfEffort.roles || {}))
+      .map(jobTitleById).filter(Boolean);
   }
 
   function addMeeting() {
@@ -278,7 +332,12 @@
 
   function moveMeeting(index, direction) {
     var array = state.editSp.meetings;
-    var swapIndex = direction === 'up' ? index - 1 : index + 1;
+    var swapIndex;
+    if (direction === 'up') {
+      swapIndex = index - 1;
+    } else {
+      swapIndex = index + 1;
+    }
     if (swapIndex < 0 || swapIndex >= array.length) {
       return;
     }
@@ -288,7 +347,7 @@
   }
 
   function internalRoles() {
-    return hooks.participantsOf(state.editSp).filter(function (role) {
+    return participantsOf(state.editSp).filter(function (role) {
       return !role.external;
     });
   }
@@ -313,7 +372,12 @@
 
   function moveTask(index, direction) {
     var array = state.editSp.tasks;
-    var swapIndex = direction === 'up' ? index - 1 : index + 1;
+    var swapIndex;
+    if (direction === 'up') {
+      swapIndex = index - 1;
+    } else {
+      swapIndex = index + 1;
+    }
     if (swapIndex < 0 || swapIndex >= array.length) {
       return;
     }
@@ -326,7 +390,7 @@
   }
 
   function taskRaciRoles(task) {
-    return hooks.sortJobTitleIds(Object.keys(task.raci || {})).map(hooks.jobTitleById).filter(Boolean);
+    return sortJobTitleIds(Object.keys(task.raci || {})).map(jobTitleById).filter(Boolean);
   }
 
   function taskRoleOrphan(roleId) {
@@ -335,7 +399,7 @@
 
   function taskAvailableRoles(task) {
     var used = Object.keys(task.raci || {});
-    return hooks.participantsOf(state.editSp).filter(function (role) {
+    return participantsOf(state.editSp).filter(function (role) {
       return used.indexOf(role.id) < 0;
     });
   }
@@ -399,17 +463,27 @@
   }
 
   function toggleJobAidRole(task, jobAid, roleId) {
-    var roleIds = hooks.sortJobTitleIds(Object.keys(task.raci || {}));
-    var array = (jobAid.roles && jobAid.roles.length) ? jobAid.roles.slice() : roleIds.slice();
+    var roleIds = sortJobTitleIds(Object.keys(task.raci || {}));
+    var array;
+    if (jobAid.roles && jobAid.roles.length) {
+      array = jobAid.roles.slice();
+    } else {
+      array = roleIds.slice();
+    }
     var index = array.indexOf(roleId);
     if (index >= 0) {
       array.splice(index, 1);
     } else {
       array.push(roleId);
     }
-    jobAid.roles = (roleIds.length && roleIds.every(function (role) {
+    var allRolesSelected = roleIds.length && roleIds.every(function (role) {
       return array.indexOf(role) >= 0;
-    })) ? [] : array;
+    });
+    if (allRolesSelected) {
+      jobAid.roles = [];
+    } else {
+      jobAid.roles = array;
+    }
   }
 
   function jobAidRoleOn(task, jobAid, roleId) {

@@ -163,8 +163,30 @@
     }
     throw new Error('Unbalanced <div> nesting looking for the end of <div class="app">');
   }
-  function buildTemplateFromSource(indexHtml, scopeClass) {
-    var appDiv = extractAppDiv(indexHtml).replace(/\s+ng-controller="[^"]*"/, '');
+  // Inline harness ng-include view partials into the widget template. Service Portal ships one
+  // template field and cannot fetch apps/<app>/partials/*.html at runtime. sources.viewPartials
+  // is a map of basename (no .html) → file text; omitted/empty is a no-op for apps without partials.
+  function inlineViewPartials(html, viewPartials) {
+    if (!viewPartials) {
+      return html;
+    }
+    // Harness uses Angular's ng-include="'partials/name.html'" (quoted expression).
+    return html.replace(
+      /<div([^>]*?)\s+ng-include=(["'])'partials\/([A-Za-z0-9_-]+)\.html'\2([^>]*)>\s*<\/div>/g,
+      function (match, beforeAttrs, quote, name, afterAttrs) {
+        var body = viewPartials[name];
+        if (body == null) {
+          throw new Error('Missing view partial for ng-include partials/' + name + '.html');
+        }
+        var attrs = (beforeAttrs + afterAttrs).replace(/\s+/g, ' ').trim();
+        return '<div ' + attrs + '>\n' + String(body).replace(/^\n/, '').replace(/\n$/, '') + '\n      </div>';
+      }
+    );
+  }
+
+  function buildTemplateFromSource(indexHtml, scopeClass, viewPartials) {
+    var inlined = inlineViewPartials(indexHtml, viewPartials || null);
+    var appDiv = extractAppDiv(inlined).replace(/\s+ng-controller="[^"]*"/, '');
     return '<div class="' + scopeClass + '">\n' + appDiv + '\n</div>';
   }
 
@@ -447,9 +469,23 @@
       container: stableSysId(p, 'container'),
       row: stableSysId(p, 'row'),
       column: stableSysId(p, 'column'),
-      widget: stableSysId(p, 'widget'),
-      instance: stableSysId(p, 'instance'),
     };
+    // Multi-widget apps (manifest.widgets[]) get one widget/instance sys_id pair PER declared
+    // widget, seeded by that widget's own `id` slug - ids.widget/ids.instance (singular) are
+    // omitted in this case rather than pointing at the first widget, so a caller that still reads
+    // the old singular keys fails loudly instead of silently only ever touching one widget.
+    if (Array.isArray(manifest.widgets) && manifest.widgets.length) {
+      ids.widgets = {};
+      manifest.widgets.forEach(function (w) {
+        ids.widgets[w.id] = {
+          widget: stableSysId(p, 'widget_' + w.id),
+          instance: stableSysId(p, 'instance_' + w.id),
+        };
+      });
+    } else {
+      ids.widget = stableSysId(p, 'widget');
+      ids.instance = stableSysId(p, 'instance');
+    }
     if (manifest.features && manifest.features.roles) {
       ids.userRole = stableSysId(p, 'user_role');
       ids.adminRole = stableSysId(p, 'admin_role');
@@ -528,6 +564,25 @@
      in a browser host); defaults to identity.
      ================================================================================== */
 
+  var DEFAULT_SERVER_SCRIPT = '(function() {\n  /* No server-side data needed - this widget\'s logic lives entirely in its injected Angular services. */\n})();';
+
+  // Wraps a raw view-partial fragment for a non-shell widget: the packager decides the outer
+  // div and the ng-if that gates it on AppState's current view (see manifest.schema.md's
+  // widgets[] doc) - the partial file itself stays the same bare fragment the harness ng-includes.
+  function wrapPartialTemplate(scopeClass, partialBody) {
+    // app--view: no top padding - Shell's .app--chrome already owns the page top gutter.
+    var inner = '<div class="app app--view" ng-if="c.isActiveView()">\n' +
+      String(partialBody).replace(/^\n/, '').replace(/\n$/, '') + '\n  </div>';
+    return '<div class="' + scopeClass + '">\n' + inner + '\n</div>';
+  }
+
+  // A `templateFile` fragment already authors its OWN root div (attributes, ng-class, always
+  // visible) - used as-is (just ng-controller-stripped, same convention as the single-widget path).
+  function wrapFileTemplate(scopeClass, fileBody) {
+    var stripped = String(fileBody).replace(/\s+ng-controller="[^"]*"/, '').trim();
+    return '<div class="' + scopeClass + '">\n' + stripped + '\n</div>';
+  }
+
   function buildParts(manifest, sources, opts) {
     var formatFn = (opts && opts.formatFn) || function (s) { return s; };
     var moduleName = manifest.angularModuleName;
@@ -546,13 +601,6 @@
       return { name: p.name, type: p.type, file: p.file, script: formatFn(body) };
     });
 
-    var controllerFn = unwrapDiArray(extractProviderBody(sources.controllerSrc, moduleName, 'controller'));
-    var clientScript = formatFn('api.controller = ' + controllerFn + ';');
-
-    var serverScript = formatFn(sources.serverScript ||
-      '(function() {\n  /* No server-side data needed - this widget\'s logic lives entirely in its injected Angular services. */\n})();');
-
-    var template = buildTemplateFromSource(sources.indexHtml, manifest.widgetScopeClass);
     // Shared SCSS partials (e.g. a design-token file an app opts into) are inlined at the TOP of the
     // widget's own <css>, before the app's rules - the host reads the files named in
     // manifest.sharedScssPartials and passes their concatenated text as sources.sharedScss. Because
@@ -560,9 +608,65 @@
     // untouched; the app's rules that reference those tokens compile against them. This is what gives
     // every widget the shared token vocabulary + portal portability. See manifest.schema.md.
     var scssSrc = (sources.sharedScss ? sources.sharedScss + '\n\n' : '') + sources.scssSrc;
+    // Every widget (single or multi) shares this SAME compiled css - see manifest.schema.md's
+    // widgets[] doc for why splitting per-widget SCSS isn't worth it for this suite.
     var css = sassSafeCss(scopeScss(scssSrc, '.' + manifest.widgetScopeClass));
 
-    return { providers: providers, clientScript: clientScript, serverScript: serverScript, template: template, css: css, link: sources.link || '' };
+    var widgetDefs = Array.isArray(manifest.widgets) ? manifest.widgets.filter(Boolean) : [];
+
+    if (!widgetDefs.length) {
+      // Legacy single-widget path - UNCHANGED behavior/shape for apps with no manifest.widgets
+      // (Glide Studio, Standards).
+      var controllerFn = unwrapDiArray(extractProviderBody(sources.controllerSrc, moduleName, 'controller'));
+      var clientScript = formatFn('api.controller = ' + controllerFn + ';');
+      var serverScript = formatFn(sources.serverScript || DEFAULT_SERVER_SCRIPT);
+      var template = buildTemplateFromSource(
+        sources.indexHtml,
+        manifest.widgetScopeClass,
+        sources.viewPartials || null
+      );
+      return { providers: providers, clientScript: clientScript, serverScript: serverScript, template: template, css: css, link: sources.link || '' };
+    }
+
+    // Multi-widget path: one { clientScript, template, serverScript } bundle per declared widget,
+    // sharing the same providers/css/link computed above. sources.widgets is keyed by widget id -
+    // see manifest.schema.md's widgets[] doc and build.js/console.js's loadSources() for how hosts
+    // populate it.
+    var widgetSources = sources.widgets || {};
+    var widgets = widgetDefs.map(function (w) {
+      var controllerSrc = widgetSources.controllerSrcs && widgetSources.controllerSrcs[w.id];
+      if (controllerSrc == null) { throw new Error('No controller source provided for widget "' + w.id + '"'); }
+      var widgetControllerFn = unwrapDiArray(extractProviderBody(controllerSrc, moduleName, 'controller'));
+      var widgetClientScript = formatFn('api.controller = ' + widgetControllerFn + ';');
+
+      var widgetTemplate;
+      if (w.templatePartial) {
+        var partialBody = widgetSources.templateTexts && widgetSources.templateTexts[w.id];
+        if (partialBody == null) { throw new Error('No template partial source provided for widget "' + w.id + '"'); }
+        widgetTemplate = wrapPartialTemplate(manifest.widgetScopeClass, partialBody);
+      } else if (w.templateFile) {
+        var fileBody = widgetSources.templateTexts && widgetSources.templateTexts[w.id];
+        if (fileBody == null) { throw new Error('No template file source provided for widget "' + w.id + '"'); }
+        widgetTemplate = wrapFileTemplate(manifest.widgetScopeClass, fileBody);
+      } else {
+        // No templatePartial/templateFile = the shell/default widget: same extraction as the
+        // legacy single-widget path (index.html's own authored <div class="app">...</div>).
+        widgetTemplate = buildTemplateFromSource(sources.indexHtml, manifest.widgetScopeClass, sources.viewPartials || null);
+      }
+
+      var widgetServerScript = formatFn(w.serverScript ? (sources.serverScript || DEFAULT_SERVER_SCRIPT) : DEFAULT_SERVER_SCRIPT);
+
+      return {
+        id: w.id,
+        name: w.name || manifest.appName,
+        widgetId: w.widgetId,
+        clientScript: widgetClientScript,
+        template: widgetTemplate,
+        serverScript: widgetServerScript,
+      };
+    });
+
+    return { providers: providers, css: css, link: sources.link || '', widgets: widgets };
   }
 
   /* ==================================================================================
@@ -825,50 +929,97 @@
       ] });
     });
 
-    // The widget. id defaults to the page id (real SP exports often share that slug); override
-    // with manifest.widgetId. name/sys_name stay the application display name.
-    var widgetId = manifest.widgetId || pageId;
-    records.push({ table: 'sp_widget', sysId: ids.widget, key: 'widget', fields: [
-      { name: 'category', value: 'custom' },
-      { name: 'client_script', value: parts.clientScript, cdata: true },
-      // Default 'vm' matches apps already shipped with that alias (Glide Studio, Standards).
-      // Service Portal's platform default is 'c' - apps that prefer that set manifest.controllerAs.
-      { name: 'controller_as', value: manifest.controllerAs || 'vm' },
-      { name: 'css', value: parts.css, cdata: true },
-      { name: 'demo_data', empty: true },
-      { name: 'description', value: manifest.shortDescription || manifest.appName },
-      { name: 'has_preview', value: true },
-      { name: 'id', value: widgetId },
-      { name: 'internal', value: false },
-      { name: 'link', value: parts.link || '', cdata: true },
-      { name: 'name', value: manifest.appName },
-      { name: 'option_schema', empty: true },
-      { name: 'public', value: false },
-      { name: 'roles', empty: true },
-      { name: 'script', value: parts.serverScript, cdata: true },
-      { name: 'servicenow', value: false },
-      { name: 'sys_class_name', value: 'sp_widget', xmlOnly: true },
-      { name: 'sys_id', value: ids.widget, xmlOnly: true },
-      { name: 'sys_name', value: manifest.appName, xmlOnly: true },
-      SC,
-      { name: 'sys_update_name', value: 'sp_widget_' + ids.widget, xmlOnly: true },
-      { name: 'template', value: parts.template, cdata: true },
-    ] });
+    // The widget(s). Multi-widget apps (parts.widgets from buildParts) get one sp_widget +
+    // sp_instance PER declared widget, stacked in column order (widgets[] array order = sp_instance
+    // order 1..N); single-widget apps keep the original one-widget/one-instance shape unchanged.
+    if (parts.widgets && parts.widgets.length) {
+      parts.widgets.forEach(function (w, index) {
+        var widgetIds = ids.widgets[w.id];
+        var widgetRecordId = w.widgetId || (pageId + '_' + w.id);
+        var widgetName = w.name || manifest.appName;
+        records.push({ table: 'sp_widget', sysId: widgetIds.widget, key: 'widget_' + w.id, fields: [
+          { name: 'category', value: 'custom' },
+          { name: 'client_script', value: w.clientScript, cdata: true },
+          { name: 'controller_as', value: manifest.controllerAs || 'vm' },
+          { name: 'css', value: parts.css, cdata: true },
+          { name: 'demo_data', empty: true },
+          { name: 'description', value: widgetName },
+          { name: 'has_preview', value: true },
+          { name: 'id', value: widgetRecordId },
+          { name: 'internal', value: false },
+          { name: 'link', value: parts.link || '', cdata: true },
+          { name: 'name', value: widgetName },
+          { name: 'option_schema', empty: true },
+          { name: 'public', value: false },
+          { name: 'roles', empty: true },
+          { name: 'script', value: w.serverScript, cdata: true },
+          { name: 'servicenow', value: false },
+          { name: 'sys_class_name', value: 'sp_widget', xmlOnly: true },
+          { name: 'sys_id', value: widgetIds.widget, xmlOnly: true },
+          { name: 'sys_name', value: widgetName, xmlOnly: true },
+          SC,
+          { name: 'sys_update_name', value: 'sp_widget_' + widgetIds.widget, xmlOnly: true },
+          { name: 'template', value: w.template, cdata: true },
+        ] });
 
-    records.push({ table: 'sp_instance', sysId: ids.instance, key: 'instance', fields: [
-      // Fluent Record() does not apply platform defaults - omit active and the instance stays
-      // inactive, so the widget never renders on the page.
-      { name: 'active', value: true },
-      { name: 'order', value: 1 },
-      { name: 'sp_column', value: ids.column },
-      { name: 'sp_widget', value: ids.widget },
-      { name: 'sys_class_name', value: 'sp_instance', xmlOnly: true },
-      { name: 'sys_id', value: ids.instance, xmlOnly: true },
-      // No instance title - real SP exports leave Target name blank when untitled.
-      SC,
-      { name: 'sys_update_name', value: 'sp_instance_' + ids.instance, xmlOnly: true },
-      { name: 'title', empty: true },
-    ] });
+        records.push({ table: 'sp_instance', sysId: widgetIds.instance, key: 'instance_' + w.id, fields: [
+          { name: 'active', value: true },
+          { name: 'order', value: index + 1 },
+          { name: 'sp_column', value: ids.column },
+          { name: 'sp_widget', value: widgetIds.widget },
+          { name: 'sys_class_name', value: 'sp_instance', xmlOnly: true },
+          { name: 'sys_id', value: widgetIds.instance, xmlOnly: true },
+          SC,
+          { name: 'sys_update_name', value: 'sp_instance_' + widgetIds.instance, xmlOnly: true },
+          { name: 'title', empty: true },
+        ] });
+      });
+    } else {
+      // id defaults to the page id (real SP exports often share that slug); override with
+      // manifest.widgetId. name/sys_name stay the application display name.
+      var widgetId = manifest.widgetId || pageId;
+      records.push({ table: 'sp_widget', sysId: ids.widget, key: 'widget', fields: [
+        { name: 'category', value: 'custom' },
+        { name: 'client_script', value: parts.clientScript, cdata: true },
+        // Default 'vm' matches apps already shipped with that alias (Glide Studio, Standards).
+        // Service Portal's platform default is 'c' - apps that prefer that set manifest.controllerAs.
+        { name: 'controller_as', value: manifest.controllerAs || 'vm' },
+        { name: 'css', value: parts.css, cdata: true },
+        { name: 'demo_data', empty: true },
+        { name: 'description', value: manifest.shortDescription || manifest.appName },
+        { name: 'has_preview', value: true },
+        { name: 'id', value: widgetId },
+        { name: 'internal', value: false },
+        { name: 'link', value: parts.link || '', cdata: true },
+        { name: 'name', value: manifest.appName },
+        { name: 'option_schema', empty: true },
+        { name: 'public', value: false },
+        { name: 'roles', empty: true },
+        { name: 'script', value: parts.serverScript, cdata: true },
+        { name: 'servicenow', value: false },
+        { name: 'sys_class_name', value: 'sp_widget', xmlOnly: true },
+        { name: 'sys_id', value: ids.widget, xmlOnly: true },
+        { name: 'sys_name', value: manifest.appName, xmlOnly: true },
+        SC,
+        { name: 'sys_update_name', value: 'sp_widget_' + ids.widget, xmlOnly: true },
+        { name: 'template', value: parts.template, cdata: true },
+      ] });
+
+      records.push({ table: 'sp_instance', sysId: ids.instance, key: 'instance', fields: [
+        // Fluent Record() does not apply platform defaults - omit active and the instance stays
+        // inactive, so the widget never renders on the page.
+        { name: 'active', value: true },
+        { name: 'order', value: 1 },
+        { name: 'sp_column', value: ids.column },
+        { name: 'sp_widget', value: ids.widget },
+        { name: 'sys_class_name', value: 'sp_instance', xmlOnly: true },
+        { name: 'sys_id', value: ids.instance, xmlOnly: true },
+        // No instance title - real SP exports leave Target name blank when untitled.
+        SC,
+        { name: 'sys_update_name', value: 'sp_instance_' + ids.instance, xmlOnly: true },
+        { name: 'title', empty: true },
+      ] });
+    }
 
     if (featureOn(manifest, 'portal')) {
       records.push({ table: 'sp_portal', sysId: ids.portal, key: 'portal', fields: [
@@ -965,7 +1116,9 @@
     // extraction
     findMatchingParen: findMatchingParen, extractProviderBody: extractProviderBody,
     unwrapDiArray: unwrapDiArray, extractTrailingMarker: extractTrailingMarker,
-    buildTemplateFromSource: buildTemplateFromSource, extractAppDiv: extractAppDiv,
+    buildTemplateFromSource: buildTemplateFromSource,
+    inlineViewPartials: inlineViewPartials,
+    extractAppDiv: extractAppDiv,
     // styling
     scopeScss: scopeScss, sassSafeCss: sassSafeCss, extractDefaultVariables: extractDefaultVariables,
     // sys_id / scope

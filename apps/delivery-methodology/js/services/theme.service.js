@@ -18,10 +18,18 @@ angular.module('deliveryMethodology').factory('ThemeService', [function () {
     return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   }
   function load(key) {
-    try { return localStorage.getItem(key); } catch (e) { return null; }
+    try {
+      return localStorage.getItem(key);
+    } catch (loadError) {
+      return null;
+    }
   }
   function save(key, value) {
-    try { localStorage.setItem(key, value); } catch (e) {}
+    try {
+      localStorage.setItem(key, value);
+    } catch (saveError) {
+      /* storage unavailable */
+    }
   }
   function applyApp() { document.documentElement.setAttribute('data-theme', appTheme); }
 
@@ -31,14 +39,29 @@ angular.module('deliveryMethodology').factory('ThemeService', [function () {
     // the app matches the system out of the box.
     init: function (keyPrefix) {
       THEME_KEY = keyPrefix + 'Theme';
-      appTheme = load(THEME_KEY) || (systemPrefersDark() ? 'dark' : 'light');
+      appTheme = load(THEME_KEY);
+      if (!appTheme) {
+        if (systemPrefersDark()) {
+          appTheme = 'dark';
+        } else {
+          appTheme = 'light';
+        }
+      }
       applyApp();
       return svc;
     },
     // A snapshot the controller mirrors onto vm after each mutation.
-    readState: function () { return { theme: appTheme }; },
+    readState: function () {
+      return {
+        theme: appTheme
+      };
+    },
     toggleApp: function () {
-      appTheme = appTheme === 'dark' ? 'light' : 'dark';
+      if (appTheme === 'dark') {
+        appTheme = 'light';
+      } else {
+        appTheme = 'dark';
+      }
       save(THEME_KEY, appTheme);
       applyApp();
     },

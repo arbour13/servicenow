@@ -200,7 +200,7 @@
     var pageRecs = [];
     var portalRecs = [];
     var roleRecs = [];
-    var widgetRec = null;
+    var widgetRecs = []; // one per sp_widget record - single-widget apps still get exactly one
 
     (model.tables || []).forEach(function (t) {
       files['src/fluent/tables/' + t.shortName + '.now.ts'] = renderTableFile(t);
@@ -211,7 +211,7 @@
       keyRegistry.push({ key: rec.key, table: rec.table, id: rec.sysId });
 
       if (rec.table === 'sp_widget') {
-        widgetRec = rec;
+        widgetRecs.push(rec);
         return;
       }
 
@@ -239,12 +239,16 @@
       else { roleRecs.push(rendered); } // sys_user_role/sys_user_group/sys_group_has_role/sys_security_acl*
     });
 
-    if (widgetRec) {
-      var rec = widgetRec;
-      files['src/fluent/widgets/' + slug + '.client.js'] = fieldValue(rec, 'client_script');
-      files['src/fluent/widgets/' + slug + '.html'] = fieldValue(rec, 'template');
-      files['src/fluent/widgets/' + slug + '.scss'] = fieldValue(rec, 'css');
-      files['src/fluent/widgets/' + slug + '.server.js'] = fieldValue(rec, 'script');
+    // One SPWidget + its own client/html/scss/server(/link) files PER sp_widget record. A
+    // single-widget app has exactly one entry here (key 'widget') and keeps the original bare
+    // `slug` filenames; a multi-widget app's records carry key 'widget_<id>', so each gets its
+    // own `slug-<id>` filenames instead of colliding on one shared name.
+    widgetRecs.forEach(function (rec) {
+      var widgetSlug = rec.key === 'widget' ? slug : (slug + '-' + rec.key.replace(/^widget_/, ''));
+      files['src/fluent/widgets/' + widgetSlug + '.client.js'] = fieldValue(rec, 'client_script');
+      files['src/fluent/widgets/' + widgetSlug + '.html'] = fieldValue(rec, 'template');
+      files['src/fluent/widgets/' + widgetSlug + '.scss'] = fieldValue(rec, 'css');
+      files['src/fluent/widgets/' + widgetSlug + '.server.js'] = fieldValue(rec, 'script');
       var link = fieldValue(rec, 'link');
       var importLines = ["import { SPWidget } from '@servicenow/sdk/core'"];
       if (providerDecls.length) {
@@ -256,28 +260,28 @@
       var lines = importLines.concat([
         '',
         'SPWidget({',
-        "    $id: Now.ID['widget'],",
+        "    $id: Now.ID[" + jsStr(rec.key) + "],",
         '    name: ' + jsStr(fieldValue(rec, 'name')) + ',',
         '    id: ' + jsStr(fieldValue(rec, 'id')) + ',',
         '    description: ' + jsStr(fieldValue(rec, 'description')) + ',',
         '    controllerAs: ' + jsStr(fieldValue(rec, 'controller_as') || 'vm') + ',',
         '    hasPreview: true,',
         "    category: 'custom',",
-        "    clientScript: Now.include('" + slug + ".client.js'),",
-        "    serverScript: Now.include('" + slug + ".server.js'),",
-        "    htmlTemplate: Now.include('" + slug + ".html'),",
-        "    customCss: Now.include('" + slug + ".scss'),",
+        "    clientScript: Now.include('" + widgetSlug + ".client.js'),",
+        "    serverScript: Now.include('" + widgetSlug + ".server.js'),",
+        "    htmlTemplate: Now.include('" + widgetSlug + ".html'),",
+        "    customCss: Now.include('" + widgetSlug + ".scss'),",
       ]);
       if (providerDecls.length) {
         lines.push('    angularProviders: [' + providerDecls.map(function (p) { return p.name; }).join(', ') + '],');
       }
       if (link) {
-        files['src/fluent/widgets/' + slug + '.link.js'] = link;
-        lines.push("    linkScript: Now.include('" + slug + ".link.js'),");
+        files['src/fluent/widgets/' + widgetSlug + '.link.js'] = link;
+        lines.push("    linkScript: Now.include('" + widgetSlug + ".link.js'),");
       }
       lines.push('})', '');
-      files['src/fluent/widgets/' + slug + '.now.ts'] = lines.join('\n');
-    }
+      files['src/fluent/widgets/' + widgetSlug + '.now.ts'] = lines.join('\n');
+    });
 
     if (providerDecls.length) {
       files['src/fluent/providers/' + slug + '.providers.now.ts'] =

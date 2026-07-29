@@ -9,7 +9,12 @@ angular.module('deliveryMethodology').factory('RaciGridService', [function () {
   var rgActivePhases = null;
   var rgGridFocusJob = null;
   var rgByRoleFocusJob = null;
-  var rg = { ids: [], counts: {}, groups: [], byRoleGroups: [] };
+  var rg = {
+    ids: [],
+    counts: {},
+    groups: [],
+    byRoleGroups: []
+  };
 
   function readState() {
     return {
@@ -30,13 +35,42 @@ angular.module('deliveryMethodology').factory('RaciGridService', [function () {
   }
 
   function ensureActivePhases(methodology) {
-    if (!methodology || !methodology.phases) { return; }
-    var phaseIds = methodology.phases.map(function (phase) { return phase.id; });
+    if (!methodology || !methodology.phases) {
+      return;
+    }
+    var phaseIds = methodology.phases.map(function (phase) {
+      return phase.id;
+    });
     var needsReset = !rgActivePhases
-      || Object.keys(rgActivePhases).some(function (phaseId) { return phaseIds.indexOf(phaseId) < 0; });
-    if (!needsReset) { return; }
+      || Object.keys(rgActivePhases).some(function (phaseId) {
+        return phaseIds.indexOf(phaseId) < 0;
+      });
+    if (!needsReset) {
+      return;
+    }
     rgActivePhases = {};
-    phaseIds.forEach(function (phaseId) { rgActivePhases[phaseId] = true; });
+    phaseIds.forEach(function (phaseId) {
+      rgActivePhases[phaseId] = true;
+    });
+  }
+
+  // Structure edits (add/delete a phase) call these directly instead of round-tripping through a
+  // controller-owned "rgActivePhases mirror" - in the multi-widget split, structure edits happen in
+  // the Methodology widget while this state belongs to the RACI widget, so there is no single
+  // controller left that could hand back such a mirror. ensureActivePhases() alone does not cover
+  // "a phase was just ADDED to an already-active methodology" (it only resets on phase REMOVAL),
+  // hence the explicit add/remove pair here.
+  function activatePhase(phaseId) {
+    if (!rgActivePhases) {
+      rgActivePhases = {};
+    }
+    rgActivePhases[phaseId] = true;
+  }
+
+  function deactivatePhase(phaseId) {
+    if (rgActivePhases) {
+      delete rgActivePhases[phaseId];
+    }
   }
 
   function refresh(context) {
@@ -44,7 +78,12 @@ angular.module('deliveryMethodology').factory('RaciGridService', [function () {
     var sortJobTitleIds = context && context.sortJobTitleIds;
     var hasContent = context && context.hasContent;
     if (!methodology || !sortJobTitleIds || !hasContent) {
-      rg = { ids: [], counts: {}, groups: [], byRoleGroups: [] };
+      rg = {
+        ids: [],
+        counts: {},
+        groups: [],
+        byRoleGroups: []
+      };
       return readState();
     }
 
@@ -53,10 +92,14 @@ angular.module('deliveryMethodology').factory('RaciGridService', [function () {
     var roleIds = [];
     methodology.phases.forEach(function (phase) {
       phase.subPhases.forEach(function (subPhase) {
-        if (!hasContent(subPhase)) { return; }
+        if (!hasContent(subPhase)) {
+          return;
+        }
         (subPhase.tasks || []).forEach(function (task) {
           Object.keys(task.raci || {}).forEach(function (roleId) {
-            if (roleIds.indexOf(roleId) < 0) { roleIds.push(roleId); }
+            if (roleIds.indexOf(roleId) < 0) {
+              roleIds.push(roleId);
+            }
           });
         });
       });
@@ -72,9 +115,13 @@ angular.module('deliveryMethodology').factory('RaciGridService', [function () {
 
     var counts = {};
     methodology.phases.forEach(function (phase) {
-      if (!rgActivePhases[phase.id]) { return; }
+      if (!rgActivePhases[phase.id]) {
+        return;
+      }
       phase.subPhases.forEach(function (subPhase) {
-        if (!hasContent(subPhase)) { return; }
+        if (!hasContent(subPhase)) {
+          return;
+        }
         (subPhase.tasks || []).forEach(function (task) {
           Object.keys(task.raci || {}).forEach(function (roleId) {
             counts[roleId] = (counts[roleId] || 0) + task.raci[roleId].length;
@@ -86,30 +133,53 @@ angular.module('deliveryMethodology').factory('RaciGridService', [function () {
     var groups = [];
     var byRoleGroups = [];
     methodology.phases.forEach(function (phase, phaseIndex) {
-      if (!rgActivePhases[phase.id]) { return; }
+      if (!rgActivePhases[phase.id]) {
+        return;
+      }
       var color = PHASE_COLORS[phaseIndex % PHASE_COLORS.length];
       phase.subPhases.filter(hasContent).forEach(function (subPhase) {
-        var rows = rgGridFocusJob
-          ? subPhase.tasks.filter(function (task) { return task.raci[rgGridFocusJob]; })
-          : subPhase.tasks;
+        var rows;
+        if (rgGridFocusJob) {
+          rows = subPhase.tasks.filter(function (task) {
+            return task.raci[rgGridFocusJob];
+          });
+        } else {
+          rows = subPhase.tasks;
+        }
         if (rows.length) {
           groups.push({
             phase: phase,
             sp: subPhase,
             color: color,
-            rows: rows.map(function (task) { return { task: task }; })
+            rows: rows.map(function (task) {
+              return {
+                task: task
+              };
+            })
           });
         }
         if (rgByRoleFocusJob) {
-          var matched = subPhase.tasks.filter(function (task) { return task.raci[rgByRoleFocusJob]; });
+          var matched = subPhase.tasks.filter(function (task) {
+            return task.raci[rgByRoleFocusJob];
+          });
           if (matched.length) {
-            byRoleGroups.push({ phase: phase, sp: subPhase, color: color, tasks: matched });
+            byRoleGroups.push({
+              phase: phase,
+              sp: subPhase,
+              color: color,
+              tasks: matched
+            });
           }
         }
       });
     });
 
-    rg = { ids: roleIds, counts: counts, groups: groups, byRoleGroups: byRoleGroups };
+    rg = {
+      ids: roleIds,
+      counts: counts,
+      groups: groups,
+      byRoleGroups: byRoleGroups
+    };
     return readState();
   }
 
@@ -120,7 +190,11 @@ angular.module('deliveryMethodology').factory('RaciGridService', [function () {
   }
 
   function toggleCol(roleId, context) {
-    rgGridFocusJob = (rgGridFocusJob === roleId) ? null : roleId;
+    if (rgGridFocusJob === roleId) {
+      rgGridFocusJob = null;
+    } else {
+      rgGridFocusJob = roleId;
+    }
     return refresh(context);
   }
 
@@ -144,6 +218,8 @@ angular.module('deliveryMethodology').factory('RaciGridService', [function () {
     getActivePhases: getActivePhases,
     setActivePhases: setActivePhases,
     ensureActivePhases: ensureActivePhases,
+    activatePhase: activatePhase,
+    deactivatePhase: deactivatePhase,
     refresh: refresh,
     togglePhase: togglePhase,
     toggleCol: toggleCol,

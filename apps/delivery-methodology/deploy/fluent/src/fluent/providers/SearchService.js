@@ -26,7 +26,10 @@
   }
 
   function readState() {
-    return { searchQuery: searchQuery, searchResultsList: searchResultsList };
+    return {
+      searchQuery: searchQuery,
+      searchResultsList: searchResultsList
+    };
   }
 
   function setQuery(query) {
@@ -59,8 +62,8 @@
 
     var results = [];
     (methodologies || []).forEach(function (methodology) {
-      methodology.phases.forEach(function (phase) {
-        phase.subPhases.forEach(function (subPhase) {
+      (methodology.phases || []).forEach(function (phase) {
+        (phase.subPhases || []).forEach(function (subPhase) {
           var haystack = [subPhase.name, subPhase.overview, subPhase.objective]
             .concat(subPhase.comments || [], subPhase.inputs || [], subPhase.deliverables || [])
             .concat((subPhase.tasks || []).map(function (task) { return task.text; }))

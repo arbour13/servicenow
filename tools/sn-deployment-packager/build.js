@@ -78,14 +78,41 @@ function loadSources(appRoot, descriptor) {
   });
   var sharedScss = (descriptor.sharedScssPartials || [])
     .map(function (f) { return fs.readFileSync(path.join(appRoot, f), 'utf8'); }).join('\n');
-  return {
-    controllerSrc: fs.readFileSync(path.join(appRoot, descriptor.files.controller), 'utf8'),
+  var viewPartials = {};
+  var viewPartialFiles = (descriptor.files && descriptor.files.viewPartials) || {};
+  Object.keys(viewPartialFiles).forEach(function (name) {
+    viewPartials[name] = fs.readFileSync(path.join(appRoot, viewPartialFiles[name]), 'utf8');
+  });
+  var sources = {
     scssSrc: fs.readFileSync(path.join(appRoot, descriptor.files.scss), 'utf8'),
     sharedScss: sharedScss,
     indexHtml: fs.readFileSync(path.join(appRoot, descriptor.files.index), 'utf8'),
+    viewPartials: viewPartials,
     providerSrcs: providerSrcs,
     serverScript: resolveServerScript(appRoot, descriptor),
   };
+
+  var widgetDefs = descriptor.manifest.widgets;
+  if (Array.isArray(widgetDefs) && widgetDefs.length) {
+    // Multi-widget: one controller file per widget, plus a template fragment for widgets that
+    // declare templatePartial/templateFile - see manifest.schema.md's widgets[] doc. A widget with
+    // neither (the shell) has no templateTexts entry; buildParts falls back to indexHtml for it.
+    var controllerSrcs = {};
+    var templateTexts = {};
+    widgetDefs.forEach(function (w) {
+      controllerSrcs[w.id] = fs.readFileSync(path.join(appRoot, w.controller), 'utf8');
+      if (w.templatePartial) {
+        templateTexts[w.id] = fs.readFileSync(path.join(appRoot, w.templatePartial), 'utf8');
+      } else if (w.templateFile) {
+        templateTexts[w.id] = fs.readFileSync(path.join(appRoot, w.templateFile), 'utf8');
+      }
+    });
+    sources.widgets = { controllerSrcs: controllerSrcs, templateTexts: templateTexts };
+  } else {
+    sources.controllerSrc = fs.readFileSync(path.join(appRoot, descriptor.files.controller), 'utf8');
+  }
+
+  return sources;
 }
 
 function writeFile(filePath, contents) {

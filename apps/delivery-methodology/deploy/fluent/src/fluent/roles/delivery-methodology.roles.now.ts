@@ -5,7 +5,7 @@ Record({
     table: 'sys_user_role',
     data: {
         description: 'Can view the Delivery Methodology tool (read-only).',
-        name: 'user',
+        name: 'delivery_methodology_user',
     },
 })
 
@@ -14,7 +14,7 @@ Record({
     table: 'sys_user_role',
     data: {
         description: 'Can edit Delivery Methodology content in the tool.',
-        name: 'editor',
+        name: 'delivery_methodology_editor',
     },
 })
 
@@ -23,7 +23,7 @@ Record({
     table: 'sys_user_role',
     data: {
         description: 'Can edit Delivery Methodology content and the application’s own records.',
-        name: 'admin',
+        name: 'delivery_methodology_admin',
     },
 })
 
@@ -109,7 +109,7 @@ Record({
         active: true,
         admin_overrides: false,
         condition: 'sys_scope=a4b5c6d7e8058b7d17058b7d18058b7d',
-        description: 'Lets admin edit sp_page records that belong to this application.',
+        description: 'Lets delivery_methodology_admin edit sp_page records that belong to this application.',
         name: 'sp_page',
         operation: 'write',
         type: 'record',
@@ -132,7 +132,7 @@ Record({
         active: true,
         admin_overrides: false,
         condition: 'sys_scope=a4b5c6d7e8058b7d17058b7d18058b7d',
-        description: 'Lets admin edit sp_container records that belong to this application.',
+        description: 'Lets delivery_methodology_admin edit sp_container records that belong to this application.',
         name: 'sp_container',
         operation: 'write',
         type: 'record',
@@ -155,7 +155,7 @@ Record({
         active: true,
         admin_overrides: false,
         condition: 'sys_scope=a4b5c6d7e8058b7d17058b7d18058b7d',
-        description: 'Lets admin edit sp_row records that belong to this application.',
+        description: 'Lets delivery_methodology_admin edit sp_row records that belong to this application.',
         name: 'sp_row',
         operation: 'write',
         type: 'record',
@@ -178,7 +178,7 @@ Record({
         active: true,
         admin_overrides: false,
         condition: 'sys_scope=a4b5c6d7e8058b7d17058b7d18058b7d',
-        description: 'Lets admin edit sp_column records that belong to this application.',
+        description: 'Lets delivery_methodology_admin edit sp_column records that belong to this application.',
         name: 'sp_column',
         operation: 'write',
         type: 'record',
@@ -201,7 +201,7 @@ Record({
         active: true,
         admin_overrides: false,
         condition: 'sys_scope=a4b5c6d7e8058b7d17058b7d18058b7d',
-        description: 'Lets admin edit sp_widget records that belong to this application.',
+        description: 'Lets delivery_methodology_admin edit sp_widget records that belong to this application.',
         name: 'sp_widget',
         operation: 'write',
         type: 'record',
@@ -224,7 +224,7 @@ Record({
         active: true,
         admin_overrides: false,
         condition: 'sys_scope=a4b5c6d7e8058b7d17058b7d18058b7d',
-        description: 'Lets admin edit sp_instance records that belong to this application.',
+        description: 'Lets delivery_methodology_admin edit sp_instance records that belong to this application.',
         name: 'sp_instance',
         operation: 'write',
         type: 'record',
@@ -246,7 +246,7 @@ Record({
     data: {
         active: true,
         admin_overrides: false,
-        description: 'Lets user/editor/admin read Content rows.',
+        description: 'Lets delivery_methodology_user/delivery_methodology_editor/delivery_methodology_admin read Content rows.',
         name: 'x_dlvry_method_content',
         operation: 'read',
         type: 'record',
@@ -286,7 +286,7 @@ Record({
     data: {
         active: true,
         admin_overrides: false,
-        description: 'Lets editor/admin write Content rows.',
+        description: 'Lets delivery_methodology_editor/delivery_methodology_admin write Content rows.',
         name: 'x_dlvry_method_content',
         operation: 'write',
         type: 'record',
@@ -317,7 +317,7 @@ Record({
     data: {
         active: true,
         admin_overrides: false,
-        description: 'Lets editor/admin create Content rows.',
+        description: 'Lets delivery_methodology_editor/delivery_methodology_admin create Content rows.',
         name: 'x_dlvry_method_content',
         operation: 'create',
         type: 'record',
@@ -348,7 +348,7 @@ Record({
     data: {
         active: true,
         admin_overrides: false,
-        description: 'Lets editor/admin delete Content rows.',
+        description: 'Lets delivery_methodology_editor/delivery_methodology_admin delete Content rows.',
         name: 'x_dlvry_method_content',
         operation: 'delete',
         type: 'record',

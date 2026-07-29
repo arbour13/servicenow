@@ -73,6 +73,14 @@ declare global {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e8b8715401b8715402b87154"
                     }
+                    "MethodologyDomainService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e88562b3848562b3858562b3"
+                    }
+                    "AppStateService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e8f8019b7bf8019b7cf8019b"
+                    }
                     "ChangelogDiffService": {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e8f7371912f7371913f73719"
@@ -129,13 +137,45 @@ declare global {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e8d1f419dad1f419dbd1f419"
                     }
-                    "widget": {
+                    "widget_shell": {
                         table: "sp_widget"
-                        id: "a4b5c6d7e8ac99e07aac99e07bac99e0"
+                        id: "a4b5c6d7e85271166b5271166c527116"
                     }
-                    "instance": {
+                    "instance_shell": {
                         table: "sp_instance"
-                        id: "a4b5c6d7e835c3ca8b35c3ca8c35c3ca"
+                        id: "a4b5c6d7e88e4d6fbc8e4d6fbd8e4d6f"
+                    }
+                    "widget_methodology": {
+                        table: "sp_widget"
+                        id: "a4b5c6d7e8a41c6a1ea41c6a1fa41c6a"
+                    }
+                    "instance_methodology": {
+                        table: "sp_instance"
+                        id: "a4b5c6d7e8526ac2af526ac2b0526ac2"
+                    }
+                    "widget_raci": {
+                        table: "sp_widget"
+                        id: "a4b5c6d7e8742d3f26742d3f27742d3f"
+                    }
+                    "instance_raci": {
+                        table: "sp_instance"
+                        id: "a4b5c6d7e8a7a7f7b5a7a7f7b6a7a7f7"
+                    }
+                    "widget_reference": {
+                        table: "sp_widget"
+                        id: "a4b5c6d7e8c3931246c3931247c39312"
+                    }
+                    "instance_reference": {
+                        table: "sp_instance"
+                        id: "a4b5c6d7e89c105b179c105b189c105b"
+                    }
+                    "widget_whatsnew": {
+                        table: "sp_widget"
+                        id: "a4b5c6d7e8bddb48e2bddb48e3bddb48"
+                    }
+                    "instance_whatsnew": {
+                        table: "sp_instance"
+                        id: "a4b5c6d7e8cd1921f1cd1921f2cd1921"
                     }
                     "acl_sp_page": {
                         table: "sys_security_acl"

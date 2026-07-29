@@ -23,8 +23,8 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
 
   function anyUnread(methodologies) {
     return (methodologies || []).some(function (methodology) {
-      return methodology.phases.some(function (phase) {
-        return phase.subPhases.some(function (subPhase) {
+      return (methodology.phases || []).some(function (phase) {
+        return (phase.subPhases || []).some(function (subPhase) {
           return unreadEntries(subPhase).length > 0;
         });
       });
@@ -32,14 +32,14 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
   }
 
   function phaseHasUnread(phase) {
-    return phase.subPhases.some(function (subPhase) { return unreadCount(subPhase) > 0; });
+    return (phase.subPhases || []).some(function (subPhase) { return unreadCount(subPhase) > 0; });
   }
 
   function refresh(methodologies) {
     var items = [];
     (methodologies || []).forEach(function (methodology) {
-      methodology.phases.forEach(function (phase, phaseIndex) {
-        phase.subPhases.forEach(function (subPhase) {
+      (methodology.phases || []).forEach(function (phase, phaseIndex) {
+        (phase.subPhases || []).forEach(function (subPhase) {
           unreadEntries(subPhase).forEach(function (entry) {
             items.push({
               m: methodology,
@@ -69,7 +69,9 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
 
   function fmtDate(dateStr) {
     var parts = String(dateStr).split('-');
-    if (parts.length !== 3) { return dateStr; }
+    if (parts.length !== 3) {
+      return dateStr;
+    }
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[+parts[1] - 1] + ' ' + (+parts[2]) + ', ' + parts[0];
   }
@@ -79,7 +81,9 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [function () {
   }
 
   function readState() {
-    return { whatsNew: whatsNew };
+    return {
+      whatsNew: whatsNew
+    };
   }
 
   return {

@@ -5,7 +5,9 @@ angular.module('deliveryMethodology').factory('ReferenceService', [function () {
   var jobAids = [];
 
   function jobAidScope(task, jobAid, sortJobTitleIds, jobTitleById) {
-    if (!jobAid.roles || !jobAid.roles.length) { return []; }
+    if (!jobAid.roles || !jobAid.roles.length) {
+      return [];
+    }
     return sortJobTitleIds(jobAid.roles).map(jobTitleById).filter(Boolean);
   }
 
@@ -15,15 +17,17 @@ angular.module('deliveryMethodology').factory('ReferenceService', [function () {
       methodology.phases.forEach(function (phase) {
         phase.subPhases.forEach(function (subPhase) {
           (subPhase.tasks || []).forEach(function (task) {
-            (task.jobAids || []).forEach(function (aid) {
-              if (!aid.url) { return; }
+            (task.jobAids || []).forEach(function (jobAid) {
+              if (!jobAid.url) {
+                return;
+              }
               aids.push({
                 m: methodology,
                 p: phase,
                 s: subPhase,
                 t: task,
-                j: aid,
-                scope: jobAidScope(task, aid, sortJobTitleIds, jobTitleById)
+                j: jobAid,
+                scope: jobAidScope(task, jobAid, sortJobTitleIds, jobTitleById)
               });
             });
           });
@@ -35,7 +39,9 @@ angular.module('deliveryMethodology').factory('ReferenceService', [function () {
   }
 
   function readState() {
-    return { jobAids: jobAids };
+    return {
+      jobAids: jobAids
+    };
   }
 
   return {

@@ -78,6 +78,41 @@ the small `opts` bag `buildParts` takes. Fluent emit is `fluent.js`'s `assembleF
     // each *Description is optional - a sensible default is generated from appName if omitted
   },
 
+  // --- multi-widget (optional) ---
+  // Omit entirely for a single-widget app (Glide Studio, Standards) - files.controller (below)
+  // stays that app's one client_script and buildParts()/buildRecordModel() take the ORIGINAL
+  // single-widget shape unchanged. When present (non-empty array), the app ships one sp_widget +
+  // sp_instance PER entry, stacked in array order in the same sp_column (Service Portal widgets
+  // stacked on one page) - e.g. a "shell" widget (chrome, no templatePartial/templateFile - its
+  // template is extracted from files.index the same way the single-widget path always has) plus
+  // several view widgets that are only visible for one AppState view each.
+  widgets: [
+    {
+      id: 'methodology',              // required, unique slug. Seeds sys_ids widget_<id>/
+                                       // instance_<id> (via core.deriveSysIds) - do not rename an
+                                       // id after first deploy, that IS this widget's identity.
+      name: 'DM Methodology',         // optional - sp_widget.name/description (default: appName)
+      widgetId: 'dm_methodology',     // optional - sp_widget.id (default: '<pageId>_<id>')
+      controller: 'js/controllers/methodology.controller.js',  // required - this widget's OWN
+                                       // controller file (extracted as client_script exactly like
+                                       // files.controller does for the single-widget path)
+      // Exactly one of templatePartial / templateFile, OR neither for the shell widget:
+      templatePartial: 'partials/methodology.html',  // a bare fragment (no outer wrapper div) -
+                                       // the packager wraps it as
+                                       // `<div class="{widgetScopeClass}"><div class="app"
+                                       // ng-if="c.isActiveView()">...fragment...</div></div>`
+      // templateFile: 'partials/some-full-fragment.html', // a fragment that already authors its
+                                       // OWN root div/attributes (e.g. always-visible chrome) -
+                                       // used as-is (just ng-controller-stripped and wrapped in
+                                       // the widgetScopeClass div), no ng-if injected
+      serverScript: false,            // optional, default false. true = this widget gets the REAL
+                                       // server script (files.serverScript/serverScriptSource) -
+                                       // exactly one widget (conventionally the shell) should set
+                                       // this true; every other widget gets the generic no-op stub
+    },
+    // ...one entry per widget...
+  ],
+
   // Optional Fluent Table() definitions. Short `name` is prefixed with manifest.scope
   // (e.g. name: 'content' → x_dlvry_method_content). Emitted to src/fluent/tables/<short>.now.ts.
   // Column types: choice | reference | string | integer | json. Reference `reference` is another
@@ -109,7 +144,10 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
 
 ```js
 {
-  controllerSrc: '...',                 // full text of the file wiring the widget's controller
+  controllerSrc: '...',                 // full text of the file wiring the widget's controller.
+                                         // ONLY for single-widget apps (manifest.widgets omitted) -
+                                         // multi-widget apps supply sources.widgets instead (below)
+                                         // and omit this key entirely.
   scssSrc: '...',                       // full text of the app's authored SCSS source
   sharedScss: undefined,                // optional - shared SCSS partial text (e.g. the concatenated
                                          // contents of a design-token file this app opts into via
@@ -118,7 +156,10 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
                                          // <css> as `!default` tokens. No app currently uses this -
                                          // the general mechanism stays, so a future shared-token
                                          // source can plug in without a core.js change.
-  indexHtml: '...',                     // full text of the authored page markup
+  indexHtml: '...',                     // full text of the authored page markup. For a multi-widget
+                                         // app, this is still needed - it's what the shell widget's
+                                         // template (the entry in manifest.widgets with neither
+                                         // templatePartial nor templateFile) is extracted from.
   providerSrcs: {                       // keyed by each providers[].file entry above
     '/angular/js/services/schema.service.js': '...',
     // ...
@@ -126,6 +167,22 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
   serverScript: undefined,              // optional - raw text for the widget's server script;
                                          // a generic no-op stub is used if omitted
   link: undefined,                      // optional - raw text for the widget's Link function
+
+  // ONLY for multi-widget apps (manifest.widgets non-empty) - omit entirely for single-widget
+  // apps. Keyed by each widgets[].id from the manifest.
+  widgets: {
+    controllerSrcs: {                   // required per widget id - full text of that widget's OWN
+                                         // controller file (widgets[].controller)
+      methodology: '...',
+      // ...
+    },
+    templateTexts: {                    // required for any widget id that declares templatePartial
+                                         // or templateFile; omitted for the shell widget id (the
+                                         // one with neither) since it uses indexHtml instead
+      methodology: '...',
+      // ...
+    },
+  },
 }
 ```
 
@@ -180,6 +237,8 @@ key or set `true` to stay deployable (default).
     // resolves them uniformly: fs.readFileSync(path.join(appRoot, p)) in Node,
     // fetch(appRootUrl + '/' + p) in a browser. manifest.providers[].file follows the same rule.
     files: {
+      // Omit controller for a multi-widget app (manifest.widgets non-empty) - each widget brings
+      // its own controller file instead (widgets[].controller). Required otherwise.
       controller: 'js/controllers/main.controller.js',
       scss: 'scss/app.scss',
       index: 'index.html',
@@ -188,6 +247,15 @@ key or set `true` to stay deployable (default).
       // Prefer this over serverScriptSource when the script is non-trivial.
       contentModel: 'js/lib/content-model.js',   // optional
       serverScript: 'js/server/content.server.js', // optional
+      // Optional, single-widget apps only: harness dev-time view partials the app's index.html
+      // pulls in via `ng-include="'partials/<name>.html'"` (a multi-view app's dev harness can
+      // split its markup into files on disk for editing convenience) - Service Portal ships ONE
+      // template field per widget and can't fetch apps/<app>/partials/*.html at runtime, so
+      // buildTemplateFromSource()/inlineViewPartials() (core.js) inline each one's file text
+      // straight into that ng-include div at build time before the widget template is extracted.
+      // Keyed by basename (no .html); each host reads the file and passes the text as
+      // sources.viewPartials[name]. Omit entirely for an app with no ng-include partials.
+      // viewPartials: { methodology: 'partials/methodology.html', raci: 'partials/raci.html' },
     },
     serverScriptSource: undefined,      // optional inline string - used when files.serverScript is absent;
                                          // omit both to use the SN Deployment Packager's built-in stub

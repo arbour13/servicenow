@@ -71,7 +71,10 @@
 
   function scrollToEditBar() {
     $timeout(function () {
-      var bar = document.querySelector('.main .edit-bar');
+      // Broadened from '.main .edit-bar' to a page-wide query: '.main' no longer exists once the
+      // Methodology view (the only widget with an edit bar) is its own widget/DOM subtree - see
+      // ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget note.
+      var bar = document.querySelector('.edit-bar');
       if (!bar) {
         return;
       }

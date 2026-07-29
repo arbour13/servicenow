@@ -9,19 +9,19 @@
    This app has no build-deploy.js of its own and doesn't need one - both deploy hosts read this
    manifest directly. Operator how-to: ../../tools/sn-deployment-packager/README.md.
 
-   SCOPE: ONE WIDGET, deliberately, for now. The recorded plan (2026-07-24) is a four-widget split -
-   one per main view: Methodology, RACI, Reference, What's New. That is still the plan; it is NOT
-   abandoned. It is blocked on APP restructuring, not on packaging: this app is currently a single
-   MainController with internal view switching (c.view === 'methodology' | 'raci' | 'reference' |
-   'whatsnew'), and four widgets would need four controllers, four templates, and a shared state
-   service - separate widgets don't share an Angular scope, so cross-view navigation that works
-   today as a plain function call (c.jumpTo, RACI row -> that sub-phase in Methodology) becomes
-   cross-widget communication that doesn't exist yet.
-   The packager is the smaller half of that problem: core.js's deriveSysIds() has a single
-   hardcoded 'widget' seed and buildRecordModel pushes exactly one sp_widget + one sp_instance, so
-   N widgets needs a loop and per-widget seeds there too.
-   When the split happens, most of this file is unchanged - identity, scope, sysIdPrefix, providers
-   and roles all stay as-is; what grows is the widget declaration. Nothing here needs undoing. */
+   SCOPE: FIVE WIDGETS, landed 2026-07-28 - the four-widget-split plan recorded 2026-07-24, plus a
+   fifth for the chrome that has to be always mounted. One per main view (Methodology, RACI,
+   Reference, What's New) PLUS Shell (pagehdr, tip/toast/confirm overlays, search, loading - see
+   js/controllers/shell.controller.js's header comment). The old single MainController with
+   internal view switching (c.view === 'methodology' | 'raci' | 'reference' | 'whatsnew') is gone;
+   AppStateService.view now gates which view widget's template renders (each view controller's own
+   isActiveView()), and cross-widget sync runs on $rootScope.$broadcast('dm-state') - see
+   AppStateService's header comment for the full writeup, and
+   ServiceNow/apps/delivery-methodology/CLAUDE.md for the app-level summary.
+   Shell is the ONLY widget with serverScript: true (js/server/content.server.js) - it owns the
+   bootstrap getData()/applyLoadedData() call and the one ContentEditService.bind()/
+   StructureEditService.bind()/NavigationService.bind() call; the four view widgets get the
+   packager's noop server-script stub (they have no server-side data of their own). */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -75,14 +75,17 @@
       // One entry per file that REGISTERS an Angular provider. Note what's absent:
       // - js/app.module.js only declares the module (angular.module('deliveryMethodology', [])),
       //   it registers nothing - Service Portal owns the module, so it must not be listed.
-      // - js/controllers/main.controller.js becomes the widget's own client_script via
-      //   files.controller below, not an sp_angular_provider.
+      // - Each of the five controllers (widgets[] below) becomes ITS OWN widget's client_script,
+      //   not an sp_angular_provider - see widgets[] below, not files.controller (multi-widget
+      //   apps have no single files.controller; each widget brings its own).
       // ThemeService is this app's OWN vendored copy as of 2026-07-26 (it used to be injected by
       // name from the shared Core app, which was retired that day) - so unlike Standards, it IS
       // listed here and DOES ship with this package.
       providers: [
         { file: 'js/services/theme.service.js', name: 'ThemeService', type: 'service' },
         { file: 'js/services/data.service.js', name: 'DataService', type: 'service' },
+        { file: 'js/services/methodology-domain.service.js', name: 'MethodologyDomainService', type: 'service' },
+        { file: 'js/services/app-state.service.js', name: 'AppStateService', type: 'service' },
         { file: 'js/services/changelog-diff.service.js', name: 'ChangelogDiffService', type: 'service' },
         { file: 'js/services/raci-grid.service.js', name: 'RaciGridService', type: 'service' },
         { file: 'js/services/navigation.service.js', name: 'NavigationService', type: 'service' },
@@ -106,15 +109,66 @@
       // real and used by the deployed widget.
       stubProviders: [],
 
+      // Five sp_widget + sp_instance records, stacked in this array's order in the one sp_column
+      // (see core.js's deriveSysIds()/buildRecordModel() - each id below seeds its own widget_<id>/
+      // instance_<id> sys_id pair, and NEVER renames after first deploy). Shell's templateFile
+      // (partials/shell.html) already authors its own always-visible root div/attributes (pagehdr,
+      // tip/toast/confirm, search, loading) - see manifest.schema.md's widgets[] doc on
+      // templateFile vs templatePartial. The four view widgets' templatePartial fragments each get
+      // wrapped by the packager as `<div class="app" ng-if="c.isActiveView()">...fragment...</div>`.
+      widgets: [
+        {
+          id: 'shell',
+          name: 'DM Shell',
+          widgetId: 'dm_shell',
+          controller: 'js/controllers/shell.controller.js',
+          templateFile: 'partials/shell.html',
+          // The ONE widget that gets the real content-table server script - see this file's SCOPE
+          // comment above and shell.controller.js's header comment.
+          serverScript: true,
+        },
+        {
+          id: 'methodology',
+          name: 'DM Methodology',
+          widgetId: 'dm_methodology',
+          controller: 'js/controllers/methodology.controller.js',
+          templatePartial: 'partials/methodology.html',
+        },
+        {
+          id: 'raci',
+          name: 'DM RACI',
+          widgetId: 'dm_raci',
+          controller: 'js/controllers/raci.controller.js',
+          templatePartial: 'partials/raci.html',
+        },
+        {
+          id: 'reference',
+          name: 'DM Reference',
+          widgetId: 'dm_reference',
+          controller: 'js/controllers/reference.controller.js',
+          templatePartial: 'partials/reference.html',
+        },
+        {
+          id: 'whatsnew',
+          name: "DM What's New",
+          widgetId: 'dm_whatsnew',
+          controller: 'js/controllers/whatsnew.controller.js',
+          templatePartial: 'partials/whatsnew.html',
+        },
+      ],
+
       // No own portal/theme - this widget drops onto an existing host portal page (or the packaged
       // sp_page is wired into one manually). Roles gate the page and the content table: user =
       // view; editor + admin = edit content in the tool; admin also gets write ACLs on app metadata.
       features: { portal: false, theme: false, roles: true },
 
+      // Prefixed (not bare user/editor/admin) so these role names never collide with another
+      // app's roles of the same short name in the same instance - see gs.hasRole() calls in
+      // js/server/content.server.js, which must match these exactly.
       roles: {
-        userRoleName: 'user',
-        editorRoleName: 'editor',
-        adminRoleName: 'admin',
+        userRoleName: 'delivery_methodology_user',
+        editorRoleName: 'delivery_methodology_editor',
+        adminRoleName: 'delivery_methodology_admin',
         userGroupName: 'Delivery Methodology Users',
         editorGroupName: 'Delivery Methodology Editors',
         adminGroupName: 'Delivery Methodology Admins',
@@ -170,12 +224,19 @@
     },
 
     files: {
-      controller: 'js/controllers/main.controller.js',
+      // No files.controller: this is a multi-widget app (manifest.widgets above) - each widget
+      // brings its own controller file instead (widgets[].controller).
       // The SCSS SOURCE, not css/app.css. The compiled file is the dev harness's own build output
       // (see the <link> in index.html); shipping it would bake in resolved values and defeat the
       // point of the widget's <css> field carrying authored SCSS for ServiceNow to compile.
       scss: 'scss/app.scss',
+      // Still read by the packager (build.js/console.js always load files.index), but unused by
+      // buildParts() here: every widgets[] entry declares its own templateFile/templatePartial, so
+      // none falls into the "neither -> extract from indexHtml" branch. Kept only because
+      // files.index is a required manifest key.
       index: 'index.html',
+      // No files.viewPartials: each view widget's fragment is now declared directly on its own
+      // widgets[] entry (templatePartial) instead of being inlined into one shared template.
       // Prefixed onto the widget server script at package time (hydrate/dehydrate).
       contentModel: 'js/lib/content-model.js',
       serverScript: 'js/server/content.server.js',

@@ -5,7 +5,9 @@ angular.module('deliveryMethodology').factory('ChangelogDiffService', [function 
 
   function truncateText(text, maxLength) {
     var value = String(text);
-    if (value.length <= maxLength) { return value; }
+    if (value.length <= maxLength) {
+      return value;
+    }
     return value.slice(0, maxLength - 1) + '…';
   }
 
@@ -22,16 +24,22 @@ angular.module('deliveryMethodology').factory('ChangelogDiffService', [function 
 
   // True only for a pure reorder: same ids/counts, different positions.
   function idSequenceChanged(beforeIds, afterIds) {
-    if (beforeIds.length !== afterIds.length) { return false; }
+    if (beforeIds.length !== afterIds.length) {
+      return false;
+    }
 
     var sortedBefore = beforeIds.slice().sort();
     var sortedAfter = afterIds.slice().sort();
     for (var sortIndex = 0; sortIndex < sortedBefore.length; sortIndex++) {
-      if (sortedBefore[sortIndex] !== sortedAfter[sortIndex]) { return false; }
+      if (sortedBefore[sortIndex] !== sortedAfter[sortIndex]) {
+        return false;
+      }
     }
 
     for (var orderIndex = 0; orderIndex < beforeIds.length; orderIndex++) {
-      if (beforeIds[orderIndex] !== afterIds[orderIndex]) { return true; }
+      if (beforeIds[orderIndex] !== afterIds[orderIndex]) {
+        return true;
+      }
     }
     return false;
   }
@@ -74,7 +82,9 @@ angular.module('deliveryMethodology').factory('ChangelogDiffService', [function 
     roleIds.forEach(function (roleId) {
       var beforeLetters = (before[roleId] || []).join('');
       var afterLetters = (after[roleId] || []).join('');
-      if (beforeLetters === afterLetters) { return; }
+      if (beforeLetters === afterLetters) {
+        return;
+      }
 
       var abbreviation = abbreviationFor(jobTitleById, roleId);
       if (!beforeLetters) {
@@ -102,9 +112,11 @@ angular.module('deliveryMethodology').factory('ChangelogDiffService', [function 
     var descriptions = [];
 
     if (before.mode !== after.mode) {
-      descriptions.push(after.mode === 'all'
-        ? 'Level of effort set to one value for all participants'
-        : 'Level of effort broken out per role');
+      if (after.mode === 'all') {
+        descriptions.push('Level of effort set to one value for all participants');
+      } else {
+        descriptions.push('Level of effort broken out per role');
+      }
     }
 
     if (after.mode === 'all') {
@@ -118,23 +130,36 @@ angular.module('deliveryMethodology').factory('ChangelogDiffService', [function 
     roleIds.forEach(function (roleId) {
       var beforeEntry = (before.roles || {})[roleId];
       var afterEntry = (after.roles || {})[roleId];
-      if (levelOfEffortEntrySame(beforeEntry, afterEntry)) { return; }
+      if (levelOfEffortEntrySame(beforeEntry, afterEntry)) {
+        return;
+      }
       // Per-role mode seeds empty rows for every participant; only log when real text exists.
-      if (!(beforeEntry && beforeEntry.text) && !(afterEntry && afterEntry.text)) { return; }
+      if (!(beforeEntry && beforeEntry.text) && !(afterEntry && afterEntry.text)) {
+        return;
+      }
       descriptions.push('Level of effort updated for ' + abbreviationFor(jobTitleById, roleId));
     });
     return descriptions;
   }
 
   function meetingLabel(meeting, jobTitleById) {
-    if (meeting && meeting.name) { return meeting.name; }
+    if (meeting && meeting.name) {
+      return meeting.name;
+    }
 
     var parts = [];
     var scheduledBy = meeting.scheduledBy && jobTitleById(meeting.scheduledBy);
     var ledBy = meeting.ledBy && jobTitleById(meeting.ledBy);
-    if (scheduledBy) { parts.push('scheduled by ' + scheduledBy.abbr); }
-    if (ledBy) { parts.push('led by ' + ledBy.abbr); }
-    return parts.length ? parts.join(', ') : 'meeting';
+    if (scheduledBy) {
+      parts.push('scheduled by ' + scheduledBy.abbr);
+    }
+    if (ledBy) {
+      parts.push('led by ' + ledBy.abbr);
+    }
+    if (parts.length) {
+      return parts.join(', ');
+    }
+    return 'meeting';
   }
 
   function meetingSame(beforeMeeting, afterMeeting) {

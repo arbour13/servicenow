@@ -175,11 +175,14 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
     };
   }
 
-  function rejectServerError(d, fallbackMessage) {
-    var message = (d && d.error) ? d.error : (fallbackMessage || 'Content save failed.');
+  function rejectServerError(responseData, fallbackMessage) {
+    var message = fallbackMessage || 'Content save failed.';
+    if (responseData && responseData.error) {
+      message = responseData.error;
+    }
     return $q.reject({
       error: message,
-      data: d
+      data: responseData
     });
   }
 

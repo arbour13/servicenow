@@ -2,8 +2,8 @@
    Bind host hooks once after the controller's location helpers exist - avoids DI cycles
    with Raci/Search/WhatsNew. */
 angular.module('deliveryMethodology').factory('NavigationService', [
-  '$timeout', 'MessagingService', 'SearchService',
-  function ($timeout, MessagingService, SearchService) {
+  '$timeout', 'MessagingService', 'SearchService', 'AppStateService', 'MethodologyDomainService',
+  function ($timeout, MessagingService, SearchService, AppStateService, MethodologyDomainService) {
   'use strict';
 
   var navStack = [];
@@ -18,9 +18,9 @@ angular.module('deliveryMethodology').factory('NavigationService', [
 
   function snapshot() {
     return {
-      view: hooks.getView(),
-      methodologyId: hooks.getMethodologyId(),
-      subPhaseId: hooks.getSubPhaseId()
+      view: AppStateService.getView(),
+      methodologyId: AppStateService.getMethodologyId(),
+      subPhaseId: AppStateService.getSubPhaseId()
     };
   }
 
@@ -32,7 +32,7 @@ angular.module('deliveryMethodology').factory('NavigationService', [
   }
 
   function push() {
-    if (navSilent || (hooks.isLoading && hooks.isLoading())) {
+    if (navSilent || AppStateService.getLoading()) {
       return;
     }
     var snap = snapshot();
@@ -50,15 +50,13 @@ angular.module('deliveryMethodology').factory('NavigationService', [
   function apply(snap) {
     navSilent = true;
     clearSearchOverlay();
-    hooks.setView(snap.view);
-    hooks.setMethodologyId(snap.methodologyId);
-    hooks.setSubPhaseId(snap.subPhaseId);
+    AppStateService.setView(snap.view);
+    AppStateService.setMethodologyId(snap.methodologyId);
+    AppStateService.setSubPhaseId(snap.subPhaseId);
     if (snap.methodologyId && snap.subPhaseId) {
       methSubPhaseById[snap.methodologyId] = snap.subPhaseId;
     }
-    if (hooks.refreshLoc) {
-      hooks.refreshLoc();
-    }
+    AppStateService.refreshLoc();
     if (hooks.afterOpenSubPhase) {
       hooks.afterOpenSubPhase();
     }
@@ -117,7 +115,7 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     if (denyIfEditing()) {
       return;
     }
-    hooks.setView(view);
+    AppStateService.setView(view);
     if (view === 'raci' && hooks.refreshRgIfRaci) {
       hooks.refreshRgIfRaci();
     }
@@ -129,22 +127,24 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     if (denyIfEditing()) {
       return;
     }
-    if (methodologyId === hooks.getMethodologyId()) {
+    if (methodologyId === AppStateService.getMethodologyId()) {
       return;
     }
-    var currentMethodologyId = hooks.getMethodologyId();
-    var currentSubPhaseId = hooks.getSubPhaseId();
+    var currentMethodologyId = AppStateService.getMethodologyId();
+    var currentSubPhaseId = AppStateService.getSubPhaseId();
     if (currentMethodologyId && currentSubPhaseId) {
       methSubPhaseById[currentMethodologyId] = currentSubPhaseId;
     }
-    hooks.setMethodologyId(methodologyId);
+    AppStateService.setMethodologyId(methodologyId);
     var resume = methSubPhaseById[methodologyId];
-    var location = resume && hooks.findSubPhase ? hooks.findSubPhase(resume) : null;
+    var location = resume && MethodologyDomainService.findSubPhase(AppStateService.getMethodologies(), resume);
     if (!location || location.meth.id !== methodologyId) {
-      resume = hooks.firstContentSubPhase(hooks.curMeth());
+      resume = MethodologyDomainService.firstContentSubPhase(
+        MethodologyDomainService.curMeth(AppStateService.getMethodologies(), methodologyId)
+      );
     }
     openSubPhase(resume);
-    if (hooks.getView() === 'raci' && hooks.refreshRgIfRaci) {
+    if (AppStateService.getView() === 'raci' && hooks.refreshRgIfRaci) {
       hooks.refreshRgIfRaci();
     }
   }
@@ -153,12 +153,18 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     if (hooks.isEditing && hooks.isEditing()) {
       return;
     }
-    var methodology = hooks.curMeth();
+    var methodology = MethodologyDomainService.curMeth(
+      AppStateService.getMethodologies(),
+      AppStateService.getMethodologyId()
+    );
+    if (!methodology) {
+      return;
+    }
     var phase = methodology.phases[phaseIndex];
     if (!phase.subPhases.length) {
       return;
     }
-    var written = phase.subPhases.find(hooks.hasContent);
+    var written = phase.subPhases.find(MethodologyDomainService.hasContent);
     openSubPhase((written || phase.subPhases[0]).id);
   }
 
@@ -166,14 +172,12 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     if (hooks.isEditing && hooks.isEditing()) {
       return;
     }
-    hooks.setSubPhaseId(subPhaseId);
-    var methodologyId = hooks.getMethodologyId();
+    AppStateService.setSubPhaseId(subPhaseId);
+    var methodologyId = AppStateService.getMethodologyId();
     if (methodologyId) {
       methSubPhaseById[methodologyId] = subPhaseId;
     }
-    if (hooks.refreshLoc) {
-      hooks.refreshLoc();
-    }
+    AppStateService.refreshLoc();
     if (hooks.afterOpenSubPhase) {
       hooks.afterOpenSubPhase();
     }
@@ -185,7 +189,10 @@ angular.module('deliveryMethodology').factory('NavigationService', [
       return;
     }
     $timeout(function () {
-      var nodes = document.querySelectorAll('.main [data-el]');
+      // Broadened from '.main [data-el]' to a page-wide query: '.main' no longer exists once the
+      // Methodology view is its own widget/DOM subtree, separate from Shell's - see
+      // ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget note.
+      var nodes = document.querySelectorAll('[data-el]');
       var target = null;
       for (var index = 0; index < nodes.length; index++) {
         if (nodes[index].getAttribute('data-el') === elementKey) {
@@ -213,10 +220,10 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     if (hooks.isEditing && hooks.isEditing()) {
       return;
     }
-    if (methodologyId && methodologyId !== hooks.getMethodologyId()) {
-      hooks.setMethodologyId(methodologyId);
+    if (methodologyId && methodologyId !== AppStateService.getMethodologyId()) {
+      AppStateService.setMethodologyId(methodologyId);
     }
-    hooks.setView('methodology');
+    AppStateService.setView('methodology');
     clearSearchOverlay();
     openSubPhase(subPhaseId);
     focusJumpTarget(elementKey);
@@ -229,16 +236,16 @@ angular.module('deliveryMethodology').factory('NavigationService', [
       if (!subPhaseId) {
         return false;
       }
-      var location = hooks.findSubPhase(subPhaseId);
+      var location = MethodologyDomainService.findSubPhase(AppStateService.getMethodologies(), subPhaseId);
       if (!location) {
         return false;
       }
-      hooks.setMethodologyId(location.meth.id);
-      hooks.setView('methodology');
+      AppStateService.setMethodologyId(location.meth.id);
+      AppStateService.setView('methodology');
       openSubPhase(subPhaseId);
       focusJumpTarget(params.get('el'));
       return true;
-    } catch (err) {
+    } catch (deepLinkError) {
       return false;
     }
   }

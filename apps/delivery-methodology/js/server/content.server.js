@@ -2,7 +2,7 @@
    Prefixed at package time with js/lib/content-model.js (DMContentModel).
    input.action: load (default) | save. One GlideRecordSecure per function. */
 (function () {
-  data.canEdit = gs.hasRole('editor') || gs.hasRole('admin');
+  data.canEdit = gs.hasRole('delivery_methodology_editor') || gs.hasRole('delivery_methodology_admin');
   data.error = '';
   data.empty = false;
   data.saved = false;

@@ -88,119 +88,136 @@ var DMContentModel = (function () {
     var jargon = (payload && payload.jargon) || {};
     var methodologies = (payload && payload.methodologies) || [];
     var referenceSections = (payload && payload.referenceSections) || [];
-    var i;
+    var index;
 
-    for (i = 0; i < jobTitles.length; i++) {
-      var jt = jobTitles[i];
-      pushRow(rows, 'job_title', null, jt.name, i + 1, {
-        id: jt.id,
-        abbreviation: jt.abbr || '',
-        description: jt.description || '',
-        external: !!jt.external
-      }, 'jt:' + jt.id);
+    for (index = 0; index < jobTitles.length; index++) {
+      var jobTitle = jobTitles[index];
+      pushRow(rows, 'job_title', null, jobTitle.name, index + 1, {
+        id: jobTitle.id,
+        abbreviation: jobTitle.abbr || '',
+        description: jobTitle.description || '',
+        external: !!jobTitle.external
+      }, 'jt:' + jobTitle.id);
     }
 
     var jargonKeys = Object.keys(jargon);
-    for (i = 0; i < jargonKeys.length; i++) {
-      var term = jargonKeys[i];
-      pushRow(rows, 'glossary_term', null, term, i + 1, {
+    for (index = 0; index < jargonKeys.length; index++) {
+      var term = jargonKeys[index];
+      pushRow(rows, 'glossary_term', null, term, index + 1, {
         definition: jargon[term] || ''
       }, 'gloss:' + term);
     }
 
-    for (i = 0; i < referenceSections.length; i++) {
-      var rs = referenceSections[i];
-      pushRow(rows, 'reference_section', null, rs.title || rs.name || '', i + 1, {
-        key: rs.key || '',
-        body: rs.body || ''
-      }, 'ref:' + (rs.key || i));
+    for (index = 0; index < referenceSections.length; index++) {
+      var referenceSection = referenceSections[index];
+      pushRow(rows, 'reference_section', null, referenceSection.title || referenceSection.name || '', index + 1, {
+        key: referenceSection.key || '',
+        body: referenceSection.body || ''
+      }, 'ref:' + (referenceSection.key || index));
     }
 
-    methodologies.forEach(function (m) {
-      pushRow(rows, 'methodology', null, m.name, m.order, {
-        id: m.id,
-        title: m.title || '',
-        summary: m.summary || '',
-        description: m.description || '',
-        feedbackUrl: m.feedbackUrl || '',
-        feedbackLabel: m.feedbackLabel || '',
-        diagramUrl: m.diagramUrl || ''
-      }, m.id);
+    methodologies.forEach(function (methodology) {
+      pushRow(rows, 'methodology', null, methodology.name, methodology.order, {
+        id: methodology.id,
+        title: methodology.title || '',
+        summary: methodology.summary || '',
+        description: methodology.description || '',
+        feedbackUrl: methodology.feedbackUrl || '',
+        feedbackLabel: methodology.feedbackLabel || '',
+        diagramUrl: methodology.diagramUrl || ''
+      }, methodology.id);
 
-      (m.phases || []).forEach(function (p) {
-        pushRow(rows, 'phase', m.id, p.name, p.order, { id: p.id }, p.id);
+      (methodology.phases || []).forEach(function (phase) {
+        pushRow(rows, 'phase', methodology.id, phase.name, phase.order, {
+          id: phase.id
+        }, phase.id);
 
-        (p.subPhases || []).forEach(function (sp) {
-          pushRow(rows, 'sub_phase', p.id, sp.name, sp.order, {
-            id: sp.id,
-            overview: sp.overview || '',
-            objective: sp.objective || '',
-            icon: sp.icon || 'doc'
-          }, sp.id);
+        (phase.subPhases || []).forEach(function (subPhase) {
+          pushRow(rows, 'sub_phase', phase.id, subPhase.name, subPhase.order, {
+            id: subPhase.id,
+            overview: subPhase.overview || '',
+            objective: subPhase.objective || '',
+            icon: subPhase.icon || 'doc'
+          }, subPhase.id);
 
-          (sp.inputs || []).forEach(function (text, idx) {
-            pushRow(rows, 'input', sp.id, text, idx + 1, {}, null);
+          (subPhase.inputs || []).forEach(function (text, inputIndex) {
+            pushRow(rows, 'input', subPhase.id, text, inputIndex + 1, {}, null);
           });
-          (sp.deliverables || []).forEach(function (text, idx) {
-            pushRow(rows, 'deliverable', sp.id, text, idx + 1, {}, null);
+          (subPhase.deliverables || []).forEach(function (text, deliverableIndex) {
+            pushRow(rows, 'deliverable', subPhase.id, text, deliverableIndex + 1, {}, null);
           });
-          (sp.comments || []).forEach(function (text, idx) {
-            pushRow(rows, 'comment', sp.id, text, idx + 1, {}, null);
+          (subPhase.comments || []).forEach(function (text, commentIndex) {
+            pushRow(rows, 'comment', subPhase.id, text, commentIndex + 1, {}, null);
           });
-          (sp.participants || []).forEach(function (roleId, idx) {
-            pushRow(rows, 'participant', sp.id, '', idx + 1, { job_title: roleId }, null);
+          (subPhase.participants || []).forEach(function (roleId, participantIndex) {
+            pushRow(rows, 'participant', subPhase.id, '', participantIndex + 1, {
+              job_title: roleId
+            }, null);
           });
-          (sp.meetings || []).forEach(function (mt, idx) {
-            pushRow(rows, 'meeting', sp.id, mt.name || '', idx + 1, {
-              id: mt.id,
-              scheduledBy: mt.scheduledBy || null,
-              ledBy: mt.ledBy || null,
-              external: !!mt.external
-            }, mt.id || null);
+          (subPhase.meetings || []).forEach(function (meeting, meetingIndex) {
+            pushRow(rows, 'meeting', subPhase.id, meeting.name || '', meetingIndex + 1, {
+              id: meeting.id,
+              scheduledBy: meeting.scheduledBy || null,
+              ledBy: meeting.ledBy || null,
+              external: !!meeting.external
+            }, meeting.id || null);
           });
 
-          var loe = sp.levelOfEffort || { mode: 'all', all: {}, roles: {} };
-          if (loe.mode === 'byRole') {
-            var roleIds = Object.keys(loe.roles || {});
-            roleIds.forEach(function (rid, idx) {
-              var entry = loe.roles[rid] || {};
-              pushRow(rows, 'level_of_effort', sp.id, '', idx + 1, {
-                job_title: rid,
+          var levelOfEffort = subPhase.levelOfEffort || {
+            mode: 'all',
+            all: {},
+            roles: {}
+          };
+          if (levelOfEffort.mode === 'byRole') {
+            var roleIds = Object.keys(levelOfEffort.roles || {});
+            roleIds.forEach(function (roleId, loeIndex) {
+              var entry = levelOfEffort.roles[roleId] || {};
+              pushRow(rows, 'level_of_effort', subPhase.id, '', loeIndex + 1, {
+                job_title: roleId,
                 text: entry.text || '',
                 billable: !!entry.billable,
                 optional: !!entry.optional
               }, null);
             });
-          } else if (loe.all && (loe.all.text || loe.all.billable != null)) {
-            pushRow(rows, 'level_of_effort', sp.id, '', 1, {
+          } else if (levelOfEffort.all && (levelOfEffort.all.text || levelOfEffort.all.billable != null)) {
+            pushRow(rows, 'level_of_effort', subPhase.id, '', 1, {
               job_title: null,
-              text: loe.all.text || '',
-              billable: !!loe.all.billable,
-              optional: !!loe.all.optional
+              text: levelOfEffort.all.text || '',
+              billable: !!levelOfEffort.all.billable,
+              optional: !!levelOfEffort.all.optional
             }, null);
           }
 
-          (sp.changelog || []).forEach(function (entry, idx) {
-            pushRow(rows, 'changelog_entry', sp.id, '', idx + 1, {
+          (subPhase.changelog || []).forEach(function (entry, changelogIndex) {
+            pushRow(rows, 'changelog_entry', subPhase.id, '', changelogIndex + 1, {
               id: entry.id,
               ts: entry.ts || '',
               text: entry.text || ''
             }, entry.id || null);
           });
 
-          (sp.tasks || []).forEach(function (t) {
-            pushRow(rows, 'task', sp.id, t.text || '', t.order, { id: t.id }, t.id);
-            var raci = t.raci || {};
+          (subPhase.tasks || []).forEach(function (task) {
+            pushRow(rows, 'task', subPhase.id, task.text || '', task.order, {
+              id: task.id
+            }, task.id);
+            var raci = task.raci || {};
             Object.keys(raci).forEach(function (roleId) {
               (raci[roleId] || []).forEach(function (letter) {
-                pushRow(rows, 'raci', t.id, letter, 0, { job_title: roleId }, null);
+                pushRow(rows, 'raci', task.id, letter, 0, {
+                  job_title: roleId
+                }, null);
               });
             });
-            (t.jobAids || []).forEach(function (ja, jaIdx) {
-              var jaId = ja.id || (t.id + '-ja' + (jaIdx + 1));
-              pushRow(rows, 'job_aid', t.id, '', jaIdx + 1, { id: jaId, url: ja.url || '' }, jaId);
-              (ja.roles || []).forEach(function (roleId, rIdx) {
-                pushRow(rows, 'job_aid_role', jaId, '', rIdx + 1, { job_title: roleId }, null);
+            (task.jobAids || []).forEach(function (jobAid, jobAidIndex) {
+              var jobAidId = jobAid.id || (task.id + '-ja' + (jobAidIndex + 1));
+              pushRow(rows, 'job_aid', task.id, '', jobAidIndex + 1, {
+                id: jobAidId,
+                url: jobAid.url || ''
+              }, jobAidId);
+              (jobAid.roles || []).forEach(function (jobAidRoleId, jobAidRoleIndex) {
+                pushRow(rows, 'job_aid_role', jobAidId, '', jobAidRoleIndex + 1, {
+                  job_title: jobAidRoleId
+                }, null);
               });
             });
           });
@@ -217,20 +234,20 @@ var DMContentModel = (function () {
 
   // Flat rows (from GlideRecord) → nested UI payload.
   function hydrate(rawRows) {
-    var rows = (rawRows || []).map(function (r) {
-      var content = parseContent(r.content);
-      var systemId = r.systemId || r.sysId || r.sys_id || null;
+    var rows = (rawRows || []).map(function (row) {
+      var content = parseContent(row.content);
+      var systemId = row.systemId || row.sysId || row.sys_id || null;
       var resolvedOrder = 0;
 
-      if (r.order != null) {
-        resolvedOrder = Number(r.order) || 0;
+      if (row.order != null) {
+        resolvedOrder = Number(row.order) || 0;
       }
 
       return {
         systemId: systemId,
-        type: r.type,
-        parentSystemId: r.parentSystemId || r.parentSysId || r.parent || null,
-        name: r.name || '',
+        type: row.type,
+        parentSystemId: row.parentSystemId || row.parentSysId || row.parent || null,
+        name: row.name || '',
         order: resolvedOrder,
         content: content,
         clientId: content.id || null
@@ -238,105 +255,113 @@ var DMContentModel = (function () {
     });
 
     var bySystemId = {};
-    rows.forEach(function (r) {
-      if (r.systemId) {
-        bySystemId[r.systemId] = r;
+    rows.forEach(function (row) {
+      if (row.systemId) {
+        bySystemId[row.systemId] = row;
       }
     });
 
-    rows.forEach(function (r) {
-      r.parentClientId = null;
+    rows.forEach(function (row) {
+      row.parentClientId = null;
 
-      if (r.parentSystemId && bySystemId[r.parentSystemId]) {
-        var parent = bySystemId[r.parentSystemId];
-        r.parentClientId = parent.clientId || parent.systemId;
+      if (row.parentSystemId && bySystemId[row.parentSystemId]) {
+        var parent = bySystemId[row.parentSystemId];
+        row.parentClientId = parent.clientId || parent.systemId;
       }
     });
 
-    rows.forEach(function (r) {
-      if (!r.clientId) {
-        if (r.type === 'job_title' && r.content.id) {
-          r.clientId = r.content.id;
-        } else if (r.systemId) {
-          r.clientId = r.systemId;
+    rows.forEach(function (row) {
+      if (!row.clientId) {
+        if (row.type === 'job_title' && row.content.id) {
+          row.clientId = row.content.id;
+        } else if (row.systemId) {
+          row.clientId = row.systemId;
         }
       }
     });
 
-    rows.forEach(function (r) {
-      if (r.parentSystemId && bySystemId[r.parentSystemId]) {
-        r.parentClientId = bySystemId[r.parentSystemId].clientId;
+    rows.forEach(function (row) {
+      if (row.parentSystemId && bySystemId[row.parentSystemId]) {
+        row.parentClientId = bySystemId[row.parentSystemId].clientId;
       }
     });
 
     var childrenOf = {};
-    rows.forEach(function (r) {
-      var key = r.parentClientId || '__root__';
+    rows.forEach(function (row) {
+      var key = row.parentClientId || '__root__';
 
       if (!childrenOf[key]) {
         childrenOf[key] = [];
       }
 
-      childrenOf[key].push(r);
+      childrenOf[key].push(row);
     });
 
-    Object.keys(childrenOf).forEach(function (k) {
-      childrenOf[k].sort(sortByOrder);
+    Object.keys(childrenOf).forEach(function (parentKey) {
+      childrenOf[parentKey].sort(sortByOrder);
     });
 
     function kids(parentClientId, type) {
-      return (childrenOf[parentClientId] || []).filter(function (r) {
-        return r.type === type;
+      return (childrenOf[parentClientId] || []).filter(function (row) {
+        return row.type === type;
       });
     }
 
     var roots = childrenOf.__root__ || [];
 
-    var jobTitlesOut = roots.filter(function (r) { return r.type === 'job_title'; }).map(function (r) {
+    var jobTitlesOut = roots.filter(function (row) {
+      return row.type === 'job_title';
+    }).map(function (row) {
       return {
-        id: r.content.id || r.clientId,
-        name: r.name,
-        abbr: r.content.abbreviation || '',
-        description: r.content.description || '',
-        external: !!r.content.external
+        id: row.content.id || row.clientId,
+        name: row.name,
+        abbr: row.content.abbreviation || '',
+        description: row.content.description || '',
+        external: !!row.content.external
       };
     });
 
     var jargon = {};
-    roots.filter(function (r) { return r.type === 'glossary_term'; }).forEach(function (r) {
-      jargon[r.name] = r.content.definition || '';
+    roots.filter(function (row) {
+      return row.type === 'glossary_term';
+    }).forEach(function (row) {
+      jargon[row.name] = row.content.definition || '';
     });
 
-    var referenceSections = roots.filter(function (r) { return r.type === 'reference_section'; }).map(function (r) {
+    var referenceSections = roots.filter(function (row) {
+      return row.type === 'reference_section';
+    }).map(function (row) {
       return {
-        key: r.content.key || '',
-        title: r.name,
-        name: r.name,
-        body: r.content.body || ''
+        key: row.content.key || '',
+        title: row.name,
+        name: row.name,
+        body: row.content.body || ''
       };
     });
 
-    var methodologies = roots.filter(function (r) { return r.type === 'methodology'; }).map(function (mRow) {
-      var mid = mRow.content.id || mRow.clientId;
+    var methodologies = roots.filter(function (row) {
+      return row.type === 'methodology';
+    }).map(function (methodologyRow) {
+      var methodologyId = methodologyRow.content.id || methodologyRow.clientId;
       return {
-        id: mid,
-        name: mRow.name,
-        order: mRow.order,
-        title: mRow.content.title || '',
-        summary: mRow.content.summary || '',
-        description: mRow.content.description || '',
-        feedbackUrl: mRow.content.feedbackUrl || '',
-        feedbackLabel: mRow.content.feedbackLabel || '',
-        diagramUrl: mRow.content.diagramUrl || '',
-        phases: kids(mid, 'phase').map(function (pRow) {
-          var pid = pRow.content.id || pRow.clientId;
+        id: methodologyId,
+        name: methodologyRow.name,
+        order: methodologyRow.order,
+        title: methodologyRow.content.title || '',
+        summary: methodologyRow.content.summary || '',
+        description: methodologyRow.content.description || '',
+        feedbackUrl: methodologyRow.content.feedbackUrl || '',
+        feedbackLabel: methodologyRow.content.feedbackLabel || '',
+        diagramUrl: methodologyRow.content.diagramUrl || '',
+        phases: kids(methodologyId, 'phase').map(function (phaseRow) {
+          var phaseId = phaseRow.content.id || phaseRow.clientId;
           return {
-            id: pid,
-            name: pRow.name,
-            order: pRow.order,
-            subPhases: kids(pid, 'sub_phase').map(function (spRow) {
-              var sid = spRow.content.id || spRow.clientId;
-              var loeRows = kids(sid, 'level_of_effort');
+            id: phaseId,
+            name: phaseRow.name,
+            order: phaseRow.order,
+            subPhases: kids(phaseId, 'sub_phase').map(function (subPhaseRow) {
+              var subPhaseId = subPhaseRow.content.id || subPhaseRow.clientId;
+              var loeRows = kids(subPhaseId, 'level_of_effort');
               var levelOfEffort = {
                 mode: 'all',
                 all: {},
@@ -352,58 +377,66 @@ var DMContentModel = (function () {
                 };
               } else if (loeRows.length) {
                 levelOfEffort.mode = 'byRole';
-                loeRows.forEach(function (lr) {
-                  var rid = lr.content.job_title;
+                loeRows.forEach(function (loeRow) {
+                  var roleId = loeRow.content.job_title;
 
-                  if (!rid) {
+                  if (!roleId) {
                     return;
                   }
 
-                  levelOfEffort.roles[rid] = {
-                    text: lr.content.text || '',
-                    billable: !!lr.content.billable,
-                    optional: !!lr.content.optional
+                  levelOfEffort.roles[roleId] = {
+                    text: loeRow.content.text || '',
+                    billable: !!loeRow.content.billable,
+                    optional: !!loeRow.content.optional
                   };
                 });
               }
 
               return {
-                id: sid,
+                id: subPhaseId,
                 sid: '',
-                name: spRow.name,
-                order: spRow.order,
-                icon: spRow.content.icon || 'doc',
-                overview: spRow.content.overview || '',
-                objective: spRow.content.objective || '',
-                inputs: kids(sid, 'input').map(function (r) { return r.name; }),
-                deliverables: kids(sid, 'deliverable').map(function (r) { return r.name; }),
-                comments: kids(sid, 'comment').map(function (r) { return r.name; }),
-                participants: kids(sid, 'participant').map(function (r) { return r.content.job_title; }).filter(Boolean),
-                meetings: kids(sid, 'meeting').map(function (r) {
+                name: subPhaseRow.name,
+                order: subPhaseRow.order,
+                icon: subPhaseRow.content.icon || 'doc',
+                overview: subPhaseRow.content.overview || '',
+                objective: subPhaseRow.content.objective || '',
+                inputs: kids(subPhaseId, 'input').map(function (row) {
+                  return row.name;
+                }),
+                deliverables: kids(subPhaseId, 'deliverable').map(function (row) {
+                  return row.name;
+                }),
+                comments: kids(subPhaseId, 'comment').map(function (row) {
+                  return row.name;
+                }),
+                participants: kids(subPhaseId, 'participant').map(function (row) {
+                  return row.content.job_title;
+                }).filter(Boolean),
+                meetings: kids(subPhaseId, 'meeting').map(function (row) {
                   return {
-                    id: r.content.id || r.clientId,
-                    name: r.name || '',
-                    scheduledBy: r.content.scheduledBy || null,
-                    ledBy: r.content.ledBy || null,
-                    external: !!r.content.external
+                    id: row.content.id || row.clientId,
+                    name: row.name || '',
+                    scheduledBy: row.content.scheduledBy || null,
+                    ledBy: row.content.ledBy || null,
+                    external: !!row.content.external
                   };
                 }),
                 levelOfEffort: levelOfEffort,
-                changelog: kids(sid, 'changelog_entry').map(function (r) {
+                changelog: kids(subPhaseId, 'changelog_entry').map(function (row) {
                   return {
-                    id: r.content.id || r.clientId || r.systemId,
-                    ts: r.content.ts || '',
-                    text: r.content.text || '',
+                    id: row.content.id || row.clientId || row.systemId,
+                    ts: row.content.ts || '',
+                    text: row.content.text || '',
                     read: false
                   };
                 }),
-                tasks: kids(sid, 'task').map(function (tRow) {
-                  var tid = tRow.content.id || tRow.clientId;
+                tasks: kids(subPhaseId, 'task').map(function (taskRow) {
+                  var taskId = taskRow.content.id || taskRow.clientId;
                   var raci = {};
 
-                  kids(tid, 'raci').forEach(function (rr) {
-                    var roleId = rr.content.job_title;
-                    var letter = rr.name;
+                  kids(taskId, 'raci').forEach(function (raciRow) {
+                    var roleId = raciRow.content.job_title;
+                    var letter = raciRow.name;
 
                     if (!roleId || !letter) {
                       return;
@@ -419,16 +452,18 @@ var DMContentModel = (function () {
                   });
 
                   return {
-                    id: tid,
-                    order: tRow.order,
-                    text: tRow.name,
+                    id: taskId,
+                    order: taskRow.order,
+                    text: taskRow.name,
                     raci: raci,
-                    jobAids: kids(tid, 'job_aid').map(function (jaRow) {
-                      var jaId = jaRow.content.id || jaRow.clientId;
+                    jobAids: kids(taskId, 'job_aid').map(function (jobAidRow) {
+                      var jobAidId = jobAidRow.content.id || jobAidRow.clientId;
                       return {
-                        id: jaId,
-                        url: jaRow.content.url || '',
-                        roles: kids(jaId, 'job_aid_role').map(function (jr) { return jr.content.job_title; }).filter(Boolean)
+                        id: jobAidId,
+                        url: jobAidRow.content.url || '',
+                        roles: kids(jobAidId, 'job_aid_role').map(function (jobAidRoleRow) {
+                          return jobAidRoleRow.content.job_title;
+                        }).filter(Boolean)
                       };
                     })
                   };
@@ -467,7 +502,7 @@ if (typeof self !== 'undefined') {
    Prefixed at package time with js/lib/content-model.js (DMContentModel).
    input.action: load (default) | save. One GlideRecordSecure per function. */
 (function () {
-  data.canEdit = gs.hasRole('editor') || gs.hasRole('admin');
+  data.canEdit = gs.hasRole('delivery_methodology_editor') || gs.hasRole('delivery_methodology_admin');
   data.error = '';
   data.empty = false;
   data.saved = false;
