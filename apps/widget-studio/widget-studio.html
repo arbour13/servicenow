@@ -5034,6 +5034,16 @@ class Component extends DCLogic {
     els.push(h('div',{key:'rowhdr',style:{marginTop:10}}, this.lbl(t,'Rows')));
     if(rows.length) { els.push(h('div',{key:'rowtracks',style:{display:'flex',flexDirection:'column',gap:5}}, rows.map((r,i)=>trackRow(rows,i,setRows,0)))); }
     els.push(addBtn('+ Add row',()=>setRows(rows.concat('auto'))));
+    // Rows deliberately get NO Preset/Auto modes the way Columns do. A grid's width is essentially
+    // always definite, so `1fr` columns divide real space; its height usually is not, so `1fr` row
+    // tracks resolve against content and an "N equal rows" preset would frequently render
+    // identically to setting nothing. repeat(auto-fill, …) on rows likewise needs a definite height
+    // to make more than one track. The row control that actually earns its place is this one:
+    // grid-auto-rows, the height of the IMPLICIT rows items flow into — which is most rows, since a
+    // grid normally declares columns only. Pairs with Auto flow just below.
+    els.push(h('div',{key:'autorows',style:{marginTop:10}}, this.lbl(t,'Auto rows'),
+      this.comboField('cf:gridAutoRows:'+node.id,t,node,'gridAutoRows',
+        {tokens:[],keywords:[{v:'auto',l:'auto'},{v:'min-content',l:'min'},{v:'max-content',l:'max'},{v:'1fr',l:'1fr'}],ghost:'auto',unsetLabel:'auto'})));
     const jItems=this.csVal(node,'justifyItems')||'stretch';
     const aItems=this.csVal(node,'alignItems')||'stretch';
     const gIc=n=>this.flexIcon(n,18);
