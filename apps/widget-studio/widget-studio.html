@@ -5379,6 +5379,7 @@ class Component extends DCLogic {
     ];
     return h('div',null,
       this.layerZone(node,t),
+      this.conflictBanner(node,t),
       canonical.map((s,i)=>h('div',{key:s.key}, this.flatSection(t,s.key,s.label,s.body,{dot:s.dot,first:i===0}))),
       this.ledger(node,t));
   }
@@ -5387,6 +5388,41 @@ class Component extends DCLogic {
   // through (overridden here); the active layer's own values are never struck. Scoped to just these
   // two tiers rather than the full N-way breakpoint/state chain, so cross-layer interaction stays
   // legible — clicking the Base header jumps the layer strip there instead of editing it in place.
+  // Properties this element's PRIMARY class sets but does not win — another class on the same element
+  // is emitted later in the stylesheet and overrides it. Style edits always write to the primary class
+  // (see the "first class is the one edits write to" note), so without this the panel silently no-ops:
+  // you click Grid, `display:grid` really is stored on the primary class, the later class's flex still
+  // wins, the canvas doesn't move, and the control correctly re-reads the effective value and snaps
+  // back to Flex. The cascade is right — the panel just never said why. Detected by comparing the
+  // primary class's own value against the effective one rather than re-deriving the emit order, so it
+  // can't drift from whatever genPreviewCss/genScss actually produce. Base layer only: at a state or
+  // breakpoint an intentional difference is the whole point, not a conflict.
+  styleConflicts(node){
+    if(this._estate!=='base' || this.device!=='lg') { return []; }
+    const primary=this.primaryClass(node);
+    const own=primary?(this.classStyles[primary]||{}):{};
+    const eff=this.effectiveStyle(node);
+    const others=(node.classes||[]).filter(c=>c!==primary);
+    const out=[];
+    for(const key in own){
+      if(eff[key]===own[key]) { continue; }
+      const by=others.filter(c=>(this.classStyles[c]||{})[key]!=null).pop();
+      if(by) { out.push({key,mine:own[key],winner:eff[key],byClass:by}); }
+    }
+    return out;
+  }
+  conflictBanner(node,t){ const h=React.createElement;
+    const list=this.styleConflicts(node);
+    if(!list.length) { return null; }
+    const primary=this.primaryClass(node);
+    return h('div',{style:{marginBottom:10,padding:'8px 10px',borderRadius:8,border:'1px solid '+(this.dark?'#5c4813':'#f0d48a'),background:this.dark?'#2b2410':'#fff8e1',fontSize:11,lineHeight:1.5,color:t.text}},
+      h('div',{style:{fontWeight:700,marginBottom:4}}, list.length===1?'1 edit is being overridden':list.length+' edits are being overridden'),
+      list.slice(0,4).map(cnf=>h('div',{key:cnf.key,style:{color:t.muted}},
+        h('code',{style:{fontFamily:'ui-monospace,monospace',color:t.text}}, this.kebab(cnf.key)),
+        ' — you set ', h('code',{style:{fontFamily:'ui-monospace,monospace'}}, String(cnf.mine)),
+        ' on .', primary, ', but .', h('strong',null, cnf.byClass), ' wins with ',
+        h('code',{style:{fontFamily:'ui-monospace,monospace'}}, String(cnf.winner||'—')))),
+      list.length>4?h('div',{style:{color:t.faint,marginTop:3}}, '+'+(list.length-4)+' more'):null); }
   ledger(node,t){
     const h=React.createElement; const c=this.primaryClass(node);
     const atBp=this.device!=='lg'; const bp=this.device;
