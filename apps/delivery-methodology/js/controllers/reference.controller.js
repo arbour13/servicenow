@@ -2,10 +2,10 @@
    methodology job aids index. Visible only when AppState.view === 'reference' (see isActiveView). */
 angular.module('deliveryMethodology').controller('DmReferenceController', [
   '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'ReferenceService',
-  'JargonService', 'TipService', 'IconService',
+  'JargonService', 'TipService', 'IconService', 'UrlPolicyService',
   function (
     $rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService,
-    JargonService, TipService, IconService
+    JargonService, TipService, IconService, UrlPolicyService
   ) {
   'use strict';
   var c = this;
@@ -13,10 +13,19 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
   AppStateService.bindActiveView(c, 'reference');
   TipService.bind(c);
   IconService.bind(c);
+  UrlPolicyService.bind(c);
 
   c.showJargon = false;
   c.jargonHtml = function (text) {
     return JargonService.jargonHtml(text, c.showJargon);
+  };
+  c.sectionParagraphs = function (section) {
+    var body = section && section.body != null ? String(section.body) : '';
+    var trimmed = body.replace(/^\s+|\s+$/g, '');
+    if (!trimmed) {
+      return [];
+    }
+    return trimmed.split(/\n\n+/);
   };
   c.jobTitleColor = function (jobTitleId) {
     return MethodologyDomainService.jobTitleColor(c.jobTitles, jobTitleId);
@@ -36,6 +45,7 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     var appState = AppStateService.readState();
     c.methodologies = appState.methodologies;
     c.jobTitles = appState.jobTitles;
+    c.referenceSections = appState.referenceSections || [];
     c.loading = appState.loading;
   }
   function syncJobAids() {

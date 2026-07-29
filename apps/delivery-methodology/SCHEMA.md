@@ -2,7 +2,7 @@
 
 Design target for the port off `localStorage` onto real ServiceNow tables. **Table + roles are
 declared in `deploy.manifest.js` and emitted by the packager** (`tables[]` → Fluent `Table()`;
-user / editor / admin roles + ACLs). Runtime load/save: widget server script
+prefixed roles + ACLs). Runtime load/save: widget server script
 (`js/server/content.server.js` + `js/lib/content-model.js`) hydrates flat `content` rows into the
 nested UI payload; `DataService` uses `c.server` on the instance and seed + `localStorage` in the
 local harness.
@@ -35,14 +35,15 @@ content (self-referencing on `parent`, discriminated by `type`)
 
 ## Roles
 
-Short names `user` / `editor` / `admin` — the scoped app prefix is applied by the platform
-(e.g. `x_<scope>.user`).
+Explicit prefixed role names (same pattern as Glide Studio) — **not** bare `user` / `editor` /
+`admin`. Declared in `deploy.manifest.js` and checked with those exact strings in
+`content.server.js` (`gs.hasRole('delivery_methodology_editor')`, etc.).
 
 | Role | Page | Edit in tool | Content table write | App metadata write |
 |---|---|---|---|---|
-| `user` | yes | no | no | no |
-| `editor` | yes | yes | yes | no |
-| `admin` | yes | yes | yes | yes |
+| `delivery_methodology_user` | yes | no | no | no |
+| `delivery_methodology_editor` | yes | yes | yes | no |
+| `delivery_methodology_admin` | yes | yes | yes | yes |
 
 Widget server sets `data.canEdit` from editor/admin roles; local harness defaults to editable.
 
@@ -99,7 +100,7 @@ to reference — always a `job_title` row — lives inside `content` as a plain 
 3. **Cascade delete:** Fluent `parent` column `cascadeRule: 'cascade'` — platform deletes
    descendants when a parent row is deleted. Soft refs inside JSON are not cascaded.
 4. **`icon`:** on `sub_phase` content as `{ overview, objective, icon }`.
-5. **Roles:** user / editor / admin as above.
+5. **Roles:** `delivery_methodology_user` / `_editor` / `_admin` as above.
 6. **Type choice values** are short labels (`task`, `raci`, `input`, …) — hierarchy is carried by
    `parent`, not by prefixes on the choice value.
 

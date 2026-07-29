@@ -34,10 +34,12 @@
         </div>
 
         <!-- Search results overlay: fixed layer so the header search + theme toggle never move.
-           Closing without picking a result leaves the underlying view exactly as it was. -->
-        <div class="search-overlay" ng-if="c.searchOpen()" ng-click="c.clearSearch()">
-          <div class="search-modal" role="dialog" aria-modal="true" aria-labelledby="dm-search-title"
-            ng-click="$event.stopPropagation()">
+           Closing without picking a result leaves the underlying view exactly as it was.
+           dm-modal-nofocus: keep typing in the header input; Escape still dismisses document-wide. -->
+        <div class="search-overlay" ng-if="c.searchOpen()" ng-click="c.clearSearch()"
+          dm-modal="c.clearSearch()" dm-modal-nofocus>
+          <div id="dm-search-modal" class="search-modal" role="dialog" aria-modal="true"
+            aria-labelledby="dm-search-title" ng-click="$event.stopPropagation()">
             <div class="search-modal-head">
               <h2 id="dm-search-title">{{(c.searchQuery || '').trim().length < 2 ? 'Search' : ('Results for “' +
                   (c.searchQuery || '' ).trim() + '”' )}}</h2>
@@ -62,23 +64,27 @@
 
           <div class="pagehdr">
             <div class="pagehdr-top">
-              <div class="views" role="tablist">
+              <div class="views" role="tablist" ng-keydown="c.onViewTabKeydown($event)">
                 <button type="button" class="vtab" id="dm-tab-methodology" role="tab"
                   aria-selected="{{c.view === 'methodology'}}" aria-controls="dm-panel-methodology"
+                  tabindex="{{c.view === 'methodology' ? 0 : -1}}"
                   ng-class="{on: c.view === 'methodology'}"
                   ng-click="c.setView('methodology')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2" ng-bind-html="c.icon('pulse')"></svg><span>Methodology</span></button>
                 <button type="button" class="vtab" id="dm-tab-raci" role="tab"
                   aria-selected="{{c.view === 'raci'}}" aria-controls="dm-panel-raci"
+                  tabindex="{{c.view === 'raci' ? 0 : -1}}"
                   ng-class="{on: c.view === 'raci'}" ng-click="c.setView('raci')"><svg
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ng-bind-html="c.icon('grid')"></svg><span>RACI</span></button>
                 <button type="button" class="vtab" id="dm-tab-reference" role="tab"
                   aria-selected="{{c.view === 'reference'}}" aria-controls="dm-panel-reference"
+                  tabindex="{{c.view === 'reference' ? 0 : -1}}"
                   ng-class="{on: c.view === 'reference'}"
                   ng-click="c.setView('reference')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('book')"></svg><span>Reference</span></button>
                 <button type="button" class="vtab" id="dm-tab-whatsnew" role="tab" ng-if="c.anyUnread()"
                   aria-selected="{{c.view === 'whatsnew'}}" aria-controls="dm-panel-whatsnew"
+                  tabindex="{{c.view === 'whatsnew' ? 0 : -1}}"
                   ng-class="{on: c.view === 'whatsnew'}"
                   ng-click="c.setView('whatsnew')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2" ng-bind-html="c.icon('clock')"></svg><span>What's New</span></button>

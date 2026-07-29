@@ -1,6 +1,8 @@
 [
   'DataService', '$q', '$rootScope', 'MessagingService', 'MethodologyDomainService', 'IdSeqService', 'IconService', 'JargonService',
-  function (DataService, $q, $rootScope, MessagingService, MethodologyDomainService, IdSeqService, IconService, JargonService) {
+  'UrlPolicyService',
+  function (DataService, $q, $rootScope, MessagingService, MethodologyDomainService, IdSeqService, IconService, JargonService,
+    UrlPolicyService) {
   'use strict';
 
   // applyLoadedData() below calls a dozen-plus setters in one pass while bootstrapping; without
@@ -166,6 +168,7 @@
 
   function tryBeginSave() {
     if (state.isSaving) {
+      MessagingService.toast('Save already in progress');
       return false;
     }
     state.isSaving = true;
@@ -198,6 +201,7 @@
     var loadOptions = options || {};
     silenced = true;
     setJobTitles(data.jobTitles);
+    UrlPolicyService.normalizeMethodologies(data.methodologies);
     setMethodologies(data.methodologies);
     setJargon(data.jargon);
     setReferenceSections(data.referenceSections);

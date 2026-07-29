@@ -1,7 +1,7 @@
 api.controller = function (
     $rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService,
     ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService,
-    RaciGridService
+    RaciGridService, UrlPolicyService
   ) {
   'use strict';
   var c = this;
@@ -9,6 +9,7 @@ api.controller = function (
   AppStateService.bindActiveView(c, 'methodology');
   TipService.bind(c);
   IconService.bind(c);
+  UrlPolicyService.bind(c);
   RaciGridService.bindLegend(c);
   c.phaseColor = MethodologyDomainService.phaseColor;
   c.raciTip = function (letters) {

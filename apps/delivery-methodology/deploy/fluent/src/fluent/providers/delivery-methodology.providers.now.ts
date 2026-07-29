@@ -105,6 +105,13 @@ export const MessagingService = SPAngularProvider({
     script: Now.include('MessagingService.js'),
 })
 
+export const UrlPolicyService = SPAngularProvider({
+    $id: Now.ID['UrlPolicyService'],
+    name: 'UrlPolicyService',
+    type: 'service',
+    script: Now.include('UrlPolicyService.js'),
+})
+
 export const ContentEditService = SPAngularProvider({
     $id: Now.ID['ContentEditService'],
     name: 'ContentEditService',

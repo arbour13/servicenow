@@ -57,13 +57,21 @@ function loadDescriptor(appFolder) {
   return descriptor;
 }
 
+function resolveContentModelParts(appRoot, files) {
+  var contentModel = files.contentModel;
+  if (!contentModel) {
+    return [];
+  }
+  var paths = Array.isArray(contentModel) ? contentModel : [contentModel];
+  return paths.map(function (rel) {
+    return fs.readFileSync(path.join(appRoot, rel), 'utf8');
+  });
+}
+
 function resolveServerScript(appRoot, descriptor) {
   var files = descriptor.files || {};
   if (files.serverScript) {
-    var parts = [];
-    if (files.contentModel) {
-      parts.push(fs.readFileSync(path.join(appRoot, files.contentModel), 'utf8'));
-    }
+    var parts = resolveContentModelParts(appRoot, files);
     parts.push(fs.readFileSync(path.join(appRoot, files.serverScript), 'utf8'));
     return parts.join('\n');
   }

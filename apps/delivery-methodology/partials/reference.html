@@ -10,11 +10,11 @@
               Explain terms <input type="checkbox" ng-model="c.showJargon">
             </label>
           </div>
-          <section class="ref-sec">
-            <h3 class="ref-h">How to use RACI</h3>
-            <p class="ref-lead">Every task in this methodology assigns each involved job title one or more RACI letters.
-              They answer one question: for this task, what is that person's relationship to the work?</p>
-            <div class="ref-raci-grid">
+
+          <section class="ref-sec" ng-repeat="section in c.referenceSections track by section.key">
+            <h3 class="ref-h">{{section.title || section.name}}</h3>
+
+            <div class="ref-raci-grid" ng-if="section.key === 'raci'">
               <div class="ref-raci-card"><span class="ref-raci-badge rl-R">R</span>
                 <div>
                   <div class="ref-raci-name">Responsible</div>
@@ -44,26 +44,15 @@
                 </div>
               </div>
             </div>
-            <ul class="ref-rules">
-              <li><b>Exactly one A per task.</b> Accountability shouldn't be shared - if two people sign off, no one
-                does.</li>
-              <li><b>R and A can be the same person</b> (shown together as <span class="rl-A">A</span> <span
-                  class="rl-R">R</span>) - they do it and own it.</li>
-              <li><b>Every task needs at least an R and an A</b> - someone doing the work, someone owning the result.
-              </li>
-              <li><b>The customer</b> appears in the RACI wherever the engagement requires their input, approval, or
-                participation.</li>
-            </ul>
-          </section>
 
-          <section class="ref-sec">
-            <h3 class="ref-h">Escalation Management</h3>
-            <div class="ref-placeholder">
+            <p ng-repeat="paragraph in c.sectionParagraphs(section) track by $index"
+              ng-class="{'ref-lead': $first}" ng-bind-html="c.jargonHtml(paragraph)"></p>
+
+            <div class="ref-placeholder" ng-if="!c.sectionParagraphs(section).length">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round" ng-bind-html="c.icon('pencil')"></svg>
               <div><b>Not yet written.</b>
-                <p>This section will hold GlideFast's escalation guidance - when and how to raise an issue, severity
-                  tiers, and who to contact at each level. Add the real content here when it's ready.</p>
+                <p>Content for this reference section hasn&rsquo;t been added yet.</p>
               </div>
             </div>
           </section>
@@ -75,7 +64,7 @@
             <p class="empty" ng-if="!c.jobAids.length">No job aids yet.</p>
             <div class="ref-aids" ng-if="c.jobAids.length">
               <div class="ref-aid" ng-repeat="aid in c.jobAids">
-                <a class="jobaid" href="{{aid.jobAid.url}}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none"
+                <a class="jobaid" ng-if="c.safeHref(aid.jobAid.url)" ng-href="{{c.safeHref(aid.jobAid.url)}}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('externalLink')"></svg>Job Aid</a>
                 <div class="ref-aid-body">
                   <div class="ref-aid-task" ng-bind-html="c.jargonHtml(aid.task.text)"></div>

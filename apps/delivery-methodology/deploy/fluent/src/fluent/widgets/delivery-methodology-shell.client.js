@@ -1,5 +1,5 @@
 api.controller = function (
-    $rootScope, $scope, $timeout, DataService, ThemeService, MessagingService, TipService,
+    $rootScope, $scope, DataService, ThemeService, MessagingService, TipService,
     AppStateService, MethodologyDomainService, NavigationService, SearchService,
     WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService,
     IconService
@@ -9,23 +9,9 @@ api.controller = function (
 
   ThemeService.init('deliveryMethodology');
 
-  /* Deployed-widget theme plumbing. ThemeService writes data-theme to <html>, which is right in
-     this dev harness. It is NOT enough once packaged: the packager scopes this app's whole
-     stylesheet under .dm-widget (deploy.manifest.js widgetScopeClass), so :root[data-theme="light"]
-     compiles to .dm-widget[data-theme="light"] - and .dm-widget is a wrapper the packager generates
-     around each widget's own markup. This app ships FIVE such wrappers (one per sp_instance), so
-     every one of them needs the attribute, not just the first - hence querySelectorAll, not
-     querySelector. $timeout(0) because on first run the widget elements may not be in the DOM yet;
-     on toggle they already are. No-op in this harness, where .dm-widget doesn't exist. */
-  function stampWidgetTheme() {
-    var widgets = document.querySelectorAll('.dm-widget');
-    for (var index = 0; index < widgets.length; index++) {
-      widgets[index].setAttribute('data-theme', c.theme);
-    }
-  }
   function syncTheme() {
     c.theme = ThemeService.readState().theme;
-    $timeout(stampWidgetTheme, 0);
+    ThemeService.stampWidgets();
   }
   syncTheme();
   c.toggleTheme = function () {
@@ -166,6 +152,40 @@ api.controller = function (
   c.setView = function (view) {
     NavigationService.setView(view);
   };
+  c.onViewTabKeydown = function ($event) {
+    var key = $event.key;
+    if (key !== 'ArrowLeft' && key !== 'ArrowRight' && key !== 'Home' && key !== 'End') {
+      return;
+    }
+    var tabs = Array.prototype.slice.call($event.currentTarget.querySelectorAll('[role="tab"]'));
+    if (!tabs.length) {
+      return;
+    }
+    var current = tabs.indexOf(document.activeElement);
+    if (current < 0) {
+      current = 0;
+      var index;
+      for (index = 0; index < tabs.length; index++) {
+        if (tabs[index].getAttribute('aria-selected') === 'true') {
+          current = index;
+          break;
+        }
+      }
+    }
+    var next = current;
+    if (key === 'ArrowLeft') {
+      next = (current - 1 + tabs.length) % tabs.length;
+    } else if (key === 'ArrowRight') {
+      next = (current + 1) % tabs.length;
+    } else if (key === 'Home') {
+      next = 0;
+    } else {
+      next = tabs.length - 1;
+    }
+    $event.preventDefault();
+    tabs[next].focus();
+    tabs[next].click();
+  };
   c.switchMethodology = function (methodologyId) {
     NavigationService.switchMethodology(methodologyId);
   };
@@ -257,6 +277,7 @@ api.controller = function (
           NavigationService.remember(result.methodologyId, result.subPhaseId);
           refreshWhatsNew();
           refreshJobAids();
+          refreshRaciGrid();
           if (!NavigationService.applyDeepLinkFromUrl()) {
             NavigationService.push();
           }

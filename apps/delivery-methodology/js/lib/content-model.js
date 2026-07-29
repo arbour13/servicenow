@@ -81,14 +81,37 @@ var DMContentModel = (function () {
     });
   }
 
+  function urlOpts(options) {
+    return {
+      instanceOrigins: (options && options.instanceOrigins) || []
+    };
+  }
+
+  function safeHref(value, options) {
+    if (typeof DMUrlPolicy !== 'undefined' && DMUrlPolicy.normalizeHref) {
+      return DMUrlPolicy.normalizeHref(value, urlOpts(options));
+    }
+    return value || '';
+  }
+
+  function safeSrc(value, options) {
+    if (typeof DMUrlPolicy !== 'undefined' && DMUrlPolicy.normalizeSrc) {
+      return DMUrlPolicy.normalizeSrc(value, urlOpts(options));
+    }
+    return value || '';
+  }
+
   // Nested UI payload → flat rows (ready for GlideRecord insert).
-  function dehydrate(payload) {
+  // options.instanceOrigins — optional list of origins (e.g. glide.servlet.uri) to strip to
+  // relative paths alongside any *.service-now.com host (see DMUrlPolicy).
+  function dehydrate(payload, options) {
     var rows = [];
     var jobTitles = (payload && payload.jobTitles) || [];
     var jargon = (payload && payload.jargon) || {};
     var methodologies = (payload && payload.methodologies) || [];
     var referenceSections = (payload && payload.referenceSections) || [];
     var index;
+    var linkOpts = urlOpts(options);
 
     for (index = 0; index < jobTitles.length; index++) {
       var jobTitle = jobTitles[index];
@@ -122,9 +145,9 @@ var DMContentModel = (function () {
         title: methodology.title || '',
         summary: methodology.summary || '',
         description: methodology.description || '',
-        feedbackUrl: methodology.feedbackUrl || '',
+        feedbackUrl: safeHref(methodology.feedbackUrl, linkOpts),
         feedbackLabel: methodology.feedbackLabel || '',
-        diagramUrl: methodology.diagramUrl || ''
+        diagramUrl: safeSrc(methodology.diagramUrl, linkOpts)
       }, methodology.id);
 
       (methodology.phases || []).forEach(function (phase) {
@@ -212,7 +235,7 @@ var DMContentModel = (function () {
               var jobAidId = jobAid.id || (task.id + '-ja' + (jobAidIndex + 1));
               pushRow(rows, 'job_aid', task.id, '', jobAidIndex + 1, {
                 id: jobAidId,
-                url: jobAid.url || ''
+                url: safeHref(jobAid.url, linkOpts)
               }, jobAidId);
               (jobAid.roles || []).forEach(function (jobAidRoleId, jobAidRoleIndex) {
                 pushRow(rows, 'job_aid_role', jobAidId, '', jobAidRoleIndex + 1, {
@@ -350,9 +373,9 @@ var DMContentModel = (function () {
         title: methodologyRow.content.title || '',
         summary: methodologyRow.content.summary || '',
         description: methodologyRow.content.description || '',
-        feedbackUrl: methodologyRow.content.feedbackUrl || '',
+        feedbackUrl: safeHref(methodologyRow.content.feedbackUrl || ''),
         feedbackLabel: methodologyRow.content.feedbackLabel || '',
-        diagramUrl: methodologyRow.content.diagramUrl || '',
+        diagramUrl: safeSrc(methodologyRow.content.diagramUrl || ''),
         phases: kids(methodologyId, 'phase').map(function (phaseRow) {
           var phaseId = phaseRow.content.id || phaseRow.clientId;
           return {
@@ -460,7 +483,7 @@ var DMContentModel = (function () {
                       var jobAidId = jobAidRow.content.id || jobAidRow.clientId;
                       return {
                         id: jobAidId,
-                        url: jobAidRow.content.url || '',
+                        url: safeHref(jobAidRow.content.url || ''),
                         roles: kids(jobAidId, 'job_aid_role').map(function (jobAidRoleRow) {
                           return jobAidRoleRow.content.job_title;
                         }).filter(Boolean)

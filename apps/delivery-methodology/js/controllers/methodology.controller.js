@@ -7,11 +7,11 @@
 angular.module('deliveryMethodology').controller('DmMethodologyController', [
   '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'WhatsNewService',
   'ReferenceService', 'IconService', 'JargonService', 'TipService', 'ContentEditService', 'StructureEditService',
-  'RaciGridService',
+  'RaciGridService', 'UrlPolicyService',
   function (
     $rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService,
     ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService,
-    RaciGridService
+    RaciGridService, UrlPolicyService
   ) {
   'use strict';
   var c = this;
@@ -19,6 +19,7 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   AppStateService.bindActiveView(c, 'methodology');
   TipService.bind(c);
   IconService.bind(c);
+  UrlPolicyService.bind(c);
   RaciGridService.bindLegend(c);
   c.phaseColor = MethodologyDomainService.phaseColor;
   c.raciTip = function (letters) {

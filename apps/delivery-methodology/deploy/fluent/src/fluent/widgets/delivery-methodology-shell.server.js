@@ -1,3 +1,193 @@
+/* Editor URL policy: scheme allowlist + strip ServiceNow instance origins to relative paths.
+   Shared by the widget server (concatenated ahead of content-model) and the browser harness /
+   UrlPolicyService. Soft-fail friendly: empty string means "do not link / do not persist".
+   Rhino-safe — no URL / window / document APIs. */
+var DMUrlPolicy = (function () {
+  'use strict';
+
+  var HREF_SCHEMES = {
+    http: true,
+    https: true,
+    mailto: true
+  };
+  var SRC_SCHEMES = {
+    http: true,
+    https: true
+  };
+
+  function trim(value) {
+    return String(value == null ? '' : value).replace(/^\s+|\s+$/g, '');
+  }
+
+  function schemeOf(value) {
+    var match = String(value).match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
+    return match ? match[1].toLowerCase() : '';
+  }
+
+  function isServiceNowHost(host) {
+    var normalized = String(host || '').toLowerCase();
+    return normalized === 'service-now.com' || normalized.slice(-16) === '.service-now.com';
+  }
+
+  function normalizeOrigin(origin) {
+    return trim(origin).replace(/\/$/, '').toLowerCase();
+  }
+
+  // https://user:pass@host:port/path?query#hash → parts (null if not http(s)).
+  function parseHttpUrl(value) {
+    var match = String(value).match(/^(https?):\/\/([^\/?#]*)([^?#]*)(\?[^#]*)?(#.*)?$/i);
+    if (!match) {
+      return null;
+    }
+
+    var hostPort = match[2];
+    var at = hostPort.lastIndexOf('@');
+    if (at >= 0) {
+      hostPort = hostPort.slice(at + 1);
+    }
+
+    var host = hostPort;
+    var colon = hostPort.indexOf(':');
+    if (colon >= 0) {
+      host = hostPort.slice(0, colon);
+    }
+
+    return {
+      scheme: match[1].toLowerCase(),
+      host: host.toLowerCase(),
+      hostPort: hostPort.toLowerCase(),
+      path: match[3] || '/',
+      search: match[4] || '',
+      hash: match[5] || '',
+      origin: match[1].toLowerCase() + '://' + hostPort.toLowerCase()
+    };
+  }
+
+  function shouldStripOrigin(parsed, instanceOrigins) {
+    if (isServiceNowHost(parsed.host)) {
+      return true;
+    }
+
+    var list = instanceOrigins || [];
+    var index;
+    for (index = 0; index < list.length; index++) {
+      var origin = normalizeOrigin(list[index]);
+      if (origin && parsed.origin === origin) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Instance links become query-relative so they resolve on whatever path the portal
+  // page is served from (…/sp?id=… → ?id=…). Path-only URLs (no ?) keep path+hash.
+  function toRelative(parsed) {
+    if (parsed.search) {
+      return parsed.search + parsed.hash;
+    }
+    var path = parsed.path || '/';
+    if (path.charAt(0) !== '/') {
+      path = '/' + path;
+    }
+    return path + parsed.hash;
+  }
+
+  function normalize(value, options) {
+    var opts = options || {};
+    var allowed = opts.allowMailto ? HREF_SCHEMES : SRC_SCHEMES;
+    var raw = trim(value);
+
+    if (!raw) {
+      return '';
+    }
+
+    // Protocol-relative URLs inherit the page scheme and are too easy to weaponize.
+    if (raw.slice(0, 2) === '//') {
+      return '';
+    }
+
+    var scheme = schemeOf(raw);
+    if (scheme) {
+      if (!allowed[scheme]) {
+        return '';
+      }
+      if (scheme === 'mailto') {
+        return raw;
+      }
+
+      var parsed = parseHttpUrl(raw);
+      if (!parsed) {
+        return '';
+      }
+      if (shouldStripOrigin(parsed, opts.instanceOrigins)) {
+        return toRelative(parsed);
+      }
+      return parsed.scheme + '://' + parsed.hostPort + (parsed.path || '/') + parsed.search + parsed.hash;
+    }
+
+    // No scheme → already relative / in-app (#, /sp?…, kb_view.do?…).
+    return raw;
+  }
+
+  function normalizeHref(value, options) {
+    return normalize(value, {
+      allowMailto: true,
+      instanceOrigins: options && options.instanceOrigins
+    });
+  }
+
+  function normalizeSrc(value, options) {
+    return normalize(value, {
+      allowMailto: false,
+      instanceOrigins: options && options.instanceOrigins
+    });
+  }
+
+  function normalizeMethodologies(methodologies, options) {
+    var list = methodologies || [];
+    var urlOpts = {
+      instanceOrigins: (options && options.instanceOrigins) || []
+    };
+    var methodologyIndex;
+
+    for (methodologyIndex = 0; methodologyIndex < list.length; methodologyIndex++) {
+      var methodology = list[methodologyIndex];
+      if (!methodology) {
+        continue;
+      }
+      methodology.feedbackUrl = normalizeHref(methodology.feedbackUrl, urlOpts);
+      methodology.diagramUrl = normalizeSrc(methodology.diagramUrl, urlOpts);
+
+      (methodology.phases || []).forEach(function (phase) {
+        (phase.subPhases || []).forEach(function (subPhase) {
+          (subPhase.tasks || []).forEach(function (task) {
+            (task.jobAids || []).forEach(function (jobAid) {
+              if (jobAid) {
+                jobAid.url = normalizeHref(jobAid.url, urlOpts);
+              }
+            });
+          });
+        });
+      });
+    }
+
+    return list;
+  }
+
+  return {
+    normalizeHref: normalizeHref,
+    normalizeSrc: normalizeSrc,
+    normalizeMethodologies: normalizeMethodologies
+  };
+})();
+
+if (typeof module === 'object' && module.exports) {
+  module.exports = DMUrlPolicy;
+}
+if (typeof self !== 'undefined') {
+  self.DMUrlPolicy = DMUrlPolicy;
+}
+
 /* Shared hydrate/dehydrate between the nested UI payload and flat `content` table rows.
    Runs on the widget server (concatenated into the server script at package time) and optionally
    in the browser. Soft refs stay as client job-title ids (`arch`, `em`, …). Client entity ids
@@ -81,14 +271,37 @@ var DMContentModel = (function () {
     });
   }
 
+  function urlOpts(options) {
+    return {
+      instanceOrigins: (options && options.instanceOrigins) || []
+    };
+  }
+
+  function safeHref(value, options) {
+    if (typeof DMUrlPolicy !== 'undefined' && DMUrlPolicy.normalizeHref) {
+      return DMUrlPolicy.normalizeHref(value, urlOpts(options));
+    }
+    return value || '';
+  }
+
+  function safeSrc(value, options) {
+    if (typeof DMUrlPolicy !== 'undefined' && DMUrlPolicy.normalizeSrc) {
+      return DMUrlPolicy.normalizeSrc(value, urlOpts(options));
+    }
+    return value || '';
+  }
+
   // Nested UI payload → flat rows (ready for GlideRecord insert).
-  function dehydrate(payload) {
+  // options.instanceOrigins — optional list of origins (e.g. glide.servlet.uri) to strip to
+  // relative paths alongside any *.service-now.com host (see DMUrlPolicy).
+  function dehydrate(payload, options) {
     var rows = [];
     var jobTitles = (payload && payload.jobTitles) || [];
     var jargon = (payload && payload.jargon) || {};
     var methodologies = (payload && payload.methodologies) || [];
     var referenceSections = (payload && payload.referenceSections) || [];
     var index;
+    var linkOpts = urlOpts(options);
 
     for (index = 0; index < jobTitles.length; index++) {
       var jobTitle = jobTitles[index];
@@ -122,9 +335,9 @@ var DMContentModel = (function () {
         title: methodology.title || '',
         summary: methodology.summary || '',
         description: methodology.description || '',
-        feedbackUrl: methodology.feedbackUrl || '',
+        feedbackUrl: safeHref(methodology.feedbackUrl, linkOpts),
         feedbackLabel: methodology.feedbackLabel || '',
-        diagramUrl: methodology.diagramUrl || ''
+        diagramUrl: safeSrc(methodology.diagramUrl, linkOpts)
       }, methodology.id);
 
       (methodology.phases || []).forEach(function (phase) {
@@ -212,7 +425,7 @@ var DMContentModel = (function () {
               var jobAidId = jobAid.id || (task.id + '-ja' + (jobAidIndex + 1));
               pushRow(rows, 'job_aid', task.id, '', jobAidIndex + 1, {
                 id: jobAidId,
-                url: jobAid.url || ''
+                url: safeHref(jobAid.url, linkOpts)
               }, jobAidId);
               (jobAid.roles || []).forEach(function (jobAidRoleId, jobAidRoleIndex) {
                 pushRow(rows, 'job_aid_role', jobAidId, '', jobAidRoleIndex + 1, {
@@ -350,9 +563,9 @@ var DMContentModel = (function () {
         title: methodologyRow.content.title || '',
         summary: methodologyRow.content.summary || '',
         description: methodologyRow.content.description || '',
-        feedbackUrl: methodologyRow.content.feedbackUrl || '',
+        feedbackUrl: safeHref(methodologyRow.content.feedbackUrl || ''),
         feedbackLabel: methodologyRow.content.feedbackLabel || '',
-        diagramUrl: methodologyRow.content.diagramUrl || '',
+        diagramUrl: safeSrc(methodologyRow.content.diagramUrl || ''),
         phases: kids(methodologyId, 'phase').map(function (phaseRow) {
           var phaseId = phaseRow.content.id || phaseRow.clientId;
           return {
@@ -460,7 +673,7 @@ var DMContentModel = (function () {
                       var jobAidId = jobAidRow.content.id || jobAidRow.clientId;
                       return {
                         id: jobAidId,
-                        url: jobAidRow.content.url || '',
+                        url: safeHref(jobAidRow.content.url || ''),
                         roles: kids(jobAidId, 'job_aid_role').map(function (jobAidRoleRow) {
                           return jobAidRoleRow.content.job_title;
                         }).filter(Boolean)
@@ -499,8 +712,9 @@ if (typeof self !== 'undefined') {
 }
 
 /* Widget server script: load/save the scoped content table.
-   Prefixed at package time with js/lib/content-model.js (DMContentModel).
-   input.action: load (default) | save. One GlideRecordSecure per function. */
+   Prefixed at package time with js/lib/url-policy.js + js/lib/content-model.js
+   (DMUrlPolicy, DMContentModel). input.action: load (default) | save.
+   One GlideRecordSecure per function. */
 (function () {
   data.canEdit = gs.hasRole('delivery_methodology_editor') || gs.hasRole('delivery_methodology_admin');
   data.error = '';
@@ -710,11 +924,37 @@ if (typeof self !== 'undefined') {
     return createContentRecords(flatRows);
   }
 
+  // Cheap fingerprint of the flat table so a second editor cannot silently clobber the first
+  // (full-replace save). Client echoes data.contentRevision on save; mismatch → hard fail + reload.
+  function contentRevision(records) {
+    var list = records || [];
+    var parts = [];
+    var index;
+    for (index = 0; index < list.length; index++) {
+      var row = list[index];
+      parts.push(
+        String(row.systemId || '') + ':' +
+        String(row.type || '') + ':' +
+        String(row.order || 0) + ':' +
+        String(row.name || '') + ':' +
+        String(row.content || '').length
+      );
+    }
+    var raw = String(list.length) + '|' + parts.join('|');
+    var hash = 0;
+    for (index = 0; index < raw.length; index++) {
+      hash = ((hash << 5) - hash) + raw.charCodeAt(index);
+      hash |= 0;
+    }
+    return String(list.length) + ':' + String(hash);
+  }
+
   function publishContentToClient(payload) {
     data.methodologies = (payload && payload.methodologies) || [];
     data.jobTitles = (payload && payload.jobTitles) || [];
     data.jargon = (payload && payload.jargon) || {};
     data.referenceSections = (payload && payload.referenceSections) || [];
+    data.contentRevision = contentRevision(getAllContentRecords());
 
     data.empty = !(data.methodologies && data.methodologies.length);
 
@@ -775,6 +1015,19 @@ if (typeof self !== 'undefined') {
     return '';
   }
 
+  function instanceOrigins() {
+    var origins = [];
+    try {
+      var servletUri = gs.getProperty('glide.servlet.uri');
+      if (servletUri) {
+        origins.push(String(servletUri).replace(/\/$/, ''));
+      }
+    } catch (originError) {
+      /* property unavailable — DMUrlPolicy still strips *.service-now.com */
+    }
+    return origins;
+  }
+
   function saveContent(payload) {
     var validationError = validateSavePayload(payload);
 
@@ -784,10 +1037,28 @@ if (typeof self !== 'undefined') {
       return false;
     }
 
+    var snapshotRecords = getAllContentRecords();
+    var expectedRevision = payload && payload.contentRevision != null
+      ? String(payload.contentRevision)
+      : '';
+    var currentRevision = contentRevision(snapshotRecords);
+
+    // Empty expected = first save from a client that never loaded (or harness). Otherwise require
+    // the fingerprint from the last load so concurrent full-replace cannot last-write-wins silently.
+    if (expectedRevision && expectedRevision !== currentRevision) {
+      data.error = 'Content was changed elsewhere. Reload and try again.';
+      gs.warn(logPrefix + 'contentRevision mismatch expected=' + expectedRevision +
+        ' current=' + currentRevision);
+      publishContentToClient(DMContentModel.hydrate(snapshotRecords));
+      return false;
+    }
+
     var flatRows;
 
     try {
-      flatRows = DMContentModel.dehydrate(payload);
+      flatRows = DMContentModel.dehydrate(payload, {
+        instanceOrigins: instanceOrigins()
+      });
     } catch (dehydrateError) {
       data.error = 'Could not prepare content for save.';
       gs.error(logPrefix + 'dehydrate failed - ' + dehydrateError);
@@ -801,8 +1072,6 @@ if (typeof self !== 'undefined') {
       gs.warn(logPrefix + flatRowsError);
       return false;
     }
-
-    var snapshotRecords = getAllContentRecords();
 
     try {
       deleteAllContentRecords();
@@ -883,7 +1152,8 @@ if (typeof self !== 'undefined') {
       methodologies: input.methodologies,
       jobTitles: input.jobTitles,
       jargon: input.jargon,
-      referenceSections: input.referenceSections || []
+      referenceSections: input.referenceSections || [],
+      contentRevision: input.contentRevision
     });
     return;
   }

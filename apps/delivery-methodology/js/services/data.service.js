@@ -2,7 +2,7 @@
    js/data/seed.js); Service Portal uses the widget server against the content table.
    Call bindServer(c.server) from the controller when c.server exists.
    Seed is NOT bundled for deploy (manifest providers[].deploy: false). */
-angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q) {
+angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicyService', function ($q, UrlPolicyService) {
   'use strict';
 
   var STORAGE_KEY = 'gf-delivery-methodology-v1';
@@ -10,6 +10,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
   var cachedJobTitles = null;
   var cachedJargon = null;
   var cachedReferenceSections = null;
+  var cachedContentRevision = '';
 
   function readSeed() {
     try {
@@ -145,6 +146,9 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
     cachedJobTitles = payload.jobTitles;
     cachedJargon = payload.jargon;
     cachedReferenceSections = payload.referenceSections || [];
+    if (payload && payload.contentRevision != null) {
+      cachedContentRevision = String(payload.contentRevision);
+    }
   }
 
   function localGetData() {
@@ -171,7 +175,8 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
       jobTitles: serverData.jobTitles || [],
       methodologies: serverData.methodologies || [],
       jargon: serverData.jargon || {},
-      referenceSections: serverData.referenceSections || []
+      referenceSections: serverData.referenceSections || [],
+      contentRevision: serverData.contentRevision != null ? String(serverData.contentRevision) : ''
     };
   }
 
@@ -192,7 +197,8 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
       methodologies: methodologies,
       jobTitles: cachedJobTitles || [],
       jargon: cachedJargon || {},
-      referenceSections: cachedReferenceSections || []
+      referenceSections: cachedReferenceSections || [],
+      contentRevision: cachedContentRevision || ''
     };
   }
 
@@ -231,6 +237,8 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
       });
     },
     saveData: function (methodologies) {
+      UrlPolicyService.normalizeMethodologies(methodologies);
+
       if (!serverApi) {
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
@@ -257,6 +265,10 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', function ($q
 
         if (responseData.referenceSections) {
           cachedReferenceSections = responseData.referenceSections;
+        }
+
+        if (responseData.contentRevision != null) {
+          cachedContentRevision = String(responseData.contentRevision);
         }
 
         return responseData;

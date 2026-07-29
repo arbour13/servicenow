@@ -86,6 +86,23 @@ angular.module('deliveryMethodology').factory('TipService', ['$timeout', functio
     tip.show = false;
   }
 
+  // Keyboard path for the same data-tip content (e.g. RACI column headers).
+  function tipFocus($event) {
+    var element = $event && $event.currentTarget;
+    if (!element || !element.getAttribute || !element.getAttribute('data-tip')) {
+      return;
+    }
+    if (tipDelay) {
+      $timeout.cancel(tipDelay);
+      tipDelay = null;
+    }
+    showTip(element);
+  }
+
+  function tipBlur() {
+    dismissTip();
+  }
+
   function readState() {
     return tip;
   }
@@ -94,6 +111,8 @@ angular.module('deliveryMethodology').factory('TipService', ['$timeout', functio
     controller.tip = tip;
     controller.tipMouseOver = tipMouseOver;
     controller.tipMouseOut = tipMouseOut;
+    controller.tipFocus = tipFocus;
+    controller.tipBlur = tipBlur;
     controller.dismissTip = dismissTip;
   }
 
@@ -103,6 +122,8 @@ angular.module('deliveryMethodology').factory('TipService', ['$timeout', functio
     readState: readState,
     tipMouseOver: tipMouseOver,
     tipMouseOut: tipMouseOut,
+    tipFocus: tipFocus,
+    tipBlur: tipBlur,
     dismissTip: dismissTip,
     bind: bind
   };

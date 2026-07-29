@@ -877,11 +877,31 @@
   };
 
 
+  var REFERENCE_SECTIONS = [
+    {
+      key: 'raci',
+      title: 'How to use RACI',
+      body: [
+        'Every task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person\'s relationship to the work?',
+        'Exactly one A per task. Accountability shouldn\'t be shared - if two people sign off, no one does.',
+        'R and A can be the same person (shown together as A R) - they do it and own it.',
+        'Every task needs at least an R and an A - someone doing the work, someone owning the result.',
+        'The customer appears in the RACI wherever the engagement requires their input, approval, or participation.'
+      ].join('\n\n')
+    },
+    {
+      key: 'escalation',
+      title: 'Escalation Management',
+      body: ''
+    }
+  ];
+
   root.DMSeed = {
-    version: 20,
+    version: 21,
     jobTitles: JOB_TITLES,
     methodologies: METHODOLOGIES,
     jargon: JARGON,
+    referenceSections: REFERENCE_SECTIONS,
     blankSubPhase: blankSubPhase
   };
 })(typeof self !== 'undefined' ? self : this);

@@ -82,6 +82,33 @@ angular.module('deliveryMethodology').controller('DmRaciController', [
     RaciGridService.setMode(mode, raciGridContext());
     syncRaciGrid();
   };
+  c.onRaciTabKeydown = function ($event) {
+    var key = $event.key;
+    if (key !== 'ArrowLeft' && key !== 'ArrowRight' && key !== 'Home' && key !== 'End') {
+      return;
+    }
+    var tabs = Array.prototype.slice.call($event.currentTarget.querySelectorAll('[role="tab"]'));
+    if (!tabs.length) {
+      return;
+    }
+    var current = tabs.indexOf(document.activeElement);
+    if (current < 0) {
+      current = c.raciMode === 'byrole' ? 1 : 0;
+    }
+    var next = current;
+    if (key === 'ArrowLeft') {
+      next = (current - 1 + tabs.length) % tabs.length;
+    } else if (key === 'ArrowRight') {
+      next = (current + 1) % tabs.length;
+    } else if (key === 'Home') {
+      next = 0;
+    } else {
+      next = tabs.length - 1;
+    }
+    $event.preventDefault();
+    tabs[next].focus();
+    tabs[next].click();
+  };
   c.selectRaciByRole = function (roleId) {
     RaciGridService.selectByRole(roleId, raciGridContext());
     syncRaciGrid();

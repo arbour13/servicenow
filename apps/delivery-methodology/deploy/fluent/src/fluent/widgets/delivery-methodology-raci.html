@@ -5,19 +5,25 @@
            note. -->
         <div ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
-        <div class="views secondary" role="tablist" aria-label="RACI layout">
-          <button type="button" class="vtab" role="tab" ng-class="{on: c.raciMode === 'grid'}"
-            ng-click="c.setRaciMode('grid')" aria-selected="{{c.raciMode === 'grid'}}">
+        <div class="views secondary" role="tablist" aria-label="RACI layout"
+          ng-keydown="c.onRaciTabKeydown($event)">
+          <button type="button" class="vtab" id="dm-raci-tab-grid" role="tab"
+            ng-class="{on: c.raciMode === 'grid'}" ng-click="c.setRaciMode('grid')"
+            aria-selected="{{c.raciMode === 'grid'}}" aria-controls="dm-raci-panel-grid"
+            tabindex="{{c.raciMode === 'grid' ? 0 : -1}}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" ng-bind-html="c.icon('grid')"></svg><span>Grid</span>
           </button>
-          <button type="button" class="vtab" role="tab" ng-class="{on: c.raciMode === 'byrole'}"
-            ng-click="c.setRaciMode('byrole')" aria-selected="{{c.raciMode === 'byrole'}}">
+          <button type="button" class="vtab" id="dm-raci-tab-byrole" role="tab"
+            ng-class="{on: c.raciMode === 'byrole'}" ng-click="c.setRaciMode('byrole')"
+            aria-selected="{{c.raciMode === 'byrole'}}" aria-controls="dm-raci-panel-byrole"
+            tabindex="{{c.raciMode === 'byrole' ? 0 : -1}}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('userGroup')"></svg><span>By Role</span>
           </button>
         </div>
 
-        <div ng-if="c.raciMode === 'byrole'">
+        <div id="dm-raci-panel-byrole" role="tabpanel" aria-labelledby="dm-raci-tab-byrole"
+          ng-if="c.raciMode === 'byrole'">
           <div class="jt-picker">
             <button type="button" class="jt-pick-btn" ng-class="{active: c.byRoleFocusRoleId === id}"
               ng-repeat="id in c.raciGrid.roleIds" ng-click="c.selectRaciByRole(id)">
@@ -41,10 +47,12 @@
           <p class="empty" ng-if="!c.byRoleFocusRoleId">No job titles have tasks yet.</p>
         </div>
 
-        <div ng-if="c.raciMode === 'grid'">
+        <div id="dm-raci-panel-grid" role="tabpanel" aria-labelledby="dm-raci-tab-grid"
+          ng-if="c.raciMode === 'grid'">
           <div class="rg-controls">
             <div class="rg-pfilters">
               <button type="button" class="rg-pchip" ng-class="{on: c.activePhases[phase.id]}"
+                aria-pressed="{{!!c.activePhases[phase.id]}}"
                 ng-repeat="phase in c.currentMethodology().phases" ng-click="c.toggleRaciPhase(phase.id)">
                 <svg class="rgp-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"
                   stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('checkmark')"></svg>{{phase.name}}
@@ -67,11 +75,18 @@
               <thead>
                 <tr>
                   <th class="taskcol">Task</th>
-                  <th ng-class="{focused: c.gridFocusRoleId === id, colhi: !c.gridFocusRoleId && c.hoverColumnRoleId === id}"
-                    ng-repeat="id in c.raciGrid.roleIds" ng-click="c.toggleRaciColumn(id)" ng-mouseenter="c.hoverColumnRoleId = id"
-                    ng-mouseleave="c.hoverColumnRoleId = null" data-tip-name="{{c.jobTitleById(id).name}}"
-                    data-tip="{{c.jobTitleById(id).description}}">{{c.jobTitleById(id).abbr}}<span
-                      class="cnt">{{c.raciGrid.roleCounts[id] || 0}}</span></th>
+                  <th class="rg-rolecol"
+                    ng-class="{focused: c.gridFocusRoleId === id, colhi: !c.gridFocusRoleId && c.hoverColumnRoleId === id}"
+                    ng-repeat="id in c.raciGrid.roleIds track by id">
+                    <button type="button" class="rg-role-btn" ng-click="c.toggleRaciColumn(id)"
+                      ng-mouseenter="c.hoverColumnRoleId = id" ng-mouseleave="c.hoverColumnRoleId = null"
+                      ng-focus="c.tipFocus($event); c.hoverColumnRoleId = id"
+                      ng-blur="c.tipBlur(); c.hoverColumnRoleId = null"
+                      aria-pressed="{{c.gridFocusRoleId === id}}"
+                      data-tip-name="{{c.jobTitleById(id).name}}"
+                      data-tip="{{c.jobTitleById(id).description}}">{{c.jobTitleById(id).abbr}}<span
+                        class="cnt">{{c.raciGrid.roleCounts[id] || 0}}</span></button>
+                  </th>
                 </tr>
               </thead>
               <tbody ng-if="!c.raciGrid.groups.length">

@@ -54,11 +54,20 @@
   // Fetches every source file a package needs, keyed the same way manifest.schema.md's `sources`
   // contract expects - every provider/controller/scss/index path is resolved relative to the
   // APP'S OWN ROOT, per deploy.manifest.js's contract (see manifest.schema.md).
+  function contentModelPaths(files) {
+    if (!files.contentModel) {
+      return [];
+    }
+    return Array.isArray(files.contentModel) ? files.contentModel : [files.contentModel];
+  }
+
   function resolveServerScript(root, descriptor, fetched) {
     var files = descriptor.files || {};
     if (files.serverScript) {
       var parts = [];
-      if (files.contentModel && fetched.contentModel) { parts.push(fetched.contentModel); }
+      if (fetched.contentModel) {
+        parts.push(fetched.contentModel);
+      }
       parts.push(fetched.serverScript);
       return parts.join('\n');
     }
@@ -81,6 +90,7 @@
     var widgetDefs = descriptor.manifest.widgets;
     var isMultiWidget = Array.isArray(widgetDefs) && widgetDefs.length > 0;
     var widgetTemplateFiles = isMultiWidget ? widgetDefs.map(function (w) { return w.templatePartial || w.templateFile || null; }) : [];
+    var modelPaths = contentModelPaths(files);
     var fetches = [
       Promise.all(providers.map(function (p) { return fetchText(root + p.file); })),
       isMultiWidget ? Promise.resolve(null) : fetchText(root + files.controller),
@@ -92,7 +102,11 @@
       isMultiWidget ? Promise.all(widgetTemplateFiles.map(function (f) { return f ? fetchText(root + f) : Promise.resolve(null); })) : Promise.resolve([]),
     ];
     if (files.serverScript) {
-      fetches.push(files.contentModel ? fetchText(root + files.contentModel) : Promise.resolve(''));
+      fetches.push(modelPaths.length
+        ? Promise.all(modelPaths.map(function (rel) { return fetchText(root + rel); })).then(function (parts) {
+          return parts.join('\n');
+        })
+        : Promise.resolve(''));
       fetches.push(fetchText(root + files.serverScript));
     }
     return Promise.all(fetches).then(function (results) {

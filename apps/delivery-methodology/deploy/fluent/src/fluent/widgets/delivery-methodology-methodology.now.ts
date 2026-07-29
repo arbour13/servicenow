@@ -1,5 +1,5 @@
 import { SPWidget } from '@servicenow/sdk/core'
-import { ThemeService, DataService, MethodologyDomainService, AppStateService, ChangelogDiffService, RaciGridService, NavigationService, SearchService, WhatsNewService, ReferenceService, IdSeqService, IconService, TipService, JargonService, MessagingService, ContentEditService, StructureEditService, dmModal } from '../providers/delivery-methodology.providers.now'
+import { ThemeService, DataService, MethodologyDomainService, AppStateService, ChangelogDiffService, RaciGridService, NavigationService, SearchService, WhatsNewService, ReferenceService, IdSeqService, IconService, TipService, JargonService, MessagingService, UrlPolicyService, ContentEditService, StructureEditService, dmModal } from '../providers/delivery-methodology.providers.now'
 
 SPWidget({
     $id: Now.ID['widget_methodology'],
@@ -13,5 +13,5 @@ SPWidget({
     serverScript: Now.include('delivery-methodology-methodology.server.js'),
     htmlTemplate: Now.include('delivery-methodology-methodology.html'),
     customCss: Now.include('delivery-methodology-methodology.scss'),
-    angularProviders: [ThemeService, DataService, MethodologyDomainService, AppStateService, ChangelogDiffService, RaciGridService, NavigationService, SearchService, WhatsNewService, ReferenceService, IdSeqService, IconService, TipService, JargonService, MessagingService, ContentEditService, StructureEditService, dmModal],
+    angularProviders: [ThemeService, DataService, MethodologyDomainService, AppStateService, ChangelogDiffService, RaciGridService, NavigationService, SearchService, WhatsNewService, ReferenceService, IdSeqService, IconService, TipService, JargonService, MessagingService, UrlPolicyService, ContentEditService, StructureEditService, dmModal],
 })

@@ -21,8 +21,37 @@
       /* storage unavailable */
     }
   }
+  var widgetObserver = null;
+
+  // Packager scopes CSS under .dm-widget[data-theme=…], so every SP wrapper needs the attribute
+  // (not only <html>). Harness has no .dm-widget — querySelectorAll is then a no-op.
+  function stampWidgets() {
+    if (!appTheme) {
+      return;
+    }
+    var widgets = document.querySelectorAll('.dm-widget');
+    var index;
+    for (index = 0; index < widgets.length; index++) {
+      widgets[index].setAttribute('data-theme', appTheme);
+    }
+  }
+
+  function ensureWidgetObserver() {
+    if (widgetObserver || typeof MutationObserver === 'undefined' || !document.documentElement) {
+      return;
+    }
+    widgetObserver = new MutationObserver(function () {
+      stampWidgets();
+    });
+    widgetObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+  }
+
   function applyApp() {
     document.documentElement.setAttribute('data-theme', appTheme);
+    stampWidgets();
   }
 
   var svc = {
@@ -40,6 +69,11 @@
         }
       }
       applyApp();
+      ensureWidgetObserver();
+      // Late-mounted SP wrappers after first paint.
+      if (typeof setTimeout === 'function') {
+        setTimeout(stampWidgets, 0);
+      }
       return svc;
     },
     // A snapshot the controller mirrors onto vm after each mutation.
@@ -57,6 +91,7 @@
       save(THEME_KEY, appTheme);
       applyApp();
     },
+    stampWidgets: stampWidgets
   };
   return svc;
 }]

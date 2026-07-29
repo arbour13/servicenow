@@ -1,6 +1,7 @@
 /* Widget server script: load/save the scoped content table.
-   Prefixed at package time with js/lib/content-model.js (DMContentModel).
-   input.action: load (default) | save. One GlideRecordSecure per function. */
+   Prefixed at package time with js/lib/url-policy.js + js/lib/content-model.js
+   (DMUrlPolicy, DMContentModel). input.action: load (default) | save.
+   One GlideRecordSecure per function. */
 (function () {
   data.canEdit = gs.hasRole('delivery_methodology_editor') || gs.hasRole('delivery_methodology_admin');
   data.error = '';
@@ -210,11 +211,37 @@
     return createContentRecords(flatRows);
   }
 
+  // Cheap fingerprint of the flat table so a second editor cannot silently clobber the first
+  // (full-replace save). Client echoes data.contentRevision on save; mismatch → hard fail + reload.
+  function contentRevision(records) {
+    var list = records || [];
+    var parts = [];
+    var index;
+    for (index = 0; index < list.length; index++) {
+      var row = list[index];
+      parts.push(
+        String(row.systemId || '') + ':' +
+        String(row.type || '') + ':' +
+        String(row.order || 0) + ':' +
+        String(row.name || '') + ':' +
+        String(row.content || '').length
+      );
+    }
+    var raw = String(list.length) + '|' + parts.join('|');
+    var hash = 0;
+    for (index = 0; index < raw.length; index++) {
+      hash = ((hash << 5) - hash) + raw.charCodeAt(index);
+      hash |= 0;
+    }
+    return String(list.length) + ':' + String(hash);
+  }
+
   function publishContentToClient(payload) {
     data.methodologies = (payload && payload.methodologies) || [];
     data.jobTitles = (payload && payload.jobTitles) || [];
     data.jargon = (payload && payload.jargon) || {};
     data.referenceSections = (payload && payload.referenceSections) || [];
+    data.contentRevision = contentRevision(getAllContentRecords());
 
     data.empty = !(data.methodologies && data.methodologies.length);
 
@@ -275,6 +302,19 @@
     return '';
   }
 
+  function instanceOrigins() {
+    var origins = [];
+    try {
+      var servletUri = gs.getProperty('glide.servlet.uri');
+      if (servletUri) {
+        origins.push(String(servletUri).replace(/\/$/, ''));
+      }
+    } catch (originError) {
+      /* property unavailable — DMUrlPolicy still strips *.service-now.com */
+    }
+    return origins;
+  }
+
   function saveContent(payload) {
     var validationError = validateSavePayload(payload);
 
@@ -284,10 +324,28 @@
       return false;
     }
 
+    var snapshotRecords = getAllContentRecords();
+    var expectedRevision = payload && payload.contentRevision != null
+      ? String(payload.contentRevision)
+      : '';
+    var currentRevision = contentRevision(snapshotRecords);
+
+    // Empty expected = first save from a client that never loaded (or harness). Otherwise require
+    // the fingerprint from the last load so concurrent full-replace cannot last-write-wins silently.
+    if (expectedRevision && expectedRevision !== currentRevision) {
+      data.error = 'Content was changed elsewhere. Reload and try again.';
+      gs.warn(logPrefix + 'contentRevision mismatch expected=' + expectedRevision +
+        ' current=' + currentRevision);
+      publishContentToClient(DMContentModel.hydrate(snapshotRecords));
+      return false;
+    }
+
     var flatRows;
 
     try {
-      flatRows = DMContentModel.dehydrate(payload);
+      flatRows = DMContentModel.dehydrate(payload, {
+        instanceOrigins: instanceOrigins()
+      });
     } catch (dehydrateError) {
       data.error = 'Could not prepare content for save.';
       gs.error(logPrefix + 'dehydrate failed - ' + dehydrateError);
@@ -301,8 +359,6 @@
       gs.warn(logPrefix + flatRowsError);
       return false;
     }
-
-    var snapshotRecords = getAllContentRecords();
 
     try {
       deleteAllContentRecords();
@@ -383,7 +439,8 @@
       methodologies: input.methodologies,
       jobTitles: input.jobTitles,
       jargon: input.jargon,
-      referenceSections: input.referenceSections || []
+      referenceSections: input.referenceSections || [],
+      contentRevision: input.contentRevision
     });
     return;
   }

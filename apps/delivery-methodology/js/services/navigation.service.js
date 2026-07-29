@@ -131,6 +131,7 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     if (denyIfEditing()) {
       return;
     }
+    clearSearchOverlay();
     if (methodologyId === AppStateService.getMethodologyId()) {
       return;
     }
@@ -147,14 +148,27 @@ angular.module('deliveryMethodology').factory('NavigationService', [
         MethodologyDomainService.currentMethodology(AppStateService.getMethodologies(), methodologyId)
       );
     }
-    openSubPhase(resume);
+    openSubPhaseUnlocked(resume);
     if (AppStateService.getView() === 'raci' && hooks.refreshRgIfRaci) {
       hooks.refreshRgIfRaci();
     }
   }
 
+  function openSubPhaseUnlocked(subPhaseId) {
+    AppStateService.setSubPhaseId(subPhaseId);
+    var methodologyId = AppStateService.getMethodologyId();
+    if (methodologyId) {
+      methodologySubPhaseById[methodologyId] = subPhaseId;
+    }
+    AppStateService.refreshLocation();
+    if (hooks.afterOpenSubPhase) {
+      hooks.afterOpenSubPhase();
+    }
+    push();
+  }
+
   function selectPhase(phaseIndex) {
-    if (hooks.isEditing && hooks.isEditing()) {
+    if (denyIfEditing()) {
       return;
     }
     var methodology = MethodologyDomainService.currentMethodology(
@@ -170,26 +184,17 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     }
     var written = phase.subPhases.find(MethodologyDomainService.hasContent);
     if (written) {
-      openSubPhase(written.id);
+      openSubPhaseUnlocked(written.id);
     } else {
-      openSubPhase(phase.subPhases[0].id);
+      openSubPhaseUnlocked(phase.subPhases[0].id);
     }
   }
 
   function openSubPhase(subPhaseId) {
-    if (hooks.isEditing && hooks.isEditing()) {
+    if (denyIfEditing()) {
       return;
     }
-    AppStateService.setSubPhaseId(subPhaseId);
-    var methodologyId = AppStateService.getMethodologyId();
-    if (methodologyId) {
-      methodologySubPhaseById[methodologyId] = subPhaseId;
-    }
-    AppStateService.refreshLocation();
-    if (hooks.afterOpenSubPhase) {
-      hooks.afterOpenSubPhase();
-    }
-    push();
+    openSubPhaseUnlocked(subPhaseId);
   }
 
   function focusJumpTarget(elementKey) {
@@ -225,7 +230,7 @@ angular.module('deliveryMethodology').factory('NavigationService', [
   }
 
   function jumpTo(subPhaseId, methodologyId, elementKey) {
-    if (hooks.isEditing && hooks.isEditing()) {
+    if (denyIfEditing()) {
       return;
     }
     if (methodologyId && methodologyId !== AppStateService.getMethodologyId()) {
@@ -233,7 +238,7 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     }
     AppStateService.setView('methodology');
     clearSearchOverlay();
-    openSubPhase(subPhaseId);
+    openSubPhaseUnlocked(subPhaseId);
     focusJumpTarget(elementKey);
   }
 

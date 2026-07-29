@@ -1,4 +1,4 @@
-['$q', function ($q) {
+['$q', 'UrlPolicyService', function ($q, UrlPolicyService) {
   'use strict';
 
   var STORAGE_KEY = 'gf-delivery-methodology-v1';
@@ -6,6 +6,7 @@
   var cachedJobTitles = null;
   var cachedJargon = null;
   var cachedReferenceSections = null;
+  var cachedContentRevision = '';
 
   function readSeed() {
     try {
@@ -141,6 +142,9 @@
     cachedJobTitles = payload.jobTitles;
     cachedJargon = payload.jargon;
     cachedReferenceSections = payload.referenceSections || [];
+    if (payload && payload.contentRevision != null) {
+      cachedContentRevision = String(payload.contentRevision);
+    }
   }
 
   function localGetData() {
@@ -167,7 +171,8 @@
       jobTitles: serverData.jobTitles || [],
       methodologies: serverData.methodologies || [],
       jargon: serverData.jargon || {},
-      referenceSections: serverData.referenceSections || []
+      referenceSections: serverData.referenceSections || [],
+      contentRevision: serverData.contentRevision != null ? String(serverData.contentRevision) : ''
     };
   }
 
@@ -188,7 +193,8 @@
       methodologies: methodologies,
       jobTitles: cachedJobTitles || [],
       jargon: cachedJargon || {},
-      referenceSections: cachedReferenceSections || []
+      referenceSections: cachedReferenceSections || [],
+      contentRevision: cachedContentRevision || ''
     };
   }
 
@@ -227,6 +233,8 @@
       });
     },
     saveData: function (methodologies) {
+      UrlPolicyService.normalizeMethodologies(methodologies);
+
       if (!serverApi) {
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
@@ -253,6 +261,10 @@
 
         if (responseData.referenceSections) {
           cachedReferenceSections = responseData.referenceSections;
+        }
+
+        if (responseData.contentRevision != null) {
+          cachedContentRevision = String(responseData.contentRevision);
         }
 
         return responseData;

@@ -97,6 +97,7 @@
         { file: 'js/services/tip.service.js', name: 'TipService', type: 'service' },
         { file: 'js/services/jargon.service.js', name: 'JargonService', type: 'service' },
         { file: 'js/services/messaging.service.js', name: 'MessagingService', type: 'service' },
+        { file: 'js/services/url-policy.service.js', name: 'UrlPolicyService', type: 'service' },
         { file: 'js/services/content-edit.service.js', name: 'ContentEditService', type: 'service' },
         { file: 'js/services/structure-edit.service.js', name: 'StructureEditService', type: 'service' },
         { file: 'js/directives/dm-modal.directive.js', name: 'dmModal', type: 'directive' },
@@ -239,11 +240,14 @@
       index: 'index.html',
       // No files.viewPartials: each view widget's fragment is now declared directly on its own
       // widgets[] entry (templatePartial) instead of being inlined into one shared template.
-      // Prefixed onto the widget server script at package time (hydrate/dehydrate).
-      contentModel: 'js/lib/content-model.js',
-      serverScript: 'js/server/content.server.js',
-    },
-
+  // Prefixed onto the widget server script at package time (url policy + hydrate/dehydrate).
+  // Array order matters: DMUrlPolicy must load before DMContentModel.
+  contentModel: [
+    'js/lib/url-policy.js',
+    'js/lib/content-model.js',
+  ],
+  serverScript: 'js/server/content.server.js',
+},
     // Inline serverScriptSource omitted — hosts concatenate files.contentModel + files.serverScript.
 
     // This app authors its own complete palette as CSS custom properties rather than consuming the

@@ -125,6 +125,10 @@ declare global {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e8084b3e27084b3e28084b3e"
                     }
+                    "UrlPolicyService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e89b846a4a9b846a4b9b846a"
+                    }
                     "ContentEditService": {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e83cdfcde83cdfcde93cdfcd"

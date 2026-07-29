@@ -247,7 +247,9 @@ key or set `true` to stay deployable (default).
       // Optional: file-backed widget server script. When set, hosts concatenate
       // contentModel (if present) + serverScript and pass that as sources.serverScript.
       // Prefer this over serverScriptSource when the script is non-trivial.
-      contentModel: 'js/lib/content-model.js',   // optional
+      // contentModel may be a single path string OR an array of paths (concat order
+      // preserved — e.g. url-policy.js before content-model.js).
+      contentModel: 'js/lib/content-model.js',   // optional — string | string[]
       serverScript: 'js/server/content.server.js', // optional
       // Optional, single-widget apps only: harness dev-time view partials the app's index.html
       // pulls in via `ng-include="'partials/<name>.html'"` (a multi-view app's dev harness can

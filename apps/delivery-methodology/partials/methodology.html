@@ -17,16 +17,16 @@
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('chevronRight')"></svg>
                 <span class="methodology-intro-heading">About {{methodology.name}}</span>
               </button>
-              <a class="methodology-intro-feedback" ng-if="methodology.feedbackUrl" ng-href="{{methodology.feedbackUrl}}">{{methodology.feedbackLabel || 'Provide Feedback'}}</a>
+              <a class="methodology-intro-feedback" ng-if="c.safeHref(methodology.feedbackUrl)" ng-href="{{c.safeHref(methodology.feedbackUrl)}}">{{methodology.feedbackLabel || 'Provide Feedback'}}</a>
             </div>
             <div class="methodology-intro-body" ng-if="!c.isMethodologyIntroCollapsed(methodology.id)"
-              ng-class="{'has-diagram': !!methodology.diagramUrl}">
+              ng-class="{'has-diagram': !!c.safeSrc(methodology.diagramUrl)}">
               <div class="methodology-intro-copy">
                 <p ng-repeat="paragraph in c.methodologyIntroParagraphs(methodology) track by $index">{{paragraph}}</p>
                 <p class="methodology-intro-empty" ng-if="!c.methodologyIntroParagraphs(methodology).length">About content for this methodology hasn&rsquo;t been written yet.</p>
               </div>
-              <div class="methodology-intro-diagram" ng-if="methodology.diagramUrl">
-                <img ng-src="{{methodology.diagramUrl}}" alt="Implementation cycle">
+              <div class="methodology-intro-diagram" ng-if="c.safeSrc(methodology.diagramUrl)">
+                <img ng-src="{{c.safeSrc(methodology.diagramUrl)}}" alt="Implementation cycle">
               </div>
             </div>
           </div>
@@ -162,9 +162,10 @@
             </div>
           </div>
 
-          <p class="obj faint stub-hint" ng-if="!c.hasContent(c.location.subPhase)">Not yet written. Use the
+          <p class="obj faint stub-hint" ng-if="!c.hasContent(c.location.subPhase) && c.canEdit">Not yet written. Use the
             <b class="stub-hint-edit">edit <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('pencil')"></svg></b> button above to add its overview, tasks and deliverables.</p>
+          <p class="obj faint stub-hint" ng-if="!c.hasContent(c.location.subPhase) && !c.canEdit">Not yet written.</p>
 
           <div ng-if="c.hasContent(c.location.subPhase)">
             <div class="pchange" ng-if="c.justRead.length">
@@ -285,8 +286,8 @@
                       <tr ng-repeat="t in c.location.subPhase.tasks" data-el="task:{{t.id}}">
                         <td class="tname">
                           <span ng-bind-html="c.jargonHtml(t.text)"></span>
-                          <div class="ja" ng-repeat="j in t.jobAids track by j.id" ng-if="j.url">
-                            <a class="jobaid" href="{{j.url}}" target="_blank" rel="noopener">&#8599; Job Aid</a>
+                          <div class="ja" ng-repeat="j in t.jobAids track by j.id" ng-if="c.safeHref(j.url)">
+                            <a class="jobaid" ng-href="{{c.safeHref(j.url)}}" target="_blank" rel="noopener">&#8599; Job Aid</a>
                             <span class="ja-scope" ng-repeat="r in c.jobAidScope(t, j)"
                               style="--c: {{c.jobTitleColor(r.id)}}" data-tip-name="{{r.name}}"
                               data-tip="{{r.description}}">{{r.external ? '&#9671; ' : ''}}{{r.abbr}}</span>
@@ -562,7 +563,7 @@
                   <div class="ja-edit-row">
                     <span class="link-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('link')"></svg></span>
-                    <input class="edit-in" placeholder="Job aid URL" ng-model="j.url">
+                    <input class="edit-in" placeholder="Job aid URL" ng-model="j.url" ng-blur="c.normalizeJobAidUrl(j)">
                     <button type="button" class="x-btn" ng-click="c.removeJobAid(t, $index)" data-tip="Remove job aid"
                       aria-label="Remove job aid">&times;</button>
                   </div>

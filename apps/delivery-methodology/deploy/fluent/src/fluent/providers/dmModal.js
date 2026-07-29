@@ -4,16 +4,19 @@
     link: function (scope, element, attrs) {
       var root = element[0];
       var lastFocus = document.activeElement;
+      var skipFocus = attrs.dmModalNofocus != null;
 
-      $timeout(function () {
-        var target = attrs.dmModalFocus ? document.getElementById(attrs.dmModalFocus) : null;
-        if (!target) {
-          target = root.querySelector('button, [href], input, textarea, select');
-        }
-        if (target && target.focus) {
-          target.focus();
-        }
-      });
+      if (!skipFocus) {
+        $timeout(function () {
+          var target = attrs.dmModalFocus ? document.getElementById(attrs.dmModalFocus) : null;
+          if (!target) {
+            target = root.querySelector('button, [href], input, textarea, select');
+          }
+          if (target && target.focus) {
+            target.focus();
+          }
+        });
+      }
 
       function focusable() {
         return Array.prototype.slice.call(
@@ -31,6 +34,9 @@
           return;
         }
         if (event.key !== 'Tab') {
+          return;
+        }
+        if (!root.contains(document.activeElement)) {
           return;
         }
         var list = focusable();

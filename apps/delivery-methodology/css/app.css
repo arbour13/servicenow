@@ -123,9 +123,9 @@
    panel-body-light: white header + $gradient-light-4 mint body + navy text) - this app's page
    background takes the paler $brand-tertiary-lightest instead of the saturated band so it still
    reads as an actual light mode, while --gradient-card adopts the real mint panel-body treatment
-   for card components. `data-theme` is set on <html> by ThemeService.toggleApp() (Core's shared
-   provider) - see js/app.module.js's `core` module dependency and the inline pre-paint script in
-   index.html. */
+   for card components. `data-theme` is set on <html> by this app's vendored ThemeService
+   (js/services/theme.service.js) and mirrored onto each .dm-widget wrapper for packager-scoped
+   CSS; see also the inline pre-paint script in index.html. */
 :root[data-theme=light] {
   /* "C · Teal surfaces, fixed" - the fourth palette round. Earlier rounds (see git history) put
      the tint on the wrong surface (a mint PANEL inside a white page reads as "mint everywhere in
@@ -3313,6 +3313,31 @@ select.edit-in option {
   border-bottom-color: transparent;
   /* Bottom edge of the sticky bar (rows scroll underneath). */
   box-shadow: inset 0 -1px 0 var(--line);
+}
+
+.rg-table thead th.rg-rolecol {
+  padding: 0;
+}
+
+.rg-role-btn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 52px;
+  margin: 0;
+  padding: 10px 8px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.rg-role-btn:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: -2px;
 }
 
 /* Role columns only - Task is not a focus control. Mix teal into surface-2 (opaque) rather than
