@@ -7,12 +7,21 @@
 
    Own copy, not shared - this is the slim, app-theme-only subset (no editor-theme half; this app has
    no output pane). The full version (with the editor-theme cycle) lives in Glide Studio, the only
-   app that needs it. */
+   app that needs it.
+
+   Also paints Service Portal's main.body to this app's --paper colour so the five stacked widgets
+   sit on one continuous surface (host gutters otherwise show a different page grey between them).
+   Packager-scoped widget CSS cannot reach main.body, so this runs as a direct style write. */
 angular.module('deliveryMethodology').factory('ThemeService', [function () {
   'use strict';
 
   var THEME_KEY; // set by init()
   var appTheme;
+  var widgetObserver = null;
+
+  // Must match scss/_tokens.scss $hs-navy-0 (dark --paper) and app.scss light --paper.
+  var PAPER_DARK = '#0a2136';
+  var PAPER_LIGHT = '#cfeef5';
 
   function systemPrefersDark() {
     return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -31,7 +40,27 @@ angular.module('deliveryMethodology').factory('ThemeService', [function () {
       /* storage unavailable */
     }
   }
-  var widgetObserver = null;
+
+  function paperColor() {
+    if (appTheme === 'light') {
+      return PAPER_LIGHT;
+    }
+    return PAPER_DARK;
+  }
+
+  // Service Portal content host: <main class="body">. Harmless no-op in the local harness.
+  function stampPortalBody() {
+    if (!appTheme) {
+      return;
+    }
+    var paper = paperColor();
+    var targets = document.querySelectorAll('main.body');
+    var index;
+    for (index = 0; index < targets.length; index++) {
+      targets[index].style.background = paper;
+      targets[index].style.backgroundColor = paper;
+    }
+  }
 
   // Packager scopes CSS under .dm-widget[data-theme=…], so every SP wrapper needs the attribute
   // (not only <html>). Harness has no .dm-widget — querySelectorAll is then a no-op.
@@ -44,6 +73,7 @@ angular.module('deliveryMethodology').factory('ThemeService', [function () {
     for (index = 0; index < widgets.length; index++) {
       widgets[index].setAttribute('data-theme', appTheme);
     }
+    stampPortalBody();
   }
 
   function ensureWidgetObserver() {

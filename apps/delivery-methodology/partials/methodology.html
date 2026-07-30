@@ -46,7 +46,7 @@
               <span class="station-num">{{$index + 1}}<span class="unread-dot"
                   ng-if="c.phaseHasUnread(phase)"></span></span>
               <span class="station-name">{{phase.name}}</span>
-              <span class="station-count">{{phase.subPhases.length}} sub-phase{{phase.subPhases.length > 1 ? 's' : ''}}</span>
+              <span class="station-count">{{phase.subPhases.length}} sub-phase{{phase.subPhases.length === 1 ? '' : 's'}}</span>
             </button>
           </div>
 
@@ -89,21 +89,17 @@
           </div>
 
           <div ng-if="c.currentMethodology()">
-            <p class="struct-toolbar-hint">Rename the methodology, phases, and sub-phases inline. Reorder with the
-              arrows, or remove them with &times;. Changes stay in a draft until you save — including new phases
-              and sub-phases. Exit structure edit, then use the pencil to write content.</p>
+            <p class="struct-toolbar-hint">Rename this methodology, its phases, and sub-phases inline. Reorder with the
+              arrows, or remove them with &times;. Add another methodology from the header. Changes stay in a draft
+              until you save. Exit structure edit, then use the pencil to write content.</p>
             <div class="struct-methodology">
               <span class="struct-methodology-label">Methodology</span>
               <input type="text" class="edit-in struct-rename" ng-model="c.currentMethodology().name"
                 ng-model-options="{updateOn: 'blur'}" ng-change="c.renameMethodology(c.currentMethodology())"
                 placeholder="Methodology name" aria-label="Methodology name">
               <button type="button" class="field-x" ng-click="c.deleteMethodology()"
-                data-tip="Delete this methodology" aria-label="Delete this methodology"
-                ng-disabled="c.methodologies.length <= 1">&times;</button>
+                data-tip="Delete this methodology" aria-label="Delete this methodology">&times;</button>
             </div>
-            <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()"
-              ng-disabled="c.isSaving">+ Add
-              methodology</button>
             <div class="struct-phase" ng-repeat="phase in c.currentMethodology().phases track by phase.id">
               <div class="struct-phase-head">
                 <span class="struct-num">{{$index + 1}}</span>
@@ -117,8 +113,7 @@
                     data-tip="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
                   <button type="button" class="field-x" ng-click="c.deletePhase($index)"
-                    data-tip="Delete phase" aria-label="Delete phase"
-                    ng-disabled="c.currentMethodology().phases.length <= 1">&times;</button>
+                    data-tip="Delete phase" aria-label="Delete phase">&times;</button>
                 </span>
               </div>
               <div class="struct-subphase-list">

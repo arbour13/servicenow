@@ -129,11 +129,18 @@ function writeFile(filePath, contents) {
 }
 
 function buildFluent(appRoot, descriptor, parts, fluentMode) {
+  var fluentDir = path.join(appRoot, 'deploy', 'fluent');
+  // Read keys.ts BEFORE wiping deploy/fluent so composite m2m / dictionary ids survive rebuilds.
+  var priorKeysPath = path.join(fluentDir, 'src', 'fluent', 'generated', 'keys.ts');
+  var priorKeysText = null;
+  if (fs.existsSync(priorKeysPath)) {
+    priorKeysText = fs.readFileSync(priorKeysPath, 'utf8');
+  }
   var files = fluent.assembleFluent(descriptor.manifest, parts, {
     mode: fluentMode,
     sdkVersion: descriptor.deployOptions && descriptor.deployOptions.fluent && descriptor.deployOptions.fluent.sdkVersion,
+    priorKeysText: priorKeysText,
   });
-  var fluentDir = path.join(appRoot, 'deploy', 'fluent');
   if (fs.existsSync(fluentDir)) {
     fs.readdirSync(fluentDir).forEach(function (name) {
       if (name === 'node_modules' || name === 'package-lock.json' || name === '.now') { return; }

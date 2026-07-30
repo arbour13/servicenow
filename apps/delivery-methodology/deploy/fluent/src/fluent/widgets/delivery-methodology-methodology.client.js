@@ -156,7 +156,7 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
       return 0;
     }
     for (var phaseIndex = 0; phaseIndex < methodology.phases.length; phaseIndex++) {
-      if (methodology.phases[phaseIndex].subPhases.some(function (subPhase) {
+      if ((methodology.phases[phaseIndex].subPhases || []).some(function (subPhase) {
         return subPhase.id === subPhaseId;
       })) {
         return phaseIndex;

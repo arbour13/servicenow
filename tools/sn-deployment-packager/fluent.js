@@ -300,7 +300,12 @@
     }
 
     if (mode === 'project') {
-      files['src/fluent/generated/keys.ts'] = renderKeys(keyRegistry);
+      // opts.priorKeysText: previous keys.ts body (hosts read it before wiping deploy/fluent).
+      // Without preserving composite, now-sdk remints random m2m_sp_ng_pro_sp_widget sys_ids every
+      // deploy and Application Files duplicate.
+      var priorKeys = parsePriorKeys(opts.priorKeysText);
+      var composite = buildCompositeEntries(manifest, model, priorKeys.composite);
+      files['src/fluent/generated/keys.ts'] = renderKeys(keyRegistry, composite, priorKeys.deletedBlock);
       files['now.config.json'] = JSON.stringify({
         scope: manifest.scope, scopeId: model.ids.app, name: manifest.appName,
       }, null, 4) + '\n';
@@ -318,15 +323,191 @@
     return files;
   }
 
+  // Pull composite[] / deleted from a prior keys.ts so rebuilds do not orphan SDK-managed rows.
+  // Accepts both SDK single-quoted and JSON.stringify double-quoted string literals.
+  function parsePriorKeys(keysText) {
+    var result = {
+      composite: [],
+      deletedBlock: null,
+    };
+    if (!keysText || typeof keysText !== 'string') {
+      return result;
+    }
+
+    var deletedMatch = keysText.match(/\bdeleted:\s*(\{[\s\S]*?\n\s*\})/);
+    if (deletedMatch) {
+      result.deletedBlock = deletedMatch[1];
+    }
+
+    var compositeMarker = keysText.indexOf('composite:');
+    if (compositeMarker < 0) {
+      return result;
+    }
+
+    var bracketStart = keysText.indexOf('[', compositeMarker);
+    if (bracketStart < 0) {
+      return result;
+    }
+
+    var depth = 0;
+    var bracketEnd = -1;
+    var index;
+    for (index = bracketStart; index < keysText.length; index++) {
+      if (keysText[index] === '[') {
+        depth++;
+      } else if (keysText[index] === ']') {
+        depth--;
+        if (depth === 0) {
+          bracketEnd = index;
+          break;
+        }
+      }
+    }
+
+    if (bracketEnd < 0) {
+      return result;
+    }
+
+    var body = keysText.slice(bracketStart + 1, bracketEnd);
+    var entryPattern = /\{\s*table:\s*(['"])([^'"]+)\1\s+id:\s*(['"])([^'"]+)\3\s+key:\s*\{([^}]*)\}\s*\}/g;
+    var match;
+    while ((match = entryPattern.exec(body)) !== null) {
+      var keyFields = {};
+      var keyBody = match[5];
+      var fieldPattern = /([A-Za-z0-9_]+):\s*(['"])([^'"]*)\2/g;
+      var fieldMatch;
+      while ((fieldMatch = fieldPattern.exec(keyBody)) !== null) {
+        keyFields[fieldMatch[1]] = fieldMatch[3];
+      }
+      result.composite.push({
+        table: match[2],
+        id: match[4],
+        key: keyFields,
+      });
+    }
+
+    return result;
+  }
+
+  function compositeFingerprint(entry) {
+    var fieldNames = Object.keys(entry.key || {}).sort();
+    var parts = fieldNames.map(function (fieldName) {
+      return fieldName + '=' + entry.key[fieldName];
+    });
+    return entry.table + '|' + parts.join('|');
+  }
+
+  // One m2m per widget×provider (SPWidget.angularProviders). Reuse prior id for the same coalesce
+  // key when present; otherwise mint a stableSysId so first builds are deterministic too. Preserve
+  // non-m2m prior composites (sys_dictionary / sys_choice / acl_role / …) so table metadata does
+  // not remint either.
+  function buildCompositeEntries(manifest, model, priorComposite) {
+    var priorByFingerprint = {};
+    (priorComposite || []).forEach(function (entry) {
+      priorByFingerprint[compositeFingerprint(entry)] = entry;
+    });
+
+    var widgets = [];
+    var providers = [];
+    (model.records || []).forEach(function (rec) {
+      if (rec.table === 'sp_widget') {
+        widgets.push(rec);
+      }
+      if (rec.table === 'sp_angular_provider') {
+        providers.push(rec);
+      }
+    });
+
+    var usedFingerprints = {};
+    var composite = [];
+    var prefix = manifest.sysIdPrefix || '';
+
+    widgets.forEach(function (widgetRecord) {
+      providers.forEach(function (providerRecord) {
+        var entry = {
+          table: 'm2m_sp_ng_pro_sp_widget',
+          id: null,
+          key: {
+            sp_widget: widgetRecord.sysId,
+            sp_angular_provider: providerRecord.sysId,
+          },
+        };
+        var fingerprint = compositeFingerprint(entry);
+        usedFingerprints[fingerprint] = true;
+        var prior = priorByFingerprint[fingerprint];
+        if (prior && prior.id) {
+          entry.id = prior.id;
+        } else {
+          entry.id = core.stableSysId(
+            prefix,
+            'm2m_sp_ng_pro_sp_widget:' + widgetRecord.sysId + ':' + providerRecord.sysId
+          );
+        }
+        composite.push(entry);
+      });
+    });
+
+    (priorComposite || []).forEach(function (entry) {
+      if (entry.table === 'm2m_sp_ng_pro_sp_widget') {
+        return;
+      }
+      var fingerprint = compositeFingerprint(entry);
+      if (usedFingerprints[fingerprint]) {
+        return;
+      }
+      usedFingerprints[fingerprint] = true;
+      composite.push(entry);
+    });
+
+    composite.sort(function (left, right) {
+      if (left.table !== right.table) {
+        if (left.table < right.table) {
+          return -1;
+        }
+        return 1;
+      }
+      if (left.id < right.id) {
+        return -1;
+      }
+      if (left.id > right.id) {
+        return 1;
+      }
+      return 0;
+    });
+
+    return composite;
+  }
+
   // generated/keys.ts - pins every Now.ID key to its {table, id}, so references (which carry the
   // concrete sys_id) resolve and the typed $id lookups typecheck. Mirrors the sample's shape.
-  function renderKeys(registry) {
+  // composite/deleted keep SDK-managed descendant identity stable across packager rebuilds.
+  function renderKeys(registry, composite, deletedBlock) {
+    // Single-quoted literals match now-sdk's keys.ts shape so parsePriorKeys round-trips.
     var entries = registry.map(function (e) {
-      return "                    " + JSON.stringify(e.key) + ": {\n" +
-        "                        table: " + JSON.stringify(e.table) + "\n" +
-        "                        id: " + JSON.stringify(e.id) + "\n" +
+      return "                    " + jsStr(e.key) + ": {\n" +
+        "                        table: " + jsStr(e.table) + "\n" +
+        "                        id: " + jsStr(e.id) + "\n" +
         "                    }";
     });
+    var compositeLines = (composite || []).map(function (entry) {
+      var keyFieldNames = Object.keys(entry.key || {});
+      var keyLines = keyFieldNames.map(function (fieldName) {
+        return "                            " + fieldName + ": " + jsStr(entry.key[fieldName]);
+      });
+      return "                    {\n" +
+        "                        table: " + jsStr(entry.table) + "\n" +
+        "                        id: " + jsStr(entry.id) + "\n" +
+        "                        key: {\n" +
+        keyLines.join('\n') + "\n" +
+        "                        }\n" +
+        "                    }";
+    });
+    var deleted = deletedBlock || '{}';
+    var compositeBlock = "                composite: [\n";
+    if (compositeLines.length) {
+      compositeBlock += compositeLines.join(',\n') + "\n";
+    }
+    compositeBlock += "                ]\n";
     return "import '@servicenow/sdk/global'\n\n" +
       "declare global {\n" +
       "    namespace Now {\n" +
@@ -335,6 +516,8 @@
       "                explicit: {\n" +
       entries.join('\n') + "\n" +
       "                }\n" +
+      compositeBlock +
+      "                deleted: " + deleted + "\n" +
       "            }\n" +
       "        }\n" +
       "    }\n" +

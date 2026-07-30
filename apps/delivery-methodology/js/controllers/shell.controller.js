@@ -129,8 +129,16 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   syncSearch();
   AppStateService.subscribe($rootScope, $scope, syncAll);
 
+  // Tabs when there is more than one methodology to switch between, or while structure-editing
+  // (so "+ Add" can sit next to the current methodology without cluttering the structure panel).
   c.showMethodologySwitch = function () {
-    return (c.view === 'methodology' || c.view === 'raci') && c.methodologies.length > 1;
+    if (c.view !== 'methodology' && c.view !== 'raci') {
+      return false;
+    }
+    if (c.methodologies.length > 1) {
+      return true;
+    }
+    return c.view === 'methodology' && c.structureEditMode && c.methodologies.length >= 1;
   };
   c.pageTitle = function () {
     if (c.view === 'raci') {
@@ -233,6 +241,9 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   };
   c.switchMethodology = function (methodologyId) {
     NavigationService.switchMethodology(methodologyId);
+  };
+  c.addMethodology = function () {
+    StructureEditService.addMethodology();
   };
   c.toggleStructureEdit = function () {
     StructureEditService.toggleStructureEdit();

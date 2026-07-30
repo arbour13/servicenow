@@ -21,10 +21,10 @@ angular.module('deliveryMethodology').factory('ReferenceService', [function () {
     var groups = [];
 
     (methodologies || []).forEach(function (methodology) {
-      methodology.phases.forEach(function (phase) {
+      (methodology.phases || []).forEach(function (phase) {
         var group = null;
 
-        phase.subPhases.forEach(function (subPhase) {
+        (phase.subPhases || []).forEach(function (subPhase) {
           (subPhase.tasks || []).forEach(function (task) {
             var taskEntry = null;
 

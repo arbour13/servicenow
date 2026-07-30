@@ -145,6 +145,9 @@
               <div class="methodology-switch" ng-if="c.showMethodologySwitch()">
                 <button type="button" class="methodology-tab" ng-class="{on: methodology.id === c.methodologyId}"
                   ng-repeat="methodology in c.methodologies track by methodology.id" ng-click="c.switchMethodology(methodology.id)">{{methodology.name}}</button>
+                <button type="button" class="methodology-tab methodology-add"
+                  ng-if="c.view === 'methodology' && c.structureEditMode && c.canEdit"
+                  ng-click="c.addMethodology()" data-tip="Add a methodology" aria-label="Add a methodology">+ Add</button>
               </div>
               <button type="button" class="struct-icon-btn" ng-if="c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit"
                 ng-class="{on: c.structureEditMode}" ng-click="c.toggleStructureEdit()"

@@ -252,9 +252,9 @@
     // Inline serverScriptSource omitted — hosts concatenate files.contentModel + files.serverScript.
 
     // App-local scss/_tokens.scss supplies $var: value !default for the core palette (compiled
-    // into :root custom properties). A future host-portal / shared foundation pass can set this
-    // to ['../../tools/theme-foundation/_tokens.scss'] (or equivalent) to override at package time.
-    sharedScssPartials: undefined,
+    // into :root custom properties). Inlined at package time so ServiceNow's widget SCSS compile
+    // never sees a dangling @import 'tokens' (that fails on the instance and ships no styles).
+    sharedScssPartials: ['scss/_tokens.scss'],
 
     // Show the "Deploy target instance" panel (URL / user / password / Detect Prefix). This app's
     // scope is meant to be set from the target instance's own vendor prefix at deploy time rather

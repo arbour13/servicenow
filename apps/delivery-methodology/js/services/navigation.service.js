@@ -197,14 +197,18 @@ angular.module('deliveryMethodology').factory('NavigationService', [
       return;
     }
     var phase = methodology.phases[phaseIndex];
-    if (!phase.subPhases.length) {
+    if (!phase) {
       return;
     }
-    var written = phase.subPhases.find(MethodologyDomainService.hasContent);
+    var subPhases = phase.subPhases || [];
+    if (!subPhases.length) {
+      return;
+    }
+    var written = subPhases.find(MethodologyDomainService.hasContent);
     if (written) {
       openSubPhaseUnlocked(written.id);
     } else {
-      openSubPhaseUnlocked(phase.subPhases[0].id);
+      openSubPhaseUnlocked(subPhases[0].id);
     }
   }
 

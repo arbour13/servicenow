@@ -566,6 +566,13 @@
 
   var DEFAULT_SERVER_SCRIPT = '(function() {\n  /* No server-side data needed - this widget\'s logic lives entirely in its injected Angular services. */\n})();';
 
+  // Drop Sass @import / @use / @forward lines. Widget <css> is compiled by ServiceNow libsass with
+  // no partial search path - unresolved imports fail the whole stylesheet. Partials belong in
+  // sources.sharedScss (manifest.sharedScssPartials) so they are already inlined above this strip.
+  function stripSassImports(text) {
+    return String(text || '').replace(/^[ \t]*@(?:import|use|forward)\b[^;]*;[ \t]*\r?\n?/gm, '');
+  }
+
   // now-sdk validates widget client_script with a regex that requires
   // `api.controller = function(...) {` on a single line - multiline DI lists fail TS213.
   function collapseWidgetClientScriptHeader(clientScript) {
@@ -666,7 +673,11 @@
     // they're `!default` token declarations (bare statements), scopeScss passes them through
     // untouched; the app's rules that reference those tokens compile against them. This is what gives
     // every widget the shared token vocabulary + portal portability. See manifest.schema.md.
-    var scssSrc = (sources.sharedScss ? sources.sharedScss + '\n\n' : '') + sources.scssSrc;
+    // Strip @import/@use: ServiceNow's widget SCSS compile cannot resolve local partials; tokens
+    // must arrive via sharedScss (or be inlined in the file). Leaving @import 'tokens' ships broken CSS.
+    var scssSrc = stripSassImports(
+      (sources.sharedScss ? sources.sharedScss + '\n\n' : '') + sources.scssSrc
+    );
     // Every widget (single or multi) shares this SAME compiled css - see manifest.schema.md's
     // widgets[] doc for why splitting per-widget SCSS isn't worth it for this suite.
     var css = sassSafeCss(scopeScss(scssSrc, '.' + manifest.widgetScopeClass));
@@ -1028,9 +1039,11 @@
           { name: 'sp_widget', value: widgetIds.widget },
           { name: 'sys_class_name', value: 'sp_instance', xmlOnly: true },
           { name: 'sys_id', value: widgetIds.instance, xmlOnly: true },
+          { name: 'sys_name', value: widgetName, xmlOnly: true },
           SC,
           { name: 'sys_update_name', value: 'sp_instance_' + widgetIds.instance, xmlOnly: true },
-          { name: 'title', empty: true },
+          // Title shows in Application Files; empty titles read as blank names in Studio.
+          { name: 'title', value: widgetName },
         ] });
       });
     } else {
@@ -1073,10 +1086,11 @@
         { name: 'sp_widget', value: ids.widget },
         { name: 'sys_class_name', value: 'sp_instance', xmlOnly: true },
         { name: 'sys_id', value: ids.instance, xmlOnly: true },
-        // No instance title - real SP exports leave Target name blank when untitled.
+        { name: 'sys_name', value: manifest.appName, xmlOnly: true },
         SC,
         { name: 'sys_update_name', value: 'sp_instance_' + ids.instance, xmlOnly: true },
-        { name: 'title', empty: true },
+        // Title shows in Application Files; empty titles read as blank names in Studio.
+        { name: 'title', value: manifest.appName },
       ] });
     }
 

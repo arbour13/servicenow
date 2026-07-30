@@ -52,6 +52,7 @@ Record({
         order: 1,
         sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
         sp_widget: 'a4b5c6d7e85271166b5271166c527116',
+        title: 'DM Shell',
     },
 })
 
@@ -63,6 +64,7 @@ Record({
         order: 2,
         sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
         sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a',
+        title: 'DM Methodology',
     },
 })
 
@@ -74,6 +76,7 @@ Record({
         order: 3,
         sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
         sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f',
+        title: 'DM RACI',
     },
 })
 
@@ -85,6 +88,7 @@ Record({
         order: 4,
         sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
         sp_widget: 'a4b5c6d7e8c3931246c3931247c39312',
+        title: 'DM Reference',
     },
 })
 
@@ -96,5 +100,6 @@ Record({
         order: 5,
         sp_column: 'a4b5c6d7e8dad75d0cdad75d0ddad75d',
         sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48',
+        title: 'DM What\'s New',
     },
 })

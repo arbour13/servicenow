@@ -229,20 +229,6 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       enterStructureEdit();
     }
     var methodologyId = IdSeqService.next('methodology');
-    var phase = {
-      id: IdSeqService.next('phase'),
-      name: 'New Phase',
-      order: 1,
-      subPhases: []
-    };
-    var subPhase = DataService.blankSubPhase(IdSeqService.next('subPhase'), '', 'New Sub-Phase', 1);
-    subPhase.changelog.push({
-      id: IdSeqService.next('changelog'),
-      ts: IdSeqService.today(),
-      text: 'Sub-phase created',
-      read: false
-    });
-    phase.subPhases.push(subPhase);
     var methodology = {
       id: methodologyId,
       name: 'New Methodology',
@@ -252,15 +238,13 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       feedbackUrl: '',
       feedbackLabel: 'Provide Feedback',
       diagramUrl: '',
-      phases: [phase]
+      phases: []
     };
     AppStateService.getMethodologies().push(methodology);
     IdSeqService.recomputeSids(methodology);
     AppStateService.setMethodologyId(methodologyId);
-    NavigationService.remember(methodologyId, subPhase.id);
-    AppStateService.setSubPhaseId(subPhase.id);
+    AppStateService.setSubPhaseId(null);
     RaciGridService.ensureActivePhases(methodology);
-    RaciGridService.activatePhase(phase.id);
     AppStateService.refreshLocation();
     markReadCurrent();
     refreshDerived();
@@ -278,10 +262,6 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       return;
     }
     var methodologies = AppStateService.getMethodologies();
-    if (methodologies.length <= 1) {
-      MessagingService.toast('Keep at least one methodology');
-      return;
-    }
     var methodology = currentMethodology();
     if (!methodology) {
       return;
@@ -303,10 +283,15 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       }
       methodologies.splice(index, 1);
       NavigationService.forget(methodology.id);
-      var next = methodologies[Math.max(0, index - 1)] || methodologies[0];
-      AppStateService.setMethodologyId(next.id);
-      AppStateService.setSubPhaseId(NavigationService.remembered(next.id) || MethodologyDomainService.firstContentSubPhase(next));
-      NavigationService.remember(next.id, AppStateService.getSubPhaseId());
+      if (!methodologies.length) {
+        AppStateService.setMethodologyId(null);
+        AppStateService.setSubPhaseId(null);
+      } else {
+        var next = methodologies[Math.max(0, index - 1)] || methodologies[0];
+        AppStateService.setMethodologyId(next.id);
+        AppStateService.setSubPhaseId(NavigationService.remembered(next.id) || MethodologyDomainService.firstContentSubPhase(next));
+        NavigationService.remember(next.id, AppStateService.getSubPhaseId());
+      }
       AppStateService.refreshLocation();
       refreshDerived();
       NavigationService.push();
@@ -334,26 +319,19 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       MessagingService.toast('Add a methodology first');
       return;
     }
+    if (!methodology.phases) {
+      methodology.phases = [];
+    }
     var phase = {
       id: IdSeqService.next('phase'),
       name: 'New Phase',
       order: methodology.phases.length + 1,
       subPhases: []
     };
-    var subPhase = DataService.blankSubPhase(IdSeqService.next('subPhase'), '', 'New Sub-Phase', 1);
-    subPhase.changelog.push({
-      id: IdSeqService.next('changelog'),
-      ts: IdSeqService.today(),
-      text: 'Sub-phase created',
-      read: false
-    });
-    phase.subPhases.push(subPhase);
     methodology.phases.push(phase);
     IdSeqService.recomputeSids(methodology);
     RaciGridService.ensureActivePhases(methodology);
     RaciGridService.activatePhase(phase.id);
-    AppStateService.setSubPhaseId(subPhase.id);
-    NavigationService.remember(methodology.id, subPhase.id);
     AppStateService.refreshLocation();
     notify();
   }
@@ -381,6 +359,12 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       return;
     }
     var phase = methodology.phases[phaseIndex];
+    if (!phase) {
+      return;
+    }
+    if (!phase.subPhases) {
+      phase.subPhases = [];
+    }
     var subPhase = DataService.blankSubPhase(
       IdSeqService.next('subPhase'),
       '',
@@ -452,21 +436,21 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     if (!methodology) {
       return;
     }
-    if (methodology.phases.length <= 1) {
-      MessagingService.toast('A methodology needs at least one phase');
+    var phase = methodology.phases[index];
+    if (!phase) {
       return;
     }
-    var phase = methodology.phases[index];
+    var subPhases = phase.subPhases || [];
     MessagingService.confirm({
       title: 'Remove phase?',
-      body: 'Remove “' + phase.name + '” and all ' + phase.subPhases.length + ' of its sub-phases from this draft? Cancel structure edit to undo.',
+      body: 'Remove “' + phase.name + '” and all ' + subPhases.length + ' of its sub-phases from this draft? Cancel structure edit to undo.',
       cancel: 'Keep',
       ok: 'Remove'
     }).then(function (accepted) {
       if (!accepted) {
         return;
       }
-      var removedIds = phase.subPhases.map(function (subPhase) {
+      var removedIds = subPhases.map(function (subPhase) {
         return subPhase.id;
       });
       methodology.phases.splice(index, 1);
@@ -487,12 +471,18 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     if (!methodology) {
       return;
     }
-    var array = methodology.phases[phaseIndex].subPhases;
-    if (array.length <= 1) {
-      MessagingService.toast('A phase needs at least one sub-phase');
+    var phase = methodology.phases[phaseIndex];
+    if (!phase) {
       return;
     }
+    if (!phase.subPhases) {
+      phase.subPhases = [];
+    }
+    var array = phase.subPhases;
     var subPhase = array[index];
+    if (!subPhase) {
+      return;
+    }
     MessagingService.confirm({
       title: 'Remove sub-phase?',
       body: 'Remove “' + subPhase.name + '” from this draft? Cancel structure edit to undo.',

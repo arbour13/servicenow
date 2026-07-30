@@ -130,7 +130,7 @@
 
     var roleIds = [];
     methodology.phases.forEach(function (phase) {
-      phase.subPhases.forEach(function (subPhase) {
+      (phase.subPhases || []).forEach(function (subPhase) {
         if (!hasContent(subPhase)) {
           return;
         }
@@ -164,7 +164,7 @@
       if (!activePhases[phase.id]) {
         return;
       }
-      phase.subPhases.forEach(function (subPhase) {
+      (phase.subPhases || []).forEach(function (subPhase) {
         if (!hasContent(subPhase)) {
           return;
         }
@@ -197,7 +197,7 @@
         return;
       }
       var color = MethodologyDomainService.phaseColor(phaseIndex);
-      phase.subPhases.filter(hasContent).forEach(function (subPhase) {
+      (phase.subPhases || []).filter(hasContent).forEach(function (subPhase) {
         var rows;
         if (gridFocusRoleId) {
           rows = subPhase.tasks.filter(function (task) {

@@ -1517,9 +1517,16 @@
   function rebuildFluent() {
     if (!currentParts) { return; }
     var manifest = manifestFromFields();
+    // priorFluentFiles is the disk snapshot (on app load) or the last emit (after rebuild). Prefer
+    // it over fluentFiles so a stale previous-app map cannot leak composite ids across apps.
+    var priorKeysText =
+      (priorFluentFiles && priorFluentFiles['src/fluent/generated/keys.ts']) ||
+      (fluentFiles && fluentFiles['src/fluent/generated/keys.ts']) ||
+      null;
     fluentFiles = fluent.assembleFluent(manifest, currentParts.parts, {
       mode: 'project',
       sdkVersion: manifest.deployOptions && manifest.deployOptions.fluent && manifest.deployOptions.fluent.sdkVersion,
+      priorKeysText: priorKeysText,
     });
     var paths = sortedFluentPaths();
     if (paths.indexOf(fluentActivePath) === -1) {
@@ -1545,6 +1552,7 @@
     connectionSection.style.display = 'none';
     if (bridgeSection) { bridgeSection.style.display = 'none'; }
     currentParts = null;
+    fluentFiles = null;
     ourInstalledSysId = null;
     sessionConnected = false;
     connectionInFlight = false;

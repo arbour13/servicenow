@@ -3,6 +3,11 @@
 
   var THEME_KEY; // set by init()
   var appTheme;
+  var widgetObserver = null;
+
+  // Must match scss/_tokens.scss $hs-navy-0 (dark --paper) and app.scss light --paper.
+  var PAPER_DARK = '#0a2136';
+  var PAPER_LIGHT = '#cfeef5';
 
   function systemPrefersDark() {
     return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -21,7 +26,27 @@
       /* storage unavailable */
     }
   }
-  var widgetObserver = null;
+
+  function paperColor() {
+    if (appTheme === 'light') {
+      return PAPER_LIGHT;
+    }
+    return PAPER_DARK;
+  }
+
+  // Service Portal content host: <main class="body">. Harmless no-op in the local harness.
+  function stampPortalBody() {
+    if (!appTheme) {
+      return;
+    }
+    var paper = paperColor();
+    var targets = document.querySelectorAll('main.body');
+    var index;
+    for (index = 0; index < targets.length; index++) {
+      targets[index].style.background = paper;
+      targets[index].style.backgroundColor = paper;
+    }
+  }
 
   // Packager scopes CSS under .dm-widget[data-theme=…], so every SP wrapper needs the attribute
   // (not only <html>). Harness has no .dm-widget — querySelectorAll is then a no-op.
@@ -34,6 +59,7 @@
     for (index = 0; index < widgets.length; index++) {
       widgets[index].setAttribute('data-theme', appTheme);
     }
+    stampPortalBody();
   }
 
   function ensureWidgetObserver() {
