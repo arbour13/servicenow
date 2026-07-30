@@ -858,6 +858,102 @@ button {
   transition: visibility 0s 0.24s;
 }
 
+/* Dark/light toggle: a whole-page crossfade via the View Transitions API (triggered from
+   shell.controller.js's c.toggleTheme), not a hand-written transition on every themed property -
+   pinned to this app's other transition timing (0.24s, same as .clp above) rather than left at
+   the browser's own default so it doesn't silently drift. prefers-reduced-motion is handled in
+   JS (the controller skips the API entirely), matching how .clp handles it above - a duration
+   override here would be a no-op in that case since the API is never invoked. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.24s;
+}
+
+/* Modal entry (search results, confirm dialog). Both used to pop in with no transition at all,
+   which read as a jump-cut against the backdrop blur fading in behind them over 0.2s. Timing and
+   shape deliberately match .toast (opacity + a small translate, ~0.2s) so every overlay in the app
+   arrives the same way. Scale starts at 0.98 rather than something showier: these are interruptions
+   the reader did not ask to admire, and a large scale reads as a bounce. Entry only - AngularJS
+   removes these from the DOM on close with no ngAnimate leave hook available. */
+@keyframes dmOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dmDialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.search-overlay,
+.msg-overlay {
+  animation: dmOverlayIn 0.16s ease-out both;
+}
+
+.search-modal,
+.msg-dialog {
+  animation: dmDialogIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Role columns revealed by "Show all roles" fade in rather than snapping: seven columns appearing
+   at once is a large layout change, and the fade is what connects the button press to the result.
+   Applied to the cells (not a width animation on the columns) because the table lays itself out in
+   one pass - animating column width would fight the layout algorithm and reflow every row. */
+@keyframes dmColumnIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.rg-roles-shown .rg-table th.rg-rolecol,
+.rg-roles-shown .rg-table tbody td:not(.tname),
+.rg-roles-shown .rg-table tfoot td:not(.tname) {
+  animation: dmColumnIn 0.22s ease-out both;
+}
+
+/* Filmstrip cards stagger in when the selected PHASE changes. Every phase's strip stays mounted
+   (ng-show, not ng-if - see the template note about not rebuilding cards), so the cards are never
+   recreated and there is no enter event to hook; this relies instead on ng-show's display:none →
+   visible flip, which restarts a CSS animation from the beginning. That also means it fires on
+   first paint for the initially-visible strip, which is wanted. Per-card delay comes from --i,
+   set on each card in the template, capped so a long phase never trails a visible ripple. */
+@keyframes dmCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.film .fcard {
+  animation: dmCardIn 0.24s ease-out both;
+  animation-delay: calc(min(var(--i, 0), 5) * 0.035s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-overlay,
+  .msg-overlay,
+  .search-modal,
+  .msg-dialog,
+  .film .fcard,
+  .rg-roles-shown .rg-table th.rg-rolecol,
+  .rg-roles-shown .rg-table tbody td:not(.tname),
+  .rg-roles-shown .rg-table tfoot td:not(.tname) {
+    animation: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .clp,
   .clp-inner {
@@ -3642,10 +3738,6 @@ select.edit-in option {
   font-size: 12.5px;
   background: var(--paper);
   color: var(--ink);
-}
-
-.rg-table tr.taskrow:hover td {
-  background: var(--surface-flat);
 }
 
 .rg-table td.tname {

@@ -83,6 +83,7 @@
       // listed here and DOES ship with this package.
       providers: [
         { file: 'js/services/theme.service.js', name: 'ThemeService', type: 'service' },
+        { file: 'js/services/motion.service.js', name: 'MotionService', type: 'service' },
         { file: 'js/services/data.service.js', name: 'DataService', type: 'service' },
         { file: 'js/services/methodology-domain.service.js', name: 'MethodologyDomainService', type: 'service' },
         { file: 'js/services/app-state.service.js', name: 'AppStateService', type: 'service' },

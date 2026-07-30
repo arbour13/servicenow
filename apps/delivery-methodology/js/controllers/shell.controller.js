@@ -12,12 +12,12 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   '$rootScope', '$scope', 'DataService', 'ThemeService', 'MessagingService', 'TipService',
   'AppStateService', 'MethodologyDomainService', 'NavigationService', 'SearchService',
   'WhatsNewService', 'ReferenceService', 'RaciGridService', 'ContentEditService', 'StructureEditService',
-  'IconService',
+  'IconService', 'MotionService',
   function (
     $rootScope, $scope, DataService, ThemeService, MessagingService, TipService,
     AppStateService, MethodologyDomainService, NavigationService, SearchService,
     WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService,
-    IconService
+    IconService, MotionService
   ) {
   'use strict';
   var c = this;
@@ -29,9 +29,17 @@ angular.module('deliveryMethodology').controller('DmShellController', [
     ThemeService.stampWidgets();
   }
   syncTheme();
+
+  // Cross-fades the whole page between themes rather than hand-writing a transition on every
+  // themed property: the naive approach (a blanket `* { transition: background-color …, color … }`
+  // while toggling) loses to any element that already declares its OWN `transition` for something
+  // else (.fcard's hover-lift, for instance) - the two don't merge, whichever rule wins takes the
+  // property outright - so some elements would snap while others crossfade. See MotionService.
   c.toggleTheme = function () {
-    ThemeService.toggleApp();
-    syncTheme();
+    MotionService.transition(function () {
+      ThemeService.toggleApp();
+      syncTheme();
+    });
   };
 
   // Editor/admin roles set data.canEdit in the widget server script. Local harness has no server
@@ -67,8 +75,18 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       hasContent: MethodologyDomainService.hasContent
     };
   }
+  // RaciGridService has no $rootScope of its own to broadcast from (same reasoning as
+  // WhatsNewService/ReferenceService below), so this nudge is required - not optional - whenever
+  // Shell triggers a refresh as a SIDE EFFECT of navigation (switching methodology, view tabs,
+  // back/forward) rather than as a direct user action inside the RACI widget itself. Without it,
+  // the RACI controller's own c.activePhases/c.raciGrid keep showing whatever was live at the
+  // LAST broadcast: ensureActivePhases() resets the phase-active map here against the new
+  // methodology's phase ids, but the RACI widget - a separate always-mounted scope - never hears
+  // about that reset, so its phase chips still reference the OLD methodology's phase ids (all
+  // read as off) while the grid itself renders from data actually already switched over.
   function refreshRaciGrid() {
     RaciGridService.refresh(raciGridContext());
+    $rootScope.$broadcast('dm-state');
   }
   function refreshWhatsNew(serverSeen) {
     WhatsNewService.hydrateSeen(c.methodologies, serverSeen);
@@ -165,8 +183,19 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   c.goForward = function () {
     NavigationService.goForward();
   };
+  // Each view is its own always-mounted widget gated by ng-if, so switching tabs replaces the
+  // whole page body with no element left over to transition - crossfade the snapshots instead.
+  // Guard reads AppStateService rather than the mirrored c.view: the mirror only catches up on the
+  // next dm-state broadcast, so back-to-back clicks (or a double-click) could both pass a stale
+  // check and fire a pointless second crossfade over identical content.
   c.setView = function (view) {
-    NavigationService.setView(view);
+    if (view === AppStateService.getView()) {
+      return;
+    }
+
+    MotionService.transition(function () {
+      NavigationService.setView(view);
+    });
   };
   c.onViewTabKeydown = function ($event) {
     var key = $event.key;

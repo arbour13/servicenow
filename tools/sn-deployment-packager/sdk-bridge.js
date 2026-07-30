@@ -3,7 +3,7 @@
    Now SDK (auth + Fluent install) and stream progress as NDJSON.
 
    Bind: 127.0.0.1:17345 only (never 0.0.0.0).
-   Start: node tools/sn-deployment-packager/sdk-bridge.js
+   Start: node "$(git rev-parse --show-toplevel)/tools/sn-deployment-packager/sdk-bridge.js"
    Endpoints:
      GET  /health
      GET  /fluent-sources?appFolder=...   prior Fluent sources for semver diff
@@ -299,7 +299,13 @@ var server = http.createServer(function (req, res) {
   var qs = new URLSearchParams(urlParts[1] || '');
 
   if (req.method === 'GET' && url === '/health') {
-    sendJson(res, 200, { ok: true, service: 'sn-deployment-packager-sdk-bridge', port: PORT });
+    sendJson(res, 200, {
+      ok: true,
+      service: 'sn-deployment-packager-sdk-bridge',
+      port: PORT,
+      suiteRoot: ROOT,
+      bridgeScript: path.join(__dirname, 'sdk-bridge.js'),
+    });
     return;
   }
 

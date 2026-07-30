@@ -54,7 +54,7 @@
           <div class="film" ng-repeat="phase in methodology.phases track by phase.id" ng-show="$index === c.phaseIndexInMethodology(methodology)">
             <div class="fcard" ng-repeat="subPhase in phase.subPhases track by subPhase.id"
               ng-class="{on: subPhase.id === c.subPhaseId, stub: !c.hasContent(subPhase)}"
-              style="--pc: {{c.phaseColor($parent.$index)}};" role="button" tabindex="0" ng-click="c.openSubPhase(subPhase.id)"
+              style="--pc: {{c.phaseColor($parent.$index)}}; --i: {{$index}};" role="button" tabindex="0" ng-click="c.openSubPhase(subPhase.id)"
               ng-keydown="c.onFilmstripCardKeydown($event, subPhase)">
               <div class="fcard-head">
                 <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"

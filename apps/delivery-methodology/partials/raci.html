@@ -47,7 +47,7 @@
         </div>
 
         <div id="dm-raci-panel-grid" role="tabpanel" aria-labelledby="dm-raci-tab-grid"
-          ng-if="c.raciMode === 'grid'">
+          ng-class="{'rg-roles-shown': c.showAllRoles}" ng-if="c.raciMode === 'grid'">
           <div class="rg-controls">
             <div class="rg-pfilters">
               <button type="button" class="rg-pchip" ng-class="{on: c.activePhases[phase.id]}"

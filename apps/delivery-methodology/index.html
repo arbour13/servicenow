@@ -24,11 +24,18 @@
   </script>
   <!-- Dev-harness fonts only - matches the standalone prototype so the preview renders in Montserrat /
      IBM Plex Mono rather than a fallback. The deployed Service Portal widget inherits type from the
-     portal theme (per ServiceNow/CLAUDE.md styling notes), so these CDN links do NOT ship. -->
+     portal theme (per ServiceNow/CLAUDE.md styling notes), so these CDN links do NOT ship.
+     display=swap (not =optional): optional gives the font ~100ms to arrive, then commits to the
+     fallback for the WHOLE page load if it misses that window - on a cold cache (hard refresh)
+     it reliably misses, so the page rendered in a more condensed fallback font until the next
+     load, while a warm cache hit the window and rendered in Montserrat - the same page looking
+     measurably different depending on cache state. swap always ends up in Montserrat; the
+     trade-off is a brief visible font swap on a cold load, which is preferable here since this is
+     dev-preview only and the shipped SN widget doesn't use these fonts at all. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=optional"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/app.css?v=20260728au">
 </head>
@@ -46,6 +53,7 @@
 <script src="js/lib/url-policy.js"></script>
 <script src="js/data/seed.js"></script>
 <script src="js/services/theme.service.js"></script>
+  <script src="js/services/motion.service.js"></script>
   <script src="js/services/data.service.js"></script>
   <script src="js/services/methodology-domain.service.js"></script>
   <script src="js/services/app-state.service.js"></script>

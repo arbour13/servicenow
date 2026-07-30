@@ -562,9 +562,9 @@
     <span class="bridge-dot" id="bridgeDot" data-state="checking" aria-hidden="true"></span>
     <span class="bridge-label" id="bridgeStatusLabel">SDK bridge: checking…</span>
     <button type="button" class="action-btn secondary bridge-btn" id="bridgeCheckBtn" data-tip="Ping the local SDK bridge again">Check again</button>
-    <button type="button" class="action-btn secondary bridge-btn" id="bridgeCopyCmdBtn" data-tip="Copy: node tools/sn-deployment-packager/sdk-bridge.js">Copy start command</button>
+    <button type="button" class="action-btn secondary bridge-btn" id="bridgeCopyCmdBtn" data-tip="Copy an absolute-path bridge start command (works from any directory in the repo)">Copy start command</button>
   </div>
-  <p class="field-hint" style="margin-top:10px;margin-bottom:0;">The browser cannot start Node. If the bridge is offline, run <code>node tools/sn-deployment-packager/sdk-bridge.js</code> from the repo root, then click Check again. Credentials sync to the bridge automatically after Connect when the bridge is online.</p>
+  <p class="field-hint" style="margin-top:10px;margin-bottom:0;">The browser cannot start Node. If the bridge is offline, click <strong>Copy start command</strong>, paste it in a terminal (any folder inside this git repo is fine), then click Check again. Credentials sync to the bridge automatically after Connect when the bridge is online.</p>
 </div>
 
 <div class="panel" id="overridesSection" style="display:none;">

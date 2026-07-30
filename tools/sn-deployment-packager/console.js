@@ -383,7 +383,7 @@
   // Localhost sdk-bridge.js (Now SDK auth/deploy handoff). Polled continuously; the browser cannot
   // start it — the status panel shows online/offline and offers Check again + a copyable start command.
   var SDK_BRIDGE = 'http://127.0.0.1:17345';
-  var SDK_BRIDGE_START_CMD = 'node tools/sn-deployment-packager/sdk-bridge.js';
+  var BRIDGE_CMD_CACHE_KEY = 'snDeployConsole_bridgeCmd';
   var sdkBridgeUp = false;
   var sdkSyncedAlias = '';
   var sdkBridgePollTimer = null;
@@ -905,7 +905,7 @@
     if (deploySdkBtn) {
       deploySdkBtn.disabled = !canDeploy;
       setTip(deploySdkBtnTip, !sdkBridgeUp
-        ? 'Start the SDK bridge: ' + SDK_BRIDGE_START_CMD
+        ? 'Start the SDK bridge: ' + bridgeStartCommand()
         : (!sessionConnected
           ? 'Connect to the instance first'
           : (!credsReady
@@ -924,14 +924,68 @@
     updateSdkBridgeButtons();
   }
 
+  function shellQuote(value) {
+    var text = String(value || '');
+    if (!/[\s'"\\$`!]/.test(text)) { return text; }
+    return '\'' + text.replace(/'/g, '\'\\\'\'') + '\'';
+  }
+
+  function bridgeScriptPathFromPage() {
+    try {
+      var bridgeUrl = new URL('sdk-bridge.js', window.location.href);
+      if (bridgeUrl.protocol === 'file:') {
+        return decodeURIComponent(bridgeUrl.pathname);
+      }
+      var scriptPath = decodeURIComponent(bridgeUrl.pathname);
+      if (/^\/Users\/.+\/sdk-bridge\.js$/.test(scriptPath) || /^\/home\/.+\/sdk-bridge\.js$/.test(scriptPath)) {
+        return scriptPath;
+      }
+      var marker = '/tools/sn-deployment-packager/sdk-bridge.js';
+      var markerAt = scriptPath.indexOf(marker);
+      if (markerAt > 0) {
+        var repoPrefix = scriptPath.slice(0, markerAt);
+        if (repoPrefix.indexOf('/Documents/') === 0) {
+          return '~' + repoPrefix + marker;
+        }
+        return repoPrefix + marker;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function cacheBridgeStartCommand(scriptPath) {
+    if (!scriptPath) { return; }
+    try {
+      localStorage.setItem(BRIDGE_CMD_CACHE_KEY, 'node ' + shellQuote(scriptPath));
+    } catch (e) {}
+  }
+
+  function loadCachedBridgeStartCommand() {
+    try { return localStorage.getItem(BRIDGE_CMD_CACHE_KEY) || ''; } catch (e) { return ''; }
+  }
+
+  // Absolute path to sdk-bridge.js so the command works from any shell cwd (the old relative path
+  // only worked when the terminal was already at the repo root). Prefer a path learned from a
+  // prior /health response, then the page URL (file:// or path-style http URLs), then git.
+  function bridgeStartCommand() {
+    var cached = loadCachedBridgeStartCommand();
+    if (cached) { return cached; }
+    var fromPage = bridgeScriptPathFromPage();
+    if (fromPage) {
+      return 'node ' + shellQuote(fromPage);
+    }
+    return 'node "$(git rev-parse --show-toplevel)/tools/sn-deployment-packager/sdk-bridge.js"';
+  }
+
   function pollSdkBridge(opts) {
     opts = opts || {};
     if (opts.manual) { setBridgeUi('checking', 'SDK bridge: checking…'); }
     fetch(SDK_BRIDGE + '/health', { method: 'GET' }).then(function (r) {
       return r.ok ? r.json() : Promise.reject();
-    }).then(function () {
+    }).then(function (data) {
       var wasUp = sdkBridgeUp;
       sdkBridgeUp = true;
+      if (data && data.bridgeScript) { cacheBridgeStartCommand(data.bridgeScript); }
       refreshBridgeLabel();
       updateSdkBridgeButtons();
       // Auto-sync when the bridge comes back while a Connect session is already live.
@@ -951,7 +1005,7 @@
   }
 
   function copyBridgeStartCommand() {
-    var cmd = SDK_BRIDGE_START_CMD;
+    var cmd = bridgeStartCommand();
     function flashCopied() {
       if (!bridgeCopyCmdBtn) { return; }
       var prev = bridgeCopyCmdBtn.textContent;

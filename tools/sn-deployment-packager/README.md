@@ -26,7 +26,7 @@ panel’s credentials with the Now SDK and streams install progress:
 
 ```bash
 # From the suite root (keep this terminal open while using the console)
-node tools/sn-deployment-packager/sdk-bridge.js
+node "$(git rev-parse --show-toplevel)/tools/sn-deployment-packager/sdk-bridge.js"
 ```
 
 Then in the console (for an app with Connect enabled, e.g. Delivery Methodology):

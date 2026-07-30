@@ -7,11 +7,11 @@
 angular.module('deliveryMethodology').controller('DmMethodologyController', [
   '$rootScope', '$scope', '$timeout', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'WhatsNewService',
   'ReferenceService', 'IconService', 'JargonService', 'TipService', 'ContentEditService', 'StructureEditService',
-  'RaciGridService', 'UrlPolicyService', 'SearchService',
+  'RaciGridService', 'UrlPolicyService', 'SearchService', 'MotionService',
   function (
     $rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService,
     ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService,
-    RaciGridService, UrlPolicyService, SearchService
+    RaciGridService, UrlPolicyService, SearchService, MotionService
   ) {
   'use strict';
   var c = this;
@@ -234,12 +234,24 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   syncAll();
   AppStateService.subscribe($rootScope, $scope, syncAll);
 
+  // Is the panel far enough down that selecting a sub-phase would change only off-screen content?
+  // Measured BEFORE the swap, because the answer decides which of two mutually exclusive motions
+  // runs (see openPanelContent) - and the panel's top edge is set by the chrome above it, which
+  // the swap does not move, so a pre-measurement stays valid.
+  function panelNeedsReveal() {
+    var panel = document.querySelector('.panel');
+
+    if (!panel) {
+      return false;
+    }
+
+    var top = panel.getBoundingClientRect().top;
+    return !(top >= 0 && top < window.innerHeight * 0.5);
+  }
+
   // Picking a phase station or filmstrip card swaps the detail panel, but that panel starts below
   // the fold on a normal desktop viewport (measured: panel top ~942px against a 720px viewport,
-  // with the About intro and roadmap above it), so the click appeared to do nothing. Bring the
-  // panel to the reader instead - but ONLY when it is actually out of view, so a click on an
-  // already-visible panel never yanks the page under them. $timeout waits for the panel to
-  // re-render with the new sub-phase before measuring it.
+  // with the About intro and roadmap above it), so the click appeared to do nothing.
   function revealPanel() {
     $timeout(function () {
       var panel = document.querySelector('.panel');
@@ -248,28 +260,76 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
         return;
       }
 
-      var rect = panel.getBoundingClientRect();
-      var alreadyComfortablyVisible = rect.top >= 0 && rect.top < window.innerHeight * 0.5;
-
-      if (alreadyComfortablyVisible) {
-        return;
-      }
-
-      var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       panel.scrollIntoView({
-        behavior: reduceMotion ? 'auto' : 'smooth',
+        behavior: MotionService.prefersReducedMotion() ? 'auto' : 'smooth',
         block: 'start'
       });
     }, 0);
   }
 
+  // Exactly ONE of the two motions runs per selection, never both: a View Transition crossfades a
+  // before/after snapshot of the page, so running it while a smooth scroll is mid-flight would
+  // crossfade two different scroll positions and read as a slide. When the panel is off-screen the
+  // scroll IS the continuity cue (it shows you where the content went), so the crossfade is
+  // redundant; when the panel is already in view there is no scroll, and the crossfade is the only
+  // thing signalling that the content underneath changed.
+  function openPanelContent(applyNavigation) {
+    if (panelNeedsReveal()) {
+      applyNavigation();
+      revealPanel();
+      return false;
+    }
+
+    MotionService.transition(applyNavigation);
+    return true;
+  }
+
+  // Replays the filmstrip's stagger. Needed because every phase's strip stays mounted and is only
+  // ng-show/ng-hidden (the template keeps them all built on purpose), so the cards are never
+  // recreated - and, verified empirically, a display:none → visible flip does NOT restart their
+  // CSS animation the way creating the element would. Re-running the existing animation objects is
+  // cleaner than the usual remove-class/force-reflow/re-add-class trick and needs no extra class.
+  function restageFilmstrip() {
+    if (MotionService.prefersReducedMotion()) {
+      return;
+    }
+
+    $timeout(function () {
+      var cards = document.querySelectorAll('.methodology-chrome:not(.ng-hide) .film:not(.ng-hide) .fcard');
+      var index;
+
+      for (index = 0; index < cards.length; index++) {
+        if (typeof cards[index].getAnimations !== 'function') {
+          return;
+        }
+
+        cards[index].getAnimations().forEach(function (animation) {
+          if (animation.animationName === 'dmCardIn') {
+            animation.cancel();
+            animation.play();
+          }
+        });
+      }
+    }, 0);
+  }
+
+  // Only selectPhase swaps which SET of cards is on screen (openSubPhase just moves the .on
+  // marker), so the restage belongs here alone - and only on the scroll path, since the crossfade
+  // path already animates the card set changing as part of the whole-page transition. One motion
+  // per interaction, same either/or rule openPanelContent uses for scroll vs crossfade.
   c.selectPhase = function (phaseIndex) {
-    NavigationService.selectPhase(phaseIndex);
-    revealPanel();
+    var crossfaded = openPanelContent(function () {
+      NavigationService.selectPhase(phaseIndex);
+    });
+
+    if (!crossfaded) {
+      restageFilmstrip();
+    }
   };
   c.openSubPhase = function (subPhaseId) {
-    NavigationService.openSubPhase(subPhaseId);
-    revealPanel();
+    openPanelContent(function () {
+      NavigationService.openSubPhase(subPhaseId);
+    });
   };
   c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
     NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);
