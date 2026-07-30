@@ -534,6 +534,7 @@
     }
     task.jobAids.push({
       id: IdSeqService.next('jobAid'),
+      label: '',
       url: '',
       roles: []
     });

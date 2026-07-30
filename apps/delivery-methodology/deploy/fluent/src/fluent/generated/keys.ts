@@ -69,6 +69,10 @@ declare global {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e83d4fdd023d4fdd033d4fdd"
                     }
+                    "MotionService": {
+                        table: "sp_angular_provider"
+                        id: "a4b5c6d7e823fc597523fc597623fc59"
+                    }
                     "DataService": {
                         table: "sp_angular_provider"
                         id: "a4b5c6d7e8b8715401b8715402b87154"

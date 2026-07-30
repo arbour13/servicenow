@@ -19,7 +19,14 @@
     return date.getFullYear() + '-' + monthPart + '-' + dayPart;
   })();
 
+  // How many already-read entries the view keeps below the unread ones. Unread-only left the page
+  // nearly blank in normal use (once you have caught up there is by definition nothing to show),
+  // and it also made a change you had just opened impossible to find again. Capped rather than
+  // unbounded because this list only grows as the methodology is edited over time.
+  var READ_HISTORY_LIMIT = 20;
+
   var whatsNew = [];
+  var whatsNewRead = [];
   var seenMap = {};
 
   function readLocalSeen() {
@@ -126,26 +133,38 @@
 
   function refresh(methodologies) {
     var items = [];
+    var readItems = [];
     (methodologies || []).forEach(function (methodology) {
       (methodology.phases || []).forEach(function (phase, phaseIndex) {
         (phase.subPhases || []).forEach(function (subPhase) {
-          unreadEntries(subPhase).forEach(function (entry) {
-            items.push({
+          (subPhase.changelog || []).forEach(function (entry) {
+            var item = {
               methodology: methodology,
               phase: phase,
               phaseIndex: phaseIndex,
               subPhase: subPhase,
               entry: entry,
               color: MethodologyDomainService.phaseColor(phaseIndex)
-            });
+            };
+
+            if (entry.read) {
+              readItems.push(item);
+            } else {
+              items.push(item);
+            }
           });
         });
       });
     });
-    items.sort(function (left, right) {
+
+    function newestFirst(left, right) {
       return Date.parse(right.entry.ts) - Date.parse(left.entry.ts);
-    });
+    }
+
+    items.sort(newestFirst);
+    readItems.sort(newestFirst);
     whatsNew = items;
+    whatsNewRead = readItems.slice(0, READ_HISTORY_LIMIT);
     return whatsNew;
   }
 
@@ -179,7 +198,8 @@
 
   function readState() {
     return {
-      whatsNew: whatsNew
+      whatsNew: whatsNew,
+      whatsNewRead: whatsNewRead
     };
   }
 

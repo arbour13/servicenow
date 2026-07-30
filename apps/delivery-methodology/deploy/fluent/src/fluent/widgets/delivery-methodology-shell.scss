@@ -20,7 +20,11 @@
   --ink-faint: #{$ink-faint};
   --text-on-primary: #{$text-on-primary};
   --paper: var(--hs-navy-0);
-  --surface: linear-gradient(160deg, var(--hs-navy-2) 0%, var(--hs-navy-0) 100%);
+  /* Ends on navy-2, NOT navy-0: navy-0 IS --paper, so the old gradient faded every card out to
+     exactly the page colour and the bottom edge of each card literally disappeared. Both stops now
+     sit above the page (1.15-1.21:1), so a card reads as a card all the way down. Light mode never
+     had this - its own --surface below ends at #f2fafc, still clear of its paper. */
+  --surface: linear-gradient(160deg, var(--hs-navy-3) 0%, var(--hs-navy-2) 100%);
   --surface-flat: var(--hs-navy-2);
   --surface-2: var(--hs-navy-3);
   --line: var(--hs-line);
@@ -75,6 +79,18 @@
   --shadow-sm: 2px 2px 4px 0 rgba(0, 0, 0, 0.15);
   --shadow: var(--shadow-sm);
   --shadow-inset: 0 4px 4px 0 rgba(0, 28, 54, 0.2) inset;
+  /* The two big elevation shadows (card hover-lift, search modal). Tokenised because they were
+     hardcoded near-black - fine over dark navy, but a heavy grey smudge on light mode's pale aqua
+     page, which re-tunes every OTHER shadow to soft navy (see --shadow-sm/-md in the light block).
+     Deliberately NOT applied to .tip/.toast: those keep a fixed dark-navy body in both themes, so
+     a dark shadow under them stays coherent. */
+  --shadow-lift: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.35);
+  /* Border on the ACTIVE view tab. Transparent in dark, where the fill alone already separates at
+     12.74:1 against the navy bar; light mode colours it because the same fill lands at just
+     1.12:1 on the white bar - the app's own --chip-on-bg note records this exact finding (a pale
+     tint tops out ~1.1:1 and the border is the real signal). */
+  --vtab-on-line: transparent;
   --focus-ring: 2px solid var(--hs-teal);
   --focus-ring-offset: 2px;
   --hs-border-tertiary: #{$ink-soft};
@@ -196,6 +212,12 @@
   --gradient-card-2: linear-gradient(135deg, #e2f6fa 0%, #bfe7ef 100%);
   --shadow-md: 0 4px 10px 0 rgba(10, 33, 54, 0.12);
   --shadow-sm: 2px 2px 8px 0 rgba(10, 33, 54, 0.08);
+  /* Same navy the other light shadows use, kept heavier than --shadow-md because these two carry
+     real elevation (a lifted card, a modal over a dimmed page) rather than surface separation. */
+  --shadow-lift: 0 10px 24px -12px rgba(10, 33, 54, 0.45);
+  --shadow-modal: 0 16px 48px rgba(10, 33, 54, 0.22);
+  /* Fill alone is 1.12:1 on the white tab bar - the border carries the selected state here. */
+  --vtab-on-line: var(--teal);
   /* Darker teal washes so mint does not glow on the pale page (matches light --teal / --hs-teal). */
   --teal-wash: rgba(0, 92, 99, 0.1);
   --teal-wash-strong: rgba(0, 92, 99, 0.16);
@@ -255,10 +277,14 @@
   gap: 14px;
   flex-wrap: wrap;
   margin-bottom: 18px;
-}.dm-widget .nav-history {
+}/* Connected pill, not two separate circles: the GROUP carries the border + radius-round shape
+   (overflow: hidden clips the two flush buttons to that shape); each button is borderless and
+   square, with a shared 1px divider between them instead of its own full border. */.dm-widget .nav-history {
   display: inline-flex;
-  gap: 2px;
   flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-round);
+  overflow: hidden;
 }.dm-widget .nav-btn {
   display: inline-flex;
   align-items: center;
@@ -266,12 +292,13 @@
   width: 34px;
   height: 34px;
   padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 50%;
+  border: none;
   background: var(--surface-flat);
   color: var(--ink-2);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
+  transition: background 0.12s, color 0.12s, opacity 0.12s;
+}.dm-widget .nav-btn + .nav-btn {
+  border-left: 1px solid var(--line);
 }.dm-widget .nav-btn svg {
   width: 16px;
   height: 16px;
@@ -307,6 +334,25 @@
   color: var(--ink-faint);
 }.dm-widget .hsearch input:focus {
   border-color: var(--teal);
+}/* Discoverability for the "/" shortcut. Right-aligned inside the field, non-interactive, and it
+   steps aside the moment the field is focused or has a query (:placeholder-shown is false once
+   the user has typed) so it never overlaps real text. */.dm-widget .hsearch-kbd {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--ink-faint);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 3px 6px;
+  transition: opacity 0.12s;
+}.dm-widget .hsearch input:focus ~ .hsearch-kbd, .dm-widget .hsearch input:not(:placeholder-shown) ~ .hsearch-kbd {
+  opacity: 0;
 }.dm-widget .hsearch input:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
@@ -326,25 +372,25 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 12vh 16px 24px;
+  padding: 8vh 24px 24px;
   background: rgba(4, 19, 31, 0.55);
   box-sizing: border-box;
 }.dm-widget .search-modal {
-  width: #{'min(560px, 100%)'};
-  max-height: #{'min(640px, 76vh)'};
+  width: #{'min(640px, 100%)'};
+  max-height: #{'min(760px, 86vh)'};
   display: flex;
   flex-direction: column;
   background: var(--surface-flat);
   border: 1px solid var(--line);
   border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-modal);
   overflow: hidden;
 }.dm-widget .search-modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--line-soft, var(--line));
   flex-shrink: 0;
 }.dm-widget .search-modal-head h2 {
@@ -372,7 +418,7 @@
   color: var(--ink);
   background: var(--surface-2);
 }.dm-widget .search-modal-body {
-  padding: 10px;
+  padding: 16px 20px;
   overflow: auto;
   flex: 1;
   min-height: 0;
@@ -382,8 +428,30 @@
   font-size: 13.5px;
   color: var(--ink-faint);
   text-align: center;
+}/* Typed result sections - same small-caps voice as the app's other section labels. */.dm-widget .sr-group {
+  margin-bottom: 16px;
+}.dm-widget .sr-group:last-child {
+  margin-bottom: 0;
+}.dm-widget .sr-group-h {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hs-teal);
+  font-weight: 600;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}.dm-widget .sr-group-n {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+}/* Glossary rows - the definition is the answer, nothing to click through to. */.dm-widget .search-result.sr-static {
+  cursor: default;
+  width: 100%;
+  text-align: left;
 }.dm-widget .search-modal-body .search-result {
-  margin-bottom: 6px;
+  margin-bottom: 12px;
   background: var(--surface-2);
   box-shadow: none;
 }.dm-widget .search-modal-body .search-result:last-child {
@@ -414,7 +482,7 @@
 }.dm-widget .theme-toggle svg {
   width: 16px;
   height: 16px;
-}/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */.dm-widget .nav-btn:focus-visible, .dm-widget .theme-toggle:focus-visible, .dm-widget .edit-pencil:focus-visible, .dm-widget .struct-icon-btn:focus-visible, .dm-widget .methodology-tab:focus-visible, .dm-widget .vtab:focus-visible, .dm-widget .loe-mode-btn:focus-visible, .dm-widget .btn:focus-visible, .dm-widget .participant-chip:focus-visible, .dm-widget .ja-rolechip:focus-visible, .dm-widget .rg-pchip:focus-visible, .dm-widget .jt-pick-btn:focus-visible, .dm-widget .raci-toggle:focus-visible, .dm-widget .reorder-btn:focus-visible, .dm-widget .field-x:focus-visible, .dm-widget .x-btn:focus-visible, .dm-widget .add-item-btn:focus-visible, .dm-widget .loe-flag-btn:focus-visible, .dm-widget .methodology-intro-toggle:focus-visible, .dm-widget .sp-brief-toggle:focus-visible, .dm-widget .loe-billable-toggle.jargon-toggle:focus-within {
+}/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */.dm-widget .nav-btn:focus-visible, .dm-widget .theme-toggle:focus-visible, .dm-widget .edit-pencil:focus-visible, .dm-widget .struct-icon-btn:focus-visible, .dm-widget .methodology-tab:focus-visible, .dm-widget .vtab:focus-visible, .dm-widget .loe-mode-btn:focus-visible, .dm-widget .btn:focus-visible, .dm-widget .participant-chip:focus-visible, .dm-widget .ja-rolechip:focus-visible, .dm-widget .rg-pchip:focus-visible, .dm-widget .rg-colnote-btn:focus-visible, .dm-widget .jt-pick-btn:focus-visible, .dm-widget .raci-toggle:focus-visible, .dm-widget .reorder-btn:focus-visible, .dm-widget .field-x:focus-visible, .dm-widget .x-btn:focus-visible, .dm-widget .add-item-btn:focus-visible, .dm-widget .loe-flag-btn:focus-visible, .dm-widget .methodology-intro-toggle:focus-visible, .dm-widget .sp-brief-toggle:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
 }.dm-widget .pagehdr-title {
@@ -479,7 +547,10 @@
 }.dm-widget .loe-billable-toggle input:checked::after {
   transform: translateX(15px);
   background: #fff;
-}.dm-widget .loe-billable-toggle input:focus-visible {
+}/* The ONLY focus treatment for these switch labels - keyboard-only (:focus-visible, which a mouse
+   click on the label never triggers) and drawn on the input itself, whose --radius-round border
+   makes the ring follow the pill. The label-level :focus-within variant was removed: it fired on
+   mouse clicks too and outlined the whole rectangular label. */.dm-widget .loe-billable-toggle input:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
 }/* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
@@ -548,6 +619,83 @@
 }.dm-widget .methodology-intro, .dm-widget .sp-brief {
   margin: 0 0 18px;
   border-bottom: 1px solid var(--line-soft);
+}/* Animated collapse for the disclosure sections (About <methodology>, sub-phase Context).
+   grid-template-rows 1fr -> 0fr animates to content height without measuring it (max-height
+   guesses jump or clip); the inner wrapper clips the shrinking row. Visibility flips AFTER the
+   close finishes (transition delay) and WITH the open (no delay) so collapsed content leaves the
+   tab order and accessibility tree, matching what the old ng-if used to do. */.dm-widget .clp {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.24s ease;
+}.dm-widget .clp-inner {
+  overflow: hidden;
+  min-height: 0;
+  visibility: visible;
+  transition: visibility 0s;
+}.dm-widget .collapsed .clp {
+  grid-template-rows: 0fr;
+}.dm-widget .collapsed .clp-inner {
+  visibility: hidden;
+  transition: visibility 0s 0.24s;
+}/* Dark/light toggle: a whole-page crossfade via the View Transitions API (triggered from
+   shell.controller.js's c.toggleTheme), not a hand-written transition on every themed property -
+   pinned to this app's other transition timing (0.24s, same as .clp above) rather than left at
+   the browser's own default so it doesn't silently drift. prefers-reduced-motion is handled in
+   JS (the controller skips the API entirely), matching how .clp handles it above - a duration
+   override here would be a no-op in that case since the API is never invoked. */.dm-widget ::view-transition-old(root), .dm-widget ::view-transition-new(root) {
+  animation-duration: 0.24s;
+}/* Modal entry (search results, confirm dialog). Both used to pop in with no transition at all,
+   which read as a jump-cut against the backdrop blur fading in behind them over 0.2s. Timing and
+   shape deliberately match .toast (opacity + a small translate, ~0.2s) so every overlay in the app
+   arrives the same way. Scale starts at 0.98 rather than something showier: these are interruptions
+   the reader did not ask to admire, and a large scale reads as a bounce. Entry only - AngularJS
+   removes these from the DOM on close with no ngAnimate leave hook available. */.dm-widget @keyframes dmOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}.dm-widget @keyframes dmDialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}.dm-widget .search-overlay, .dm-widget .msg-overlay {
+  animation: dmOverlayIn 0.16s ease-out both;
+}.dm-widget .search-modal, .dm-widget .msg-dialog {
+  animation: dmDialogIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}/* Role columns revealed by "Show all roles" fade in rather than snapping: seven columns appearing
+   at once is a large layout change, and the fade is what connects the button press to the result.
+   Applied to the cells (not a width animation on the columns) because the table lays itself out in
+   one pass - animating column width would fight the layout algorithm and reflow every row. */.dm-widget @keyframes dmColumnIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}.dm-widget .rg-roles-shown .rg-table th.rg-rolecol, .dm-widget .rg-roles-shown .rg-table tbody td:not(.tname), .dm-widget .rg-roles-shown .rg-table tfoot td:not(.tname) {
+  animation: dmColumnIn 0.22s ease-out both;
+}/* Filmstrip cards stagger in when the selected PHASE changes. Every phase's strip stays mounted
+   (ng-show, not ng-if - see the template note about not rebuilding cards), so the cards are never
+   recreated and there is no enter event to hook; this relies instead on ng-show's display:none →
+   visible flip, which restarts a CSS animation from the beginning. That also means it fires on
+   first paint for the initially-visible strip, which is wanted. Per-card delay comes from --i,
+   set on each card in the template, capped so a long phase never trails a visible ripple. */.dm-widget @keyframes dmCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}.dm-widget .film .fcard {
+  animation: dmCardIn 0.24s ease-out both;
+  animation-delay: #{'calc(#{'min(var(--i, 0), 5)'} * 0.035s)'};
+}@media (prefers-reduced-motion: reduce) {.dm-widget .search-overlay, .dm-widget .msg-overlay, .dm-widget .search-modal, .dm-widget .msg-dialog, .dm-widget .film .fcard, .dm-widget .rg-roles-shown .rg-table th.rg-rolecol, .dm-widget .rg-roles-shown .rg-table tbody td:not(.tname), .dm-widget .rg-roles-shown .rg-table tfoot td:not(.tname) {
+    animation: none;
+  }
+}@media (prefers-reduced-motion: reduce) {.dm-widget .clp, .dm-widget .clp-inner {
+    transition: none;
+  }
 }.dm-widget .methodology-intro-bar, .dm-widget .sp-brief-bar {
   display: flex;
   align-items: center;
@@ -853,7 +1001,10 @@
   flex-direction: column;
   min-height: 142px;
   background: var(--gradient-card);
-  border: 1px solid var(--card-line);
+  /* 2px on EVERY card (transparent until --card-line or --pc colours it) so .fcard.on can thicken
+     the selected ring purely by colour - swapping width per state would shift the card's content
+     by a pixel on every selection. */
+  border: 2px solid var(--card-line);
   border-radius: 12px;
   padding: 12px 15px 13px;
   cursor: pointer;
@@ -873,9 +1024,24 @@
   transition: width 0.16s;
 }.dm-widget .fcard:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
-}.dm-widget .fcard.on {
+  box-shadow: var(--shadow-lift);
+}/* Selected cue is the phase-coloured RING, not the fill. The fill alone measured 1.71:1 (dark) and
+   1.23:1 (light) against an unselected sibling - under WCAG 1.4.11's 3:1 for a meaningful state
+   indicator, and the light figure is near-imperceptible. It also inverted between themes (selected
+   reads lighter in dark, darker in light), so there was no single rule to learn. The ring fixes
+   all three at once: same structure in both themes (only --pc's value differs, per the
+   --card-line note above), and it borrows the SHAPE of the chip vocabulary (.rg-pchip.on /
+   .jt-pick-btn.on = tint + coloured border) without borrowing its teal - these cards belong to the
+   phase-colour system (MethodologyDomainService.phaseColor), so a teal ring would make the
+   selected card the one phase-coloured element not wearing its own phase colour.
+   Carried by border-colour ALONE, deliberately. An inset box-shadow was the obvious way to thicken
+   the ring, but box-shadow does not re-resolve var(--pc) when only [data-theme] flips: toggling the
+   theme left the shadow painting the PREVIOUS theme's colour until some unrelated change forced a
+   style recalc, while border-colour on the very same element updated correctly (reproduced both
+   directions in Chrome). Border width is instead carried by .fcard's base rule so every card
+   reserves the same 2px and selection never shifts layout. */.dm-widget .fcard.on {
   background: linear-gradient(135deg, #{'color-mix(in srgb, var(--pc) var(--fcard-on-mix-1), var(--card-mix-1))'} 0%, #{'color-mix(in srgb, var(--pc) var(--fcard-on-mix-2), var(--card-mix-2))'} 100%);
+  border-color: var(--pc);
 }.dm-widget .fcard.on::before {
   width: 5px;
 }.dm-widget .fcard.on .fcard-sid {
@@ -970,11 +1136,17 @@
   flex-shrink: 0;
   white-space: nowrap;
   margin-top: auto;
-}.dm-widget .panel {
+}/* The dominant surface on the Methodology view, and it used to carry no border and no shadow - a
+   flat fill just 1.149:1 off the page in dark, which is what made the view read flat. Definition
+   (border + elevation) rather than a lifted fill on purpose: raising --surface-flat would have
+   closed the gap between the tab bar and the active tab that sits on it, whereas a border and a
+   shadow cost nothing else. Both values are themed tokens, so light gets its soft navy shadow. */.dm-widget .panel {
   background: var(--navy-2);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 30px 34px;
   margin-top: 20px;
+  box-shadow: var(--shadow-md);
 }.dm-widget .crumb {
   font-size: 12px;
   color: var(--hs-teal);
@@ -1186,6 +1358,15 @@
   filter: blur(2.5px) saturate(0.7);
   pointer-events: none;
   transition: filter 0.2s, opacity 0.2s;
+}/* The four view widgets are sibling DOM trees, so Shell's .search-active can't reach them with a
+   descendant selector. Each view partial's root carries .view-root and flips .view-blur itself
+   off SearchService.isOpen() - same blur values as the chrome rules above, so the whole page
+   reads as one dimmed layer under the search overlay. */.dm-widget .view-root {
+  transition: filter 0.2s, opacity 0.2s;
+}.dm-widget .view-root.view-blur {
+  opacity: 0.5;
+  filter: blur(2.5px) saturate(0.7);
+  pointer-events: none;
 }.dm-widget .app.search-active .search-overlay {
   background: rgba(4, 19, 31, 0.28);
 }.dm-widget[data-theme="light"] .app.search-active .search-overlay {
@@ -1535,6 +1716,11 @@
   border-radius: 4px;
   padding: 0 4px;
   letter-spacing: 0.02em;
+}/* Standalone RACI letters inside prose paragraphs (JargonService.chipRaciLetters) - the colour
+   comes from the shared .rl-* rules below; mono + bold so a bare "A" reads as the letter, not a
+   typo in the sentence. */.dm-widget .rl-prose {
+  font-family: var(--font-mono);
+  font-weight: 700;
 }.dm-widget .rl-R {
   color: var(--r-r-text);
 }.dm-widget .rl-A {
@@ -2191,7 +2377,9 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  border: none;
+  /* Transparent (not none) on EVERY tab so .vtab.on only swaps the colour - a border appearing
+     just on the active tab would shift the whole row by a pixel each time you switch views. */
+  border: 1px solid transparent;
   background: none;
   color: var(--ink-2);
   font-family: var(--font-body);
@@ -2214,6 +2402,7 @@
   stroke-linejoin: round;
 }.dm-widget .vtab.on {
   background: var(--surface-2);
+  border-color: var(--vtab-on-line);
   color: var(--ink);
 }.dm-widget .vtab.on svg {
   stroke: var(--teal);
@@ -2333,14 +2522,49 @@
   border-radius: 14px;
   padding: 4px 12px;
   cursor: pointer;
-}/* Table scrolls with the page; thead sticks flush to the viewport.
-   Scroller fill matches the header/footer so the kept border-radius corners
-   read as one piece (square th cells no longer leave a paper gap in the arc).
-   No top inset / upward pad - those left the frame's left/right borders visible
-   in the gap above the stuck header. */.dm-widget .rg-scroller {
+}/* Standing state note, not an alert - deliberately quieter than .rg-focusbar (no wash, no border)
+   because it is on screen every time the grid loads, whereas the focus bar marks a thing the
+   reader just did. Same button shape so the two read as one family when both are visible. */.dm-widget .rg-colnote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 0 2px;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}.dm-widget .rg-colnote b {
+  color: var(--ink-soft);
+  font-weight: 600;
+}.dm-widget .rg-colnote-btn {
+  margin-left: auto;
+  flex: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 4px 12px;
+  cursor: pointer;
+}.dm-widget .rg-colnote-btn:hover {
+  border-color: var(--teal);
+}/* Bounded, self-scrolling panel - both axes scroll INSIDE this box, thead sticks to the top of
+   this box (not the page). CSS can't split the two: setting overflow-x forces overflow-y to also
+   become a scroll container (CSS Overflow §3), which detaches position: sticky from the page
+   viewport - a bare overflow-x: auto with an unbounded height leaves the sticky header inert
+   (verified: it neither pins to the page nor to the box once that promotion kicks in). Giving the
+   box its own max-height + overflow makes that promotion the intended behavior instead of a bug,
+   and is what actually lets narrow viewports reach the later role columns - .taskcol/.tname's
+   position: sticky; left: 0 only does anything with real horizontal scroll present.
+   Scroller fill matches the header/footer so the kept border-radius corners read as one piece
+   (square th cells no longer leave a paper gap in the arc). No top inset / upward pad - those
+   left the frame's left/right borders visible in the gap above the stuck header. */.dm-widget .rg-scroller {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-2);
+  max-height: 70vh;
+  overflow: auto;
 }.dm-widget .rg-table tfoot tr:last-child td:first-child {
   border-bottom-left-radius: 11px;
 }.dm-widget .rg-table tfoot tr:last-child td:last-child {
@@ -2455,8 +2679,6 @@
   font-size: 12.5px;
   background: var(--paper);
   color: var(--ink);
-}.dm-widget .rg-table tr.taskrow:hover td {
-  background: var(--surface-flat);
 }.dm-widget .rg-table td.tname {
   position: sticky;
   left: 0;
@@ -2625,6 +2847,30 @@
 }.dm-widget .whatsnew-item:hover {
   border-left-color: var(--hs-mint);
   filter: brightness(1.08);
+}.dm-widget .wn-group {
+  margin-bottom: 26px;
+}.dm-widget .wn-group:last-child {
+  margin-bottom: 0;
+}.dm-widget .wn-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--teal);
+  background: var(--teal-wash);
+  border-radius: 20px;
+  padding: 1px 8px;
+  margin-left: 6px;
+}/* Read history sits visibly below unread: same card, muted accent rail and softened text, so it
+   reads as reference material rather than as something still demanding attention. */.dm-widget .wn-group-read .whatsnew-item {
+  border-left-color: var(--line);
+  opacity: 0.72;
+}.dm-widget .wn-group-read .whatsnew-item:hover {
+  border-left-color: var(--teal);
+  opacity: 1;
+}.dm-widget .wn-caughtup {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  color: var(--ink-faint);
 }.dm-widget .whatsnew-item .wn-top {
   display: flex;
   align-items: baseline;
@@ -2684,10 +2930,14 @@
 }.dm-widget .search-result .sr-snip {
   font-size: 13.5px;
   color: var(--ink-soft);
-}.dm-widget .refdoc {
-  max-width: 860px;
-}.dm-widget .ref-sec {
+}/* Reference used to run its own narrower column (860px) inside the shared .app (1120px) - visibly
+   narrower than RACI's ~1038px table, so switching tabs made the page jump width. One shared
+   width now (just .app's, no local override); readability is preserved at the PROSE level
+   instead (.ref-sec p below), not by capping the whole view - the RACI-card row and Job Aids
+   index are structural, not running text, and have no reason to be narrower than the page. */.dm-widget .ref-sec {
   margin-bottom: 34px;
+}.dm-widget .ref-sec p {
+  max-width: 72ch;
 }.dm-widget .ref-h {
   font-size: 17px;
   font-weight: 700;
@@ -2841,6 +3091,17 @@
   text-align: left;
 }.dm-widget .ref-aid-crumb:hover {
   text-decoration: underline;
+}.dm-widget .ref-aid-group {
+  margin: 0 0 20px;
+}.dm-widget .ref-aid-group:last-child {
+  margin-bottom: 0;
+}/* Same small-caps voice as h4.sec so phase groupings read as section labels, not content. */.dm-widget .ref-aid-group-h {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hs-teal);
+  margin: 0 0 8px;
+  font-weight: 600;
 }.dm-widget .ref-aid-scope {
   font-size: 11.5px;
   color: var(--ink-faint);

@@ -1,18 +1,28 @@
 api.controller = function (
     $rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService,
-    JargonService, TipService, IconService, UrlPolicyService
+    JargonService, TipService, IconService, UrlPolicyService, SearchService
   ) {
   'use strict';
   var c = this;
 
+  // Drives this widget's own .view-blur while the Shell's search overlay is open - Shell's
+  // .search-active class can't reach a sibling widget's DOM (see CLAUDE.md's multi-widget note).
+  c.searchOpen = SearchService.isOpen;
   AppStateService.bindActiveView(c, 'reference');
   TipService.bind(c);
   IconService.bind(c);
   UrlPolicyService.bind(c);
 
-  c.showJargon = false;
+  // Shares the one JargonService flag with the Methodology view's copy of this control - see that
+  // controller's note; getterSetter avoids a per-controller mirror going stale.
+  c.jargonModel = function (value) {
+    if (arguments.length) {
+      JargonService.setShowJargon(value);
+    }
+    return JargonService.getShowJargon();
+  };
   c.jargonHtml = function (text) {
-    return JargonService.jargonHtml(text, c.showJargon);
+    return JargonService.jargonHtml(text, JargonService.getShowJargon());
   };
   c.sectionParagraphs = function (section) {
     var body = section && section.body != null ? String(section.body) : '';
@@ -44,7 +54,9 @@ api.controller = function (
     c.loading = appState.loading;
   }
   function syncJobAids() {
-    c.jobAids = ReferenceService.readState().jobAids;
+    var referenceState = ReferenceService.readState();
+    c.jobAids = referenceState.jobAids;
+    c.jobAidGroups = referenceState.jobAidGroups;
   }
   function syncAll() {
     syncAppState();

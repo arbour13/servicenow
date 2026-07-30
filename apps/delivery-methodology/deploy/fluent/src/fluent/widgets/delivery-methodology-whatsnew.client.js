@@ -1,7 +1,10 @@
-api.controller = function ($rootScope, $scope, AppStateService, NavigationService, WhatsNewService) {
+api.controller = function ($rootScope, $scope, AppStateService, NavigationService, WhatsNewService, SearchService) {
   'use strict';
   var c = this;
 
+  // Drives this widget's own .view-blur while the Shell's search overlay is open - Shell's
+  // .search-active class can't reach a sibling widget's DOM (see CLAUDE.md's multi-widget note).
+  c.searchOpen = SearchService.isOpen;
   AppStateService.bindActiveView(c, 'whatsnew');
   WhatsNewService.bindFormatters(c);
 
@@ -15,7 +18,9 @@ api.controller = function ($rootScope, $scope, AppStateService, NavigationServic
     c.loading = appState.loading;
   }
   function syncWhatsNew() {
-    c.whatsNew = WhatsNewService.readState().whatsNew;
+    var whatsNewState = WhatsNewService.readState();
+    c.whatsNew = whatsNewState.whatsNew;
+    c.whatsNewRead = whatsNewState.whatsNewRead;
   }
   function syncAll() {
     syncAppState();

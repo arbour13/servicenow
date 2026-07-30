@@ -46,16 +46,27 @@
                   <button type="button" class="search-modal-close" ng-click="c.clearSearch()"
                     aria-label="Close search">&times;</button>
             </div>
-            <div class="search-modal-body" role="listbox">
+            <div class="search-modal-body">
               <p class="hsearch-empty" ng-if="(c.searchQuery || '').trim().length < 2">Type at least two characters.</p>
-              <p class="hsearch-empty" ng-if="(c.searchQuery || '').trim().length >= 2 && !c.searchResultsList.length">No
+              <p class="hsearch-empty" ng-if="(c.searchQuery || '').trim().length >= 2 && !c.searchResultCount">No
                 matches.</p>
-              <button type="button" class="search-result" role="option" ng-repeat="result in c.searchResultsList"
-                ng-click="c.pickSearchResult(result)">
-                <div class="sr-loc">{{result.methodology.name}} &rsaquo; {{result.phase.name}} &rsaquo; {{result.subPhase.sid}}</div>
-                <div class="sr-title">{{result.subPhase.name}}</div>
-                <div class="sr-snip" ng-bind-html="result.snippetHtml"></div>
-              </button>
+              <!-- Results sectioned by content type (SearchService groups). Glossary rows are
+                 informational - the definition IS the answer, there is nowhere to jump - so they
+                 render as plain rows, not buttons. -->
+              <div class="sr-group" ng-repeat="group in c.searchResultGroups track by group.kind">
+                <h3 class="sr-group-h">{{group.label}} <span class="sr-group-n">{{group.results.length}}</span></h3>
+                <button type="button" class="search-result" ng-if="group.kind !== 'glossary'"
+                  ng-repeat="result in group.results" ng-click="c.pickSearchResult(result)">
+                  <div class="sr-loc" ng-if="result.loc">{{result.loc}}</div>
+                  <div class="sr-title">{{result.title}}</div>
+                  <div class="sr-snip" ng-bind-html="result.snippetHtml"></div>
+                </button>
+                <div class="search-result sr-static" ng-if="group.kind === 'glossary'"
+                  ng-repeat="result in group.results">
+                  <div class="sr-title">{{result.title}}</div>
+                  <div class="sr-snip" ng-bind-html="result.snippetHtml"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -67,23 +78,27 @@
               <div class="views" role="tablist" ng-keydown="c.onViewTabKeydown($event)">
                 <button type="button" class="vtab" id="dm-tab-methodology" role="tab"
                   aria-selected="{{c.view === 'methodology'}}" aria-controls="dm-panel-methodology"
+                  aria-label="Methodology" data-tip="Methodology"
                   tabindex="{{c.view === 'methodology' ? 0 : -1}}"
                   ng-class="{on: c.view === 'methodology'}"
                   ng-click="c.setView('methodology')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2" ng-bind-html="c.icon('pulse')"></svg><span>Methodology</span></button>
                 <button type="button" class="vtab" id="dm-tab-raci" role="tab"
                   aria-selected="{{c.view === 'raci'}}" aria-controls="dm-panel-raci"
+                  aria-label="RACI" data-tip="RACI"
                   tabindex="{{c.view === 'raci' ? 0 : -1}}"
                   ng-class="{on: c.view === 'raci'}" ng-click="c.setView('raci')"><svg
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ng-bind-html="c.icon('grid')"></svg><span>RACI</span></button>
                 <button type="button" class="vtab" id="dm-tab-reference" role="tab"
                   aria-selected="{{c.view === 'reference'}}" aria-controls="dm-panel-reference"
+                  aria-label="Reference" data-tip="Reference"
                   tabindex="{{c.view === 'reference' ? 0 : -1}}"
                   ng-class="{on: c.view === 'reference'}"
                   ng-click="c.setView('reference')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('book')"></svg><span>Reference</span></button>
                 <button type="button" class="vtab" id="dm-tab-whatsnew" role="tab" ng-if="c.anyUnread()"
                   aria-selected="{{c.view === 'whatsnew'}}" aria-controls="dm-panel-whatsnew"
+                  aria-label="What's New" data-tip="What's New"
                   tabindex="{{c.view === 'whatsnew' ? 0 : -1}}"
                   ng-class="{on: c.view === 'whatsnew'}"
                   ng-click="c.setView('whatsnew')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -107,6 +122,10 @@
                   <input type="text" placeholder="Search…" autocomplete="off" ng-model="c.searchQuery"
                     ng-change="c.runSearch()" ng-keydown="c.searchKeydown($event)" aria-autocomplete="list"
                     aria-controls="dm-search-modal" aria-expanded="{{c.searchOpen()}}">
+                  <!-- Hides once the field has focus or content: the hint has done its job by then,
+                     and it would otherwise sit on top of what you are typing. aria-hidden - the
+                     shortcut is a convenience, not the only way in. -->
+                  <kbd class="hsearch-kbd" aria-hidden="true">/</kbd>
                 </div>
                 <button type="button" class="theme-toggle" ng-click="c.toggleTheme()" aria-pressed="{{c.theme === 'dark'}}"
                   aria-label="Toggle light/dark mode" data-tip="Toggle light/dark mode">

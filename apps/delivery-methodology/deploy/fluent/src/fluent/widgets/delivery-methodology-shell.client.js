@@ -2,7 +2,7 @@ api.controller = function (
     $rootScope, $scope, DataService, ThemeService, MessagingService, TipService,
     AppStateService, MethodologyDomainService, NavigationService, SearchService,
     WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService,
-    IconService
+    IconService, MotionService
   ) {
   'use strict';
   var c = this;
@@ -14,9 +14,17 @@ api.controller = function (
     ThemeService.stampWidgets();
   }
   syncTheme();
+
+  // Cross-fades the whole page between themes rather than hand-writing a transition on every
+  // themed property: the naive approach (a blanket `* { transition: background-color …, color … }`
+  // while toggling) loses to any element that already declares its OWN `transition` for something
+  // else (.fcard's hover-lift, for instance) - the two don't merge, whichever rule wins takes the
+  // property outright - so some elements would snap while others crossfade. See MotionService.
   c.toggleTheme = function () {
-    ThemeService.toggleApp();
-    syncTheme();
+    MotionService.transition(function () {
+      ThemeService.toggleApp();
+      syncTheme();
+    });
   };
 
   // Editor/admin roles set data.canEdit in the widget server script. Local harness has no server
@@ -52,8 +60,18 @@ api.controller = function (
       hasContent: MethodologyDomainService.hasContent
     };
   }
+  // RaciGridService has no $rootScope of its own to broadcast from (same reasoning as
+  // WhatsNewService/ReferenceService below), so this nudge is required - not optional - whenever
+  // Shell triggers a refresh as a SIDE EFFECT of navigation (switching methodology, view tabs,
+  // back/forward) rather than as a direct user action inside the RACI widget itself. Without it,
+  // the RACI controller's own c.activePhases/c.raciGrid keep showing whatever was live at the
+  // LAST broadcast: ensureActivePhases() resets the phase-active map here against the new
+  // methodology's phase ids, but the RACI widget - a separate always-mounted scope - never hears
+  // about that reset, so its phase chips still reference the OLD methodology's phase ids (all
+  // read as off) while the grid itself renders from data actually already switched over.
   function refreshRaciGrid() {
     RaciGridService.refresh(raciGridContext());
+    $rootScope.$broadcast('dm-state');
   }
   function refreshWhatsNew(serverSeen) {
     WhatsNewService.hydrateSeen(c.methodologies, serverSeen);
@@ -83,7 +101,8 @@ api.controller = function (
   }
   function syncSearch() {
     var state = SearchService.readState();
-    c.searchResultsList = state.searchResultsList;
+    c.searchResultGroups = state.searchResultGroups;
+    c.searchResultCount = state.searchResultCount;
     c.searchQuery = state.searchQuery;
   }
   function syncAll() {
@@ -149,8 +168,19 @@ api.controller = function (
   c.goForward = function () {
     NavigationService.goForward();
   };
+  // Each view is its own always-mounted widget gated by ng-if, so switching tabs replaces the
+  // whole page body with no element left over to transition - crossfade the snapshots instead.
+  // Guard reads AppStateService rather than the mirrored c.view: the mirror only catches up on the
+  // next dm-state broadcast, so back-to-back clicks (or a double-click) could both pass a stale
+  // check and fire a pointless second crossfade over identical content.
   c.setView = function (view) {
-    NavigationService.setView(view);
+    if (view === AppStateService.getView()) {
+      return;
+    }
+
+    MotionService.transition(function () {
+      NavigationService.setView(view);
+    });
   };
   c.onViewTabKeydown = function ($event) {
     var key = $event.key;
@@ -197,7 +227,8 @@ api.controller = function (
   };
 
   c.searchQuery = '';
-  c.searchResultsList = [];
+  c.searchResultGroups = [];
+  c.searchResultCount = 0;
   c.searchOpen = function () {
     return SearchService.isOpen() || !!(c.searchQuery || '').trim();
   };
@@ -209,16 +240,66 @@ api.controller = function (
       }
     }
   };
+
+  // "/" focuses search from anywhere - the one shortcut worth having in a reference tool people
+  // read more than they operate. Ignored while typing (any field, or a contenteditable) so it can
+  // never swallow a literal slash mid-edit, and ignored with a modifier held so it does not
+  // shadow browser/OS chords. Listener is document-level, so it unbinds on $destroy like the
+  // dm-modal directive's does.
+  function onGlobalKeydown(event) {
+    if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) {
+      return;
+    }
+
+    var target = event.target;
+    var tagName = target && target.tagName;
+
+    if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || (target && target.isContentEditable)) {
+      return;
+    }
+
+    var searchInput = document.querySelector('.hsearch input');
+
+    if (!searchInput) {
+      return;
+    }
+
+    event.preventDefault();
+    searchInput.focus();
+    searchInput.select();
+  }
+
+  document.addEventListener('keydown', onGlobalKeydown);
+  $scope.$on('$destroy', function () {
+    document.removeEventListener('keydown', onGlobalKeydown);
+  });
   c.clearSearch = function () {
     SearchService.clear();
     syncSearch();
   };
+  // Per-kind landing: job aids anchor to their task row; Reference sections switch the view
+  // (they have no sub-phase to jump to); glossary rows are informational and never reach here
+  // (rendered as non-buttons). Everything else opens its sub-phase. jumpTo clears the search
+  // overlay itself (NavigationService.clearSearchOverlay); the reference path clears explicitly.
   c.pickSearchResult = function (result) {
+    if (result.kind === 'reference') {
+      c.clearSearch();
+      c.setView('reference');
+      return;
+    }
+    if (result.kind === 'jobaid') {
+      c.jumpTo(result.subPhase.id, result.methodology.id, 'task:' + result.task.id);
+      return;
+    }
     c.jumpTo(result.subPhase.id, result.methodology.id);
   };
   c.runSearch = function () {
     SearchService.setQuery(c.searchQuery);
-    SearchService.run(c.methodologies, {
+    SearchService.run({
+      methodologies: c.methodologies,
+      jargon: AppStateService.getJargon(),
+      referenceSections: AppStateService.getReferenceSections()
+    }, {
       isEditing: function () {
         return ContentEditService.isEditing() || StructureEditService.isEditing();
       }

@@ -1,9 +1,12 @@
 api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, RaciGridService, TipService,
-    IconService) {
+    IconService, SearchService) {
   'use strict';
   var c = this;
 
   c.hoverColumnRoleId = null;
+  // Drives this widget's own .view-blur while the Shell's search overlay is open - Shell's
+  // .search-active class can't reach a sibling widget's DOM (see CLAUDE.md's multi-widget note).
+  c.searchOpen = SearchService.isOpen;
   AppStateService.bindActiveView(c, 'raci');
   TipService.bind(c);
   IconService.bind(c);
@@ -40,6 +43,7 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
     c.activePhases = state.activePhases;
     c.gridFocusRoleId = state.gridFocusRoleId;
     c.byRoleFocusRoleId = state.byRoleFocusRoleId;
+    c.showAllRoles = state.showAllRoles;
     c.raciGrid = state.raciGrid;
   }
   function syncAll() {
@@ -68,6 +72,10 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
   };
   c.clearRaciFocus = function () {
     RaciGridService.clearFocus(raciGridContext());
+    syncRaciGrid();
+  };
+  c.toggleShowAllRoles = function () {
+    RaciGridService.toggleShowAllRoles(raciGridContext());
     syncRaciGrid();
   };
   c.setRaciMode = function (mode) {

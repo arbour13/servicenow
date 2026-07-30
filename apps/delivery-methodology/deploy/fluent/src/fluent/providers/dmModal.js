@@ -1,10 +1,40 @@
 ['$timeout', function ($timeout) {
+  // Background-scroll lock, shared across every dm-modal instance (search overlay, confirm
+  // dialog) via a module-level counter rather than a per-instance flag - if a second modal ever
+  // opens while one is already up, the lock must survive the first one closing until the LAST
+  // one does. Counts down under the same guarantee $destroy already gives keydown/focus cleanup.
+  var openCount = 0;
+
+  function lockScroll() {
+    openCount = openCount + 1;
+    if (openCount === 1) {
+      // Both elements, not body alone: the page's actual scrolling box is whichever of the two
+      // ends up with the propagated overflow (CSS root-viewport propagation moves body's
+      // overflow onto the initial containing block only when html's own computed overflow is
+      // 'visible' - true here, but locking both sidesteps that propagation rule entirely rather
+      // than depending on it, and covers the case where a future html-level rule sets its own
+      // overflow and breaks the propagation this depended on).
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function unlockScroll() {
+    openCount = Math.max(0, openCount - 1);
+    if (openCount === 0) {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+  }
+
   return {
     restrict: 'A',
     link: function (scope, element, attrs) {
       var root = element[0];
       var lastFocus = document.activeElement;
       var skipFocus = attrs.dmModalNofocus != null;
+
+      lockScroll();
 
       if (!skipFocus) {
         $timeout(function () {
@@ -57,6 +87,7 @@
       document.addEventListener('keydown', onKeydown);
 
       scope.$on('$destroy', function () {
+        unlockScroll();
         document.removeEventListener('keydown', onKeydown);
         if (lastFocus && lastFocus.focus) {
           lastFocus.focus();

@@ -17,13 +17,29 @@
     I: '#bdc2cb'
   };
 
+  /* A role is "minor" when it carries a RACI letter on fewer than this share of the currently
+     visible tasks, and the grid hides its column until the reader asks for it. Measured against
+     the real methodology: four roles sit at 91-99% of tasks and the other seven at 1-9%, so over
+     half the grid's width was rendering dashes. The gap between those two clusters is wide enough
+     that anything from ~0.10 to ~0.85 splits them identically - 0.10 is chosen as the conservative
+     end of that range, so a role has to be genuinely peripheral to drop out.
+     Deliberately a SHARE, not a fixed count: roleTaskCounts is computed over the active phase
+     filters only, so filtering down to one phase re-evaluates which roles are peripheral there
+     rather than judging them against the whole engagement. No role is ever unreachable - By Role
+     mode still lists every role, and the toggle reveals the hidden columns in place. */
+  var MINOR_ROLE_SHARE = 0.1;
+
   var raciMode = 'grid';
   var activePhases = null;
   var gridFocusRoleId = null;
   var byRoleFocusRoleId = null;
+  var showAllRoles = false;
   var raciGrid = {
     roleIds: [],
+    visibleRoleIds: [],
+    minorRoleIds: [],
     roleCounts: {},
+    roleTaskCounts: {},
     groups: [],
     byRoleGroups: []
   };
@@ -34,6 +50,7 @@
       activePhases: activePhases,
       gridFocusRoleId: gridFocusRoleId,
       byRoleFocusRoleId: byRoleFocusRoleId,
+      showAllRoles: showAllRoles,
       raciGrid: raciGrid
     };
   }
@@ -99,7 +116,10 @@
     if (!methodology || !sortJobTitleIds || !hasContent) {
       raciGrid = {
         roleIds: [],
+        visibleRoleIds: [],
+        minorRoleIds: [],
         roleCounts: {},
+        roleTaskCounts: {},
         groups: [],
         byRoleGroups: []
       };
@@ -132,7 +152,14 @@
       byRoleFocusRoleId = roleIds[0] || null;
     }
 
+    // roleCounts sums RACI LETTERS (a task can give one role both A and R) and is what the column
+    // header / totals row show. roleTaskCounts counts DISTINCT TASKS and is what the minor-role
+    // test uses - "on 9% of tasks" is the honest statement, where a letter sum would overstate a
+    // role that doubles up. Both are gated by the same active-phase + hasContent filters as the
+    // rows below, so every figure describes exactly what is on screen.
     var roleCounts = {};
+    var roleTaskCounts = {};
+    var visibleTaskTotal = 0;
     methodology.phases.forEach(function (phase) {
       if (!activePhases[phase.id]) {
         return;
@@ -142,11 +169,25 @@
           return;
         }
         (subPhase.tasks || []).forEach(function (task) {
+          visibleTaskTotal = visibleTaskTotal + 1;
           Object.keys(task.raci || {}).forEach(function (roleId) {
             roleCounts[roleId] = (roleCounts[roleId] || 0) + task.raci[roleId].length;
+            roleTaskCounts[roleId] = (roleTaskCounts[roleId] || 0) + 1;
           });
         });
       });
+    });
+
+    var minorRoleIds = roleIds.filter(function (roleId) {
+      return (roleTaskCounts[roleId] || 0) < visibleTaskTotal * MINOR_ROLE_SHARE;
+    });
+    var visibleRoleIds = roleIds.filter(function (roleId) {
+      if (showAllRoles || minorRoleIds.indexOf(roleId) < 0) {
+        return true;
+      }
+      // A focused role always keeps its column - focusing a minor role from By Role and coming
+      // back to Grid must not hide the very column being focused.
+      return gridFocusRoleId === roleId;
     });
 
     var groups = [];
@@ -195,7 +236,13 @@
 
     raciGrid = {
       roleIds: roleIds,
+      visibleRoleIds: visibleRoleIds,
+      minorRoleIds: minorRoleIds,
+      // Actual columns withheld right now - NOT minorRoleIds.length, which overstates by one
+      // whenever a focused minor role is being kept visible.
+      hiddenRoleCount: roleIds.length - visibleRoleIds.length,
       roleCounts: roleCounts,
+      roleTaskCounts: roleTaskCounts,
       groups: groups,
       byRoleGroups: byRoleGroups
     };
@@ -219,6 +266,11 @@
 
   function clearFocus(context) {
     gridFocusRoleId = null;
+    return refresh(context);
+  }
+
+  function toggleShowAllRoles(context) {
+    showAllRoles = !showAllRoles;
     return refresh(context);
   }
 
@@ -252,6 +304,7 @@
     togglePhase: togglePhase,
     toggleColumn: toggleColumn,
     clearFocus: clearFocus,
+    toggleShowAllRoles: toggleShowAllRoles,
     setMode: setMode,
     selectByRole: selectByRole,
     bindLegend: bindLegend

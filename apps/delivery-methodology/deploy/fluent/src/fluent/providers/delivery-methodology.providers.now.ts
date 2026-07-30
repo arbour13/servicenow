@@ -7,6 +7,13 @@ export const ThemeService = SPAngularProvider({
     script: Now.include('ThemeService.js'),
 })
 
+export const MotionService = SPAngularProvider({
+    $id: Now.ID['MotionService'],
+    name: 'MotionService',
+    type: 'service',
+    script: Now.include('MotionService.js'),
+})
+
 export const DataService = SPAngularProvider({
     $id: Now.ID['DataService'],
     name: 'DataService',
