@@ -291,7 +291,7 @@
   // instead of copying the three-line blocks into every controller.
   function bindActiveView(controller, viewName) {
     controller.isActiveView = function () {
-      return !getLoading() && getView() === viewName;
+      return getView() === viewName;
     };
   }
 

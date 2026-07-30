@@ -624,7 +624,7 @@
   function wrapPartialTemplate(scopeClass, partialBody, opts) {
     opts = opts || {};
     // app--view: no top padding - Shell's .app--chrome already owns the page top gutter.
-    var panelAttrs = ' class="app app--view" ng-if="c.isActiveView()"';
+    var panelAttrs = ' class="app app--view" ng-show="c.isActiveView()"';
     if (opts.widgetId) {
       var panelId = 'dm-panel-' + opts.widgetId;
       var tabId = 'dm-tab-' + opts.widgetId;

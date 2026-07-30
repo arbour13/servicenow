@@ -90,28 +90,28 @@
 
   <div ng-controller="DmMethodologyController as c">
     <div class="app app--view" id="dm-panel-methodology" role="tabpanel" aria-labelledby="dm-tab-methodology"
-      ng-if="c.isActiveView()">
+      ng-show="c.isActiveView()">
       <div ng-include="'partials/methodology.html?v=20260728au'"></div>
     </div>
   </div>
 
   <div ng-controller="DmRaciController as c">
     <div class="app app--view" id="dm-panel-raci" role="tabpanel" aria-labelledby="dm-tab-raci"
-      ng-if="c.isActiveView()">
+      ng-show="c.isActiveView()">
       <div ng-include="'partials/raci.html?v=20260728au'"></div>
     </div>
   </div>
 
   <div ng-controller="DmReferenceController as c">
     <div class="app app--view" id="dm-panel-reference" role="tabpanel" aria-labelledby="dm-tab-reference"
-      ng-if="c.isActiveView()">
+      ng-show="c.isActiveView()">
       <div ng-include="'partials/reference.html?v=20260728au'"></div>
     </div>
   </div>
 
   <div ng-controller="DmWhatsNewController as c">
     <div class="app app--view" id="dm-panel-whatsnew" role="tabpanel" aria-labelledby="dm-tab-whatsnew"
-      ng-if="c.isActiveView()">
+      ng-show="c.isActiveView()">
       <div ng-include="'partials/whatsnew.html?v=20260728au'"></div>
     </div>
   </div>

@@ -1,5 +1,5 @@
 <div class="dm-widget">
-<div class="app app--view" ng-if="c.isActiveView()" id="dm-panel-whatsnew" role="tabpanel" aria-labelledby="dm-tab-whatsnew">
+<div class="app app--view" ng-show="c.isActiveView()" id="dm-panel-whatsnew" role="tabpanel" aria-labelledby="dm-tab-whatsnew">
         <!-- Root wrapper exists (unlike before) solely to carry .view-blur while the Shell's search
            overlay is open - this widget has no tip-delegation handlers of its own. -->
         <div class="view-root" ng-class="{'view-blur': c.searchOpen()}">

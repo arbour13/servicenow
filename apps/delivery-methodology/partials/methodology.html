@@ -6,6 +6,8 @@
         <div class="view-root" ng-class="{editing: c.editMode || c.structureEditMode, 'view-blur': c.searchOpen()}"
           ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
+        <p class="empty" ng-if="!c.loading && !c.methodologies.length">No methodology content yet. Use structure edit in the header to add a methodology.</p>
+
         <!-- One mounted methodology chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
          toggles visibility instead of destroying/rebuilding every station + film card. -->
         <div class="methodology-chrome" ng-repeat="methodology in c.methodologies track by methodology.id" ng-show="methodology.id === c.methodologyId">

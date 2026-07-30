@@ -446,9 +446,14 @@
     font-family: var(--mono); font-size: 12.5px;
   }
 
+  .deploy-modal-body {
+    padding: var(--sp-md) var(--sp-xl) var(--sp-lg);
+    display: flex; flex-direction: column; gap: var(--sp-sm);
+  }
+  .deploy-modal-body .modal-hint { margin: 0; }
   .deploy-progress-bar {
     height: 8px; border-radius: 999px; background: var(--bg);
-    overflow: hidden; margin: 12px 0 10px;
+    overflow: hidden; margin: 0;
   }
   .deploy-progress-fill {
     height: 100%; width: 0%;
@@ -457,7 +462,7 @@
   }
   .deploy-progress-log {
     max-height: 220px; overflow: auto;
-    margin: 0; padding: 10px 12px;
+    margin: 0; padding: var(--sp-sm) var(--sp-md);
     background: var(--panel-alt); border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-family: var(--mono); font-size: 12px; line-height: 1.45;
@@ -674,11 +679,13 @@
       <span id="deployModalTitle">Deploying with Now SDK</span>
       <button type="button" class="modal-close" id="deployModalCloseBtn" data-tip="Close" aria-label="Close" hidden>✕</button>
     </div>
-    <p class="modal-hint" id="deployModalStatus">Starting…</p>
-    <div class="deploy-progress-bar" aria-hidden="true">
-      <div class="deploy-progress-fill" id="deployProgressFill"></div>
+    <div class="deploy-modal-body">
+      <p class="modal-hint" id="deployModalStatus">Starting…</p>
+      <div class="deploy-progress-bar" aria-hidden="true">
+        <div class="deploy-progress-fill" id="deployProgressFill"></div>
+      </div>
+      <div class="deploy-progress-log" id="deployProgressLog"></div>
     </div>
-    <div class="deploy-progress-log" id="deployProgressLog"></div>
     <div class="modal-actions">
       <button type="button" class="modal-btn primary" id="deployModalDoneBtn" hidden>Done</button>
     </div>

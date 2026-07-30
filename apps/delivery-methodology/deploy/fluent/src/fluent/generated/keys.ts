@@ -63,7 +63,7 @@ declare global {
                     }
                     bom_json: {
                         table: 'sys_module'
-                        id: 'bf7895f974e74775bd26583802d377d6'
+                        id: '56ea1c06b89f4217b7c2deb2db8fef5c'
                     }
                     ChangelogDiffService: {
                         table: 'sp_angular_provider'
@@ -151,7 +151,7 @@ declare global {
                     }
                     package_json: {
                         table: 'sys_module'
-                        id: 'b2ca6fb32e6b42ad9796aa43257c89ab'
+                        id: '2da4a22a305945a5a098fcfb0036c76a'
                     }
                     RaciGridService: {
                         table: 'sp_angular_provider'
@@ -221,193 +221,47 @@ declare global {
                 composite: [
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '004a0b2fa3b84ccd94f9cea843d5425e'
+                        id: '015b768c50e649b290da86106086868f'
                         key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
                             sp_angular_provider: 'a4b5c6d7e83d4fdd023d4fdd033d4fdd'
                         }
                     },
                     {
-                        table: 'sys_dictionary'
-                        id: '03fc354e98f248ffac8cba471e054d66'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'parent'
-                        }
-                    },
-                    {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '04b43de2185d426da2e4718b218aac23'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8e4182670e4182671e41826'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '04db8acacfd74b7ba35740c19462c238'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '0625f0c8abae40e38eb7dd9cde067f1d'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8304eff10304eff11304eff'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '131b621c8471418d9775e7ab8c30e2ed'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e823fc597523fc597623fc59'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '138d422d913546f9a16fec67398e551c'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'raci'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '15a835a7aa5e4553bcccf83854af41c1'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8e4182670e4182671e41826'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '1691860b75e246d18b524c6e2983efd6'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'reference_section'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '1a40e07f4c9d403392f48e67290f1c3e'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'phase'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '1b19fe4364b343c882b0bfc9e2c2b97e'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'methodology'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '1cc30cb08488406ab47aae5e0fb31b3d'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '20899c95718e438b9fb3bb67416969a9'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8498b43c3498b43c4498b43'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '219e7724f55440178867f1e9f7af3983'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '23588a122e9740dbb67871ca8c313aff'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '25658ba1b98441c7b0d7493f800be917'
+                        id: '02aba32dc43f4017a95b5b6dc8f63838'
                         key: {
                             sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8498b43c3498b43c4498b43'
+                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '25dad733e52b4563917731c206fa759d'
+                        id: '030c5b2e7d864700a7dc3aa253cfcf2c'
                         key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
-                        }
-                    },
-                    {
-                        table: 'sys_choice_set'
-                        id: '265d67e96f8046bb9cf444a7c5fb3a22'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '26d6c354f5fd43e4a5d43d17f9d6065d'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
                             sp_angular_provider: 'a4b5c6d7e8b8715401b8715402b87154'
                         }
                     },
                     {
-                        table: 'sys_choice'
-                        id: '26e653a25c3741cb8fea3e440b2e7448'
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '03498a67eeed49a98d8518ba8948d6a2'
                         key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'job_aid_role'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '29cefc07bdbc4b75802c860c8d6d4c56'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'job_aid'
-                            language: 'en'
-                            dependent_value: 'NULL'
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '2bc713867b8844d9879ffc1a9c3aad2c'
+                        id: '0357345dc68a4de09f6cb40f44190e8b'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e87b8295c07b8295c17b8295'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '05468a548c7a49b39fa43e777a5751f1'
                         key: {
                             sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
                             sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
@@ -415,264 +269,81 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '2e4227fc9d6a4a30be4c9bf4fcd261d4'
+                        id: '0661a14e9ae54b20a950a860b69f4263'
                         key: {
                             sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8084b3e27084b3e28084b3e'
-                        }
-                    },
-                    {
-                        table: 'sys_dictionary'
-                        id: '3070f9108ad44c30b64114cac72a3594'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'name'
-                        }
-                    },
-                    {
-                        table: 'sys_dictionary'
-                        id: '317714233a3545f687770904c859bbdf'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'content'
-                        }
-                    },
-                    {
-                        table: 'sys_dictionary'
-                        id: '318b433b36974a538a7bc7b476ea52f8'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'order'
-                        }
-                    },
-                    {
-                        table: 'ua_table_licensing_config'
-                        id: '3237f130e4b74073837ebe3f48fe9d8a'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '3962d9b3c5024e6484851473bd92c9fa'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '39f4dc679316499fa74a07b0adaae242'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'deliverable'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '3a3bc64ee5f541a1830fa6239c95f714'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'task'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '3ccbecf22bae40d2b13e07a79627795e'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
                             sp_angular_provider: 'a4b5c6d7e8d1f419dad1f419dbd1f419'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '40e10973a7724c3b8b1d1b2178e1ef7e'
+                        id: '0891d48149fc47d4842cbee98825585f'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '08be4d4c86b541bea94025fd3bbd55d3'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'sub_phase'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '0b5687b78da34f23a21354f6ea794a1f'
                         key: {
                             sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8498b43c3498b43c4498b43'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '40ee1d3e38af404d96e84f6f4d4cb0a0'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8304eff10304eff11304eff'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '41dec9e8d2f04927ba49fbdd629dccba'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
                             sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '42ec11c9ef97481390cfc15e10b25c99'
+                        id: '0c09830768554989a92b70aa38033b23'
                         key: {
                             sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8ba87332eba87332fba8733'
+                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '43de67f7cf2e4f98b44ea92c9353be4b'
+                        id: '0e62ee90135e48f0a6d739b8725f740f'
                         key: {
                             sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8d1f419dad1f419dbd1f419'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '4634e423db6e49ae81f9c9f5633210d9'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '48d73389e6304688a608da93bb828564'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'level_of_effort'
-                            language: 'en'
-                            dependent_value: 'NULL'
+                            sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
                         }
                     },
                     {
                         table: 'sys_db_object'
-                        id: '48f7cbef7bb94fb29e1d6cc670c693ff'
+                        id: '0fae07f0fd71480193692bcbb0a41fcb'
                         key: {
                             name: 'x_dlvry_method_content'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '49e596c0021745a895ff3fa655087a7b'
+                        id: '102c18b44d574bb690af5c78ca16706e'
                         key: {
                             sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
+                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '4a0cc710e27d40a9a3397c903bf4a49d'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '541dd9477efd4ad28caf97e4f5ca0683'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8ba87332eba87332fba8733'
-                        }
-                    },
-                    {
-                        table: 'sys_documentation'
-                        id: '56955df5185b4f7db0f9c03ad5ffd206'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'parent'
-                            language: 'en'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '582140c8c13944b4b3a4abf5e6c71891'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '58b33b5f05b9475d8b79bd0974f37008'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8304eff10304eff11304eff'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '59470719d8624d588b0af2a14de4bce4'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
-                        }
-                    },
-                    {
-                        table: 'sys_documentation'
-                        id: '5c0cfeca6ef647c6bdec5b514c54df2b'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'name'
-                            language: 'en'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '5ce02b9d50fe42c9aa169d62363fc027'
+                        id: '10dcb5f265d4499387a2642851125279'
                         key: {
                             sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8a6d8b29aa6d8b29ba6d8b2'
+                            sp_angular_provider: 'a4b5c6d7e8d1f419dad1f419dbd1f419'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '5d4781057e5543469803b421e6a91207'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '5e33ebc11c194978b1fa32207d552bd3'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '625f4f836ec74b159f6c7a7195257cba'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e87b8295c07b8295c17b8295'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '62939832639d4e16901ff9bdcde9a3b5'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8ba87332eba87332fba8733'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '674b24e378aa4aac84fdde43eab22463'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '68f92cbf41454b849bb1ac3b684966d3'
+                        id: '138d6edc3eaf49408adba53e3ddaece1'
                         key: {
                             sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
                             sp_angular_provider: 'a4b5c6d7e87b8295c07b8295c17b8295'
@@ -680,26 +351,7 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '69dd88c9586e45d8a46ff3143c392bab'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '6b48d7ab28d441a6bbaa03abe2a609bd'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'comment'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '6bfa16e875d84cd0bf2838b91f4751c2'
+                        id: '143842d5e6e74b58a45c13ab747e9c2c'
                         key: {
                             sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
                             sp_angular_provider: 'a4b5c6d7e823fc597523fc597623fc59'
@@ -707,167 +359,7 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '6c7af10658a74178988eb6e912f80363'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8304eff10304eff11304eff'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '6f9dc0942b074d89b048da23843bbd6d'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8e4182670e4182671e41826'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '719a3fbe1b9949148e8d0dba4c96e7d0'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'participant'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '71ec4f33bb07442b9342b44804ed3e32'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
-                        }
-                    },
-                    {
-                        table: 'sys_documentation'
-                        id: '72e1737ce9334aa883a4d5031d511d61'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'order'
-                            language: 'en'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '74ad5a9257c548ba97ffc49856ee90e1'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8d1f419dad1f419dbd1f419'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '753d70c0d5b641ed8b06484ac57b9a0f'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e83d4fdd023d4fdd033d4fdd'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '780bddcf028f4aea998de69d6f2684eb'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8b8715401b8715402b87154'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '785b73dd3db1484bbea436610cce4d8f'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '7ee35afabc1c4eaa8b0dc73309384f94'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '7f1f1a3e4a144d5a9584cee99fdbe6e9'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8b8715401b8715402b87154'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '80b3bd247c0e4c5297681ade6f07fdad'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '84561434be344ff0885a82c48395fdf0'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '851abaa888f54e989a1966bffdc256f6'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '8884c8feab6e4e5b98e61cb203d42985'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8084b3e27084b3e28084b3e'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '8a5a7da5d1c14400bdeb3550f83bd0fb'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '8efe2ceab0734c0aafbd5821977cebce'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: '9170e0c8b78e4ea6ad9a4692b7f7367e'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'glossary_term'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'sys_documentation'
-                        id: '94268a44c5024d008f7c076a67728e7e'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            language: 'en'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '94b15a5f10ff4eb28788cfcef586e220'
+                        id: '1502ae50e71c4ae28761b7fab8738a11'
                         key: {
                             sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
                             sp_angular_provider: 'a4b5c6d7e8084b3e27084b3e28084b3e'
@@ -875,31 +367,24 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '94fef589f3d548af8dcc4ef9c4759878'
+                        id: '177b63f66a1d4cd4b408dea78a66970f'
                         key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
                         }
                     },
                     {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '99377e8adc2e43b88f731e764efbbffb'
+                        table: 'sys_documentation'
+                        id: '178e634fc222480da78220216cd408a8'
                         key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: '9b2679badaf24e2aa4ff790ab70332e8'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
+                            name: 'x_dlvry_method_content'
+                            element: 'NULL'
+                            language: 'en'
                         }
                     },
                     {
                         table: 'sys_choice'
-                        id: '9d8830b778534b248eaa6ac682e7be8d'
+                        id: '18349fb4b1d24afab67be2cab87f0ebd'
                         key: {
                             name: 'x_dlvry_method_content'
                             element: 'type'
@@ -910,39 +395,500 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a05c1293475549888968359a42dfd06f'
+                        id: '1d3ad8786aad4319994f8129779cca6f'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '1de09087079e47b5bcf67b196132cbe3'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'job_aid'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '1f4821ab471949feb328f1a43a7a8477'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'glossary_term'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '24593dc86cc84e0a9ee31768169118fe'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8084b3e27084b3e28084b3e'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '258c38e25b044a689043eb4951c367e1'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8b8715401b8715402b87154'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '30a347e486974274bf7254cc91256f1a'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8b8715401b8715402b87154'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '3231609dd04c4f5f8e1dbba6ee942ca9'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '3238cc0bb19e4ef0aacbf10f660c10d3'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e87b8295c07b8295c17b8295'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: '37b517347f4f4f168c95e593e8a49107'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'name'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '38445971190d4356aaf6a03bda01f582'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '3c2d4a7f7951408190cce604d1c07947'
                         key: {
                             sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8304eff10304eff11304eff'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '3dda00d143ef4ea6974aaae114870b8a'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'level_of_effort'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '3e0121f7014747918e8a9ed8459c14c9'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'participant'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: '3e23ab37603743a6a2dc251b4b1f9ffe'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'order'
+                        }
+                    },
+                    {
+                        table: 'sys_documentation'
+                        id: '3f6086b1db344a9dbee7c2a1fc313e67'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'order'
+                            language: 'en'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '3fb62bf73a2e4df3acbcba6bfa362e70'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '40645247ec904a62979ae21c309143de'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8498b43c3498b43c4498b43'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '459008a292064799957aff819874b5a3'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'task'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '46fc23feff82488ca21861b8a91add2d'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8084b3e27084b3e28084b3e'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '478396442c7e40a1a1ac6aa283edced5'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e823fc597523fc597623fc59'
+                        }
+                    },
+                    {
+                        table: 'sys_documentation'
+                        id: '482d9139e34347d2bd74fbc918a411ec'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'content'
+                            language: 'en'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '48a8568a33c24f3aa6d8639eee47a0aa'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '493227ac29cc4a898d660e9bf0b5f32a'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '49645bd975f744219c025a6221243958'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8ba87332eba87332fba8733'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '4af6f5046c6f49d0bc5bfe1529208b3b'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'raci'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '4f3dcc0f606c449cbc641bdec2bea1db'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '53c18299d4084e0bb0a52e243064daae'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'job_aid_role'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '557d089ad71c428e9a05898dd6e69408'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '558a2113bab24784ba6efd969abf01a9'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '56707d7ab072460d9b1ab6cbab0c4ca3'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '5674804add2f4e45977f93c3edeb316c'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8304eff10304eff11304eff'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: '5c0cd6b16ef94f2387015086f0f401be'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '65677b09fe7242dbb626e765fb9082c0'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '65cf885001b34a898367cb8813559a67'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e83d4fdd023d4fdd033d4fdd'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '666403d2ff334ff8b11f8fcf539a3fba'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '687769e8cee04f72ba948b5bc0bbc3cd'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'deliverable'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '6a004c3ac3fa4aec98b70977ebcd1323'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8ba87332eba87332fba8733'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '6aae6dd2798847278db3c623e94d3a66'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '6fddc7d053a440658d8e2fe0e2c21b75'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '7028ff1aab0345878321d2b022802372'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8498b43c3498b43c4498b43'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '72535ee4a7aa4d82a5b30a7041718743'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '7278a80b3f044180b113cfe7131213a5'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '738627af3970455fafaa493d3978194b'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '73fa33f826994809aaa58b7f5c198ada'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8304eff10304eff11304eff'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: '74c38885d09a42c99c000e89a7984020'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'parent'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '74db40eeb85c4c9d8a0737c6716d6f3b'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8498b43c3498b43c4498b43'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '751278d7369d42d9b29a762d8f24affe'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8ba87332eba87332fba8733'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '754bece6daa040ec8fb63fadceeb6375'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8b8715401b8715402b87154'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '7932da1b0f8b488a9d4393768e4c0ba5'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8d1f419dad1f419dbd1f419'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '79930ba73df545dc96a2d46b828b90c7'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '7cef2530fc86448bbf53de8a2e9eaa82'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '800456fac8a3485183b036677ec9008a'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '808d080ff4c0478b953b6a61acb85c93'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e823fc597523fc597623fc59'
+                        }
+                    },
+                    {
+                        table: 'sys_choice_set'
+                        id: '80f75467c97a4ebea44db44de063e1fb'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '8c2cd5762444440e80da3cb08288e5e8'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8e4182670e4182671e41826'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '8eced71004c3460a9ba1c5f6427c5952'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'input'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '8f65ee21ad0f4b15bd044e9d18d06fc1'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
                             sp_angular_provider: 'a4b5c6d7e8a6d8b29aa6d8b29ba6d8b2'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a0861272d34a4ccab65019b311a4ffca'
+                        id: '921d5a8170ef4423a94af2330f4f94b0'
                         key: {
                             sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
                             sp_angular_provider: 'a4b5c6d7e83d4fdd023d4fdd033d4fdd'
                         }
                     },
                     {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a0d6f11bf8c944449e418043d203f11c'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a2b838842180488badd274f3b0b4d19a'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8084b3e27084b3e28084b3e'
-                        }
-                    },
-                    {
                         table: 'sys_choice'
-                        id: 'a2fac78d09c3410d9b674fd3cfc08961'
+                        id: '927fa9f947894027ba953a219876c51c'
                         key: {
                             name: 'x_dlvry_method_content'
                             element: 'type'
@@ -953,34 +899,67 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a3598d8c52044331878422abb68706bf'
+                        id: '994a5670df4446a6ac48b882aaadd9f4'
                         key: {
                             sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e87b8295c07b8295c17b8295'
+                            sp_angular_provider: 'a4b5c6d7e8e4182670e4182671e41826'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a39afbc9f3dc4c64a8a8062c58b02b42'
+                        id: '99cf3299cbdc44a3898b275a9bde4716'
                         key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a4016edd8dfb47e7b7a835981405e885'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a481121df8be45bcbb1ff00b1fbf540a'
+                        id: '99f2de27c8084152b1b27f46daeb9f2b'
                         key: {
                             sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
+                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '9b9f6b8688da45978a4da44702c8752a'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8498b43c3498b43c4498b43'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: '9d921b86b578492ebb48615d475fb1e3'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e823fc597523fc597623fc59'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a0d648df207349eab60fe0f7d44281c6'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
+                        }
+                    },
+                    {
+                        table: 'sys_documentation'
+                        id: 'a210548f65c846d0bcf07acda4fe57b8'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'name'
+                            language: 'en'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a276d3f78cb54915ac66bfeac6236a81'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
                         }
                     },
                     {
@@ -1133,31 +1112,58 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a5f7197742b94fa8b10cef1dd4a1974a'
+                        id: 'a9039b44c1994dbc866e7393d0b499e9'
                         key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'a9fe121ff49f4387bb0ce08fdd4985d0'
+                        id: 'ab1b2046ea54492a925811ecc5f8ccfa'
                         key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8a6d8b29aa6d8b29ba6d8b2'
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8e4182670e4182671e41826'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: 'aba50fb7475b45a39b0e4698895845f8'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'content'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'af2f6a8cefb743bd93eca182d82be7f4'
+                        id: 'aca913e7fd6f4f58a79a19e01d028f74'
                         key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'af4246881d8f457c88d4c51295378d86'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
                             sp_angular_provider: 'a4b5c6d7e8e4182670e4182671e41826'
                         }
                     },
                     {
                         table: 'sys_choice'
-                        id: 'af7c849f24a94dd78cf65e9d785a29c2'
+                        id: 'b353f328f2484e9c9d9736aaa21fee8c'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'phase'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: 'b689bf5ec10a428e88e8b028cb645ed3'
                         key: {
                             name: 'x_dlvry_method_content'
                             element: 'type'
@@ -1168,279 +1174,37 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'b450c33e0728487e929f7e2fdd1ae724'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'b6760056e32642cfac8b69bc8e3aee66'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'b6ce45688c9d4815be019477dfb680ca'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8084b3e27084b3e28084b3e'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'b76bd1e6dcb441e7820a1e0be4227e55'
+                        id: 'b6d1d11fb39c4a1fbe1eff2506bec9b9'
                         key: {
                             sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e823fc597523fc597623fc59'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'b804b5e0cf284ad98522b24e79dde8ad'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8d1f419dad1f419dbd1f419'
-                        }
-                    },
-                    {
-                        table: 'sys_documentation'
-                        id: 'b818802efac14490921d7b59f41a3005'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'content'
-                            language: 'en'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'ba881a67a7e84bafabfb7101e2bb604c'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8f7371912f7371913f73719'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'baa04a8e07224bd3a93ad2be3a15d14a'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e83d4fdd023d4fdd033d4fdd'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'bcbdc37d9b43439b9fffbdf2f86b18c2'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'c0c0d840c89e45c7837ff16e25bc93c6'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e83d4fdd023d4fdd033d4fdd'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'c3d5651ab2744660a05d43cc1d50a307'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
                             sp_angular_provider: 'a4b5c6d7e8498b43c3498b43c4498b43'
                         }
                     },
                     {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'c5edfae123404bee89431bb56f392805'
+                        table: 'sys_choice'
+                        id: 'ba1e9240e66f491cb0cc3a8bd588dc19'
                         key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'c673fa511123432998e69b84e3f70dca'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e823fc597523fc597623fc59'
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'methodology'
+                            language: 'en'
+                            dependent_value: 'NULL'
                         }
                     },
                     {
                         table: 'sys_choice'
-                        id: 'c8c17a4b22c6477bb922b0afc09ea8c9'
+                        id: 'c32577c535034dc289f9801c5bc40482'
                         key: {
                             name: 'x_dlvry_method_content'
                             element: 'type'
-                            value: 'sub_phase'
+                            value: 'reference_section'
                             language: 'en'
                             dependent_value: 'NULL'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'c8d60e98f6a74f0ab48563aa42ebbb1d'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'c9a3788e9dce4007869669312def914e'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
-                        }
-                    },
-                    {
-                        table: 'sys_dictionary'
-                        id: 'c9de9c81172d49a8b529ce6f48fb4fbf'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'd1f36ce308124105b235d56cab6ea592'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'd301c0d1488941bb92b23cd49540678c'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8b8715401b8715402b87154'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'd89aa9ba395944b58650ad20f3357a59'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e89b846a4a9b846a4b9b846a'
-                        }
-                    },
-                    {
-                        table: 'sys_dictionary'
-                        id: 'd9e526fcb2504038a66c56fd8bc98de9'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                        }
-                    },
-                    {
-                        table: 'sys_documentation'
-                        id: 'dd756ea093714e78bd3c38350fd61bc0'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'NULL'
-                            language: 'en'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'df211540dccd42489db5449e348642b7'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e87b8295c07b8295c17b8295'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'e079fdfa343c4115b2757f3a11be665a'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
-                            sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'e0aa6861e2774aa496592b1bc1d7c036'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e87b8295c07b8295c17b8295'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'e0dafeb7e3cb43fb91d716e63ed1e8cb'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
-                            sp_angular_provider: 'a4b5c6d7e8e4182670e4182671e41826'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'e7380519794748bf8947d2f83e7891a2'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8f8019b7bf8019b7cf8019b'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'eb924ede4bac41d0abf2c3d75b12b451'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8ba87332eba87332fba8733'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'ee12b75f8a364292a1ebea7c6ddf67b7'
-                        key: {
-                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
-                            sp_angular_provider: 'a4b5c6d7e8a6d8b29aa6d8b29ba6d8b2'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'ef0db61f7b59432baf134a4d8af3debb'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'f01c25afa2df4dff9e67cab3b3decb8c'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
-                            sp_angular_provider: 'a4b5c6d7e8498b43c3498b43c4498b43'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'f3e8e5e835f048cdb74649230e15c679'
-                        key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e8b8715401b8715402b87154'
-                        }
-                    },
-                    {
-                        table: 'sys_choice'
-                        id: 'f4c3976698e740a98f731b7dcdccad1c'
-                        key: {
-                            name: 'x_dlvry_method_content'
-                            element: 'type'
-                            value: 'input'
-                            language: 'en'
-                            dependent_value: 'NULL'
-                        }
-                    },
-                    {
-                        table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'f5e08e2aa000414ebbbcb91f054b385e'
+                        id: 'c3af7f9e4aa145f988d3e3a70503fef9'
                         key: {
                             sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
                             sp_angular_provider: 'a4b5c6d7e8304eff10304eff11304eff'
@@ -1448,23 +1212,72 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'f5eb6b7f4b974628884ce61c56f68720'
+                        id: 'c3e8c24b0a6f4e17aac7020f1283812c'
                         key: {
                             sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'c47be409b8c94c2e949c1ab7aff65c0f'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8304eff10304eff11304eff'
+                        }
+                    },
+                    {
+                        table: 'sys_documentation'
+                        id: 'c5cff06457604c2daf809f0057efdb4d'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'parent'
+                            language: 'en'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'c68ea5322777464488de78ea664ea04d'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e87b8295c07b8295c17b8295'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'c6e6530893da441d8d58de99ff4b362f'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
                             sp_angular_provider: 'a4b5c6d7e8a6d8b29aa6d8b29ba6d8b2'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'f7395d4fa87f40a1a486f484c73c4a90'
+                        id: 'cb4a14ee2dee4c97b86537e8664e8f78'
                         key: {
-                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
-                            sp_angular_provider: 'a4b5c6d7e823fc597523fc597623fc59'
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e83d4fdd023d4fdd033d4fdd'
                         }
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'f93d51ab870a4d2c97a3ea071590064b'
+                        id: 'cb98e72b954047b28051c2e315d8c861'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8e4182670e4182671e41826'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'ce4c2f9188604c708749a0a400e16f11'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8d1f419dad1f419dbd1f419'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'cf7c6a0357a745f5a46e7c8688c76afa'
                         key: {
                             sp_widget: 'a4b5c6d7e85271166b5271166c527116'
                             sp_angular_provider: 'a4b5c6d7e8ba87332eba87332fba8733'
@@ -1472,10 +1285,197 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
-                        id: 'fbaeaec26ee64a33983c2e7815a35ed4'
+                        id: 'cf8cf328fddc40fd98858ae4da0076c4'
                         key: {
                             sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8b8715401b8715402b87154'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'd2426b7a37da4d85b088928420382869'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'd2677a3b0a934433b7702175be0469a7'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'd576aff1ce5140c3b748c69be693517b'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8084b3e27084b3e28084b3e'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'd64330b595f94a6b91b800e87905bea2'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e83d4fdd023d4fdd033d4fdd'
+                        }
+                    },
+                    {
+                        table: 'ua_table_licensing_config'
+                        id: 'd8f36bac778d4fcd8c1caf63a3cf160a'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'd94870b258ca4a578098e99a9752e606'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: 'dad3330c7016445bbad4163e091d30f4'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'dc4714fa18ad4e4d9a11ad7dc7c89161'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e87b8295c07b8295c17b8295'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'dc9d5a56d41b4b5e86f895f39365ee4b'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
                             sp_angular_provider: 'a4b5c6d7e8d1f419dad1f419dbd1f419'
+                        }
+                    },
+                    {
+                        table: 'sys_documentation'
+                        id: 'de310577b0d44ea59440ca5b4c23775a'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            language: 'en'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'de356482e9794bf19616b3e7eaee0a8c'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e823fc597523fc597623fc59'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'df057f18639a4c178859e1653666b75b'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8a6d8b29aa6d8b29ba6d8b2'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'e4dd4d0821c2420fa19afcae10e0a5e3'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8ba87332eba87332fba8733'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: 'e4df7205a80f43c7b5cd5834f67f373f'
+                        key: {
+                            name: 'x_dlvry_method_content'
+                            element: 'type'
+                            value: 'comment'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'e624a3414dc043c3b454c63f17555dfd'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'e6ba4ba4300f445e95f6e37f7f5ddf7f'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'e9874228a5c54de2b806462ea6a09a09'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e88562b3848562b3858562b3'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'ec29bdb3b52b41b09bbe7ede1c17c1f1'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8a6d8b29aa6d8b29ba6d8b2'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'edb2f1ac285540b48664891e72d181ab'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8084b3e27084b3e28084b3e'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'edd6f42a7c0546b2bdeeb56a6881cb53'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e83cdfcde83cdfcde93cdfcd'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'ef600d4f0327409fbb3ca4fe62cca02f'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8108a2fe7108a2fe8108a2f'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'f4c7a63d79884c049c48098e0103d41d'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'fe815e3d62d240cdb1812d233078511a'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8a6d8b29aa6d8b29ba6d8b2'
                         }
                     },
                 ]

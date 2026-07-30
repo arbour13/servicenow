@@ -1,5 +1,5 @@
 <div class="dm-widget">
-<div class="app app--view" ng-if="c.isActiveView()" id="dm-panel-methodology" role="tabpanel" aria-labelledby="dm-tab-methodology">
+<div class="app app--view" ng-show="c.isActiveView()" id="dm-panel-methodology" role="tabpanel" aria-labelledby="dm-tab-methodology">
         <!-- Own tip-delegation + editing wrapper: this is now a standalone widget, not a descendant
            of the Shell widget's .app - see ServiceNow/apps/delivery-methodology/CLAUDE.md's
            multi-widget note. ng-class="editing" replaces the old cross-widget ".editing .main"
@@ -7,6 +7,8 @@
            or the other view widgets). -->
         <div class="view-root" ng-class="{editing: c.editMode || c.structureEditMode, 'view-blur': c.searchOpen()}"
           ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
+
+        <p class="empty" ng-if="!c.loading && !c.methodologies.length">No methodology content yet. Use structure edit in the header to add a methodology.</p>
 
         <!-- One mounted methodology chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
          toggles visibility instead of destroying/rebuilding every station + film card. -->

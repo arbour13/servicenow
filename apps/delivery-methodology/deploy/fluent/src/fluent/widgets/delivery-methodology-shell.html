@@ -155,6 +155,10 @@
                   stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('pencil')"></svg>
               </button>
             </div>
+            <p class="empty" ng-if="!c.loading && !c.methodologies.length && (c.view === 'methodology' || c.view === 'raci')">
+              No methodology content is loaded yet. Editors can use the structure edit button to add a methodology.
+              This page needs all five Delivery Methodology widgets (Shell plus the four view widgets) stacked in one column — not Shell alone.
+            </p>
           </div>
 
         </div>

@@ -118,7 +118,7 @@
       // tip/toast/confirm, search, loading) - see manifest.schema.md's widgets[] doc on
       // templateFile vs templatePartial. The four view widgets' templatePartial fragments each get
       // wrapped by the packager as `<div class="app app--view" id="dm-panel-<id>" role="tabpanel"
-      // aria-labelledby="dm-tab-<id>" ng-if="c.isActiveView()">...fragment...</div>` — matching
+      // aria-labelledby="dm-tab-<id>" ng-show="c.isActiveView()">...fragment...</div>` — matching
       // the harness index.html so Shell aria-controls resolve after deploy.
       widgets: [
         {
