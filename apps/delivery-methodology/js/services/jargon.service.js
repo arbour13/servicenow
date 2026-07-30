@@ -4,6 +4,19 @@ angular.module('deliveryMethodology').factory('JargonService', ['$sce', function
 
   var glossary = {};
   var jargonCache = {};
+  // "Explain terms" is a global reading preference, not a per-view one - it used to be two
+  // unsynced local booleans (Methodology's own c.showJargon, Reference's own), so toggling it on
+  // one view silently reset on the other. One flag here, one control in Shell's header; every
+  // view controller reads getShowJargon() instead of owning its own copy.
+  var showJargon = false;
+
+  function getShowJargon() {
+    return showJargon;
+  }
+
+  function setShowJargon(value) {
+    showJargon = !!value;
+  }
 
   function escapeHtml(text) {
     var value = '';
@@ -99,6 +112,8 @@ angular.module('deliveryMethodology').factory('JargonService', ['$sce', function
 
   return {
     setGlossary: setGlossary,
-    jargonHtml: jargonHtml
+    jargonHtml: jargonHtml,
+    getShowJargon: getShowJargon,
+    setShowJargon: setShowJargon
   };
 }]);

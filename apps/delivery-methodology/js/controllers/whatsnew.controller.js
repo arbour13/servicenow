@@ -22,7 +22,9 @@ angular.module('deliveryMethodology').controller('DmWhatsNewController', [
     c.loading = appState.loading;
   }
   function syncWhatsNew() {
-    c.whatsNew = WhatsNewService.readState().whatsNew;
+    var whatsNewState = WhatsNewService.readState();
+    c.whatsNew = whatsNewState.whatsNew;
+    c.whatsNewRead = whatsNewState.whatsNewRead;
   }
   function syncAll() {
     syncAppState();

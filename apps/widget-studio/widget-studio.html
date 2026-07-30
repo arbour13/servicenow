@@ -23,7 +23,6 @@
   @keyframes dropPulse { 0%,100%{opacity:.5} 50%{opacity:.9} }
   @keyframes wsIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
   @keyframes wsFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
-  @keyframes wsLayoutReveal { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
   @keyframes wsFlash { 0%,55%{background:#fff6da} 100%{background:transparent} }
   @keyframes wsChipGrow { from{max-width:0;opacity:0} to{max-width:110px;opacity:1} }
   @keyframes wsClassChange { 0%{background:rgba(88,166,255,.45)} 100%{background:rgba(88,166,255,0)} }
@@ -4523,11 +4522,9 @@ class Component extends DCLogic {
 
   // A collapsible inspector section. Auto-hidden when its body is null/empty. `defOpen` sets the default
   // when the user hasn't toggled it yet (Attributes defaults closed; Repeat follows the repeating state).
-  // Shared open/close animation for every accordion-style disclosure in the app (inspector sections,
-  // mini-disclosures, option cards, layer-tree children): grid-template-rows 0fr<->1fr, so it animates to
-  // the CONTENT'S actual height with no fixed max-height guess. The inner wrapper needs overflow:hidden +
-  // minHeight:0 for the grid track to actually collapse to 0. Body stays mounted while closed so the close
-  // transition has something to animate away (cheap here — editor controls, not heavy data).
+  // Shared open/close animation for accordion-style disclosures outside the inspector (layer-tree
+  // children, palette groups, option cards): grid-template-rows 0fr<->1fr. Inspector flatSection
+  // toggles instantly — no height animation.
   animatedBox(open,body){ const h=React.createElement;
     return h('div',{style:{display:'grid',gridTemplateRows:open?'1fr':'0fr',transition:'grid-template-rows .18s cubic-bezier(.4,0,.2,1)'}},
       h('div',{style:{overflow:'hidden',minHeight:0}}, body));
@@ -5246,12 +5243,7 @@ class Component extends DCLogic {
     if(disp==='flex'||disp==='grid'){
       dyn.push(this.inspBand(t,'Gap', this.gapBlock(node,t)));
     }
-    // No fill-mode: 'both' would keep this element's transform animation permanently "in effect" even after
-    // it settles at transform:none, which makes it a CSS containing block for any position:fixed descendant
-    // (e.g. the Gap field's dropdown menu) — pinning that menu to this panel instead of the viewport and
-    // shoving it off-screen. Dropping fill-mode costs nothing here since both end states (opacity:1,
-    // transform:none) already match the element's un-animated defaults.
-    if(dyn.length) { els.push(h('div',{key:'dyn-'+disp,style:{animation:'wsLayoutReveal .26s cubic-bezier(.4,0,.2,1)'}}, dyn)); }
+    if(dyn.length) { els.push(h('div',{key:'dyn-'+disp}, dyn)); }
     // ---- grid-item options (when this element sits inside a grid parent) — reference: Grid child ----
     const r=this.find(node.id); const parent=r&&r.parent;
     const pgrid = parent && this.effectiveStyle(parent).display==='grid';
@@ -5351,9 +5343,9 @@ class Component extends DCLogic {
     return h('div',null,
       h('div',Object.assign({onClick:toggle},this.a11y(toggle,{label:label+(open?' section, expanded':' section, collapsed'),pressed:open}),
         {style:{position:'sticky',top:0,zIndex:3,background:t.panel2,display:'flex',alignItems:'center',gap:6,cursor:'pointer',userSelect:'none',fontSize:10.5,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:t.text,marginTop:opts.first?0:6,marginBottom:open?8:0,padding:'6px 0'}}),
-        h('span',{style:{display:'inline-flex',color:t.faint,transition:'transform .12s',transform:open?'rotate(90deg)':'none'}},this.chev('right',10)),
+        h('span',{style:{display:'inline-flex',color:t.faint,transform:open?'rotate(90deg)':'none'}},this.chev('right',10)),
         label, opts.dot||null),
-      this.animatedBox(open, body));
+      open?body:null);
   }
   // Every top-level section is independently collapsible, in a FIXED canonical order that NEVER
   // varies by what's selected — order is the map, and a map that changes can't be learned (this is

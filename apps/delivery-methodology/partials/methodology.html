@@ -162,7 +162,7 @@
             <div class="sp-header-actions">
               <label class="loe-billable-toggle jargon-toggle" ng-if="c.hasContent(c.location.subPhase)"
                 data-tip="Highlight jargon and acronyms with hover-over definitions">
-                Explain terms <input type="checkbox" ng-model="c.showJargon">
+                Explain terms <input type="checkbox" ng-model="c.jargonModel" ng-model-options="{getterSetter: true}">
               </label>
               <button type="button" class="edit-pencil" ng-if="c.canEdit" ng-click="c.enterEdit()"
                 data-tip="Edit this sub-phase" aria-label="Edit this sub-phase">

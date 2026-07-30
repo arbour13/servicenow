@@ -132,6 +132,13 @@ angular.module('deliveryMethodology').factory('SearchService', ['$sce', 'Messagi
       (methodology.phases || []).forEach(function (phase) {
         (phase.subPhases || []).forEach(function (subPhase) {
           (subPhase.changelog || []).forEach(function (entry) {
+            // Same set the What's New tab shows - a read entry doesn't exist there, so it must
+            // not surface here either (this used to search ALL changelog entries regardless of
+            // entry.read, so a since-read match would count in the search badge/results while
+            // being invisible - and unreachable - from the tab itself).
+            if (entry.read) {
+              return;
+            }
             if ((entry.text || '').toLowerCase().indexOf(query) < 0) {
               return;
             }

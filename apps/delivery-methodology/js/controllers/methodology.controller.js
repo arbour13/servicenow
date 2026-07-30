@@ -5,11 +5,11 @@
    action methods; see shell.controller.js's header comment and AppStateService's for why
    $rootScope.$on('dm-state', ...) is how this stays in sync with sibling widgets. */
 angular.module('deliveryMethodology').controller('DmMethodologyController', [
-  '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'WhatsNewService',
+  '$rootScope', '$scope', '$timeout', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'WhatsNewService',
   'ReferenceService', 'IconService', 'JargonService', 'TipService', 'ContentEditService', 'StructureEditService',
   'RaciGridService', 'UrlPolicyService', 'SearchService',
   function (
-    $rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService,
+    $rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService,
     ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService,
     RaciGridService, UrlPolicyService, SearchService
   ) {
@@ -34,9 +34,18 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
     }).join(' / ');
   };
 
-  c.showJargon = false;
+  // "Explain terms" appears on this view AND on Reference; both drive the ONE JargonService flag
+  // (each used to own a separate local boolean, so switching views silently reset the setting).
+  // getterSetter reads live from the service every digest rather than mirroring onto `c`, so the
+  // other view toggling it can never leave this checkbox stale.
+  c.jargonModel = function (value) {
+    if (arguments.length) {
+      JargonService.setShowJargon(value);
+    }
+    return JargonService.getShowJargon();
+  };
   c.jargonHtml = function (text) {
-    return JargonService.jargonHtml(text, c.showJargon);
+    return JargonService.jargonHtml(text, JargonService.getShowJargon());
   };
 
   // Methodology intro panel: expanded until the user collapses it once, then remember collapsed
@@ -225,11 +234,42 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   syncAll();
   AppStateService.subscribe($rootScope, $scope, syncAll);
 
+  // Picking a phase station or filmstrip card swaps the detail panel, but that panel starts below
+  // the fold on a normal desktop viewport (measured: panel top ~942px against a 720px viewport,
+  // with the About intro and roadmap above it), so the click appeared to do nothing. Bring the
+  // panel to the reader instead - but ONLY when it is actually out of view, so a click on an
+  // already-visible panel never yanks the page under them. $timeout waits for the panel to
+  // re-render with the new sub-phase before measuring it.
+  function revealPanel() {
+    $timeout(function () {
+      var panel = document.querySelector('.panel');
+
+      if (!panel) {
+        return;
+      }
+
+      var rect = panel.getBoundingClientRect();
+      var alreadyComfortablyVisible = rect.top >= 0 && rect.top < window.innerHeight * 0.5;
+
+      if (alreadyComfortablyVisible) {
+        return;
+      }
+
+      var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      panel.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start'
+      });
+    }, 0);
+  }
+
   c.selectPhase = function (phaseIndex) {
     NavigationService.selectPhase(phaseIndex);
+    revealPanel();
   };
   c.openSubPhase = function (subPhaseId) {
     NavigationService.openSubPhase(subPhaseId);
+    revealPanel();
   };
   c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
     NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);

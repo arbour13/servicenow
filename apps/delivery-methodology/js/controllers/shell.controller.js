@@ -226,6 +226,39 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       }
     }
   };
+
+  // "/" focuses search from anywhere - the one shortcut worth having in a reference tool people
+  // read more than they operate. Ignored while typing (any field, or a contenteditable) so it can
+  // never swallow a literal slash mid-edit, and ignored with a modifier held so it does not
+  // shadow browser/OS chords. Listener is document-level, so it unbinds on $destroy like the
+  // dm-modal directive's does.
+  function onGlobalKeydown(event) {
+    if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) {
+      return;
+    }
+
+    var target = event.target;
+    var tagName = target && target.tagName;
+
+    if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || (target && target.isContentEditable)) {
+      return;
+    }
+
+    var searchInput = document.querySelector('.hsearch input');
+
+    if (!searchInput) {
+      return;
+    }
+
+    event.preventDefault();
+    searchInput.focus();
+    searchInput.select();
+  }
+
+  document.addEventListener('keydown', onGlobalKeydown);
+  $scope.$on('$destroy', function () {
+    document.removeEventListener('keydown', onGlobalKeydown);
+  });
   c.clearSearch = function () {
     SearchService.clear();
     syncSearch();
