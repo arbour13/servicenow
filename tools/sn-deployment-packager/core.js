@@ -566,6 +566,55 @@
 
   var DEFAULT_SERVER_SCRIPT = '(function() {\n  /* No server-side data needed - this widget\'s logic lives entirely in its injected Angular services. */\n})();';
 
+  // now-sdk validates widget client_script with a regex that requires
+  // `api.controller = function(...) {` on a single line - multiline DI lists fail TS213.
+  function collapseWidgetClientScriptHeader(clientScript) {
+    var text = String(clientScript || '');
+    var marker = 'api.controller';
+    var markerIndex = text.indexOf(marker);
+
+    if (markerIndex < 0) {
+      return text;
+    }
+
+    var openParenIndex = text.indexOf('(', markerIndex);
+
+    if (openParenIndex < 0) {
+      return text;
+    }
+
+    var depth = 0;
+    var closeParenIndex = -1;
+    var index;
+
+    for (index = openParenIndex; index < text.length; index++) {
+      if (text[index] === '(') {
+        depth++;
+      } else if (text[index] === ')') {
+        depth--;
+        if (depth === 0) {
+          closeParenIndex = index;
+          break;
+        }
+      }
+    }
+
+    if (closeParenIndex < 0) {
+      return text;
+    }
+
+    var braceIndex = text.indexOf('{', closeParenIndex);
+
+    if (braceIndex < 0) {
+      return text;
+    }
+
+    var params = text.slice(openParenIndex + 1, closeParenIndex).replace(/\s+/g, ' ').trim();
+    var header = 'api.controller = function (' + params + ') {';
+
+    return header + text.slice(braceIndex + 1);
+  }
+
   // Wraps a raw view-partial fragment for a non-shell widget: the packager decides the outer
   // div and the ng-if that gates it on AppState's current view (see manifest.schema.md's
   // widgets[] doc) - the partial file itself stays the same bare fragment the harness ng-includes.
@@ -628,7 +677,7 @@
       // Legacy single-widget path - UNCHANGED behavior/shape for apps with no manifest.widgets
       // (Glide Studio, Standards).
       var controllerFn = unwrapDiArray(extractProviderBody(sources.controllerSrc, moduleName, 'controller'));
-      var clientScript = formatFn('api.controller = ' + controllerFn + ';');
+      var clientScript = collapseWidgetClientScriptHeader(formatFn('api.controller = ' + controllerFn + ';'));
       var serverScript = formatFn(sources.serverScript || DEFAULT_SERVER_SCRIPT);
       var template = buildTemplateFromSource(
         sources.indexHtml,
@@ -647,7 +696,7 @@
       var controllerSrc = widgetSources.controllerSrcs && widgetSources.controllerSrcs[w.id];
       if (controllerSrc == null) { throw new Error('No controller source provided for widget "' + w.id + '"'); }
       var widgetControllerFn = unwrapDiArray(extractProviderBody(controllerSrc, moduleName, 'controller'));
-      var widgetClientScript = formatFn('api.controller = ' + widgetControllerFn + ';');
+      var widgetClientScript = collapseWidgetClientScriptHeader(formatFn('api.controller = ' + widgetControllerFn + ';'));
 
       var widgetTemplate;
       if (w.templatePartial) {
