@@ -23,27 +23,6 @@ var PORT = 17345;
 var HOST = '127.0.0.1';
 var ROOT = path.join(__dirname, '..', '..');
 
-// Cursor (and some agent shells) inject HTTP(S)_PROXY / ALL_PROXY pointing at a short-lived
-// local sandbox proxy. If this bridge inherits those vars, now-sdk's fetch to the ServiceNow
-// instance goes through that proxy and dies with a bare "fetch failed" (CONNECT 403 or
-// ECONNREFUSED once the proxy port is gone). Strip them so auth/deploy always talk to the
-// instance directly. NO_PROXY is cleared too — it only listed localhost and would otherwise
-// still force *.service-now.com through the dead proxy.
-var PROXY_ENV_KEYS = [
-  'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'NO_PROXY',
-  'http_proxy', 'https_proxy', 'all_proxy', 'no_proxy',
-  'SOCKS_PROXY', 'SOCKS5_PROXY', 'socks_proxy', 'socks5_proxy',
-  'GIT_HTTP_PROXY', 'GIT_HTTPS_PROXY',
-];
-
-function scrubProxyEnv(base) {
-  var env = Object.assign({}, base || process.env);
-  PROXY_ENV_KEYS.forEach(function (key) { delete env[key]; });
-  return env;
-}
-
-PROXY_ENV_KEYS.forEach(function (key) { delete process.env[key]; });
-
 function corsHeaders(extra) {
   var h = {
     'Access-Control-Allow-Origin': '*',
@@ -124,7 +103,7 @@ function run(cmd, args, opts) {
   return new Promise(function (resolve, reject) {
     var child = spawn(cmd, args, {
       cwd: opts.cwd || ROOT,
-      env: scrubProxyEnv(opts.env || process.env),
+      env: opts.env || process.env,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     var stdout = '';
@@ -218,13 +197,7 @@ async function handleAuth(body, emit) {
     '--password-stdin',
   ], { cwd: cwd, stdin: password });
   if (add.code !== 0) {
-    var addOut = combinedOut(add).slice(-2000);
-    if (/fetch failed/i.test(addOut)) {
-      addOut += '\n\nHint: the bridge could not reach the instance (often a Cursor sandbox proxy '
-        + 'inherited by the bridge process, or a hibernating PDI). Restart the bridge from a '
-        + 'normal terminal, open the instance URL in a browser to wake it, then Connect again.';
-    }
-    throw new Error('now-sdk auth --add failed:\n' + addOut);
+    throw new Error('now-sdk auth --add failed:\n' + combinedOut(add).slice(-2000));
   }
 
   emit({ step: 'auth', message: 'Selecting alias "' + alias + '"…', pct: 85, ok: true });

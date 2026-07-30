@@ -78,28 +78,6 @@ function resolveServerScript(appRoot, descriptor) {
   return descriptor.serverScriptSource;
 }
 
-// Resolves `@import 'tokens'` (etc.) against the app's scss/ folder. Service Portal cannot.
-function makeScssPartialLoader(appRoot, scssFileRel) {
-  var scssDir = path.dirname(path.join(appRoot, scssFileRel));
-  return function (importPath) {
-    var cleaned = String(importPath || '').replace(/^\.\//, '').replace(/\.scss$/i, '');
-    var baseName = path.basename(cleaned);
-    var subDir = path.dirname(cleaned);
-    var searchDir = subDir === '.' ? scssDir : path.join(scssDir, subDir);
-    var candidates = [
-      path.join(searchDir, '_' + baseName + '.scss'),
-      path.join(searchDir, baseName + '.scss'),
-      path.join(searchDir, baseName),
-    ];
-    for (var index = 0; index < candidates.length; index++) {
-      if (fs.existsSync(candidates[index])) {
-        return fs.readFileSync(candidates[index], 'utf8');
-      }
-    }
-    return null;
-  };
-}
-
 function loadSources(appRoot, descriptor) {
   var providerSrcs = {};
   (descriptor.manifest.providers || []).forEach(function (p) {
@@ -113,11 +91,9 @@ function loadSources(appRoot, descriptor) {
   Object.keys(viewPartialFiles).forEach(function (name) {
     viewPartials[name] = fs.readFileSync(path.join(appRoot, viewPartialFiles[name]), 'utf8');
   });
-  var scssRel = descriptor.files.scss;
   var sources = {
-    scssSrc: fs.readFileSync(path.join(appRoot, scssRel), 'utf8'),
+    scssSrc: fs.readFileSync(path.join(appRoot, descriptor.files.scss), 'utf8'),
     sharedScss: sharedScss,
-    resolveScssPartial: makeScssPartialLoader(appRoot, scssRel),
     indexHtml: fs.readFileSync(path.join(appRoot, descriptor.files.index), 'utf8'),
     viewPartials: viewPartials,
     providerSrcs: providerSrcs,

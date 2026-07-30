@@ -151,14 +151,6 @@ host, `fs.readFileSync` in a Node host. The core never touches the filesystem or
                                          // multi-widget apps supply sources.widgets instead (below)
                                          // and omit this key entirely.
   scssSrc: '...',                       // full text of the app's authored SCSS source
-  resolveScssPartial: undefined,        // optional fn(importPath) -> partial text | null. Hosts
-                                         // MUST supply this when the app SCSS uses `@import '…'` of
-                                         // files under its own scss/ (e.g. `@import 'tokens'` →
-                                         // scss/_tokens.scss). buildRecordModel inlines those imports
-                                         // before scopeScss — Service Portal has no app include path,
-                                         // so unresolved imports leave `#{$token}` broken on-instance
-                                         // (layout CSS may still paint; colors fall through to the
-                                         // portal). build.js / console.js always pass a loader.
   sharedScss: undefined,                // optional - shared SCSS partial text (e.g. the concatenated
                                          // contents of a design-token file this app opts into via
                                          // manifest.sharedScssPartials, below). Prepended to scssSrc

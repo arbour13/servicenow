@@ -126,20 +126,6 @@
     return text.slice(fnStart, lastBracket).trim();
   }
 
-  // now-sdk's SPWidget clientScript check is a single-line regex:
-  //   /^(function|api.controller\s?=\s?function)\s?(name)?\s?\(.*\)\s?\n?{/i
-  // Its `(.*)` does NOT match newlines, so a multi-line DI param list fails TS213 even though the
-  // script is valid. Collapse the opening signature onto one line; leave the body alone.
-  function flattenClientControllerSignature(script) {
-    return String(script || '').replace(
-      /^(api\.controller\s*=\s*function)\s*\(([\s\S]*?)\)\s*\{/,
-      function (_match, head, params) {
-        var flat = String(params).replace(/\s+/g, ' ').trim();
-        return head + ' (' + flat + ') {';
-      }
-    );
-  }
-
   // Generalizes the one-off "this provider has a trailing top-level statement after its own
   // .directive()/.factory() call" quirk (e.g. Glide Studio's gs-select.directive.js registers a
   // shared document scroll listener below its directive registration). Real Angular Providers
@@ -358,39 +344,6 @@
     text = replaceFn(text, 'min', function () { return true; });
     text = replaceFn(text, 'max', function () { return true; });
     return text;
-  }
-
-  // Service Portal compiles each widget's <css> field as SCSS on the instance, but it has no
-  // access to the app's scss/ folder — so a bare `@import 'tokens';` (or any other app-local
-  // partial) fails there and every `#{$token}` stays unresolved. Colors then fall through to the
-  // portal's white/black while layout rules that don't need Sass vars still paint. Resolve every
-  // local `@import '…'` / `@import "…"` here at package time by calling loadPartial(importPath)
-  // (host supplies filesystem or fetched text). Nested imports are inlined depth-first; cycles
-  // are skipped. http(s) / protocol-relative imports are left alone.
-  function inlineScssImports(scssText, loadPartial, seen) {
-    if (typeof loadPartial !== 'function') { return String(scssText || ''); }
-    seen = seen || {};
-    return String(scssText || '').replace(
-      /@import\s+(?:url\()?\s*['"]([^'"]+)['"]\s*\)?\s*;/g,
-      function (_match, rawPath) {
-        if (/^(https?:)?\/\//i.test(rawPath) || /^[a-z]+:/i.test(rawPath)) {
-          return _match;
-        }
-        var key = String(rawPath).replace(/^\.\//, '');
-        if (seen[key]) { return ''; }
-        seen[key] = true;
-        var content = loadPartial(key);
-        if (content == null) {
-          throw new Error(
-            'Unresolved SCSS @import "' + rawPath + '" — Service Portal cannot load app-local '
-            + 'partials at runtime; the packager host must resolve this file at build time.'
-          );
-        }
-        return '/* inlined: ' + key + ' */\n'
-          + inlineScssImports(content, loadPartial, seen)
-          + '\n';
-      }
-    );
   }
 
   // Utility: pulls just the light/default palette's
@@ -665,10 +618,6 @@
     // untouched; the app's rules that reference those tokens compile against them. This is what gives
     // every widget the shared token vocabulary + portal portability. See manifest.schema.md.
     var scssSrc = (sources.sharedScss ? sources.sharedScss + '\n\n' : '') + sources.scssSrc;
-    // App-local `@import 'tokens'` (and friends) must be resolved here — SP has no scss/ include path.
-    if (typeof sources.resolveScssPartial === 'function') {
-      scssSrc = inlineScssImports(scssSrc, sources.resolveScssPartial);
-    }
     // Every widget (single or multi) shares this SAME compiled css - see manifest.schema.md's
     // widgets[] doc for why splitting per-widget SCSS isn't worth it for this suite.
     var css = sassSafeCss(scopeScss(scssSrc, '.' + manifest.widgetScopeClass));
@@ -679,7 +628,7 @@
       // Legacy single-widget path - UNCHANGED behavior/shape for apps with no manifest.widgets
       // (Glide Studio, Standards).
       var controllerFn = unwrapDiArray(extractProviderBody(sources.controllerSrc, moduleName, 'controller'));
-      var clientScript = formatFn(flattenClientControllerSignature('api.controller = ' + controllerFn + ';'));
+      var clientScript = formatFn('api.controller = ' + controllerFn + ';');
       var serverScript = formatFn(sources.serverScript || DEFAULT_SERVER_SCRIPT);
       var template = buildTemplateFromSource(
         sources.indexHtml,
@@ -698,7 +647,7 @@
       var controllerSrc = widgetSources.controllerSrcs && widgetSources.controllerSrcs[w.id];
       if (controllerSrc == null) { throw new Error('No controller source provided for widget "' + w.id + '"'); }
       var widgetControllerFn = unwrapDiArray(extractProviderBody(controllerSrc, moduleName, 'controller'));
-      var widgetClientScript = formatFn(flattenClientControllerSignature('api.controller = ' + widgetControllerFn + ';'));
+      var widgetClientScript = formatFn('api.controller = ' + widgetControllerFn + ';');
 
       var widgetTemplate;
       if (w.templatePartial) {
@@ -1181,8 +1130,7 @@
     inlineViewPartials: inlineViewPartials,
     extractAppDiv: extractAppDiv,
     // styling
-    scopeScss: scopeScss, sassSafeCss: sassSafeCss, inlineScssImports: inlineScssImports,
-    extractDefaultVariables: extractDefaultVariables,
+    scopeScss: scopeScss, sassSafeCss: sassSafeCss, extractDefaultVariables: extractDefaultVariables,
     // sys_id / scope
     stableSysId: stableSysId, deriveSysIds: deriveSysIds,
     deriveScope: deriveScope, deriveScopePrefix: deriveScopePrefix,

@@ -283,31 +283,30 @@ button {
 
 /* Constrained, centered content column. Post five-widget split there are TWO .app roots stacked
    (Shell chrome, then the active view) - full padding on both left a ~150px void under pagehdr.
-   Each modifier sets the FULL padding shorthand so SP's rem rewrite of .app never leaks a fat top
-   gutter onto .app--chrome (portal already clears header space via ThemeService). */
+   .app--chrome: top/side only. .app--view: side + bottom breathing room, no extra top. */
 .app {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 12px 40px 100px;
+  padding: 28px 40px 100px;
 }
 
 .app--chrome {
-  padding: 12px 40px 0;
+  padding-bottom: 0;
 }
 
 .app--view {
-  padding: 0 40px 100px;
+  padding-top: 0;
 }
 
 @media (max-width: 1000px) {
   .app {
-    padding: 10px 24px 70px;
+    padding: 24px 24px 70px;
   }
   .app--chrome {
-    padding: 10px 24px 0;
+    padding-bottom: 0;
   }
   .app--view {
-    padding: 0 24px 70px;
+    padding-top: 0;
   }
 }
 .pagehdr {
@@ -1599,17 +1598,6 @@ button {
   padding: 30px 34px;
   margin-top: 20px;
   box-shadow: var(--shadow-md);
-}
-
-.empty-methodologies-title {
-  margin: 0 0 10px;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.empty-methodologies .btn {
-  margin-top: 14px;
 }
 
 .crumb {

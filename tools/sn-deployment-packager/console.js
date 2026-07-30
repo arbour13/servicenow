@@ -74,78 +74,6 @@
     return descriptor.serverScriptSource;
   }
 
-  // Fetch app-local SCSS @import targets so core.inlineScssImports can resolve them (SP cannot).
-  function scssDirFromFile(scssRel) {
-    var slash = String(scssRel || '').lastIndexOf('/');
-    if (slash < 0) { return ''; }
-    return scssRel.slice(0, slash + 1);
-  }
-
-  function scssPartialCandidateUrls(root, scssRel, importPath) {
-    var cleaned = String(importPath || '').replace(/^\.\//, '').replace(/\.scss$/i, '');
-    var parts = cleaned.split('/');
-    var baseName = parts.pop();
-    var subDir = parts.length ? parts.join('/') + '/' : '';
-    var dir = root + scssDirFromFile(scssRel) + subDir;
-    return [
-      dir + '_' + baseName + '.scss',
-      dir + baseName + '.scss',
-      dir + baseName,
-    ];
-  }
-
-  function fetchFirstOk(urls) {
-    if (!urls.length) { return Promise.resolve(null); }
-    return fetchText(urls[0]).then(function (text) {
-      return text;
-    }).catch(function () {
-      return fetchFirstOk(urls.slice(1));
-    });
-  }
-
-  function loadScssPartialMap(root, scssRel, scssText) {
-    var cache = {};
-    var pending = [];
-
-    function enqueueFrom(text) {
-      var re = /@import\s+(?:url\()?\s*['"]([^'"]+)['"]\s*\)?\s*;/g;
-      var match;
-      while ((match = re.exec(text))) {
-        var rawPath = match[1];
-        if (/^(https?:)?\/\//i.test(rawPath) || /^[a-z]+:/i.test(rawPath)) { continue; }
-        var key = String(rawPath).replace(/^\.\//, '');
-        if (Object.prototype.hasOwnProperty.call(cache, key) || pending.indexOf(key) >= 0) {
-          continue;
-        }
-        pending.push(key);
-      }
-    }
-
-    enqueueFrom(scssText);
-
-    function drain() {
-      if (!pending.length) {
-        return Promise.resolve(cache);
-      }
-      var key = pending.shift();
-      return fetchFirstOk(scssPartialCandidateUrls(root, scssRel, key)).then(function (text) {
-        cache[key] = text;
-        if (text) { enqueueFrom(text); }
-        return drain();
-      });
-    }
-
-    return drain().then(function () {
-      return function resolveScssPartial(importPath) {
-        var key = String(importPath || '').replace(/^\.\//, '');
-        if (Object.prototype.hasOwnProperty.call(cache, key)) {
-          return cache[key];
-        }
-        return null;
-      };
-    });
-  }
-
   function loadSources(folder, descriptor) {
     var root = appRoot(folder);
     var providers = (descriptor.manifest.providers || []).filter(function (p) {
@@ -191,31 +119,26 @@
       var serverScript = files.serverScript
         ? resolveServerScript(root, descriptor, { contentModel: results[8], serverScript: results[9] })
         : descriptor.serverScriptSource;
-      var sharedScssText = results[4].join('\n');
-      var scssSrc = results[2];
-      return loadScssPartialMap(root, files.scss, sharedScssText + '\n' + scssSrc).then(function (resolveScssPartial) {
-        var sources = {
-          scssSrc: scssSrc,
-          sharedScss: sharedScssText,
-          resolveScssPartial: resolveScssPartial,
-          indexHtml: results[3],
-          viewPartials: viewPartials,
-          providerSrcs: providerSrcs,
-          serverScript: serverScript,
-        };
-        if (isMultiWidget) {
-          var controllerSrcs = {};
-          var templateTexts = {};
-          widgetDefs.forEach(function (w, index) {
-            controllerSrcs[w.id] = results[6][index];
-            if (results[7][index] != null) { templateTexts[w.id] = results[7][index]; }
-          });
-          sources.widgets = { controllerSrcs: controllerSrcs, templateTexts: templateTexts };
-        } else {
-          sources.controllerSrc = results[1];
-        }
-        return sources;
-      });
+      var sources = {
+        scssSrc: results[2],
+        sharedScss: results[4].join('\n'),
+        indexHtml: results[3],
+        viewPartials: viewPartials,
+        providerSrcs: providerSrcs,
+        serverScript: serverScript,
+      };
+      if (isMultiWidget) {
+        var controllerSrcs = {};
+        var templateTexts = {};
+        widgetDefs.forEach(function (w, index) {
+          controllerSrcs[w.id] = results[6][index];
+          if (results[7][index] != null) { templateTexts[w.id] = results[7][index]; }
+        });
+        sources.widgets = { controllerSrcs: controllerSrcs, templateTexts: templateTexts };
+      } else {
+        sources.controllerSrc = results[1];
+      }
+      return sources;
     });
   }
 
@@ -243,8 +166,6 @@
   var detectStatus = document.getElementById('detectStatus');
   var savedInstanceSelect = document.getElementById('savedInstanceSelect');
   var saveInstanceBtn = document.getElementById('saveInstanceBtn');
-  var renameInstanceBtn = document.getElementById('renameInstanceBtn');
-  var renameInstanceTip = document.getElementById('renameInstanceTip');
   var removeInstanceBtn = document.getElementById('removeInstanceBtn');
   var removeInstanceTip = document.getElementById('removeInstanceTip');
   var connectionHint = document.getElementById('connectionHint');
@@ -528,17 +449,6 @@
       return 'Instance';
     }
   }
-  function syncSavedInstanceActions() {
-    var hasSaved = !!savedInstanceSelect.value;
-    if (renameInstanceBtn) { renameInstanceBtn.disabled = !hasSaved; }
-    if (removeInstanceBtn) { removeInstanceBtn.disabled = !hasSaved; }
-    setTip(renameInstanceTip, hasSaved
-      ? 'Rename this saved connection'
-      : 'Choose a saved connection to rename');
-    setTip(removeInstanceTip, hasSaved
-      ? 'Remove this saved connection'
-      : 'Choose a saved connection to remove');
-  }
   function refreshSavedInstanceSelect(selectId) {
     var list = loadSavedInstances();
     var selected = selectId != null ? selectId : savedInstanceSelect.value;
@@ -550,7 +460,10 @@
     } else {
       savedInstanceSelect.value = '';
     }
-    syncSavedInstanceActions();
+    removeInstanceBtn.disabled = !savedInstanceSelect.value;
+    setTip(removeInstanceTip, savedInstanceSelect.value
+      ? 'Remove this saved connection'
+      : 'Choose a saved connection to remove');
     applyConnectionFieldLock();
   }
   function applyConnectionFieldLock() {
@@ -584,16 +497,9 @@
   //   - true for a plain confirm
   //   - null when cancelled / dismissed
   var modalResolve = null;
-  // Freeze page scroll + keep backdrop blur while either dialog overlay is open.
-  function syncModalPageLock() {
-    var dialogOpen = (modalOverlay && !modalOverlay.hidden)
-      || (deployModalOverlay && !deployModalOverlay.hidden);
-    document.documentElement.classList.toggle('modal-open', !!dialogOpen);
-  }
   function closeModal(result) {
     if (!modalResolve) { return; }
     modalOverlay.hidden = true;
-    syncModalPageLock();
     var resolve = modalResolve;
     modalResolve = null;
     document.removeEventListener('keydown', onModalKeydown, true);
@@ -640,7 +546,6 @@
         modalInput.value = '';
       }
       modalOverlay.hidden = false;
-      syncModalPageLock();
       document.addEventListener('keydown', onModalKeydown, true);
       setTimeout(function () {
         if (opts.input) { modalInput.focus(); modalInput.select(); }
@@ -657,7 +562,10 @@
 
   function onSavedInstanceSelected() {
     var id = savedInstanceSelect.value;
-    syncSavedInstanceActions();
+    removeInstanceBtn.disabled = !id;
+    setTip(removeInstanceTip, id
+      ? 'Remove this saved connection'
+      : 'Choose a saved connection to remove');
     if (!id) {
       applyInstanceFields(null);
       saveLastInstanceId('');
@@ -716,31 +624,6 @@
       applyInstanceFields(created);
       applyConnectionFieldLock();
       detectStatus.textContent = 'Saved “' + created.name + '”.';
-    });
-  }
-  function onRenameInstanceClick() {
-    var id = savedInstanceSelect.value;
-    if (!id) { return; }
-    var list = loadSavedInstances();
-    var inst = list.filter(function (i) { return i.id === id; })[0];
-    if (!inst) { return; }
-    promptModal({
-      title: 'Rename connection',
-      body: 'Choose a new display name for this saved connection.',
-      inputLabel: 'Connection name',
-      defaultValue: inst.name,
-      confirmLabel: 'Rename',
-    }).then(function (name) {
-      if (name == null) { return; }
-      name = String(name).trim();
-      if (!name || name === inst.name) { return; }
-      list = loadSavedInstances().map(function (item) {
-        if (item.id !== id) { return item; }
-        return Object.assign({}, item, { name: name });
-      });
-      persistSavedInstances(list);
-      refreshSavedInstanceSelect(id);
-      detectStatus.textContent = 'Renamed to “' + name + '”.';
     });
   }
   function onRemoveInstanceClick() {
@@ -1219,7 +1102,6 @@
     deployModalCloseBtn.hidden = true;
     deployModalDoneBtn.hidden = true;
     deployModalOverlay.hidden = false;
-    syncModalPageLock();
   }
 
   function appendDeployLog(msg, isError) {
@@ -1251,7 +1133,6 @@
   function closeDeployModal() {
     if (!deployModalFinished) { return; }
     deployModalOverlay.hidden = true;
-    syncModalPageLock();
   }
 
   // Maps a 0-100 bridge-reported pct onto a sub-range of the modal's overall bar, so auth and
@@ -1800,7 +1681,6 @@
   if (deployModalDoneBtn) { deployModalDoneBtn.addEventListener('click', closeDeployModal); }
   savedInstanceSelect.addEventListener('change', onSavedInstanceSelected);
   saveInstanceBtn.addEventListener('click', onSaveInstanceClick);
-  if (renameInstanceBtn) { renameInstanceBtn.addEventListener('click', onRenameInstanceClick); }
   removeInstanceBtn.addEventListener('click', onRemoveInstanceClick);
   modalCloseBtn.addEventListener('click', function () { closeModal(null); });
   modalCancelBtn.addEventListener('click', function () { closeModal(null); });

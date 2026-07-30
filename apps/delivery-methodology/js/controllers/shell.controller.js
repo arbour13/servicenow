@@ -27,7 +27,6 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   function syncTheme() {
     c.theme = ThemeService.readState().theme;
     ThemeService.stampWidgets();
-    ThemeService.paintPageChrome();
   }
   syncTheme();
 

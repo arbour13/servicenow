@@ -1,4 +1,9 @@
-api.controller = function ($rootScope, $scope, DataService, ThemeService, MessagingService, TipService, AppStateService, MethodologyDomainService, NavigationService, SearchService, WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService, IconService, MotionService) {
+api.controller = function (
+    $rootScope, $scope, DataService, ThemeService, MessagingService, TipService,
+    AppStateService, MethodologyDomainService, NavigationService, SearchService,
+    WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService,
+    IconService, MotionService
+  ) {
   'use strict';
   var c = this;
 
@@ -7,7 +12,6 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
   function syncTheme() {
     c.theme = ThemeService.readState().theme;
     ThemeService.stampWidgets();
-    ThemeService.paintPageChrome();
   }
   syncTheme();
 

@@ -36,10 +36,7 @@ Then in the console (for an app with Connect enabled, e.g. Delivery Methodology)
 3. **Deploy with Now SDK** — opens a progress modal, syncs Connect credentials into the SDK Keychain, rebuilds `apps/<app>/deploy/fluent/`, then runs `now-sdk build` + `now-sdk install`.
 
 The bridge listens only on `127.0.0.1:17345`. Passwords are not logged or written to disk. If the
-bridge is offline, Deploy stays disabled (hover the button for how to start it). Run it from a
-normal Terminal window (not an agent/sandbox shell): Cursor injects a short-lived `HTTPS_PROXY`
-that makes `now-sdk auth` fail with a bare `fetch failed`. The bridge now strips those proxy vars,
-but a bridge already started under the old code must be restarted.
+bridge is offline, Deploy stays disabled (hover the button for how to start it).
 
 ### Progress stream
 
