@@ -19,6 +19,8 @@
         var t = localStorage.getItem('deliveryMethodologyTheme');
         if (!t) { t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }
         document.documentElement.setAttribute('data-theme', t);
+        // Same paper hexes as ThemeService / _tokens.scss — beat first paint of a white body.
+        document.documentElement.style.backgroundColor = t === 'light' ? '#cfeef5' : '#0a2136';
       } catch (e) { }
     })();
   </script>

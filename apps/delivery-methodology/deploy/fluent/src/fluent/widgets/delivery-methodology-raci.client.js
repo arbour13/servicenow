@@ -1,5 +1,4 @@
-api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, RaciGridService, TipService,
-    IconService, SearchService) {
+api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, RaciGridService, TipService, IconService, SearchService) {
   'use strict';
   var c = this;
 

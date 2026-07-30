@@ -1,7 +1,34 @@
 /* Palette literals live in _tokens.scss as $var: value !default so a host theme (or future
    sharedScssPartials) can override at compile time. Runtime light/dark still swaps via the
-   CSS custom properties below. */
-@import 'tokens';.dm-widget {
+   CSS custom properties below. *//* inlined: tokens *//* Sass !default palette tokens for Delivery Methodology.
+   Compile-time overrides (future sharedScssPartials / host theme) can redefine these before
+   app.scss emits :root custom properties. Runtime light/dark still swaps via CSS variables. */
+
+$hs-navy-0: #0a2136 !default;
+$hs-navy-2: #0b2d45 !default;
+$hs-navy-3: #013c56 !default;
+$hs-line: rgba(197, 220, 231, 0.35) !default;
+$hs-line-soft: rgba(197, 220, 231, 0.18) !default;
+$hs-teal: #00e0ac !default;
+$ink: #ffffff !default;
+$ink-soft: #c5dce7 !default;
+$ink-faint: #7d97a8 !default;
+$text-on-primary: #0a2136 !default;
+$r-r: #01cc52 !default;
+$r-a: #e5c20b !default;
+$r-c: #3ec2f8 !default;
+$r-i: #bdc2cb !default;
+$p1: #00e0ac !default;
+$p2: #21fbc8 !default;
+$p3: #8ef1ff !default;
+$p4: #3ec2f8 !default;
+$p5: #b1f5ff !default;
+$on-accent-ink: #ffffff !default;
+$on-accent-soft: #c5dce7 !default;
+$on-accent-faint: #7d97a8 !default;
+$on-phase-ink: #06121c !default;
+$card-mix-1: #275b63 !default;
+$card-mix-2: #0d435f !default;.dm-widget {
   --hs-navy-0: #{$hs-navy-0};
   --hs-navy-2: #{$hs-navy-2};
   --hs-navy-3: #{$hs-navy-3};
@@ -253,20 +280,21 @@
   cursor: pointer;
 }/* Constrained, centered content column. Post five-widget split there are TWO .app roots stacked
    (Shell chrome, then the active view) - full padding on both left a ~150px void under pagehdr.
-   .app--chrome: top/side only. .app--view: side + bottom breathing room, no extra top. */.dm-widget .app {
+   Each modifier sets the FULL padding shorthand so SP's rem rewrite of .app never leaks a fat top
+   gutter onto .app--chrome (portal already clears header space via ThemeService). */.dm-widget .app {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 28px 40px 100px;
+  padding: 12px 40px 100px;
 }.dm-widget .app--chrome {
-  padding-bottom: 0;
+  padding: 12px 40px 0;
 }.dm-widget .app--view {
-  padding-top: 0;
+  padding: 0 40px 100px;
 }@media (max-width: 1000px) {.dm-widget .app {
-    padding: 24px 24px 70px;
+    padding: 10px 24px 70px;
   }.dm-widget .app--chrome {
-    padding-bottom: 0;
+    padding: 10px 24px 0;
   }.dm-widget .app--view {
-    padding-top: 0;
+    padding: 0 24px 70px;
   }
 }.dm-widget .pagehdr {
   margin-bottom: 22px;
@@ -1147,6 +1175,13 @@
   padding: 30px 34px;
   margin-top: 20px;
   box-shadow: var(--shadow-md);
+}.dm-widget .empty-methodologies-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}.dm-widget .empty-methodologies .btn {
+  margin-top: 14px;
 }.dm-widget .crumb {
   font-size: 12px;
   color: var(--hs-teal);

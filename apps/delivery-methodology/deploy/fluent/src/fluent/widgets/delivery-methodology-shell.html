@@ -157,6 +157,18 @@
             </div>
           </div>
 
+          <!-- Empty CTA lives in Shell (same widget as the title/pencil) so Service Portal cannot
+             insert a white instance gap between the chrome and this panel. Methodology widget still
+             owns structure-edit UI once the pencil is on. -->
+          <div class="panel empty-methodologies"
+            ng-if="!c.loading && c.view === 'methodology' && !c.methodologies.length && !c.structureEditMode">
+            <h2 class="empty-methodologies-title">No methodologies yet</h2>
+            <p class="obj faint" ng-if="c.canEdit">This instance has no Delivery Methodology content. Use Edit structure to add a methodology, then phases and sub-phases.</p>
+            <p class="obj faint" ng-if="!c.canEdit">Delivery Methodology content has not been published on this instance yet.</p>
+            <button type="button" class="btn primary" ng-if="c.canEdit && c.structureEditUiEnabled"
+              ng-click="c.toggleStructureEdit()">Edit structure</button>
+          </div>
+
         </div>
 
       </div>
