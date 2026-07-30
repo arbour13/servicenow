@@ -474,6 +474,40 @@ button {
   text-align: center;
 }
 
+/* Typed result sections - same small-caps voice as the app's other section labels. */
+.sr-group {
+  margin-bottom: 16px;
+}
+
+.sr-group:last-child {
+  margin-bottom: 0;
+}
+
+.sr-group-h {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hs-teal);
+  font-weight: 600;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.sr-group-n {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+}
+
+/* Glossary rows - the definition is the answer, nothing to click through to. */
+.search-result.sr-static {
+  cursor: default;
+  width: 100%;
+  text-align: left;
+}
+
 .search-modal-body .search-result {
   margin-bottom: 6px;
   background: var(--surface-2);
@@ -537,6 +571,7 @@ button {
 .participant-chip:focus-visible,
 .ja-rolechip:focus-visible,
 .rg-pchip:focus-visible,
+.rg-colnote-btn:focus-visible,
 .jt-pick-btn:focus-visible,
 .raci-toggle:focus-visible,
 .reorder-btn:focus-visible,
@@ -545,8 +580,7 @@ button {
 .add-item-btn:focus-visible,
 .loe-flag-btn:focus-visible,
 .methodology-intro-toggle:focus-visible,
-.sp-brief-toggle:focus-visible,
-.loe-billable-toggle.jargon-toggle:focus-within {
+.sp-brief-toggle:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
 }
@@ -634,6 +668,10 @@ button {
   background: #fff;
 }
 
+/* The ONLY focus treatment for these switch labels - keyboard-only (:focus-visible, which a mouse
+   click on the label never triggers) and drawn on the input itself, whose --radius-round border
+   makes the ring follow the pill. The label-level :focus-within variant was removed: it fired on
+   mouse clicks too and outlined the whole rectangular label. */
 .loe-billable-toggle input:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
@@ -736,6 +774,40 @@ button {
 .sp-brief {
   margin: 0 0 18px;
   border-bottom: 1px solid var(--line-soft);
+}
+
+/* Animated collapse for the disclosure sections (About <methodology>, sub-phase Context).
+   grid-template-rows 1fr -> 0fr animates to content height without measuring it (max-height
+   guesses jump or clip); the inner wrapper clips the shrinking row. Visibility flips AFTER the
+   close finishes (transition delay) and WITH the open (no delay) so collapsed content leaves the
+   tab order and accessibility tree, matching what the old ng-if used to do. */
+.clp {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.24s ease;
+}
+
+.clp-inner {
+  overflow: hidden;
+  min-height: 0;
+  visibility: visible;
+  transition: visibility 0s;
+}
+
+.collapsed .clp {
+  grid-template-rows: 0fr;
+}
+
+.collapsed .clp-inner {
+  visibility: hidden;
+  transition: visibility 0s 0.24s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clp,
+  .clp-inner {
+    transition: none;
+  }
 }
 
 .methodology-intro-bar,
@@ -1184,7 +1256,10 @@ button {
   flex-direction: column;
   min-height: 142px;
   background: var(--gradient-card);
-  border: 1px solid var(--card-line);
+  /* 2px on EVERY card (transparent until --card-line or --pc colours it) so .fcard.on can thicken
+     the selected ring purely by colour - swapping width per state would shift the card's content
+     by a pixel on every selection. */
+  border: 2px solid var(--card-line);
   border-radius: 12px;
   padding: 12px 15px 13px;
   cursor: pointer;
@@ -1211,8 +1286,24 @@ button {
   box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
 }
 
+/* Selected cue is the phase-coloured RING, not the fill. The fill alone measured 1.71:1 (dark) and
+   1.23:1 (light) against an unselected sibling - under WCAG 1.4.11's 3:1 for a meaningful state
+   indicator, and the light figure is near-imperceptible. It also inverted between themes (selected
+   reads lighter in dark, darker in light), so there was no single rule to learn. The ring fixes
+   all three at once: same structure in both themes (only --pc's value differs, per the
+   --card-line note above), and it borrows the SHAPE of the chip vocabulary (.rg-pchip.on /
+   .jt-pick-btn.on = tint + coloured border) without borrowing its teal - these cards belong to the
+   phase-colour system (MethodologyDomainService.phaseColor), so a teal ring would make the
+   selected card the one phase-coloured element not wearing its own phase colour.
+   Carried by border-colour ALONE, deliberately. An inset box-shadow was the obvious way to thicken
+   the ring, but box-shadow does not re-resolve var(--pc) when only [data-theme] flips: toggling the
+   theme left the shadow painting the PREVIOUS theme's colour until some unrelated change forced a
+   style recalc, while border-colour on the very same element updated correctly (reproduced both
+   directions in Chrome). Border width is instead carried by .fcard's base rule so every card
+   reserves the same 2px and selection never shifts layout. */
 .fcard.on {
   background: linear-gradient(135deg, color-mix(in srgb, var(--pc) var(--fcard-on-mix-1), var(--card-mix-1)) 0%, color-mix(in srgb, var(--pc) var(--fcard-on-mix-2), var(--card-mix-2)) 100%);
+  border-color: var(--pc);
 }
 
 .fcard.on::before {
@@ -1643,6 +1734,20 @@ h1.sp-title {
   filter: blur(2.5px) saturate(0.7);
   pointer-events: none;
   transition: filter 0.2s, opacity 0.2s;
+}
+
+/* The four view widgets are sibling DOM trees, so Shell's .search-active can't reach them with a
+   descendant selector. Each view partial's root carries .view-root and flips .view-blur itself
+   off SearchService.isOpen() - same blur values as the chrome rules above, so the whole page
+   reads as one dimmed layer under the search overlay. */
+.view-root {
+  transition: filter 0.2s, opacity 0.2s;
+}
+
+.view-root.view-blur {
+  opacity: 0.5;
+  filter: blur(2.5px) saturate(0.7);
+  pointer-events: none;
 }
 
 .app.search-active .search-overlay {
@@ -2129,6 +2234,14 @@ table.ttbl .jobaid {
   border-radius: 4px;
   padding: 0 4px;
   letter-spacing: 0.02em;
+}
+
+/* Standalone RACI letters inside prose paragraphs (JargonService.chipRaciLetters) - the colour
+   comes from the shared .rl-* rules below; mono + bold so a bare "A" reads as the letter, not a
+   typo in the sentence. */
+.rl-prose {
+  font-family: var(--font-mono);
+  font-weight: 700;
 }
 
 .rl-R {
@@ -3244,15 +3357,59 @@ select.edit-in option {
   cursor: pointer;
 }
 
-/* Table scrolls with the page; thead sticks flush to the viewport.
-   Scroller fill matches the header/footer so the kept border-radius corners
-   read as one piece (square th cells no longer leave a paper gap in the arc).
-   No top inset / upward pad - those left the frame's left/right borders visible
-   in the gap above the stuck header. */
+/* Standing state note, not an alert - deliberately quieter than .rg-focusbar (no wash, no border)
+   because it is on screen every time the grid loads, whereas the focus bar marks a thing the
+   reader just did. Same button shape so the two read as one family when both are visible. */
+.rg-colnote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 0 2px;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
+.rg-colnote b {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.rg-colnote-btn {
+  margin-left: auto;
+  flex: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.rg-colnote-btn:hover {
+  border-color: var(--teal);
+}
+
+/* Bounded, self-scrolling panel - both axes scroll INSIDE this box, thead sticks to the top of
+   this box (not the page). CSS can't split the two: setting overflow-x forces overflow-y to also
+   become a scroll container (CSS Overflow §3), which detaches position: sticky from the page
+   viewport - a bare overflow-x: auto with an unbounded height leaves the sticky header inert
+   (verified: it neither pins to the page nor to the box once that promotion kicks in). Giving the
+   box its own max-height + overflow makes that promotion the intended behavior instead of a bug,
+   and is what actually lets narrow viewports reach the later role columns - .taskcol/.tname's
+   position: sticky; left: 0 only does anything with real horizontal scroll present.
+   Scroller fill matches the header/footer so the kept border-radius corners read as one piece
+   (square th cells no longer leave a paper gap in the arc). No top inset / upward pad - those
+   left the frame's left/right borders visible in the gap above the stuck header. */
 .rg-scroller {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-2);
+  max-height: 70vh;
+  overflow: auto;
 }
 
 .rg-table tfoot tr:last-child td:first-child {
@@ -3949,6 +4106,24 @@ select.edit-in option {
 
 .ref-aid-crumb:hover {
   text-decoration: underline;
+}
+
+.ref-aid-group {
+  margin: 0 0 20px;
+}
+
+.ref-aid-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Same small-caps voice as h4.sec so phase groupings read as section labels, not content. */
+.ref-aid-group-h {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hs-teal);
+  margin: 0 0 8px;
+  font-weight: 600;
 }
 
 .ref-aid-scope {

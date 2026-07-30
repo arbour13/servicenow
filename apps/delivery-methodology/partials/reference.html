@@ -1,7 +1,8 @@
         <!-- Own tip-delegation wrapper - this is now a standalone widget, not a descendant of the
            Shell widget's .app. See ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget
            note. -->
-        <div ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
+        <div class="view-root" ng-class="{'view-blur': c.searchOpen()}" ng-mouseover="c.tipMouseOver($event)"
+          ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
         <div class="refdoc">
           <div class="refdoc-toolbar">
@@ -59,24 +60,32 @@
 
           <section class="ref-sec">
             <h3 class="ref-h">Job Aids index <span class="ref-count">{{c.jobAids.length}}</span></h3>
-            <p class="ref-lead">Every job aid referenced by a task, across all methodologies, in one place. This list
-              builds itself from the tasks - add a job aid to a task and it appears here.</p>
+            <p class="ref-lead">Every job aid referenced by a task, across all methodologies, grouped by phase. This
+              list builds itself from the tasks - add a job aid to a task and it appears here.</p>
             <p class="empty" ng-if="!c.jobAids.length">No job aids yet.</p>
-            <div class="ref-aids" ng-if="c.jobAids.length">
-              <div class="ref-aid" ng-repeat="aid in c.jobAids">
-                <a class="jobaid" ng-if="c.safeHref(aid.jobAid.url)" ng-href="{{c.safeHref(aid.jobAid.url)}}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('externalLink')"></svg>Job Aid</a>
-                <div class="ref-aid-body">
-                  <div class="ref-aid-task" ng-bind-html="c.jargonHtml(aid.task.text)"></div>
-                  <button type="button" class="ref-aid-crumb"
-                    ng-click="c.jumpTo(aid.subPhase.id, aid.methodology.id)">{{aid.methodology.name}} &rsaquo;
-                    {{aid.phase.name}} &rsaquo; {{aid.subPhase.sid}} {{aid.subPhase.name}} &#8599;</button>
-                  <div class="ref-aid-scope">
-                    <span>Applies to:</span>
-                    <span ng-if="!aid.scope.length" class="ref-allroles">All roles</span>
-                    <span class="ja-scope" ng-repeat="role in aid.scope" style="--c: {{c.jobTitleColor(role.id)}}"
-                      data-tip-name="{{role.name}}" data-tip="{{role.description}}">{{role.external ? '&#9671; ' :
-                      ''}}{{role.abbr}}</span>
+            <!-- One card per TASK (a task's aids listed inside it), grouped under methodology+phase
+               headings - one-card-per-aid repeated the task line whenever a task carried two aids
+               and read as accidental duplicates. -->
+            <div class="ref-aid-group" ng-repeat="group in c.jobAidGroups">
+              <h4 class="ref-aid-group-h">{{group.methodology.name}} &middot; {{group.phase.name}}</h4>
+              <div class="ref-aids">
+                <div class="ref-aid" ng-repeat="entry in group.entries">
+                  <div class="ref-aid-body">
+                    <div class="ref-aid-task" ng-bind-html="c.jargonHtml(entry.task.text)"></div>
+                    <button type="button" class="ref-aid-crumb"
+                      ng-click="c.jumpTo(entry.subPhase.id, entry.methodology.id)">{{entry.subPhase.sid}}
+                      {{entry.subPhase.name}} &#8599;</button>
+                    <div class="ref-aid-scope" ng-repeat="aid in entry.aids">
+                      <a class="jobaid" ng-if="c.safeHref(aid.jobAid.url)" ng-href="{{c.safeHref(aid.jobAid.url)}}"
+                        target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                          ng-bind-html="c.icon('externalLink')"></svg>{{aid.jobAid.label || 'Job Aid'}}</a>
+                      <span>Applies to:</span>
+                      <span ng-if="!aid.scope.length" class="ref-allroles">All roles</span>
+                      <span class="ja-scope" ng-repeat="role in aid.scope" style="--c: {{c.jobTitleColor(role.id)}}"
+                        data-tip-name="{{role.name}}" data-tip="{{role.description}}">{{role.external ? '&#9671; ' :
+                        ''}}{{role.abbr}}</span>
+                    </div>
                   </div>
                 </div>
               </div>

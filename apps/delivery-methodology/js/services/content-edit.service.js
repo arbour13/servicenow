@@ -543,6 +543,7 @@ angular.module('deliveryMethodology').factory('ContentEditService', [
     }
     task.jobAids.push({
       id: IdSeqService.next('jobAid'),
+      label: '',
       url: '',
       roles: []
     });

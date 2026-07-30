@@ -1,11 +1,14 @@
 /* Delivery Methodology "What's New" widget: unread changelog entries across every methodology.
    Visible only when AppState.view === 'whatsnew' (see isActiveView). */
 angular.module('deliveryMethodology').controller('DmWhatsNewController', [
-  '$rootScope', '$scope', 'AppStateService', 'NavigationService', 'WhatsNewService',
-  function ($rootScope, $scope, AppStateService, NavigationService, WhatsNewService) {
+  '$rootScope', '$scope', 'AppStateService', 'NavigationService', 'WhatsNewService', 'SearchService',
+  function ($rootScope, $scope, AppStateService, NavigationService, WhatsNewService, SearchService) {
   'use strict';
   var c = this;
 
+  // Drives this widget's own .view-blur while the Shell's search overlay is open - Shell's
+  // .search-active class can't reach a sibling widget's DOM (see CLAUDE.md's multi-widget note).
+  c.searchOpen = SearchService.isOpen;
   AppStateService.bindActiveView(c, 'whatsnew');
   WhatsNewService.bindFormatters(c);
 

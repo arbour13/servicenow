@@ -1,7 +1,8 @@
         <!-- Own tip-delegation wrapper - this is now a standalone widget, not a descendant of the
            Shell widget's .app. See ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget
            note. -->
-        <div ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
+        <div class="view-root" ng-class="{'view-blur': c.searchOpen()}" ng-mouseover="c.tipMouseOver($event)"
+          ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
         <div class="views secondary" role="tablist" aria-label="RACI layout"
           ng-keydown="c.onRaciTabKeydown($event)">
@@ -68,6 +69,19 @@
             <button type="button" ng-click="c.clearRaciFocus()">Clear focus</button>
           </div>
 
+          <!-- Only rendered when some role actually qualifies as minor - a methodology where every
+             role is well used never sees this control at all. -->
+          <div class="rg-colnote" ng-if="c.raciGrid.minorRoleIds.length">
+            <span ng-if="!c.showAllRoles">Hiding <b>{{c.raciGrid.hiddenRoleCount}}</b> roles on fewer than
+              10% of these tasks. They stay listed under By Role.</span>
+            <span ng-if="c.showAllRoles">Showing all <b>{{c.raciGrid.roleIds.length}}</b> roles.</span>
+            <button type="button" class="rg-colnote-btn" ng-click="c.toggleShowAllRoles()"
+              aria-pressed="{{c.showAllRoles}}">
+              <span ng-if="!c.showAllRoles">Show all roles</span>
+              <span ng-if="c.showAllRoles">Show core roles only</span>
+            </button>
+          </div>
+
           <div class="rg-scroller">
             <table class="rg-table">
               <thead>
@@ -75,7 +89,7 @@
                   <th class="taskcol">Task</th>
                   <th class="rg-rolecol"
                     ng-class="{focused: c.gridFocusRoleId === id, colhi: !c.gridFocusRoleId && c.hoverColumnRoleId === id}"
-                    ng-repeat="id in c.raciGrid.roleIds track by id">
+                    ng-repeat="id in c.raciGrid.visibleRoleIds track by id">
                     <button type="button" class="rg-role-btn" ng-click="c.toggleRaciColumn(id)"
                       ng-mouseenter="c.hoverColumnRoleId = id" ng-mouseleave="c.hoverColumnRoleId = null"
                       ng-focus="c.tipFocus($event); c.hoverColumnRoleId = id"
@@ -89,7 +103,7 @@
               </thead>
               <tbody ng-if="!c.raciGrid.groups.length">
                 <tr>
-                  <td class="tname rg-empty-cell" colspan="{{c.raciGrid.roleIds.length + 1}}">No tasks match the current filters.
+                  <td class="tname rg-empty-cell" colspan="{{c.raciGrid.visibleRoleIds.length + 1}}">No tasks match the current filters.
                   </td>
                 </tr>
               </tbody>
@@ -97,7 +111,7 @@
                  the group header + its task/detail rows repeat together as one unit per group. -->
               <tbody ng-repeat="group in c.raciGrid.groups track by group.subPhase.id">
                 <tr class="rg-grouprow">
-                  <td colspan="{{c.raciGrid.roleIds.length + 1}}"><span class="gsid"
+                  <td colspan="{{c.raciGrid.visibleRoleIds.length + 1}}"><span class="gsid"
                       ng-style="{background: group.color}">{{group.subPhase.sid}}</span>{{group.phase.name}} - {{group.subPhase.name}}</td>
                 </tr>
                 <tr class="taskrow" ng-repeat="row in group.rows track by row.task.id">
@@ -105,7 +119,7 @@
                     <button type="button" class="rg-task-link"
                       ng-click="c.jumpTo(group.subPhase.id, c.methodologyId, 'task:' + row.task.id)">{{row.task.text}}</button>
                   </td>
-                  <td ng-repeat="id in c.raciGrid.roleIds track by id"
+                  <td ng-repeat="id in c.raciGrid.visibleRoleIds track by id"
                     ng-class="{dimmed: c.gridFocusRoleId && id !== c.gridFocusRoleId, colhi: !c.gridFocusRoleId && c.hoverColumnRoleId === id}">
                     <span ng-if="row.task.raci[id]" class="rg-lt"><span ng-repeat="l in row.task.raci[id] track by l"
                         ng-class="'rl-' + l">{{l}}</span></span>
@@ -116,7 +130,7 @@
               <tfoot>
                 <tr class="rg-total">
                   <td class="tname">Total involvements</td>
-                  <td ng-repeat="id in c.raciGrid.roleIds track by id">{{c.raciGrid.roleCounts[id] || 0}}</td>
+                  <td ng-repeat="id in c.raciGrid.visibleRoleIds track by id">{{c.raciGrid.roleCounts[id] || 0}}</td>
                 </tr>
               </tfoot>
             </table>

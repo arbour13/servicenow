@@ -2,14 +2,17 @@
    methodology job aids index. Visible only when AppState.view === 'reference' (see isActiveView). */
 angular.module('deliveryMethodology').controller('DmReferenceController', [
   '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'ReferenceService',
-  'JargonService', 'TipService', 'IconService', 'UrlPolicyService',
+  'JargonService', 'TipService', 'IconService', 'UrlPolicyService', 'SearchService',
   function (
     $rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService,
-    JargonService, TipService, IconService, UrlPolicyService
+    JargonService, TipService, IconService, UrlPolicyService, SearchService
   ) {
   'use strict';
   var c = this;
 
+  // Drives this widget's own .view-blur while the Shell's search overlay is open - Shell's
+  // .search-active class can't reach a sibling widget's DOM (see CLAUDE.md's multi-widget note).
+  c.searchOpen = SearchService.isOpen;
   AppStateService.bindActiveView(c, 'reference');
   TipService.bind(c);
   IconService.bind(c);
@@ -49,7 +52,9 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     c.loading = appState.loading;
   }
   function syncJobAids() {
-    c.jobAids = ReferenceService.readState().jobAids;
+    var referenceState = ReferenceService.readState();
+    c.jobAids = referenceState.jobAids;
+    c.jobAidGroups = referenceState.jobAidGroups;
   }
   function syncAll() {
     syncAppState();

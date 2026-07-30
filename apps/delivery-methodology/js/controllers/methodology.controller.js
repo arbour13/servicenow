@@ -7,15 +7,18 @@
 angular.module('deliveryMethodology').controller('DmMethodologyController', [
   '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'WhatsNewService',
   'ReferenceService', 'IconService', 'JargonService', 'TipService', 'ContentEditService', 'StructureEditService',
-  'RaciGridService', 'UrlPolicyService',
+  'RaciGridService', 'UrlPolicyService', 'SearchService',
   function (
     $rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService,
     ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService,
-    RaciGridService, UrlPolicyService
+    RaciGridService, UrlPolicyService, SearchService
   ) {
   'use strict';
   var c = this;
 
+  // Drives this widget's own .view-blur while the Shell's search overlay is open - Shell's
+  // .search-active class can't reach a sibling widget's DOM (see CLAUDE.md's multi-widget note).
+  c.searchOpen = SearchService.isOpen;
   AppStateService.bindActiveView(c, 'methodology');
   TipService.bind(c);
   IconService.bind(c);

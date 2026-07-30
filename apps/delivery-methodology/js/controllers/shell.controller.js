@@ -98,7 +98,8 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   }
   function syncSearch() {
     var state = SearchService.readState();
-    c.searchResultsList = state.searchResultsList;
+    c.searchResultGroups = state.searchResultGroups;
+    c.searchResultCount = state.searchResultCount;
     c.searchQuery = state.searchQuery;
   }
   function syncAll() {
@@ -212,7 +213,8 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   };
 
   c.searchQuery = '';
-  c.searchResultsList = [];
+  c.searchResultGroups = [];
+  c.searchResultCount = 0;
   c.searchOpen = function () {
     return SearchService.isOpen() || !!(c.searchQuery || '').trim();
   };
@@ -228,12 +230,29 @@ angular.module('deliveryMethodology').controller('DmShellController', [
     SearchService.clear();
     syncSearch();
   };
+  // Per-kind landing: job aids anchor to their task row; Reference sections switch the view
+  // (they have no sub-phase to jump to); glossary rows are informational and never reach here
+  // (rendered as non-buttons). Everything else opens its sub-phase. jumpTo clears the search
+  // overlay itself (NavigationService.clearSearchOverlay); the reference path clears explicitly.
   c.pickSearchResult = function (result) {
+    if (result.kind === 'reference') {
+      c.clearSearch();
+      c.setView('reference');
+      return;
+    }
+    if (result.kind === 'jobaid') {
+      c.jumpTo(result.subPhase.id, result.methodology.id, 'task:' + result.task.id);
+      return;
+    }
     c.jumpTo(result.subPhase.id, result.methodology.id);
   };
   c.runSearch = function () {
     SearchService.setQuery(c.searchQuery);
-    SearchService.run(c.methodologies, {
+    SearchService.run({
+      methodologies: c.methodologies,
+      jargon: AppStateService.getJargon(),
+      referenceSections: AppStateService.getReferenceSections()
+    }, {
       isEditing: function () {
         return ContentEditService.isEditing() || StructureEditService.isEditing();
       }

@@ -37,10 +37,14 @@ widget broadcasts.
 
 Each view widget's own root partial div carries its own `ng-mouseover` / `ng-mouseout` / `ng-click`
 tip-delegation handlers (`TipService`) and, where relevant, its own `ng-class="{editing: ...}"` —
-this is a deliberate, accepted regression from the pre-split single-DOM version: editing/search
-dimming no longer cascades across widget boundaries (e.g. entering edit mode in Methodology no
-longer dims RACI/Reference, since they're separate widgets/DOM trees). Shell's own `.app` wrapper
-keeps `editing` / `search-active` classes for the chrome it still owns (pagehdr, etc).
+a deliberate, accepted regression from the pre-split single-DOM version: EDIT-mode dimming no
+longer cascades across widget boundaries (entering edit mode in Methodology no longer dims
+RACI/Reference, since they're separate widgets/DOM trees). SEARCH dimming was later restored
+across widgets a different way: every view partial's root carries
+`class="view-root" ng-class="{'view-blur': c.searchOpen()}"` (each view controller exposes
+`c.searchOpen = SearchService.isOpen`), so each widget blurs its own DOM while the Shell's search
+overlay is open. Shell's own `.app` wrapper keeps `editing` / `search-active` classes for the
+chrome it still owns (pagehdr, etc).
 
 `deploy.manifest.js` declares all five in `manifest.widgets` (see
 `tools/sn-deployment-packager/manifest.schema.md`); `shell` is the only entry with

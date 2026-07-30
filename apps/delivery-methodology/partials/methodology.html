@@ -3,8 +3,8 @@
            multi-widget note. ng-class="editing" replaces the old cross-widget ".editing .main"
            blur (accepted regression: only THIS widget's own content dims now, not Shell's pagehdr
            or the other view widgets). -->
-        <div ng-class="{editing: c.editMode || c.structureEditMode}" ng-mouseover="c.tipMouseOver($event)"
-          ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
+        <div class="view-root" ng-class="{editing: c.editMode || c.structureEditMode, 'view-blur': c.searchOpen()}"
+          ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
         <!-- One mounted methodology chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
          toggles visibility instead of destroying/rebuilding every station + film card. -->
@@ -19,14 +19,20 @@
               </button>
               <a class="methodology-intro-feedback" ng-if="c.safeHref(methodology.feedbackUrl)" ng-href="{{c.safeHref(methodology.feedbackUrl)}}">{{methodology.feedbackLabel || 'Provide Feedback'}}</a>
             </div>
-            <div class="methodology-intro-body" ng-if="!c.isMethodologyIntroCollapsed(methodology.id)"
-              ng-class="{'has-diagram': !!c.safeSrc(methodology.diagramUrl)}">
-              <div class="methodology-intro-copy">
-                <p ng-repeat="paragraph in c.methodologyIntroParagraphs(methodology) track by $index">{{paragraph}}</p>
-                <p class="methodology-intro-empty" ng-if="!c.methodologyIntroParagraphs(methodology).length">About content for this methodology hasn&rsquo;t been written yet.</p>
-              </div>
-              <div class="methodology-intro-diagram" ng-if="c.safeSrc(methodology.diagramUrl)">
-                <img ng-src="{{c.safeSrc(methodology.diagramUrl)}}" alt="Implementation cycle">
+            <!-- .clp/.clp-inner animate collapse via grid-template-rows (see the .clp scss note);
+               body stays mounted (no ng-if) so there is something to animate - the parent's
+               .collapsed class drives both the animation and visibility. -->
+            <div class="clp">
+              <div class="clp-inner">
+                <div class="methodology-intro-body" ng-class="{'has-diagram': !!c.safeSrc(methodology.diagramUrl)}">
+                  <div class="methodology-intro-copy">
+                    <p ng-repeat="paragraph in c.methodologyIntroParagraphs(methodology) track by $index">{{paragraph}}</p>
+                    <p class="methodology-intro-empty" ng-if="!c.methodologyIntroParagraphs(methodology).length">About content for this methodology hasn&rsquo;t been written yet.</p>
+                  </div>
+                  <div class="methodology-intro-diagram" ng-if="c.safeSrc(methodology.diagramUrl)">
+                    <img ng-src="{{c.safeSrc(methodology.diagramUrl)}}" alt="Implementation cycle">
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -191,11 +197,15 @@
                   <span class="sp-brief-heading">Context</span>
                 </button>
               </div>
-              <div class="sp-brief-body" ng-if="!c.isSubPhaseBriefCollapsed(c.location.subPhase.id)">
-                <h4 class="sec" ng-if="c.location.subPhase.overview">Overview</h4>
-                <p class="lede" ng-if="c.location.subPhase.overview" ng-bind-html="c.jargonHtml(c.location.subPhase.overview)"></p>
-                <h4 class="sec" ng-if="c.location.subPhase.objective">Objective</h4>
-                <p class="obj" ng-if="c.location.subPhase.objective" ng-bind-html="c.jargonHtml(c.location.subPhase.objective)"></p>
+              <div class="clp">
+                <div class="clp-inner">
+                  <div class="sp-brief-body">
+                    <h4 class="sec" ng-if="c.location.subPhase.overview">Overview</h4>
+                    <p class="lede" ng-if="c.location.subPhase.overview" ng-bind-html="c.jargonHtml(c.location.subPhase.overview)"></p>
+                    <h4 class="sec" ng-if="c.location.subPhase.objective">Objective</h4>
+                    <p class="obj" ng-if="c.location.subPhase.objective" ng-bind-html="c.jargonHtml(c.location.subPhase.objective)"></p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -291,7 +301,7 @@
                         <td class="tname">
                           <span ng-bind-html="c.jargonHtml(t.text)"></span>
                           <div class="ja" ng-repeat="j in t.jobAids track by j.id" ng-if="c.safeHref(j.url)">
-                            <a class="jobaid" ng-href="{{c.safeHref(j.url)}}" target="_blank" rel="noopener">&#8599; Job Aid</a>
+                            <a class="jobaid" ng-href="{{c.safeHref(j.url)}}" target="_blank" rel="noopener">&#8599; {{j.label || 'Job Aid'}}</a>
                             <span class="ja-scope" ng-repeat="r in c.jobAidScope(t, j) track by r.id"
                               style="--c: {{c.jobTitleColor(r.id)}}" data-tip-name="{{r.name}}"
                               data-tip="{{r.description}}">{{r.external ? '&#9671; ' : ''}}{{r.abbr}}</span>
@@ -566,10 +576,15 @@
                 <div class="ja-edit" ng-repeat="j in t.jobAids track by j.id">
                   <div class="ja-edit-row">
                     <span class="link-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('link')"></svg></span>
-                    <input class="edit-in" placeholder="Job aid URL" ng-model="j.url" ng-blur="c.normalizeJobAidUrl(j)">
+                        stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('pencil')"></svg></span>
+                    <input class="edit-in" placeholder="Job aid title (link text; blank shows &ldquo;Job Aid&rdquo;)" ng-model="j.label">
                     <button type="button" class="x-btn" ng-click="c.removeJobAid(t, $index)" data-tip="Remove job aid"
                       aria-label="Remove job aid">&times;</button>
+                  </div>
+                  <div class="ja-edit-row">
+                    <span class="link-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('link')"></svg></span>
+                    <input class="edit-in" placeholder="Job aid URL" ng-model="j.url" ng-blur="c.normalizeJobAidUrl(j)">
                   </div>
                   <div class="ja-roles">
                     <span class="ja-roles-lbl">Applies to:</span>

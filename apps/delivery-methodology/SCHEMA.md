@@ -76,7 +76,7 @@ to reference — always a `job_title` row — lives inside `content` as a plain 
 | `sub_phase` | a `phase` row | sub-phase name | `{ id, overview, objective, icon }` |
 | `task` | a `sub_phase` row | the task text | `{ id }` |
 | `raci` | a `task` row | the letter (`R`/`A`/`C`/`I`) | `{ job_title }` *(soft ref)* |
-| `job_aid` | a `task` row | — | `{ id, url }` |
+| `job_aid` | a `task` row | aid title (optional; UI falls back to "Job Aid") | `{ id, url }` |
 | `job_aid_role` | a `job_aid` row | — | `{ job_title }` *(soft ref; zero rows = all roles)* |
 | `input` | a `sub_phase` row | the input text | `{}` |
 | `deliverable` | a `sub_phase` row | the deliverable text | `{}` |

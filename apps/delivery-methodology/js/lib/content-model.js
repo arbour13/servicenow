@@ -233,7 +233,9 @@ var DMContentModel = (function () {
             });
             (task.jobAids || []).forEach(function (jobAid, jobAidIndex) {
               var jobAidId = jobAid.id || (task.id + '-ja' + (jobAidIndex + 1));
-              pushRow(rows, 'job_aid', task.id, '', jobAidIndex + 1, {
+              // Label rides the row's own name column (the "real display value" slot per
+              // SCHEMA.md), not the content JSON - empty when the aid is unnamed.
+              pushRow(rows, 'job_aid', task.id, jobAid.label || '', jobAidIndex + 1, {
                 id: jobAidId,
                 url: safeHref(jobAid.url, linkOpts)
               }, jobAidId);
@@ -483,6 +485,7 @@ var DMContentModel = (function () {
                       var jobAidId = jobAidRow.content.id || jobAidRow.clientId;
                       return {
                         id: jobAidId,
+                        label: jobAidRow.name || '',
                         url: safeHref(jobAidRow.content.url || ''),
                         roles: kids(jobAidId, 'job_aid_role').map(function (jobAidRoleRow) {
                           return jobAidRoleRow.content.job_title;
