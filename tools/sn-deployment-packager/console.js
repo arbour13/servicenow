@@ -163,6 +163,9 @@
   var bridgeStatusLabel = document.getElementById('bridgeStatusLabel');
   var bridgeCheckBtn = document.getElementById('bridgeCheckBtn');
   var bridgeCopyCmdBtn = document.getElementById('bridgeCopyCmdBtn');
+  var bridgeSyncBtn = document.getElementById('bridgeSyncBtn');
+  var bridgeCmdWrap = document.getElementById('bridgeCmdWrap');
+  var bridgeCmdText = document.getElementById('bridgeCmdText');
   var detectStatus = document.getElementById('detectStatus');
   var savedInstanceSelect = document.getElementById('savedInstanceSelect');
   var saveInstanceBtn = document.getElementById('saveInstanceBtn');
@@ -383,7 +386,7 @@
   // Localhost sdk-bridge.js (Now SDK auth/deploy handoff). Polled continuously; the browser cannot
   // start it — the status panel shows online/offline and offers Check again + a copyable start command.
   var SDK_BRIDGE = 'http://127.0.0.1:17345';
-  var BRIDGE_CMD_CACHE_KEY = 'snDeployConsole_bridgeCmd';
+  var BRIDGE_CMD_CACHE_KEY = 'snDeployConsole_bridgeCmd_v3';
   var sdkBridgeUp = false;
   var sdkSyncedAlias = '';
   var sdkBridgePollTimer = null;
@@ -467,19 +470,23 @@
     applyConnectionFieldLock();
   }
   function applyConnectionFieldLock() {
-    var locked = !!savedInstanceSelect.value;
-    fldInstanceUrl.readOnly = locked;
-    fldUsername.readOnly = locked;
-    fldPassword.readOnly = locked;
-    saveInstanceBtn.hidden = locked;
-    if (connectionHint) {
-      connectionHint.textContent = locked
-        ? 'URL, username, and password are locked for this saved connection. Choose New connection to enter different details.'
-        : 'To add a saved connection, leave New connection selected, fill in the fields, then click Save for later.';
-    }
-    if (!locked) {
+    var editingSaved = !!savedInstanceSelect.value;
+    fldInstanceUrl.readOnly = false;
+    fldUsername.readOnly = false;
+    fldPassword.readOnly = false;
+    saveInstanceBtn.hidden = false;
+    if (editingSaved) {
+      saveInstanceBtn.textContent = 'Update connection';
+      setTip(saveInstanceBtn, 'Save URL, username, password, and name changes to this saved connection');
+      if (connectionHint) {
+        connectionHint.textContent = 'Edit the fields below, then Update connection to save changes (including a new password). Connect again after updating credentials.';
+      }
+    } else {
       saveInstanceBtn.textContent = 'Save for later';
       setTip(saveInstanceBtn, 'Save these credentials as a new named connection');
+      if (connectionHint) {
+        connectionHint.textContent = 'To add a saved connection, leave New connection selected, fill in the fields, then click Save for later.';
+      }
     }
   }
   function escapeHtml(s) {
@@ -594,9 +601,34 @@
     }
   }
   function onSaveInstanceClick() {
-    if (savedInstanceSelect.value) { return; } // fields are locked for saved connections
     if (!fldInstanceUrl.value.trim() || !fldUsername.value.trim() || !fldPassword.value) {
       detectStatus.textContent = 'Enter instance URL, username, and password before saving.';
+      return;
+    }
+    var selectedId = savedInstanceSelect.value;
+    if (selectedId) {
+      var list = loadSavedInstances();
+      var existing = list.filter(function (i) { return i.id === selectedId; })[0];
+      if (!existing) { return; }
+      promptModal({
+        title: 'Update connection',
+        body: 'Save the edited URL, username, and password to “' + existing.name + '”. You can rename it below.',
+        inputLabel: 'Connection name',
+        defaultValue: existing.name,
+        confirmLabel: 'Update',
+      }).then(function (name) {
+        if (name == null) { return; }
+        name = String(name).trim() || existing.name;
+        existing.name = name;
+        existing.instanceUrl = fldInstanceUrl.value.trim();
+        existing.username = fldUsername.value.trim();
+        existing.password = fldPassword.value;
+        persistSavedInstances(list);
+        refreshSavedInstanceSelect(existing.id);
+        saveLastInstanceId(existing.id);
+        if (currentFolder) { saveConn(currentFolder); }
+        detectStatus.textContent = 'Updated “' + existing.name + '”.';
+      });
       return;
     }
     var suggested = defaultInstanceName(fldInstanceUrl.value.trim());
@@ -822,9 +854,21 @@
     if (bridgeStatusLabel) { bridgeStatusLabel.textContent = label || ''; }
   }
 
+  function syncBridgeCmdDisplay() {
+    var cmd = bridgeStartCommand();
+    if (bridgeCmdText) {
+      bridgeCmdText.value = cmd;
+    }
+    if (bridgeCmdWrap) { bridgeCmdWrap.hidden = !!sdkBridgeUp; }
+    if (bridgeSyncBtn) {
+      bridgeSyncBtn.hidden = !(sdkBridgeUp && sessionConnected && !bridgeCredsSynced && !bridgeAuthSyncing);
+    }
+  }
+
   function refreshBridgeLabel() {
+    syncBridgeCmdDisplay();
     if (!sdkBridgeUp) {
-      setBridgeUi('offline', 'SDK bridge: offline — run the start command, then Check again');
+      setBridgeUi('offline', 'SDK bridge: offline — run the terminal command below, then Check again');
       return;
     }
     if (bridgeAuthSyncing) {
@@ -832,45 +876,62 @@
       return;
     }
     if (sessionConnected && bridgeCredsSynced) {
-      setBridgeUi('online', 'SDK bridge: online — credentials synced');
+      setBridgeUi('online', 'SDK bridge: online — credentials synced, ready to deploy');
       return;
     }
     if (sessionConnected) {
-      setBridgeUi('online', 'SDK bridge: online — Connect credentials not synced yet');
+      setBridgeUi('online', 'SDK bridge: online — click Sync credentials or Deploy (syncs automatically)');
       return;
     }
-    setBridgeUi('online', 'SDK bridge: online');
+    setBridgeUi('online', 'SDK bridge: online — Connect to your instance next');
   }
 
   // Quietly push Connect credentials to the local Now SDK alias store. Called after a successful
-  // Connect, and when the bridge comes back online while a session is already connected.
-  function maybeSyncAuthToBridge() {
-    if (!sdkBridgeUp || !sessionConnected || bridgeAuthSyncing) { return; }
-    if (!(fldInstanceUrl.value.trim() && fldUsername.value.trim() && fldPassword.value)) { return; }
-    if (!currentFolder) { return; }
+  // Connect, when the bridge comes back online while a session is already connected, or manually
+  // via Sync credentials.
+  function maybeSyncAuthToBridge(opts) {
+    opts = opts || {};
+    if (!sdkBridgeUp || !sessionConnected || bridgeAuthSyncing) { return Promise.resolve(false); }
+    if (!(fldInstanceUrl.value.trim() && fldUsername.value.trim() && fldPassword.value)) { return Promise.resolve(false); }
+    if (!currentFolder) { return Promise.resolve(false); }
     bridgeAuthSyncing = true;
     refreshBridgeLabel();
     var alias = sdkSyncedAlias || aliasFromInstanceUrl(fldInstanceUrl.value);
     var authFailed = false;
-    bridgePostStream('/auth', {
+    var lastMessage = '';
+    return bridgePostStream('/auth', {
       instanceUrl: fldInstanceUrl.value.trim(),
       username: fldUsername.value.trim(),
       password: fldPassword.value,
       alias: alias,
       appFolder: currentFolder,
     }, function (evt) {
+      if (evt.message) { lastMessage = evt.message; }
       if (evt.ok === false) { authFailed = true; }
       if (evt.step === 'done' && evt.alias) { sdkSyncedAlias = evt.alias; }
     }).then(function () {
       bridgeCredsSynced = !authFailed;
-      if (authFailed) { sdkSyncedAlias = ''; }
-    }).catch(function () {
+      if (authFailed) {
+        sdkSyncedAlias = '';
+        if (opts.onResult) {
+          opts.onResult(false, lastMessage || 'Credential sync failed — check username and password.');
+        }
+      } else if (opts.onResult) {
+        opts.onResult(true, 'Credentials synced to Now SDK.');
+      }
+      return !authFailed;
+    }).catch(function (err) {
       bridgeCredsSynced = false;
       sdkSyncedAlias = '';
-    }).then(function () {
+      if (opts.onResult) {
+        opts.onResult(false, (err && err.message) || 'Could not reach the SDK bridge.');
+      }
+      return false;
+    }).then(function (ok) {
       bridgeAuthSyncing = false;
       refreshBridgeLabel();
       updateSdkBridgeButtons();
+      return ok;
     });
   }
 
@@ -930,33 +991,57 @@
     return '\'' + text.replace(/'/g, '\'\\\'\'') + '\'';
   }
 
-  function bridgeScriptPathFromPage() {
+  function formatBridgeRunCommand(opts) {
+    opts = opts || {};
+    var suiteRoot = opts.suiteRoot || bridgeSuiteRootFromPage();
+    var relative = 'tools/sn-deployment-packager/sdk-bridge.js';
+    if (suiteRoot) {
+      if (/^~[/\w]/.test(suiteRoot) || /^[\w.$/=-]+$/.test(suiteRoot)) {
+        return 'cd ' + suiteRoot + ' && node ' + relative;
+      }
+      return 'cd ' + shellQuote(suiteRoot) + ' && node ' + relative;
+    }
+    return 'cd "$(git rev-parse --show-toplevel)" && node tools/sn-deployment-packager/sdk-bridge.js';
+  }
+
+  function bridgeSuiteRootFromPage() {
     try {
       var bridgeUrl = new URL('sdk-bridge.js', window.location.href);
       if (bridgeUrl.protocol === 'file:') {
-        return decodeURIComponent(bridgeUrl.pathname);
+        return decodeURIComponent(bridgeUrl.pathname).replace(/\/tools\/sn-deployment-packager\/sdk-bridge\.js$/, '');
       }
       var scriptPath = decodeURIComponent(bridgeUrl.pathname);
-      if (/^\/Users\/.+\/sdk-bridge\.js$/.test(scriptPath) || /^\/home\/.+\/sdk-bridge\.js$/.test(scriptPath)) {
-        return scriptPath;
-      }
       var marker = '/tools/sn-deployment-packager/sdk-bridge.js';
       var markerAt = scriptPath.indexOf(marker);
       if (markerAt > 0) {
         var repoPrefix = scriptPath.slice(0, markerAt);
         if (repoPrefix.indexOf('/Documents/') === 0) {
-          return '~' + repoPrefix + marker;
+          return '~' + repoPrefix;
         }
-        return repoPrefix + marker;
+        return repoPrefix;
       }
     } catch (e) {}
     return null;
   }
 
-  function cacheBridgeStartCommand(scriptPath) {
-    if (!scriptPath) { return; }
+  function bridgeScriptPathFromPage() {
+    var suiteRoot = bridgeSuiteRootFromPage();
+    if (!suiteRoot) { return null; }
+    if (suiteRoot.indexOf('~') === 0) {
+      return '$HOME' + suiteRoot.slice(1) + '/tools/sn-deployment-packager/sdk-bridge.js';
+    }
+    return suiteRoot + '/tools/sn-deployment-packager/sdk-bridge.js';
+  }
+
+  function bridgeScriptPathFromSuiteRoot(suiteRoot) {
+    if (!suiteRoot) { return null; }
+    return String(suiteRoot).replace(/\/+$/, '') + '/tools/sn-deployment-packager/sdk-bridge.js';
+  }
+
+  function cacheBridgeStartCommand(suiteRoot) {
+    if (!suiteRoot) { return; }
     try {
-      localStorage.setItem(BRIDGE_CMD_CACHE_KEY, 'node ' + shellQuote(scriptPath));
+      localStorage.setItem(BRIDGE_CMD_CACHE_KEY, formatBridgeRunCommand({ suiteRoot: suiteRoot }));
     } catch (e) {}
   }
 
@@ -964,44 +1049,51 @@
     try { return localStorage.getItem(BRIDGE_CMD_CACHE_KEY) || ''; } catch (e) { return ''; }
   }
 
-  // Absolute path to sdk-bridge.js so the command works from any shell cwd (the old relative path
-  // only worked when the terminal was already at the repo root). Prefer a path learned from a
-  // prior /health response, then the page URL (file:// or path-style http URLs), then git.
+  // Absolute path to sdk-bridge.js so the command works from any shell cwd. Prefer a path learned
+  // from a prior /health response, then the page URL (file:// or path-style http URLs), then git.
   function bridgeStartCommand() {
     var cached = loadCachedBridgeStartCommand();
     if (cached) { return cached; }
-    var fromPage = bridgeScriptPathFromPage();
-    if (fromPage) {
-      return 'node ' + shellQuote(fromPage);
-    }
-    return 'node "$(git rev-parse --show-toplevel)/tools/sn-deployment-packager/sdk-bridge.js"';
+    return formatBridgeRunCommand();
+  }
+
+  function scheduleBridgePoll() {
+    if (sdkBridgePollTimer) { clearInterval(sdkBridgePollTimer); }
+    sdkBridgePollTimer = setInterval(function () { pollSdkBridge(); }, sdkBridgeUp ? 6000 : 2000);
   }
 
   function pollSdkBridge(opts) {
     opts = opts || {};
     if (opts.manual) { setBridgeUi('checking', 'SDK bridge: checking…'); }
     fetch(SDK_BRIDGE + '/health', { method: 'GET' }).then(function (r) {
-      return r.ok ? r.json() : Promise.reject();
+      return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status));
     }).then(function (data) {
       var wasUp = sdkBridgeUp;
       sdkBridgeUp = true;
-      if (data && data.bridgeScript) { cacheBridgeStartCommand(data.bridgeScript); }
+      if (data && data.suiteRoot) {
+        cacheBridgeStartCommand(data.suiteRoot);
+      } else if (data && data.bridgeScript) {
+        cacheBridgeStartCommand(String(data.bridgeScript).replace(/\/tools\/sn-deployment-packager\/sdk-bridge\.js$/, ''));
+      }
       refreshBridgeLabel();
       updateSdkBridgeButtons();
+      if (!wasUp) { scheduleBridgePoll(); }
       // Auto-sync when the bridge comes back while a Connect session is already live.
       if (!wasUp && sessionConnected) { maybeSyncAuthToBridge(); }
     }).catch(function () {
+      var wasUp = sdkBridgeUp;
       sdkBridgeUp = false;
       bridgeCredsSynced = false;
       refreshBridgeLabel();
       updateSdkBridgeButtons();
+      if (wasUp || opts.manual) { scheduleBridgePoll(); }
     });
   }
 
   function startSdkBridgePolling() {
+    syncBridgeCmdDisplay();
     pollSdkBridge();
-    if (sdkBridgePollTimer) { clearInterval(sdkBridgePollTimer); }
-    sdkBridgePollTimer = setInterval(function () { pollSdkBridge(); }, 4000);
+    scheduleBridgePoll();
   }
 
   function copyBridgeStartCommand() {
@@ -1716,6 +1808,18 @@
   }
   if (bridgeCopyCmdBtn) {
     bridgeCopyCmdBtn.addEventListener('click', copyBridgeStartCommand);
+  }
+  if (bridgeSyncBtn) {
+    bridgeSyncBtn.addEventListener('click', function () {
+      maybeSyncAuthToBridge({
+        onResult: function (ok, message) {
+          if (bridgeStatusLabel) {
+            setBridgeUi(ok ? 'online' : 'syncing', message);
+          }
+          refreshBridgeLabel();
+        },
+      });
+    });
   }
 
   // Password visibility toggle - masked by default; eyeball reveals plain text when needed.

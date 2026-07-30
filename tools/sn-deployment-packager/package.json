@@ -1,0 +1,8 @@
+{
+  "name": "sn-deployment-packager",
+  "private": true,
+  "description": "Build-time tooling for the ServiceNow app suite (console, packager core, SDK bridge).",
+  "scripts": {
+    "bridge": "node sdk-bridge.js"
+  }
+}

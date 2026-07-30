@@ -217,6 +217,14 @@
 
   #connectionSection > label:first-child { margin-bottom: 8px; }
   .grid3 { display: grid; grid-template-columns: 1.4fr 1.8fr 0.8fr; gap: var(--sp-md); }
+  #overridesSection .grid3 {
+    align-items: end;
+  }
+  #overridesSection .field > label {
+    display: flex;
+    align-items: center;
+    min-height: 18px;
+  }
   .field + .field { margin-top: 14px; }
   .grid3 .field + .field { margin-top: 0; }
 
@@ -264,6 +272,9 @@
   .conn-actions {
     margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
+  .conn-save-row {
+    display: flex; justify-content: flex-end; margin-top: 8px;
+  }
   .bridge-status {
     display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
     margin: 0; padding: 10px 12px;
@@ -283,6 +294,16 @@
     font-size: 13px; color: var(--text);
   }
   .bridge-btn { height: 30px; padding: 0 10px; font-size: 12px; }
+  .bridge-cmd-wrap { margin: 0 0 12px; }
+  .bridge-cmd-wrap > label {
+    display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--muted);
+  }
+  .bridge-cmd {
+    display: block; width: 100%; margin: 0; padding: 10px 12px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.45;
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); overflow-x: auto; resize: vertical; min-height: 3.2em;
+  }
   .saved-row {
     display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: end;
     margin-bottom: 14px;
@@ -510,7 +531,7 @@
 </div>
 
 <div class="panel" id="connectionSection" style="display:none;">
-  <p class="panel-intro">Choose a saved connection to fill credentials, or New connection to type them. Connect detects the vendor prefix and whether this app is already installed. Requires CORS from this origin to the instance. Deploy uses the local SDK bridge with these credentials.</p>
+  <p class="panel-intro">Choose a saved connection to fill credentials, or New connection to type them. Saved connections can be edited and updated in place. Connect detects the vendor prefix and whether this app is already installed. Requires CORS from this origin to the instance. Deploy uses the local SDK bridge with these credentials.</p>
   <div class="saved-row">
     <div class="field">
       <label for="savedInstanceSelect">Saved connection</label>
@@ -542,6 +563,9 @@
       </div>
     </div>
   </div>
+  <div class="conn-save-row">
+    <button type="button" class="action-btn secondary" id="saveInstanceBtn" data-tip="Save these credentials as a new connection">Save for later</button>
+  </div>
   <div class="conn-actions">
     <button type="button" class="action-btn" id="connectBtn" data-tip="Connect to detect the vendor prefix and check for an existing install">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8z"/></svg>
@@ -551,20 +575,25 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8z"/><line x1="4" y1="4" x2="20" y2="20"/></svg>
       Disconnect
     </button>
-    <button type="button" class="action-btn secondary" id="saveInstanceBtn" data-tip="Save these credentials as a new connection">Save for later</button>
     <span id="detectStatus" class="status" style="margin:0;"></span>
   </div>
   <p class="field-hint" id="connectionHint">To add a saved connection, leave New connection selected, fill in the fields, then click Save for later.</p>
 </div>
 
 <div class="panel" id="bridgeSection" style="display:none;">
+  <p class="panel-intro">Deploy with Now SDK needs a local Node process in a <strong>second terminal</strong> (separate from your web server). Copy the command below, paste it there, and leave that window open while you Connect and Deploy.</p>
   <div class="bridge-status" id="bridgeStatusBar" aria-live="polite">
     <span class="bridge-dot" id="bridgeDot" data-state="checking" aria-hidden="true"></span>
     <span class="bridge-label" id="bridgeStatusLabel">SDK bridge: checking…</span>
     <button type="button" class="action-btn secondary bridge-btn" id="bridgeCheckBtn" data-tip="Ping the local SDK bridge again">Check again</button>
-    <button type="button" class="action-btn secondary bridge-btn" id="bridgeCopyCmdBtn" data-tip="Copy an absolute-path bridge start command (works from any directory in the repo)">Copy start command</button>
+    <button type="button" class="action-btn secondary bridge-btn" id="bridgeCopyCmdBtn" data-tip="Copy the bridge start command">Copy command</button>
+    <button type="button" class="action-btn secondary bridge-btn" id="bridgeSyncBtn" hidden data-tip="Push Connect credentials to the local Now SDK store">Sync credentials</button>
   </div>
-  <p class="field-hint" style="margin-top:10px;margin-bottom:0;">The browser cannot start Node. If the bridge is offline, click <strong>Copy start command</strong>, paste it in a terminal (any folder inside this git repo is fine), then click Check again. Credentials sync to the bridge automatically after Connect when the bridge is online.</p>
+  <div class="bridge-cmd-wrap" id="bridgeCmdWrap">
+    <label for="bridgeCmdText">Terminal command</label>
+    <textarea id="bridgeCmdText" class="bridge-cmd" readonly rows="2" spellcheck="false" aria-label="Bridge start command"></textarea>
+    <p class="field-hint">Paste in Terminal and press Enter. You should see <code>SN Deployment Packager SDK bridge listening on http://127.0.0.1:17345</code> within a second. No new shell prompt after that is normal — leave the window open.</p>
+  </div>
 </div>
 
 <div class="panel" id="overridesSection" style="display:none;">

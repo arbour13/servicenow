@@ -347,8 +347,20 @@ var server = http.createServer(function (req, res) {
   sendJson(res, 404, { ok: false, error: 'Not found' });
 });
 
+server.on('error', function (err) {
+  if (err && err.code === 'EADDRINUSE') {
+    console.error('[sdk-bridge] Port ' + PORT + ' is already in use.');
+    console.error('[sdk-bridge] A bridge is probably already running — in the packager console click Check again.');
+    console.error('[sdk-bridge] Or run: curl http://127.0.0.1:' + PORT + '/health');
+    process.exit(1);
+  }
+  console.error('[sdk-bridge] Failed to start:', err && err.message ? err.message : err);
+  process.exit(1);
+});
+
 server.listen(PORT, HOST, function () {
-  console.log('[sdk-bridge] listening on http://' + HOST + ':' + PORT);
+  console.log('SN Deployment Packager SDK bridge listening on http://' + HOST + ':' + PORT);
   console.log('[sdk-bridge] suite root: ' + ROOT);
   console.log('[sdk-bridge] Endpoints: GET /health, GET /fluent-sources, POST /auth, POST /deploy (NDJSON)');
+  console.log('[sdk-bridge] Leave this terminal open while using the packager console.');
 });

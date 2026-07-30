@@ -688,7 +688,10 @@
     transform: translateY(0);
   }
 }.dm-widget .film .fcard {
-  animation: dmCardIn 0.24s ease-out both;
+  /* backwards (not both): keep the from-state during the stagger delay, then RELEASE transform
+     when the animation ends so .fcard:hover's translateY lift can apply. `both`/`forwards` left
+     transform: translateY(0) pinned and silently killed the hover. */
+  animation: dmCardIn 0.24s ease-out backwards;
   animation-delay: #{'calc(#{'min(var(--i, 0), 5)'} * 0.035s)'};
 }@media (prefers-reduced-motion: reduce) {.dm-widget .search-overlay, .dm-widget .msg-overlay, .dm-widget .search-modal, .dm-widget .msg-dialog, .dm-widget .film .fcard, .dm-widget .rg-roles-shown .rg-table th.rg-rolecol, .dm-widget .rg-roles-shown .rg-table tbody td:not(.tname), .dm-widget .rg-roles-shown .rg-table tfoot td:not(.tname) {
     animation: none;

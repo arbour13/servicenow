@@ -22,11 +22,21 @@ npx --yes serve -l 4173 .
 ## Deploy with Now SDK (SDK bridge)
 
 The browser console cannot run `now-sdk` itself. A tiny **localhost bridge** registers the Connect
-panel’s credentials with the Now SDK and streams install progress:
+panel’s credentials with the Now SDK and streams install progress.
+
+**Step 1 — start the bridge** (keep this terminal open):
 
 ```bash
-# From the suite root (keep this terminal open while using the console)
-node "$(git rev-parse --show-toplevel)/tools/sn-deployment-packager/sdk-bridge.js"
+node $HOME/Documents/Projects/servicenow/tools/sn-deployment-packager/sdk-bridge.js
+```
+
+The packager console shows the exact command for your machine (Copy command in the SDK bridge panel).
+You should see `SN Deployment Packager SDK bridge listening on http://127.0.0.1:17345`.
+
+Alternative from the packager folder:
+
+```bash
+cd tools/sn-deployment-packager && npm run bridge
 ```
 
 Then in the console (for an app with Connect enabled, e.g. Delivery Methodology):
@@ -35,8 +45,8 @@ Then in the console (for an app with Connect enabled, e.g. Delivery Methodology)
 2. Review **App name / App ID / Version** (Version is suggested from Fluent-vs-prior change size — edit freely).
 3. **Deploy with Now SDK** — opens a progress modal, syncs Connect credentials into the SDK Keychain, rebuilds `apps/<app>/deploy/fluent/`, then runs `now-sdk build` + `now-sdk install`.
 
-The bridge listens only on `127.0.0.1:17345`. Passwords are not logged or written to disk. If the
-bridge is offline, Deploy stays disabled (hover the button for how to start it).
+The bridge listens only on `127.0.0.1:17345`. Passwords are not logged or written to disk. The console
+polls every few seconds for bridge status. If sync fails, use **Sync credentials** in the bridge panel.
 
 ### Progress stream
 

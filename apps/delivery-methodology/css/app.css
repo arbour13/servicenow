@@ -938,7 +938,10 @@ button {
   }
 }
 .film .fcard {
-  animation: dmCardIn 0.24s ease-out both;
+  /* backwards (not both): keep the from-state during the stagger delay, then RELEASE transform
+     when the animation ends so .fcard:hover's translateY lift can apply. `both`/`forwards` left
+     transform: translateY(0) pinned and silently killed the hover. */
+  animation: dmCardIn 0.24s ease-out backwards;
   animation-delay: calc(min(var(--i, 0), 5) * 0.035s);
 }
 
@@ -4344,5 +4347,3 @@ select.edit-in option {
   font-size: 10.5px;
   color: var(--ink-2);
 }
-
-/*# sourceMappingURL=app.css.map */
