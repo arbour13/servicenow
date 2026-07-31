@@ -1,4 +1,4 @@
-api.controller = function ($rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService, ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService, RaciGridService, UrlPolicyService, SearchService, MotionService) {
+api.controller = function ($rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService, ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService, RaciGridService, UrlPolicyService, SearchService, MotionService, MessagingService) {
   'use strict';
   var c = this;
 
@@ -220,54 +220,49 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   syncAll();
   AppStateService.subscribe($rootScope, $scope, syncAll);
 
-  // Is the panel far enough down that selecting a sub-phase would change only off-screen content?
-  // Measured BEFORE the swap, because the answer decides which of two mutually exclusive motions
-  // runs (see openPanelContent) - and the panel's top edge is set by the chrome above it, which
-  // the swap does not move, so a pre-measurement stays valid.
-  function panelNeedsReveal() {
-    var panel = document.querySelector('.panel');
+  // One-time "Load standard content" action offered by the empty-state below when this
+  // instance's content table is empty. Guarded by canEdit/isSaving in the template (same as
+  // every other write action here) - AppStateService.seedStandard() itself also refuses a
+  // double-fire via tryBeginSave(), and the server refuses outright if the table already has
+  // rows, so this button cannot clobber existing content no matter how it's triggered.
+  c.seedStandard = function () {
+    AppStateService.seedStandard();
+  };
 
-    if (!panel) {
-      return false;
+  // Testing affordance for the empty state / one-click load above: wipes all content so that flow
+  // can be run again. Destructive and irreversible (there is no undo - the save path deletes and
+  // recreates rows wholesale), hence the confirm, the danger styling, and the structure-edit-only
+  // placement rather than a button sitting on the read view. Content edit blocks it for the same
+  // reason every other structural write does: a half-finished sub-phase edit would be lost.
+  c.resetAllContent = function () {
+    if (c.editMode) {
+      MessagingService.toast('Finish editing first');
+      return;
     }
 
-    var top = panel.getBoundingClientRect().top;
-    return !(top >= 0 && top < window.innerHeight * 0.5);
-  }
-
-  // Picking a phase station or filmstrip card swaps the detail panel, but that panel starts below
-  // the fold on a normal desktop viewport (measured: panel top ~942px against a 720px viewport,
-  // with the About intro and roadmap above it), so the click appeared to do nothing.
-  function revealPanel() {
-    $timeout(function () {
-      var panel = document.querySelector('.panel');
-
-      if (!panel) {
+    MessagingService.confirm({
+      title: 'Clear all content?',
+      body: 'Deletes every methodology, phase, sub-phase and task on this instance. This cannot be undone - ' +
+        'you can reload the standard content afterwards.',
+      cancel: 'Keep',
+      ok: 'Clear everything'
+    }).then(function (accepted) {
+      if (!accepted) {
         return;
       }
+      AppStateService.resetAllContent();
+    });
+  };
 
-      panel.scrollIntoView({
-        behavior: MotionService.prefersReducedMotion() ? 'auto' : 'smooth',
-        block: 'start'
-      });
-    }, 0);
-  }
-
-  // Exactly ONE of the two motions runs per selection, never both: a View Transition crossfades a
-  // before/after snapshot of the page, so running it while a smooth scroll is mid-flight would
-  // crossfade two different scroll positions and read as a slide. When the panel is off-screen the
-  // scroll IS the continuity cue (it shows you where the content went), so the crossfade is
-  // redundant; when the panel is already in view there is no scroll, and the crossfade is the only
-  // thing signalling that the content underneath changed.
+  // Selecting a sub-phase never moves scroll position, on purpose - an earlier version scrolled
+  // the panel into view when it was off-screen (panel.scrollIntoView({behavior:'smooth'})), but
+  // the panel's OWN height changes as part of the same click (the new sub-phase's content is a
+  // different length), so the smooth-scroll's target shifted mid-flight and the browser
+  // overshot-and-corrected - a visible fall-then-rise wobble. The crossfade alone is the
+  // continuity cue now; if the panel is off-screen the reader scrolls to it themselves, same as
+  // any other page.
   function openPanelContent(applyNavigation) {
-    if (panelNeedsReveal()) {
-      applyNavigation();
-      revealPanel();
-      return false;
-    }
-
     MotionService.transition(applyNavigation);
-    return true;
   }
 
   // Replays the filmstrip's stagger. Needed because every phase's strip stays mounted and is only
@@ -300,17 +295,12 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   }
 
   // Only selectPhase swaps which SET of cards is on screen (openSubPhase just moves the .on
-  // marker), so the restage belongs here alone - and only on the scroll path, since the crossfade
-  // path already animates the card set changing as part of the whole-page transition. One motion
-  // per interaction, same either/or rule openPanelContent uses for scroll vs crossfade.
+  // marker), so the restage belongs here alone.
   c.selectPhase = function (phaseIndex) {
-    var crossfaded = openPanelContent(function () {
+    openPanelContent(function () {
       NavigationService.selectPhase(phaseIndex);
     });
-
-    if (!crossfaded) {
-      restageFilmstrip();
-    }
+    restageFilmstrip();
   };
   c.openSubPhase = function (subPhaseId) {
     openPanelContent(function () {

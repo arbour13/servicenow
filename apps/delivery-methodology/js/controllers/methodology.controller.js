@@ -5,13 +5,13 @@
    action methods; see shell.controller.js's header comment and AppStateService's for why
    $rootScope.$on('dm-state', ...) is how this stays in sync with sibling widgets. */
 angular.module('deliveryMethodology').controller('DmMethodologyController', [
-  '$rootScope', '$scope', '$timeout', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'WhatsNewService',
+  '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'WhatsNewService',
   'ReferenceService', 'IconService', 'JargonService', 'TipService', 'ContentEditService', 'StructureEditService',
-  'RaciGridService', 'UrlPolicyService', 'SearchService', 'MotionService',
+  'RaciGridService', 'UrlPolicyService', 'SearchService', 'MessagingService',
   function (
-    $rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService,
+    $rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService,
     ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService,
-    RaciGridService, UrlPolicyService, SearchService, MotionService
+    RaciGridService, UrlPolicyService, SearchService, MessagingService
   ) {
   'use strict';
   var c = this;
@@ -243,102 +243,43 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
     AppStateService.seedStandard();
   };
 
-  // Is the panel far enough down that selecting a sub-phase would change only off-screen content?
-  // Measured BEFORE the swap, because the answer decides which of two mutually exclusive motions
-  // runs (see openPanelContent) - and the panel's top edge is set by the chrome above it, which
-  // the swap does not move, so a pre-measurement stays valid.
-  function panelNeedsReveal() {
-    var panel = document.querySelector('.panel');
-
-    if (!panel) {
-      return false;
-    }
-
-    var top = panel.getBoundingClientRect().top;
-    return !(top >= 0 && top < window.innerHeight * 0.5);
-  }
-
-  // Picking a phase station or filmstrip card swaps the detail panel, but that panel starts below
-  // the fold on a normal desktop viewport (measured: panel top ~942px against a 720px viewport,
-  // with the About intro and roadmap above it), so the click appeared to do nothing.
-  function revealPanel() {
-    $timeout(function () {
-      var panel = document.querySelector('.panel');
-
-      if (!panel) {
-        return;
-      }
-
-      panel.scrollIntoView({
-        behavior: MotionService.prefersReducedMotion() ? 'auto' : 'smooth',
-        block: 'start'
-      });
-    }, 0);
-  }
-
-  // Exactly ONE of the two motions runs per selection, never both: a View Transition crossfades a
-  // before/after snapshot of the page, so running it while a smooth scroll is mid-flight would
-  // crossfade two different scroll positions and read as a slide. When the panel is off-screen the
-  // scroll IS the continuity cue (it shows you where the content went), so the crossfade is
-  // redundant; when the panel is already in view there is no scroll, and the crossfade is the only
-  // thing signalling that the content underneath changed.
-  function openPanelContent(applyNavigation) {
-    if (panelNeedsReveal()) {
-      applyNavigation();
-      revealPanel();
-      return false;
-    }
-
-    MotionService.transition(applyNavigation);
-    return true;
-  }
-
-  // Replays the filmstrip's stagger. Needed because every phase's strip stays mounted and is only
-  // ng-show/ng-hidden (the template keeps them all built on purpose), so the cards are never
-  // recreated - and, verified empirically, a display:none → visible flip does NOT restart their
-  // CSS animation the way creating the element would. Re-running the existing animation objects is
-  // cleaner than the usual remove-class/force-reflow/re-add-class trick and needs no extra class.
-  function restageFilmstrip() {
-    if (MotionService.prefersReducedMotion()) {
+  // Testing affordance for the empty state / one-click load above: wipes all content so that flow
+  // can be run again. Destructive and irreversible (there is no undo - the save path deletes and
+  // recreates rows wholesale), hence the confirm, the danger styling, and the structure-edit-only
+  // placement rather than a button sitting on the read view. Content edit blocks it for the same
+  // reason every other structural write does: a half-finished sub-phase edit would be lost.
+  c.resetAllContent = function () {
+    if (c.editMode) {
+      MessagingService.toast('Finish editing first');
       return;
     }
 
-    $timeout(function () {
-      var cards = document.querySelectorAll('.methodology-chrome:not(.ng-hide) .film:not(.ng-hide) .fcard');
-      var index;
-
-      for (index = 0; index < cards.length; index++) {
-        if (typeof cards[index].getAnimations !== 'function') {
-          return;
-        }
-
-        cards[index].getAnimations().forEach(function (animation) {
-          if (animation.animationName === 'dmCardIn') {
-            animation.cancel();
-            animation.play();
-          }
-        });
+    MessagingService.confirm({
+      title: 'Clear all content?',
+      body: 'Deletes every methodology, phase, sub-phase and task on this instance. This cannot be undone - ' +
+        'you can reload the standard content afterwards.',
+      cancel: 'Keep',
+      ok: 'Clear everything'
+    }).then(function (accepted) {
+      if (!accepted) {
+        return;
       }
-    }, 0);
-  }
-
-  // Only selectPhase swaps which SET of cards is on screen (openSubPhase just moves the .on
-  // marker), so the restage belongs here alone - and only on the scroll path, since the crossfade
-  // path already animates the card set changing as part of the whole-page transition. One motion
-  // per interaction, same either/or rule openPanelContent uses for scroll vs crossfade.
-  c.selectPhase = function (phaseIndex) {
-    var crossfaded = openPanelContent(function () {
-      NavigationService.selectPhase(phaseIndex);
+      AppStateService.resetAllContent();
     });
+  };
 
-    if (!crossfaded) {
-      restageFilmstrip();
-    }
+  // Selecting a phase or sub-phase applies INSTANTLY - no animation of any kind on the cards or
+  // on the panel content, and no scroll. Several layered attempts at motion here (a whole-page
+  // View Transition, then a panel-scoped one, a filmstrip stagger, an entry translate, an animated
+  // accent rail, a scroll-into-view) each produced their own visible jump on click. Selection is a
+  // high-frequency, precise action taken with the pointer already resting on the target - it wants
+  // to feel like nothing moved except the content being replaced. The card's ONLY movement is
+  // :hover's lift; the panel just swaps.
+  c.selectPhase = function (phaseIndex) {
+    NavigationService.selectPhase(phaseIndex);
   };
   c.openSubPhase = function (subPhaseId) {
-    openPanelContent(function () {
-      NavigationService.openSubPhase(subPhaseId);
-    });
+    NavigationService.openSubPhase(subPhaseId);
   };
   c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
     NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);
@@ -368,8 +309,11 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   c.methodologyNeedsSetup = function (methodology) {
     return StructureEditService.methodologyNeedsSetup(methodology);
   };
-  c.deleteMethodology = function () {
-    StructureEditService.deleteMethodology();
+  c.unsettledMethodology = function () {
+    return (c.methodologies || []).find(c.methodologyNeedsSetup);
+  };
+  c.deleteMethodology = function (methodology) {
+    StructureEditService.deleteMethodology(methodology);
   };
   c.renamePhase = function (phase) {
     StructureEditService.renamePhase(phase);
@@ -377,23 +321,23 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   c.renameSubPhase = function (subPhase) {
     StructureEditService.renameSubPhase(subPhase);
   };
-  c.addPhase = function () {
-    StructureEditService.addPhase();
+  c.addPhase = function (methodology) {
+    StructureEditService.addPhase(methodology);
   };
-  c.addSubPhase = function (phaseIndex) {
-    StructureEditService.addSubPhase(phaseIndex);
+  c.addSubPhase = function (phaseIndex, methodology) {
+    StructureEditService.addSubPhase(phaseIndex, methodology);
   };
-  c.movePhase = function (index, direction) {
-    StructureEditService.movePhase(index, direction);
+  c.movePhase = function (index, direction, methodology) {
+    StructureEditService.movePhase(index, direction, methodology);
   };
-  c.moveSubPhase = function (phaseIndex, index, direction) {
-    StructureEditService.moveSubPhase(phaseIndex, index, direction);
+  c.moveSubPhase = function (phaseIndex, index, direction, methodology) {
+    StructureEditService.moveSubPhase(phaseIndex, index, direction, methodology);
   };
-  c.deletePhase = function (index) {
-    StructureEditService.deletePhase(index);
+  c.deletePhase = function (index, methodology) {
+    StructureEditService.deletePhase(index, methodology);
   };
-  c.deleteSubPhase = function (phaseIndex, index) {
-    StructureEditService.deleteSubPhase(phaseIndex, index);
+  c.deleteSubPhase = function (phaseIndex, index, methodology) {
+    StructureEditService.deleteSubPhase(phaseIndex, index, methodology);
   };
 
   c.enterEdit = function () {

@@ -1,9 +1,9 @@
 {
-  "name": "glidefast-standards-portal",
+  "name": "glidefast-docs",
   "private": true,
   "scripts": {
     "build:css": "sass scss/app.scss css/app.css --no-source-map",
-    "build:standards": "node scripts/build-standards.js"
+    "build:docs": "node scripts/build-docs.js"
   },
   "devDependencies": {
     "sass": "^1.101.0"

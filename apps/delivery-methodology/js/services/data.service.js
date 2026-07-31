@@ -277,6 +277,47 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
         return responseData;
       });
     },
+    // Testing counterpart to seedStandard(): wipes ALL content so the empty state (and the
+    // one-click load) can be exercised repeatedly. Deliberately does NOT go through saveData() -
+    // that reuses cachedJobTitles/cachedJargon/cachedReferenceSections, which would leave those
+    // lookup rows behind and the table non-empty, so seedStandard's emptiness guard would then
+    // refuse the reload. Sends explicitly empty collections instead, and clears the caches so a
+    // subsequent save cannot resurrect them.
+    resetAllContent: function () {
+      cachedJobTitles = [];
+      cachedJargon = {};
+      cachedReferenceSections = [];
+
+      if (!serverApi) {
+        var seed = readSeed();
+        var seedVersion = (seed && seed.version) || 0;
+        storeMethodologies([], seedVersion);
+        return $q.resolve({
+          saved: true
+        });
+      }
+
+      return serverApi.get({
+        action: 'save',
+        methodologies: [],
+        jobTitles: [],
+        jargon: {},
+        referenceSections: [],
+        contentRevision: cachedContentRevision || ''
+      }).then(function (response) {
+        var responseData = (response && response.data) || {};
+
+        if (responseData.error || responseData.saved === false) {
+          return rejectServerError(responseData, 'Could not clear content.');
+        }
+
+        if (responseData.contentRevision != null) {
+          cachedContentRevision = String(responseData.contentRevision);
+        }
+
+        return responseData;
+      });
+    },
     // One-time "Load standard content" action for an instance whose content table is empty.
     // Harness fallback re-derives the payload from window.DMSeed and PERSISTS it (not just an
     // in-memory resolve) - the harness's own "empty" state only exists after a real

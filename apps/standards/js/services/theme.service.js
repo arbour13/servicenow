@@ -1,14 +1,13 @@
 /* Light/dark theme service. Handles the app-wide light/dark toggle (html[data-theme]), persisted to
    localStorage and applied straight to documentElement.
 
-   init('standardsPortal') namespaces this app's stored preference ('standardsPortalTheme')
+   init('glidefastDocs') namespaces this app's stored preference ('glidefastDocsTheme')
    independently of any other app - this is why the service is init-first rather than reading
    localStorage at construction.
 
    Own copy, not shared - this is the slim, app-theme-only subset (no editor-theme half; this app has
-   no output pane). The full version (with the editor-theme cycle) lives in Glide Studio, the only
-   app that needs it. */
-angular.module('standardsPortal').factory('ThemeService', [function () {
+   no output pane). */
+angular.module('glidefastDocs').factory('ThemeService', [function () {
   'use strict';
 
   var THEME_KEY; // set by init()

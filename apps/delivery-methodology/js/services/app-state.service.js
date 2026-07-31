@@ -267,6 +267,40 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     });
   }
 
+  // Testing counterpart to seedStandard() - clears all content so the fresh-instance empty state
+  // can be exercised repeatedly. Runs the same applyLoadedData() pipeline on the way back, which
+  // takes its own empty branch (null methodologyId/subPhaseId, no nav push) and leaves every
+  // widget correctly showing nothing.
+  function resetAllContent() {
+    if (!tryBeginSave()) {
+      return $q.reject({
+        error: 'Save already in progress'
+      });
+    }
+
+    return DataService.resetAllContent().then(function () {
+      state.isSaving = false;
+      return applyLoadedData({
+        methodologies: [],
+        jobTitles: [],
+        jargon: {},
+        referenceSections: []
+      }, {
+        canEdit: state.canEdit,
+        onAfterLoad: hooks.onAfterLoad
+      });
+    }, function (error) {
+      state.isSaving = false;
+      notify();
+      var message = 'Could not clear content.';
+      if (error && error.error) {
+        message = error.error;
+      }
+      MessagingService.toast(message);
+      return $q.reject(error);
+    });
+  }
+
   function applyLoadedData(data, options) {
     var loadOptions = options || {};
     silenced = true;
@@ -388,6 +422,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     persistMethodologies: persistMethodologies,
     applyLoadedData: applyLoadedData,
     seedStandard: seedStandard,
+    resetAllContent: resetAllContent,
     readState: readState,
     bindActiveView: bindActiveView,
     subscribe: subscribe,

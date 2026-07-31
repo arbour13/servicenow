@@ -8,7 +8,18 @@
         <div class="view-root" ng-class="{editing: c.editMode || c.structureEditMode, 'view-blur': c.searchOpen()}"
           ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
-        <p class="empty" ng-if="!c.loading && !c.methodologies.length">No methodology content yet. Use structure edit in the header to add a methodology.</p>
+        <!-- Fresh-instance empty state (methodologies.length === 0 - no seed ships with the deploy
+           artifact, so this is genuinely what a brand-new install looks like before the one-time
+           load). Editors get the action; a plain viewer gets an honest status line and no button
+           they couldn't use anyway (c.seedStandard is gated server-side on the editor/admin role,
+           same as any other write). -->
+        <div class="content-empty-state" ng-if="!c.loading && !c.methodologies.length">
+          <p class="content-empty-lede" ng-if="c.canEdit">The standard GlideFast Delivery 2.0 content hasn&rsquo;t
+            been loaded on this instance yet.</p>
+          <p class="content-empty-lede" ng-if="!c.canEdit">No methodology content yet.</p>
+          <button type="button" class="btn primary" ng-if="c.canEdit" ng-click="c.seedStandard()"
+            ng-disabled="c.isSaving">{{c.isSaving ? 'Loading…' : 'Load standard content'}}</button>
+        </div>
 
         <!-- One mounted methodology chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
          toggles visibility instead of destroying/rebuilding every station + film card. -->
@@ -149,6 +160,16 @@
             </div>
             <button type="button" class="add-item-btn struct-add-phase" ng-click="c.addPhase()"
               ng-disabled="c.isSaving">+ Add phase</button>
+          </div>
+
+          <!-- Testing affordance for the fresh-instance empty state / one-click standard load.
+             Kept at the very bottom, behind a confirm and danger styling, and inside structure
+             edit rather than on the read view - it deletes everything on the instance. -->
+          <div class="struct-danger-zone">
+            <button type="button" class="btn danger" ng-click="c.resetAllContent()"
+              ng-disabled="c.isSaving">Clear all content</button>
+            <span class="struct-danger-hint">Wipes every methodology so the &ldquo;Load standard content&rdquo;
+              flow can be tested again.</span>
           </div>
         </div>
 

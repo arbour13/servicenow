@@ -1,105 +1,105 @@
-/* GlideFast Standards Portal - visual identity: card-based layout, light/dark theming, and
-   Standards-page (.std-*) treatment, trimmed to only what this standalone doc viewer needs (no
-   builder forms, no output pane, no sidenav/mode-switcher).
+/* GlideFast Docs - visual identity: card-based layout, light/dark theming, and docs-page (.docs-*)
+   treatment, trimmed to only what this standalone reference viewer needs (no builder forms, no
+   output pane, no sidenav/mode-switcher).
 
    SCSS SOURCE, not hand-edited CSS - css/app.css is a BUILD OUTPUT (npx sass scss/app.scss
    css/app.css --no-source-map). Edit this file, not that one.
 
    Color tokens stay real SCSS variables with `!default` so a future ServiceNow deploy (see
-   scripts/build-deploy.js) can ship them as a Theme's actual CSS Variables and have this file's
+   deploy.manifest.js) can ship them as a Theme's actual CSS Variables and have this file's
    content ship as a CSS Include that references them uncompiled. */
 
 // ---------- Light (default) palette ----------
-$gs-bg: #f4f5f7 !default;
-$gs-panel: #ffffff !default;
-$gs-panel-alt: #fbfbfd !default;
-$gs-border: #e2e5ea !default;
-$gs-border-strong: #d2d6dd !default;
-$gs-text: #1c2128 !default;
-$gs-muted: #6b7280 !default;
-$gs-faint: #9aa1ab !default;
-$gs-accent: #054b80 !default;
-$gs-accent-hover: #043a63 !default;
-$gs-accent-soft: #e6eef5 !default;
-$gs-accent-soft-hover: #d6e6f2 !default;
-$gs-accent-border: #b3cae0 !default;
-// Topbar background - the brand navy the source app used for its sidenav; this app has no
-// sidenav, just a slim top bar, but keeps the same brand color for it.
-$gs-topbar-bg: #054b80 !default;
+$gfd-bg: #f4f5f7 !default;
+$gfd-panel: #ffffff !default;
+$gfd-panel-alt: #fbfbfd !default;
+$gfd-border: #e2e5ea !default;
+$gfd-border-strong: #d2d6dd !default;
+$gfd-text: #1c2128 !default;
+$gfd-muted: #6b7280 !default;
+$gfd-faint: #9aa1ab !default;
+$gfd-accent: #054b80 !default;
+$gfd-accent-hover: #043a63 !default;
+$gfd-accent-soft: #e6eef5 !default;
+$gfd-accent-soft-hover: #d6e6f2 !default;
+$gfd-accent-border: #b3cae0 !default;
+// Topbar background - the brand navy this app has always used, kept for continuity even though
+// there's no sidenav here, just a slim top bar.
+$gfd-topbar-bg: #054b80 !default;
 
-$gs-purple: #6d3fc9 !default;
-$gs-purple-soft: #f1ecfb !default;
-$gs-purple-border: #d3c2ee !default;
-$gs-green: #15803d !default;
-$gs-green-soft: #e8f5ec !default;
-$gs-green-border: #bfe3cb !default;
+$gfd-purple: #6d3fc9 !default;
+$gfd-purple-soft: #f1ecfb !default;
+$gfd-purple-border: #d3c2ee !default;
+$gfd-green: #15803d !default;
+$gfd-green-soft: #e8f5ec !default;
+$gfd-green-border: #bfe3cb !default;
 
-// Code-sample palette - the doc's <pre> blocks use a generated-script-style highlighter look
-// (.c-kw/.c-str/.c-num/.c-com/.c-fn). Bound directly to these $gs-ed-* values (not var(--...)) per
-// app THEME - see the .std-pre rule below for why.
-$gs-ed-bg: #ffffff !default;
-$gs-ed-text: #1c2128 !default;
-$gs-ed-border: #e2e5ea !default;
-$gs-ed-kw: #8250df !default;
-$gs-ed-str: #116329 !default;
-$gs-ed-num: #953800 !default;
-$gs-ed-com: #6b7280 !default;
-$gs-ed-fn: #0550ae !default;
+// Code-sample palette - the docs' <pre> blocks use a generated-script-style highlighter look
+// (.c-kw/.c-str/.c-num/.c-com/.c-fn). Bound directly to these $gfd-ed-* values (not var(--...)) per
+// app THEME - see the .docs-pre rule below for why.
+$gfd-ed-bg: #ffffff !default;
+$gfd-ed-text: #1c2128 !default;
+$gfd-ed-border: #e2e5ea !default;
+$gfd-ed-kw: #8250df !default;
+$gfd-ed-str: #116329 !default;
+$gfd-ed-num: #953800 !default;
+$gfd-ed-com: #6b7280 !default;
+$gfd-ed-fn: #0550ae !default;
 
-$gs-ed-bg-dark: #1b1f2a !default;
-$gs-ed-text-dark: #e6e9ef !default;
-$gs-ed-border-dark: #2c3242 !default;
-$gs-ed-kw-dark: #c792ea !default;
-$gs-ed-str-dark: #c3e88d !default;
-$gs-ed-num-dark: #f78c6c !default;
-$gs-ed-com-dark: #5a6275 !default;
-$gs-ed-fn-dark: #82aaff !default;
+$gfd-ed-bg-dark: #1b1f2a !default;
+$gfd-ed-text-dark: #e6e9ef !default;
+$gfd-ed-border-dark: #2c3242 !default;
+$gfd-ed-kw-dark: #c792ea !default;
+$gfd-ed-str-dark: #c3e88d !default;
+$gfd-ed-num-dark: #f78c6c !default;
+$gfd-ed-com-dark: #5a6275 !default;
+$gfd-ed-fn-dark: #82aaff !default;
 
 // ---------- Dark palette ----------
-$gs-bg-dark: #10131a !default;
-$gs-panel-dark: #1a1f29 !default;
-$gs-panel-alt-dark: #20262f !default;
-$gs-border-dark: #2a3040 !default;
-$gs-border-strong-dark: #3b4353 !default;
-$gs-text-dark: #e7ebf2 !default;
-$gs-muted-dark: #9aa3b6 !default;
-$gs-faint-dark: #6b7385 !default;
-$gs-accent-dark: #5b9fe0 !default;
-$gs-accent-hover-dark: #7ab3ea !default;
-$gs-accent-soft-dark: rgba(91, 159, 224, 0.16) !default;
-$gs-accent-soft-hover-dark: rgba(91, 159, 224, 0.28) !default;
-$gs-accent-border-dark: rgba(91, 159, 224, 0.4) !default;
-$gs-topbar-bg-dark: #043962 !default;
-$gs-purple-dark: #b79cf0 !default;
-$gs-purple-soft-dark: rgba(183, 156, 240, 0.16) !default;
-$gs-purple-border-dark: rgba(183, 156, 240, 0.4) !default;
-$gs-green-dark: #6ee7a0 !default;
-$gs-green-soft-dark: rgba(110, 231, 160, 0.14) !default;
-$gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;
+$gfd-bg-dark: #10131a !default;
+$gfd-panel-dark: #1a1f29 !default;
+$gfd-panel-alt-dark: #20262f !default;
+$gfd-border-dark: #2a3040 !default;
+$gfd-border-strong-dark: #3b4353 !default;
+$gfd-text-dark: #e7ebf2 !default;
+$gfd-muted-dark: #9aa3b6 !default;
+$gfd-faint-dark: #6b7385 !default;
+$gfd-accent-dark: #5b9fe0 !default;
+$gfd-accent-hover-dark: #7ab3ea !default;
+$gfd-accent-soft-dark: rgba(91, 159, 224, 0.16) !default;
+$gfd-accent-soft-hover-dark: rgba(91, 159, 224, 0.28) !default;
+$gfd-accent-border-dark: rgba(91, 159, 224, 0.4) !default;
+$gfd-topbar-bg-dark: #043962 !default;
+$gfd-purple-dark: #b79cf0 !default;
+$gfd-purple-soft-dark: rgba(183, 156, 240, 0.16) !default;
+$gfd-purple-border-dark: rgba(183, 156, 240, 0.4) !default;
+$gfd-green-dark: #6ee7a0 !default;
+$gfd-green-soft-dark: rgba(110, 231, 160, 0.14) !default;
+$gfd-green-border-dark: rgba(110, 231, 160, 0.36) !default;
 
 :root {
-  --bg: #{$gs-bg};
-  --panel: #{$gs-panel};
-  --panel-alt: #{$gs-panel-alt};
-  --border: #{$gs-border};
-  --border-strong: #{$gs-border-strong};
-  --text: #{$gs-text};
-  --muted: #{$gs-muted};
-  --faint: #{$gs-faint};
-  --accent: #{$gs-accent};
-  --accent-hover: #{$gs-accent-hover};
-  --accent-soft: #{$gs-accent-soft};
-  --accent-soft-hover: #{$gs-accent-soft-hover};
-  --accent-border: #{$gs-accent-border};
-  --topbar-bg: #{$gs-topbar-bg};
-  --ed-bg: #{$gs-ed-bg};
-  --ed-text: #{$gs-ed-text};
-  --ed-border: #{$gs-ed-border};
-  --ed-kw: #{$gs-ed-kw};
-  --ed-str: #{$gs-ed-str};
-  --ed-num: #{$gs-ed-num};
-  --ed-com: #{$gs-ed-com};
-  --ed-fn: #{$gs-ed-fn};
+  --bg: #{$gfd-bg};
+  --panel: #{$gfd-panel};
+  --panel-alt: #{$gfd-panel-alt};
+  --border: #{$gfd-border};
+  --border-strong: #{$gfd-border-strong};
+  --text: #{$gfd-text};
+  --muted: #{$gfd-muted};
+  --faint: #{$gfd-faint};
+  --accent: #{$gfd-accent};
+  --accent-hover: #{$gfd-accent-hover};
+  --accent-soft: #{$gfd-accent-soft};
+  --accent-soft-hover: #{$gfd-accent-soft-hover};
+  --accent-border: #{$gfd-accent-border};
+  --topbar-bg: #{$gfd-topbar-bg};
+  --ed-bg: #{$gfd-ed-bg};
+  --ed-text: #{$gfd-ed-text};
+  --ed-border: #{$gfd-ed-border};
+  --ed-kw: #{$gfd-ed-kw};
+  --ed-str: #{$gfd-ed-str};
+  --ed-num: #{$gfd-ed-num};
+  --ed-com: #{$gfd-ed-com};
+  --ed-fn: #{$gfd-ed-fn};
   --radius: 10px;
   --radius-sm: 7px;
   --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
@@ -112,39 +112,55 @@ $gs-green-border-dark: rgba(110, 231, 160, 0.36) !default;
   --sp-xxl: 24px;
   --font: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
-  --purple: #{$gs-purple};
-  --purple-soft: #{$gs-purple-soft};
-  --purple-border: #{$gs-purple-border};
-  --green: #{$gs-green};
-  --green-soft: #{$gs-green-soft};
-  --green-border: #{$gs-green-border};
+  --purple: #{$gfd-purple};
+  --purple-soft: #{$gfd-purple-soft};
+  --purple-border: #{$gfd-purple-border};
+  --green: #{$gfd-green};
+  --green-soft: #{$gfd-green-soft};
+  --green-border: #{$gfd-green-border};
 }
 /* Dark mode. `data-theme` is set on <html> by vm.toggleTheme() (see ThemeService) - overriding the
    custom properties here is enough to re-theme every component that already references
-   var(--...) instead of a literal color; the handful that don't (the .std-pre code-sample surface)
-   get their own explicit :root[data-theme="dark"] overrides further down, same as the source app. */
+   var(--...) instead of a literal color; the handful that don't (the .docs-pre code-sample surface)
+   get their own explicit :root[data-theme="dark"] overrides further down. */
 :root[data-theme="dark"] {
-  --bg: #{$gs-bg-dark};
-  --panel: #{$gs-panel-dark};
-  --panel-alt: #{$gs-panel-alt-dark};
-  --border: #{$gs-border-dark};
-  --border-strong: #{$gs-border-strong-dark};
-  --text: #{$gs-text-dark};
-  --muted: #{$gs-muted-dark};
-  --faint: #{$gs-faint-dark};
-  --accent: #{$gs-accent-dark};
-  --accent-hover: #{$gs-accent-hover-dark};
-  --accent-soft: #{$gs-accent-soft-dark};
-  --accent-soft-hover: #{$gs-accent-soft-hover-dark};
-  --accent-border: #{$gs-accent-border-dark};
-  --topbar-bg: #{$gs-topbar-bg-dark};
+  --bg: #{$gfd-bg-dark};
+  --panel: #{$gfd-panel-dark};
+  --panel-alt: #{$gfd-panel-alt-dark};
+  --border: #{$gfd-border-dark};
+  --border-strong: #{$gfd-border-strong-dark};
+  --text: #{$gfd-text-dark};
+  --muted: #{$gfd-muted-dark};
+  --faint: #{$gfd-faint-dark};
+  --accent: #{$gfd-accent-dark};
+  --accent-hover: #{$gfd-accent-hover-dark};
+  --accent-soft: #{$gfd-accent-soft-dark};
+  --accent-soft-hover: #{$gfd-accent-soft-hover-dark};
+  --accent-border: #{$gfd-accent-border-dark};
+  --topbar-bg: #{$gfd-topbar-bg-dark};
   --shadow: 0 1px 2px rgba(0,0,0,.24), 0 1px 3px rgba(0,0,0,.32);
-  --purple: #{$gs-purple-dark};
-  --purple-soft: #{$gs-purple-soft-dark};
-  --purple-border: #{$gs-purple-border-dark};
-  --green: #{$gs-green-dark};
-  --green-soft: #{$gs-green-soft-dark};
-  --green-border: #{$gs-green-border-dark};
+  --purple: #{$gfd-purple-dark};
+  --purple-soft: #{$gfd-purple-soft-dark};
+  --purple-border: #{$gfd-purple-border-dark};
+  --green: #{$gfd-green-dark};
+  --green-soft: #{$gfd-green-soft-dark};
+  --green-border: #{$gfd-green-border-dark};
+}
+
+// The one shared focus-ring shape for every focusable element in the app - a soft-glow treatment
+// (border-color + a soft box-shadow "halo"), picked over a solid outset outline or an
+// adaptive-per-surface outline after a live comparison across this app's own components.
+// Deliberately just the ring itself: callers compose it with whatever grounding THEIR element
+// already has (border-color for bordered controls, a background tint for borderless rows). $inset
+// exists for elements that sit flush against a container edge (the topbar) where an outset ring
+// would get clipped by that container's own edge.
+@mixin gfd-focus-ring($glow: var(--accent-soft), $spread: 3px, $inset: false) {
+  outline: none;
+  @if $inset {
+    box-shadow: inset 0 0 0 $spread $glow;
+  } @else {
+    box-shadow: 0 0 0 $spread $glow;
+  }
 }
 
 /* ---------- Base reset ---------- */
@@ -187,12 +203,12 @@ input[type=text] {
   background: var(--panel); font: inherit; font-size: 13px; color: var(--text);
   transition: border-color .12s, box-shadow .12s;
 }
-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
 input::placeholder { color: var(--faint); }
 
 /* ---------- App shell ---------- */
-// No sidenav/mode-switcher (this app is nothing but the Standards page) - just a slim brand bar
-// pinned above the scrolling content pane.
+// No sidenav/mode-switcher (this app is nothing but the docs) - just a slim brand bar pinned above
+// the scrolling content pane.
 .app { display: flex; flex-direction: column; height: 100vh; }
 .topbar {
   flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
@@ -208,171 +224,197 @@ input::placeholder { color: var(--faint); }
   background: rgba(255,255,255,.12); color: #fff; cursor: pointer; transition: background .12s, border-color .12s;
 }
 .topbar-theme-toggle:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4); }
+// Inverse ring: var(--accent-soft) has poor contrast against this permanent navy background
+// regardless of app theme, so this uses a white glow instead - inset so it doesn't get clipped by
+// the topbar's own edge.
+.topbar-theme-toggle:focus-visible {
+  @include gfd-focus-ring($glow: rgba(255,255,255,.55), $spread: 2px, $inset: true);
+  border-color: rgba(255,255,255,.4);
+}
 
-// The scrolling content pane - StandardsUiService.scrollTo/scrollToTop/setupScrollSpy all query
-// `.builder` by class name for this element, so the name is kept even though there's no other
-// builder pane left to distinguish it from.
-.builder { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; padding: 0 var(--sp-xl) 80px; }
+// The scrolling content pane - DocsUiService's scrollTo/scrollToTop/setupScrollSpy and
+// MainController's docs-link click delegation all query `.docs-pane` by class name for this
+// element.
+.docs-pane { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; padding: 0 var(--sp-xl) 80px; }
 .page-title { display: flex; align-items: flex-start; gap: var(--sp-md); margin: 0 0 var(--sp-xxl); padding-top: var(--sp-xl); }
 .page-title > span:first-child { display: flex; color: var(--accent); }
 .page-title-name { font-size: 20px; font-weight: 650; color: var(--text); line-height: 1.1; }
 .page-title-sub { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-top: var(--sp-xxs); }
 .page-title-actions { margin-left: auto; align-self: center; display: flex; gap: var(--sp-sm); flex-wrap: wrap; justify-content: flex-end; }
-// Sticky header - stays reachable (title + search) while scrolled, since the doc runs far longer
+// Sticky header - stays reachable (title + search) while scrolled, since a page can run longer
 // than one screen. Background covers its own padding-top so nothing peeks through above it while
-// pinned (see the source app's own comment on this rule for the layout gotcha that requires it).
+// pinned.
 .page-title-sticky { position: sticky; top: 0; z-index: 5; background: var(--bg); }
 // Below this, the title text plus the search box's fixed 220px width no longer fit on one row -
 // wrap the search onto its own row rather than letting it run off the right edge (the fixed
-// std-search-wrap-header width was measured against a desktop-width header, not a phone one).
+// docs-search-wrap-header width was measured against a desktop-width header, not a phone one).
 @media (max-width: 560px) {
   .page-title { flex-wrap: wrap; }
   .page-title-actions { margin-left: 0; width: 100%; justify-content: flex-start; }
-  .std-search-wrap-header .std-search-input { width: 100%; }
+  .docs-search-wrap-header .docs-search-input { width: 100%; }
 }
 
-/* ---------- Standards page (hosted GlideFast best-practices document) ---------- */
-// Rendered from StandardsService's pre-parsed HTML (see scripts/build-standards.js). Two-column
-// layout: the reading column caps at .std-content's measure (940px) rather than stretching to
-// fill the pane, and a sticky rail uses the reclaimed width for an "on this page" nav.
-.standards-doc { display: flex; align-items: flex-start; gap: var(--sp-xxl); max-width: 1204px; margin: 0 auto; }
-.std-doc-main { flex: 1; min-width: 0; max-width: 940px; position: relative; overflow: hidden; }
-// Keeps a .std-band genuinely laid out (never display:none) while Overview is showing, so
-// StandardsUiService.scrollTo's getBoundingClientRect() measurement is always accurate the instant
-// a tile/rail-link is clicked - display:none was tried first and caused a real, reproduced bug
-// (a large layout-cost first reveal made the very next scrollTo land short).
-.std-reading-hidden { position: absolute; top: 0; left: 0; width: 100%; visibility: hidden; pointer-events: none; }
+/* ---------- Docs (hosted reference pages) ---------- */
+// Rendered from DocsService's pre-parsed HTML (see scripts/build-docs.js). Two-column layout: the
+// reading column caps at .docs-content's measure (940px) rather than stretching to fill the pane,
+// and a sticky rail uses the reclaimed width for group/page/section navigation.
+.docs-layout { display: flex; align-items: flex-start; gap: var(--sp-xxl); max-width: 1204px; margin: 0 auto; }
+.docs-layout-main { flex: 1; min-width: 0; max-width: 940px; position: relative; }
 
-.std-rail {
+.docs-rail {
   width: 240px; flex-shrink: 0; align-self: flex-start;
   position: sticky; top: 75px;
   max-height: calc(100vh - 75px - var(--sp-xl));
   overflow-y: auto; padding: 0 var(--sp-sm) var(--sp-lg);
 }
-.std-rail-overview {
+.docs-rail-home {
   display: block; width: 100%; text-align: left; border: 0; border-left: 2px solid transparent; background: transparent; cursor: pointer;
   font: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted);
   padding: var(--sp-xs) 0 var(--sp-xs) var(--sp-sm); margin-left: -1px; margin-bottom: var(--sp-lg);
   transition: color .12s, border-color .12s;
 }
-.std-rail .std-search-wrap {
+.docs-rail .docs-search-wrap {
   position: sticky; top: 0; z-index: 1; background: var(--bg);
   margin-bottom: var(--sp-md);
 }
-.std-rail .std-search-wrap .std-search-input { width: 100%; }
-.std-rail-overview:hover { color: var(--text); }
-.std-rail-overview.active { color: var(--accent); border-left-color: var(--accent); }
-.std-rail-band + .std-rail-band { margin-top: var(--sp-xl); }
-.std-rail-band-title {
-  display: block; width: 100%; text-align: left; border: 0; border-left: 2px solid transparent; background: transparent; cursor: pointer;
-  font: inherit; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+.docs-rail .docs-search-wrap .docs-search-input { width: 100%; }
+.docs-rail-home:hover { color: var(--text); }
+.docs-rail-home.active { color: var(--accent); border-left-color: var(--accent); }
+.docs-rail-home:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+.docs-rail-band + .docs-rail-band { margin-top: var(--sp-xl); }
+// Not a button (see index.html) - a group is a structural label, not something to navigate to.
+.docs-rail-band-title {
+  display: block; width: 100%; text-align: left;
+  font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
   color: var(--text); margin-left: -1px; margin-bottom: var(--sp-sm);
 }
-.std-rail-band-title:hover { color: var(--accent); }
-.std-rail-chapter { margin-bottom: 2px; }
-.std-rail-part-row { display: flex; align-items: stretch; }
-.std-rail-part {
+.docs-rail-chapter { margin-bottom: 2px; }
+.docs-rail-part-row { display: flex; align-items: stretch; }
+.docs-rail-part {
   flex: 1; min-width: 0; text-align: left; border: 0; background: transparent;
   border-left: 2px solid transparent; margin-left: -1px;
   padding: 3px 0 3px var(--sp-sm); cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
   color: var(--muted);
 }
-.std-rail-part:hover { color: var(--text); }
-.std-rail-part.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; letter-spacing: -0.02em; }
-.std-rail-expand {
+.docs-rail-part:hover { color: var(--text); }
+.docs-rail-part.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; letter-spacing: -0.02em; }
+.docs-rail-part:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+.docs-rail-expand {
   flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   width: 20px; border: 0; background: transparent; border-radius: var(--radius-sm);
   color: var(--faint); cursor: pointer; padding: 0;
   transition: color .12s, background .12s;
 }
-.std-rail-expand svg { transition: transform .15s; }
-.std-rail-expand.expanded svg { transform: rotate(90deg); }
-.std-rail-expand:hover { color: var(--text); background: var(--panel-alt); }
-.std-rail-sections { margin-bottom: 2px; }
-.std-rail-section {
+.docs-rail-expand svg { transition: transform .15s; }
+.docs-rail-expand.expanded svg { transform: rotate(90deg); }
+.docs-rail-expand:hover { color: var(--text); background: var(--panel-alt); }
+.docs-rail-expand:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+.docs-rail-sections { margin-bottom: 2px; }
+.docs-rail-section {
   display: block; width: 100%; text-align: left; border: 0; background: transparent;
   border-left: 2px solid transparent; margin-left: -1px;
   padding: 2px 0 2px var(--sp-lg); cursor: pointer; font: inherit; font-size: 11.5px; line-height: 1.6;
   color: var(--faint);
 }
-.std-rail-section:hover { color: var(--text); }
-.std-rail-section.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
-// Below this, .std-doc-main alone (940px) plus padding doesn't leave enough room for a 240px
+.docs-rail-section:hover { color: var(--text); }
+.docs-rail-section.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+.docs-rail-section:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+// Below this, .docs-layout-main alone (940px) plus padding doesn't leave enough room for a 240px
 // rail without cramping the reading column - the rail is the ONLY in-page nav, so below this
 // width the reader falls back to plain scrolling.
 @media (max-width: 1260px) {
-  .std-rail { display: none; }
+  .docs-rail { display: none; }
 }
 
-.std-link {
+.docs-link {
   border: 0; background: transparent; padding: 0; cursor: pointer;
   font: inherit; font-weight: 600; color: var(--accent); white-space: nowrap;
 }
-.std-link:hover { text-decoration: underline; }
+.docs-link:hover { text-decoration: underline; }
+.docs-link:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
 
-.std-band + .std-band { margin-top: var(--sp-xxl); }
-.std-band-heading {
-  font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em;
-  color: var(--text); margin: 0 0 var(--sp-lg);
-}
+// Breadcrumb on an open page's card-head ("Group / Page Title") - the group half stays muted so
+// the page's own title (plain text alongside it, not its own span) is what reads as the heading.
+.docs-breadcrumb { color: var(--faint); font-weight: 650; }
+.docs-breadcrumb-sep { color: var(--faint); margin: 0 var(--sp-xs); font-weight: 400; }
 
-// Standards search box - lives in the sticky .page-title so it stays reachable regardless of
-// scroll position or viewport width, unlike the Contents card it started in or the TOC rail
-// (which hides below 1260px). The clear "x" sits INSIDE the input's own box, not as a flex
-// sibling, so typing a query never widens the row.
-.std-search-wrap { position: relative; display: flex; align-items: center; }
-.std-search-wrap .std-search-input { width: 220px; padding-right: 26px; }
-.std-search-clear {
+// Search results box - lives in the sticky .page-title so it stays reachable regardless of scroll
+// position or viewport width, unlike the rail's own copy (which hides below 1260px). The clear "x"
+// sits INSIDE the input's own box, not as a flex sibling, so typing a query never widens the row.
+.docs-search-wrap { position: relative; display: flex; align-items: center; }
+.docs-search-wrap .docs-search-input { width: 220px; padding-right: 26px; }
+.docs-search-clear {
   position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
   display: flex; align-items: center; justify-content: center;
   width: 18px; height: 18px; padding: 0; border: 0; border-radius: var(--radius-sm);
   background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; line-height: 1;
 }
-.std-search-clear:hover { color: var(--text); background: var(--panel-alt); }
+.docs-search-clear:hover { color: var(--text); background: var(--panel-alt); }
 // The rail carries its own search box, but it hides below 1260px - the header keeps a second copy
-// (.std-search-wrap-header) as the sole fallback below that width; hidden here whenever the
+// (.docs-search-wrap-header) as the sole fallback below that width; hidden here whenever the
 // rail's own copy is on-screen so exactly one of the two ever renders.
 @media (min-width: 1261px) {
-  .std-search-wrap-header { display: none; }
+  .docs-search-wrap-header { display: none; }
 }
 
-.std-content { font-size: 13px; line-height: 1.65; color: var(--text); max-width: 940px; }
-.std-content h2 { font-size: 16px; font-weight: 650; margin: var(--sp-xxl) 0 var(--sp-sm); }
-.std-content h3 { font-size: 13.5px; font-weight: 650; margin: var(--sp-xl) 0 var(--sp-sm); }
-.std-content h2:first-child, .std-content > div > h2:first-child { margin-top: var(--sp-sm); }
-.std-content h2, .std-content h3 { scroll-margin-top: var(--sp-lg); }
-.std-content p { margin: 0 0 var(--sp-md); }
-.std-content ul, .std-content ol { margin: 0 0 var(--sp-md); padding-left: 22px; }
-.std-content li { margin-bottom: var(--sp-xxs); }
-.std-content code {
+// Flat search-results list (see vm.docsSearchResults) - a page heading row (breadcrumb + title)
+// followed by its own matched sections, indented, borrowing the rail's own muted/hover language
+// but with roomier spacing since this lives in the main content column, not the narrow rail.
+.docs-results-list { display: flex; flex-direction: column; gap: var(--sp-lg); }
+.docs-results-page-title {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  width: 100%; text-align: left; border: 0; border-radius: var(--radius-sm);
+  background: transparent; cursor: pointer; font: inherit; padding: var(--sp-xs) var(--sp-sm);
+  margin: 0 0 0 calc(-1 * var(--sp-sm));
+}
+.docs-results-page-title:hover { background: var(--panel-alt); }
+.docs-results-page-title:focus-visible { @include gfd-focus-ring; }
+.docs-results-breadcrumb { font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .03em; color: var(--faint); }
+.docs-results-page-title > span:last-child { font-size: 13.5px; font-weight: 650; color: var(--text); }
+.docs-results-section {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  border-radius: var(--radius-sm); cursor: pointer; font: inherit; font-size: 12px; color: var(--muted);
+  padding: 3px var(--sp-sm) 3px var(--sp-lg); margin-left: calc(-1 * var(--sp-sm));
+}
+.docs-results-section:hover { color: var(--text); background: var(--panel-alt); }
+.docs-results-section:focus-visible { @include gfd-focus-ring; }
+
+.docs-content { font-size: 13px; line-height: 1.65; color: var(--text); max-width: 940px; }
+.docs-content h2 { font-size: 16px; font-weight: 650; margin: var(--sp-xxl) 0 var(--sp-sm); }
+.docs-content h3 { font-size: 13.5px; font-weight: 650; margin: var(--sp-xl) 0 var(--sp-sm); }
+.docs-content h2:first-child, .docs-content > div > h2:first-child { margin-top: var(--sp-sm); }
+.docs-content h2, .docs-content h3 { scroll-margin-top: var(--sp-lg); }
+.docs-content p { margin: 0 0 var(--sp-md); }
+.docs-content ul, .docs-content ol { margin: 0 0 var(--sp-md); padding-left: 22px; }
+.docs-content li { margin-bottom: var(--sp-xxs); }
+.docs-content code {
   font-family: var(--mono); font-size: 12px;
   background: var(--panel-alt); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
 }
-.std-content a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-.std-content a:hover { color: var(--accent-hover); }
+.docs-content a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.docs-content a:hover { color: var(--accent-hover); }
 // Code samples use the generated-script highlighter's .c-* token spans (see the .c-* rules
-// below), bound to the editor palette per APP theme so a snippet in the doc stays legible in
-// both themes.
-.std-pre {
+// below), bound to the editor palette per APP theme so a snippet stays legible in both themes.
+.docs-pre {
   margin: 0 0 var(--sp-md); padding: var(--sp-md) var(--sp-lg); overflow-x: auto;
   font-family: var(--mono); border-radius: var(--radius-sm);
-  background: #{$gs-ed-bg}; border: 1px solid #{$gs-ed-border};
+  background: #{$gfd-ed-bg}; border: 1px solid #{$gfd-ed-border};
 }
-.std-pre code { background: transparent; border: 0; padding: 0; font-size: 12.5px; line-height: 1.6; color: #{$gs-ed-text}; }
-:root[data-theme="dark"] .std-pre { background: #{$gs-ed-bg-dark}; border-color: #{$gs-ed-border-dark}; }
-:root[data-theme="dark"] .std-pre code { color: #{$gs-ed-text-dark}; }
+.docs-pre code { background: transparent; border: 0; padding: 0; font-size: 12.5px; line-height: 1.6; color: #{$gfd-ed-text}; }
+:root[data-theme="dark"] .docs-pre { background: #{$gfd-ed-bg-dark}; border-color: #{$gfd-ed-border-dark}; }
+:root[data-theme="dark"] .docs-pre code { color: #{$gfd-ed-text-dark}; }
 .c-kw  { color: var(--ed-kw); }
 .c-str { color: var(--ed-str); }
 .c-num { color: var(--ed-num); }
 .c-com { color: var(--ed-com); font-style: italic; }
 .c-fn  { color: var(--ed-fn); }
-:root[data-theme="dark"] .std-content .c-kw  { color: #{$gs-ed-kw-dark}; }
-:root[data-theme="dark"] .std-content .c-str { color: #{$gs-ed-str-dark}; }
-:root[data-theme="dark"] .std-content .c-num { color: #{$gs-ed-num-dark}; }
-:root[data-theme="dark"] .std-content .c-com { color: #{$gs-ed-com-dark}; }
-:root[data-theme="dark"] .std-content .c-fn  { color: #{$gs-ed-fn-dark}; }
+:root[data-theme="dark"] .docs-content .c-kw  { color: #{$gfd-ed-kw-dark}; }
+:root[data-theme="dark"] .docs-content .c-str { color: #{$gfd-ed-str-dark}; }
+:root[data-theme="dark"] .docs-content .c-num { color: #{$gfd-ed-num-dark}; }
+:root[data-theme="dark"] .docs-content .c-com { color: #{$gfd-ed-com-dark}; }
+:root[data-theme="dark"] .docs-content .c-fn  { color: #{$gfd-ed-fn-dark}; }
 
-.std-source-badge {
+.docs-badge {
   display: inline-flex; align-items: center;
   margin-left: var(--sp-sm); vertical-align: middle;
   border: 1px solid var(--border); background: var(--panel-alt); color: var(--muted);
@@ -380,41 +422,41 @@ input::placeholder { color: var(--faint); }
   font-size: 10.5px; font-weight: 650; letter-spacing: .02em; text-transform: uppercase;
 }
 
-.std-table { border-collapse: collapse; margin: 0 0 var(--sp-md); width: 100%; }
-.std-table th, .std-table td { border: 1px solid var(--border); padding: var(--sp-xs) var(--sp-md); text-align: left; vertical-align: top; }
-.std-table th { background: var(--panel-alt); font-weight: 650; }
+.docs-table { border-collapse: collapse; margin: 0 0 var(--sp-md); width: 100%; }
+.docs-table th, .docs-table td { border: 1px solid var(--border); padding: var(--sp-xs) var(--sp-md); text-align: left; vertical-align: top; }
+.docs-table th { background: var(--panel-alt); font-weight: 650; }
 
-.std-hub { margin-top: var(--sp-xl); }
-.std-hub-band + .std-hub-band { margin-top: var(--sp-xl); }
-.std-hub-band-title {
+.docs-hub { margin-top: var(--sp-xl); }
+.docs-hub-band + .docs-hub-band { margin-top: var(--sp-xl); }
+.docs-hub-band-title {
   font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
   color: var(--faint); margin: 0 0 var(--sp-md);
 }
-.std-hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-md); }
-.std-hub-tile {
+.docs-hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-md); }
+.docs-hub-tile {
   display: flex; flex-direction: column; gap: var(--sp-xxs); text-align: left;
   border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel);
   padding: var(--sp-md); font: inherit; cursor: pointer; transition: border-color .12s, box-shadow .12s;
 }
-.std-hub-tile:hover { border-color: var(--accent-border); box-shadow: var(--shadow); }
-.std-hub-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.std-hub-tile .ic { display: block; width: 15px; height: 15px; margin-bottom: 2px; color: var(--accent); }
-.std-hub-tile-alt .ic { color: var(--purple); }
-.std-hub-tile.ghost .ic { color: var(--faint); }
-.std-hub-tile .t { font-size: 12.5px; font-weight: 650; color: var(--text); line-height: 1.35; }
-.std-hub-tile .meta { font-size: 10.5px; color: var(--faint); }
-.std-hub-tile.ghost { border-style: dashed; cursor: default; opacity: .7; }
-.std-hub-tile.ghost:hover { border-color: var(--border); box-shadow: none; }
-.std-hub-tile .badge {
+.docs-hub-tile:hover { border-color: var(--accent-border); box-shadow: var(--shadow); }
+.docs-hub-tile:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+.docs-hub-tile .ic { display: block; width: 15px; height: 15px; margin-bottom: 2px; color: var(--accent); }
+.docs-hub-tile-alt .ic { color: var(--purple); }
+.docs-hub-tile.ghost .ic { color: var(--faint); }
+.docs-hub-tile .t { font-size: 12.5px; font-weight: 650; color: var(--text); line-height: 1.35; }
+.docs-hub-tile .meta { font-size: 10.5px; color: var(--faint); }
+.docs-hub-tile.ghost { border-style: dashed; cursor: default; opacity: .7; }
+.docs-hub-tile.ghost:hover { border-color: var(--border); box-shadow: none; }
+.docs-hub-tile .badge {
   align-self: flex-start; margin-top: 2px; font-size: 9px; font-weight: 700; letter-spacing: .04em;
   text-transform: uppercase; color: var(--faint); background: var(--panel-alt); border: 1px solid var(--border-strong);
   border-radius: 20px; padding: 2px 7px;
 }
 
-// Deep-link landing flash - marks WHICH heading a rail/hub link pointed at (targets are often
+// Deep-link landing flash - marks WHICH heading a rail/hub/docs-link pointed at (targets are often
 // mid-page). Animation, not a transition, so the reduced-motion override above still kills it.
-@keyframes stdFlash {
+@keyframes docsFlash {
   0% { background: var(--accent-soft); box-shadow: 0 0 0 6px var(--accent-soft); }
   100% { background: transparent; box-shadow: 0 0 0 6px transparent; }
 }
-.std-flash { animation: stdFlash 1.5s ease-out; border-radius: var(--radius-sm); }
+.docs-flash { animation: docsFlash 1.5s ease-out; border-radius: var(--radius-sm); }

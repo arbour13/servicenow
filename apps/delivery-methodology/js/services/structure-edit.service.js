@@ -275,7 +275,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     notify();
   }
 
-  function deleteMethodology() {
+  function deleteMethodology(methodology) {
     if (!hooks.canEdit()) {
       MessagingService.toast('You do not have permission to edit');
       return;
@@ -284,8 +284,6 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       MessagingService.toast('Finish editing first');
       return;
     }
-    var methodologies = AppStateService.getMethodologies();
-    var methodology = currentMethodology();
     if (!methodology) {
       return;
     }
@@ -298,22 +296,26 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       if (!accepted) {
         return;
       }
+      var methodologies = AppStateService.getMethodologies();
       var index = methodologies.findIndex(function (item) {
         return item.id === methodology.id;
       });
       if (index < 0) {
         return;
       }
+      var wasActive = methodology.id === AppStateService.getMethodologyId();
       methodologies.splice(index, 1);
       NavigationService.forget(methodology.id);
-      if (!methodologies.length) {
-        AppStateService.setMethodologyId(null);
-        AppStateService.setSubPhaseId(null);
-      } else {
-        var next = methodologies[Math.max(0, index - 1)] || methodologies[0];
-        AppStateService.setMethodologyId(next.id);
-        AppStateService.setSubPhaseId(NavigationService.remembered(next.id) || MethodologyDomainService.firstContentSubPhase(next));
-        NavigationService.remember(next.id, AppStateService.getSubPhaseId());
+      if (wasActive) {
+        if (!methodologies.length) {
+          AppStateService.setMethodologyId(null);
+          AppStateService.setSubPhaseId(null);
+        } else {
+          var next = methodologies[Math.max(0, index - 1)] || methodologies[0];
+          AppStateService.setMethodologyId(next.id);
+          AppStateService.setSubPhaseId(NavigationService.remembered(next.id) || MethodologyDomainService.firstContentSubPhase(next));
+          NavigationService.remember(next.id, AppStateService.getSubPhaseId());
+        }
       }
       AppStateService.refreshLocation();
       refreshDerived();
@@ -336,8 +338,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     notify();
   }
 
-  function addPhase() {
-    var methodology = currentMethodology();
+  function addPhase(methodology) {
     if (!methodology) {
       MessagingService.toast('Add a methodology first');
       return;
@@ -376,8 +377,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
   // Draft-only, same as addPhase: stays in structure edit until Save. (Previously this path
   // force-persisted the whole draft and jumped into content edit, so Cancel could no longer
   // undo prior structure changes.)
-  function addSubPhase(phaseIndex) {
-    var methodology = currentMethodology();
+  function addSubPhase(phaseIndex, methodology) {
     if (!methodology) {
       return;
     }
@@ -403,14 +403,14 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     phase.subPhases.push(subPhase);
     renumberSubPhaseOrders(phase);
     IdSeqService.recomputeSids(methodology);
+    AppStateService.setMethodologyId(methodology.id);
     AppStateService.setSubPhaseId(subPhase.id);
     NavigationService.remember(methodology.id, subPhase.id);
     AppStateService.refreshLocation();
     notify();
   }
 
-  function movePhase(index, direction) {
-    var methodology = currentMethodology();
+  function movePhase(index, direction, methodology) {
     if (!methodology) {
       return;
     }
@@ -431,8 +431,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     notify();
   }
 
-  function moveSubPhase(phaseIndex, index, direction) {
-    var methodology = currentMethodology();
+  function moveSubPhase(phaseIndex, index, direction, methodology) {
     if (!methodology) {
       return;
     }
@@ -454,8 +453,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     notify();
   }
 
-  function deletePhase(index) {
-    var methodology = currentMethodology();
+  function deletePhase(index, methodology) {
     if (!methodology) {
       return;
     }
@@ -489,8 +487,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     });
   }
 
-  function deleteSubPhase(phaseIndex, index) {
-    var methodology = currentMethodology();
+  function deleteSubPhase(phaseIndex, index, methodology) {
     if (!methodology) {
       return;
     }
@@ -517,7 +514,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       }
       var wasOpen = subPhase.id === AppStateService.getSubPhaseId();
       array.splice(index, 1);
-      renumberSubPhaseOrders(methodology.phases[phaseIndex]);
+      renumberSubPhaseOrders(phase);
       IdSeqService.recomputeSids(methodology);
       if (wasOpen) {
         var next = array[index] || array[index - 1];

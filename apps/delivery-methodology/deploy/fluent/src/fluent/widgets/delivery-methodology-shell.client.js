@@ -348,26 +348,48 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
     }
   });
 
+  // Runs after EITHER kind of content load: the bootstrap getData() below, or a later
+  // AppStateService.seedStandard() call from the Methodology widget's empty-state button (a
+  // table that was empty a moment ago now has real content none of these derived caches have
+  // ever seen). Named and bound via AppStateService.bind() rather than left as bootstrap's own
+  // inline closure, so seedStandard() can reuse it instead of duplicating this list. loadedData
+  // is AppStateService.applyLoadedData()'s own first argument, passed through unchanged - this
+  // is the only place changelogSeen is available (result itself only carries {empty,
+  // methodologyId, subPhaseId}).
+  function handleContentLoaded(result, loadedData) {
+    // Stamp changelog read flags from user preference + localStorage before What's New refresh.
+    refreshWhatsNew(loadedData && loadedData.changelogSeen);
+
+    // Rebuilt on EVERY load including the empty one, deliberately. These two hold derived caches
+    // (RACI groups, the job-aids index) computed from the methodology tree, and "empty" is no
+    // longer only first-boot-with-nothing-cached: resetAllContent() empties a session whose
+    // caches are already full, and skipping the refresh there left the RACI view rendering 21
+    // phantom groups and Reference listing 69 job aids belonging to just-deleted content.
+    // Both are cheap no-ops against an empty tree.
+    refreshJobAids();
+    refreshRaciGrid();
+
+    if (!result.empty) {
+      NavigationService.remember(result.methodologyId, result.subPhaseId);
+      if (!NavigationService.applyDeepLinkFromUrl()) {
+        NavigationService.push();
+      }
+    }
+    // WhatsNewService/ReferenceService refresh() above updates THEIR OWN internal state, which
+    // has no $rootScope of its own to broadcast from - one explicit nudge here lets the
+    // What's New / Reference widgets (already mounted and listening) pick up the fresh data,
+    // matching every other cross-widget state change in this app (see AppStateService header).
+    $rootScope.$broadcast('dm-state');
+  }
+
+  AppStateService.bind({
+    onAfterLoad: handleContentLoaded
+  });
+
   function applyLoadedData(data) {
     AppStateService.applyLoadedData(data, {
       canEdit: c.data && c.data.canEdit,
-      onAfterLoad: function (result) {
-        // Stamp changelog read flags from user preference + localStorage before What's New refresh.
-        refreshWhatsNew(data && data.changelogSeen);
-        if (!result.empty) {
-          NavigationService.remember(result.methodologyId, result.subPhaseId);
-          refreshJobAids();
-          refreshRaciGrid();
-          if (!NavigationService.applyDeepLinkFromUrl()) {
-            NavigationService.push();
-          }
-        }
-        // WhatsNewService/ReferenceService refresh() above updates THEIR OWN internal state, which
-        // has no $rootScope of its own to broadcast from - one explicit nudge here lets the
-        // What's New / Reference widgets (already mounted and listening) pick up the fresh data,
-        // matching every other cross-widget state change in this app (see AppStateService header).
-        $rootScope.$broadcast('dm-state');
-      }
+      onAfterLoad: handleContentLoaded
     });
   }
 

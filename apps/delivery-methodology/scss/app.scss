@@ -930,37 +930,15 @@ textarea:focus-visible {
   animation: dmColumnIn 0.22s ease-out both;
 }
 
-/* Filmstrip cards stagger in when the selected PHASE changes. Every phase's strip stays mounted
-   (ng-show, not ng-if - see the template note about not rebuilding cards), so the cards are never
-   recreated and there is no enter event to hook; this relies instead on ng-show's display:none →
-   visible flip, which restarts a CSS animation from the beginning. That also means it fires on
-   first paint for the initially-visible strip, which is wanted. Per-card delay comes from --i,
-   set on each card in the template, capped so a long phase never trails a visible ripple. */
-@keyframes dmCardIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.film .fcard {
-  /* backwards (not both): keep the from-state during the stagger delay, then RELEASE transform
-     when the animation ends so .fcard:hover's translateY lift can apply. `both`/`forwards` left
-     transform: translateY(0) pinned and silently killed the hover. */
-  animation: dmCardIn 0.24s ease-out backwards;
-  animation-delay: calc(min(var(--i, 0), 5) * 0.035s);
-}
+/* Filmstrip cards render instantly, no entry animation - see .fcard's own comment on why transform
+   is :hover's alone, and methodology.controller.js's note on selectPhase/openSubPhase for why
+   selection itself carries no motion either. */
 
 @media (prefers-reduced-motion: reduce) {
   .search-overlay,
   .msg-overlay,
   .search-modal,
   .msg-dialog,
-  .film .fcard,
   .rg-roles-shown .rg-table th.rg-rolecol,
   .rg-roles-shown .rg-table tbody td:not(.tname),
   .rg-roles-shown .rg-table tfoot td:not(.tname) {
@@ -1291,6 +1269,10 @@ textarea:focus-visible {
   margin: 0 0 16px;
 }
 
+.struct-methodology-block {
+  margin-bottom: 26px;
+}
+
 .struct-methodology {
   display: flex;
   align-items: center;
@@ -1408,7 +1390,7 @@ textarea:focus-visible {
 }
 
 .struct-add-methodology {
-  margin: -8px 0 18px;
+  margin: 4px 0 0;
 }
 
 .struct-add-phase {
@@ -1434,6 +1416,11 @@ textarea:focus-visible {
   transition: transform 0.16s, box-shadow 0.16s;
 }
 
+/* Accent rail. Width changes 3px -> 5px on select and is deliberately NOT transitioned: animating
+   it meant every click grew a bar along the card's left edge over 0.16s, which reads as the card
+   itself shifting even though the rail is absolutely positioned and reflows nothing. Selecting
+   should leave the card completely static - :hover's lift is the only movement a card ever makes.
+   The colour/fill difference carries the selected state; the width step just needs to be instant. */
 .fcard::before {
   content: "";
   position: absolute;
@@ -1443,7 +1430,6 @@ textarea:focus-visible {
   width: 3px;
   background: var(--pc);
   opacity: 0.9;
-  transition: width 0.16s;
 }
 
 .fcard:hover {
@@ -3412,6 +3398,26 @@ select.edit-in option {
   font-size: 14px;
   padding: 30px 0;
   text-align: center;
+}
+
+/* TEMPORARY destructive testing action at the foot of the Methodology view - separated by a rule
+   and pushed well clear of the content above so it can't be hit by accident. Remove alongside the
+   .reset-content-zone block in partials/methodology.html when seeding no longer needs testing. */
+.reset-content-zone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface-flat);
+}
+
+.reset-content-hint {
+  font-size: 12px;
+  color: var(--ink-faint);
 }
 
 /* Fresh-instance empty state on the Methodology view - a real call to action (not just .empty's

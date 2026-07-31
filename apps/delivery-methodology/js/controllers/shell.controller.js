@@ -379,10 +379,18 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   function handleContentLoaded(result, loadedData) {
     // Stamp changelog read flags from user preference + localStorage before What's New refresh.
     refreshWhatsNew(loadedData && loadedData.changelogSeen);
+
+    // Rebuilt on EVERY load including the empty one, deliberately. These two hold derived caches
+    // (RACI groups, the job-aids index) computed from the methodology tree, and "empty" is no
+    // longer only first-boot-with-nothing-cached: resetAllContent() empties a session whose
+    // caches are already full, and skipping the refresh there left the RACI view rendering 21
+    // phantom groups and Reference listing 69 job aids belonging to just-deleted content.
+    // Both are cheap no-ops against an empty tree.
+    refreshJobAids();
+    refreshRaciGrid();
+
     if (!result.empty) {
       NavigationService.remember(result.methodologyId, result.subPhaseId);
-      refreshJobAids();
-      refreshRaciGrid();
       if (!NavigationService.applyDeepLinkFromUrl()) {
         NavigationService.push();
       }
