@@ -159,12 +159,45 @@ angular.module('glidefastDocs').controller('MainController', [
       vm.docsEditText = vm.activePage.markdown || '';
       vm.docsEditMode = true;
       vm.updateDocsEditPreview();
+      // The editor's panes don't exist until ng-if mounts them, so focus and the scroll-sync
+      // binding both have to wait a digest. scrollTop is reset explicitly AFTER focus: focusing a
+      // textarea whose content overflows can leave it scrolled to the end even with the caret at
+      // position 0, so without this an author opens the editor staring at the bottom of their page.
+      $timeout(function () {
+        var textarea = document.querySelector('.docs-editor-textarea');
+        if (textarea) {
+          textarea.focus();
+          textarea.setSelectionRange(0, 0);
+          textarea.scrollTop = 0;
+        }
+        DocsUiService.setupEditorScrollSync();
+        // Paint the highlight layer HERE, not in the updateDocsEditPreview() call above - that one
+        // runs before ng-if has mounted the editor, so the layer doesn't exist yet and the paint
+        // silently no-ops, leaving the source pane blank (the textarea's own text is transparent).
+        DocsUiService.paintEditorHighlight(vm.docsEditText);
+      });
     };
+
+    // Escape leaves the editor - same discard-unsaved-text behavior as Cancel (see
+    // vm.exitDocsEdit). Kept even though this is an inline panel rather than a modal: it's the
+    // reflex people have with a focused textarea, and the editor is the only thing Escape could
+    // plausibly mean while it's open. Bound on document because the focused element is the
+    // textarea inside the editor, and keydown from there bubbles up here. Torn down with the
+    // controller so it can't outlive the app.
+    function onDocumentKeydown(event) {
+      if (event.key !== 'Escape' || !vm.docsEditMode) { return; }
+      $scope.$applyAsync(function () { vm.exitDocsEdit(); });
+    }
+    document.addEventListener('keydown', onDocumentKeydown);
+    $scope.$on('$destroy', function () { document.removeEventListener('keydown', onDocumentKeydown); });
 
     // Leaves edit mode WITHOUT touching anything already saved to localStorage - only discards
     // whatever's currently sitting unsaved in the textarea. Safe to call even when not editing
     // (vm.openPage/vm.showDocsHome call this unconditionally on every navigation).
     vm.exitDocsEdit = function () {
+      // Unbinds the pane scroll listeners before ng-if tears the panes out of the DOM - otherwise
+      // the handlers keep a reference to detached elements until the next edit replaces them.
+      DocsUiService.teardownEditorScrollSync();
       vm.docsEditMode = false;
       vm.docsEditText = '';
       vm.docsEditPreview = null;
@@ -178,6 +211,7 @@ angular.module('glidefastDocs').controller('MainController', [
     // Reuses DocsUiService's linkTargets so a still-unsaved edit's [[links]] validate against the
     // same "every page's current section slugs" picture the reader view itself was just built from.
     vm.updateDocsEditPreview = function () {
+      DocsUiService.paintEditorHighlight(vm.docsEditText);
       var linkTargets = DocsUiService.getLinkTargets();
       var rendered = DocsRenderer.renderPage(vm.docsEditText, linkTargets);
       vm.docsEditPreview = {
@@ -222,47 +256,54 @@ angular.module('glidefastDocs').controller('MainController', [
     // than a generic markdown toolbar. Query the textarea by class each call rather than caching
     // the element, matching this app's existing style of querying singleton DOM nodes directly
     // (see DocsUiService's .docs-pane lookups) - it only exists while vm.docsEditMode is true.
+    // Every insertion goes through execCommand('insertText') rather than assigning
+    // vm.docsEditText. That looks like the long way round, and it's the whole reason Cmd/Ctrl+Z
+    // works in this editor: writing to a textarea's value programmatically CLEARS the browser's
+    // native undo stack, so a toolbar click used to make everything typed before it unundoable.
+    // execCommand is formally deprecated, but there is still no standard API that edits a textarea
+    // while participating in native undo - contentEditable's alternatives don't apply to <textarea>.
+    // It also fires a real `input` event, which is what lets ng-model and its ng-change (the live
+    // preview + highlight refresh) update on their own with no manual call here.
+    // Runs inside $timeout because ng-click already has us in a digest, and the synchronous input
+    // event would otherwise re-enter $apply.
+    function replaceSelection(text, onDone) {
+      var textarea = document.querySelector('.docs-editor-textarea');
+      if (!textarea) { return; }
+      $timeout(function () {
+        textarea.focus();
+        document.execCommand('insertText', false, text);
+        if (onDone) { onDone(textarea); }
+      });
+    }
     function insertWrap(before, after, placeholder) {
       var textarea = document.querySelector('.docs-editor-textarea');
       if (!textarea) { return; }
       var start = textarea.selectionStart;
-      var end = textarea.selectionEnd;
-      var text = vm.docsEditText;
-      var selected = text.slice(start, end) || placeholder;
-      vm.docsEditText = text.slice(0, start) + before + selected + after + text.slice(end);
-      vm.updateDocsEditPreview();
-      $timeout(function () {
-        textarea.focus();
-        textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
+      var selected = vm.docsEditText.slice(start, textarea.selectionEnd) || placeholder;
+      replaceSelection(before + selected + after, function (el) {
+        // Leave the inner text selected so it can be typed straight over - the placeholder case is
+        // the point ("bold text" should be replaceable immediately).
+        el.setSelectionRange(start + before.length, start + before.length + selected.length);
       });
     }
     function insertLinePrefix(prefix) {
       var textarea = document.querySelector('.docs-editor-textarea');
       if (!textarea) { return; }
       var start = textarea.selectionStart;
-      var text = vm.docsEditText;
-      var lineStart = text.lastIndexOf('\n', start - 1) + 1;
-      vm.docsEditText = text.slice(0, lineStart) + prefix + text.slice(lineStart);
-      vm.updateDocsEditPreview();
-      $timeout(function () {
-        textarea.focus();
-        textarea.setSelectionRange(start + prefix.length, start + prefix.length);
+      var lineStart = vm.docsEditText.lastIndexOf('\n', start - 1) + 1;
+      // Collapse to the line's start so the prefix lands there rather than at the caret, then put
+      // the caret back where the author actually was, shifted by what was inserted.
+      textarea.setSelectionRange(lineStart, lineStart);
+      replaceSelection(prefix, function (el) {
+        el.setSelectionRange(start + prefix.length, start + prefix.length);
       });
     }
     function insertLine(line) {
       var textarea = document.querySelector('.docs-editor-textarea');
       if (!textarea) { return; }
       var start = textarea.selectionStart;
-      var text = vm.docsEditText;
-      var needsLeadingNewline = start > 0 && text[start - 1] !== '\n';
-      var insertion = (needsLeadingNewline ? '\n' : '') + line + '\n';
-      vm.docsEditText = text.slice(0, start) + insertion + text.slice(start);
-      vm.updateDocsEditPreview();
-      $timeout(function () {
-        textarea.focus();
-        var pos = start + insertion.length;
-        textarea.setSelectionRange(pos, pos);
-      });
+      var needsLeadingNewline = start > 0 && vm.docsEditText[start - 1] !== '\n';
+      replaceSelection((needsLeadingNewline ? '\n' : '') + line + '\n');
     }
     vm.docsToolbarBold = function () { insertWrap('**', '**', 'bold text'); };
     vm.docsToolbarCode = function () { insertWrap('`', '`', 'code'); };

@@ -11,8 +11,9 @@ the small `opts` bag `buildParts` takes. Fluent emit is `fluent.js`'s `assembleF
 {
   // --- identity ---
   appName: 'Glide Studio',              // required
-  scope: 'x_glide_studio_ng',           // required. Fixed, or derived at runtime via
-                                         // core.deriveScope(appName, companyCode) - see
+  scope: 'x_glide_studio_ng',           // required at build time. Fixed in the manifest, or
+                                         // omitted when deployOptions.showConnection derives it
+                                         // per instance (CLI then needs --scope=…). See
                                          // "Dynamic scope" below.
   vendorPrefix: 'x_glide_studio',       // optional - derived from scope if omitted
   version: '1.0.0',                     // optional - defaults to '1.0.0'
@@ -69,12 +70,15 @@ the small `opts` bag `buildParts` takes. Fluent emit is `fluent.js`'s `assembleF
     // portal: false, theme: false,
   },
   roles: {                                // required if features.roles is true
-    userRoleName: 'glide_studio_user', adminRoleName: 'glide_studio_admin',
+    // Short suffixes only — packager emits scoped names (<scope>.user / .admin). A name that
+    // already contains a dot is left as-is. Server scripts should hasRole(gs.getCurrentScopeName()
+    // + '.admin'), not a hardcoded vendor-prefixed scope.
+    userRoleName: 'user', adminRoleName: 'admin',
     userGroupName: 'Glide Studio Users', adminGroupName: 'Glide Studio Admins',
     // Optional third role — when editorRoleName is set, the packager also emits editor role/group
     // (editors + admins get the user role for page access). Content-table write ACLs go to
     // editor+admin; portal/widget write ACLs stay admin-only.
-    // editorRoleName: 'app_editor', editorGroupName: 'App Editors',
+    // editorRoleName: 'editor', editorGroupName: 'App Editors',
     // each *Description is optional - a sensible default is generated from appName if omitted
   },
 
@@ -116,7 +120,7 @@ the small `opts` bag `buildParts` takes. Fluent emit is `fluent.js`'s `assembleF
   ],
 
   // Optional Fluent Table() definitions. Short `name` is prefixed with manifest.scope
-  // (e.g. name: 'content' → x_dlvry_method_content). Emitted to src/fluent/tables/<short>.now.ts.
+  // (e.g. name: 'content' → <scope>_content). Emitted to src/fluent/tables/<short>.now.ts.
   // Column types: choice | reference | string | integer | json. Reference `reference` is another
   // table's short name (or full scoped name); cascadeRule (e.g. 'cascade') is passed through.
   // tables: [

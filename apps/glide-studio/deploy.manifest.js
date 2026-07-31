@@ -89,8 +89,9 @@
       ],
       features: { roles: true },
       roles: {
-        userRoleName: 'glide_studio_user',
-        adminRoleName: 'glide_studio_admin',
+        // Short suffixes — packager emits <scope>.user / .admin.
+        userRoleName: 'user',
+        adminRoleName: 'admin',
         userGroupName: 'Glide Studio Users',
         adminGroupName: 'Glide Studio Admins',
       },

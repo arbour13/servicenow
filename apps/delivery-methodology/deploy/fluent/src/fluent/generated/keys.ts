@@ -77,6 +77,10 @@ declare global {
                         table: 'sp_angular_provider'
                         id: 'a4b5c6d7e8b8715401b8715402b87154'
                     }
+                    'LiveSyncService': {
+                        table: 'sp_angular_provider'
+                        id: 'a4b5c6d7e8d4e256a4d4e256a5d4e256'
+                    }
                     'MethodologyDomainService': {
                         table: 'sp_angular_provider'
                         id: 'a4b5c6d7e88562b3848562b3858562b3'
@@ -349,6 +353,14 @@ declare global {
                         key: {
                             sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
                             sp_angular_provider: 'a4b5c6d7e8c274e8d7c274e8d8c274e8'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e816cda02916cda02a16cda0'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e8d4e256a4d4e256a5d4e256'
                         }
                     },
                     {
@@ -673,6 +685,14 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e87ef3e3577ef3e3587ef3e3'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e8d4e256a4d4e256a5d4e256'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
                         id: 'a4b5c6d7e8839e170c839e170d839e17'
                         key: {
                             sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
@@ -809,6 +829,22 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e8a7a41363a7a41364a7a413'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e8d4e256a4d4e256a5d4e256'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e8a822d4a1a822d4a2a822d4'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e8d4e256a4d4e256a5d4e256'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
                         id: 'a4b5c6d7e8a9421676a9421677a94216'
                         key: {
                             sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
@@ -821,6 +857,14 @@ declare global {
                         key: {
                             sp_widget: 'a4b5c6d7e85271166b5271166c527116'
                             sp_angular_provider: 'a4b5c6d7e8cfdfbc40cfdfbc41cfdfbc'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e8af107caaaf107cabaf107c'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e8d4e256a4d4e256a5d4e256'
                         }
                     },
                     {
@@ -1548,7 +1592,6 @@ declare global {
                     }
                 ]
                 deleted: {}
-            }
             }
         }
     }

@@ -714,12 +714,12 @@ if (typeof self !== 'undefined') {
   self.DMContentModel = DMContentModel;
 }
 
-/* Standard GlideFast Delivery 2.0 starter content - the one-time "Load standard content"
-   action offers this when an instance's content table is empty (see content.server.js's
-   seedStandard action and js/services/data.service.js's seedStandard()). Deployed (unlike
-   js/data/seed.js, which stays deploy: false / harness-only) - see deploy.manifest.js's
-   files.contentModel entry, which concatenates this onto the widget SERVER script alongside
-   url-policy.js / content-model.js, in the same Rhino-safe bare-var style.
+/* Delivery 2.0 content payload - the one-time "Import Delivery 2.0 content" action offers this
+   when an instance's content table is empty (see content.server.js's seedStandard action and
+   js/services/data.service.js's seedStandard()). Deployed (unlike js/data/seed.js, which stays
+   deploy: false / harness-only) - see deploy.manifest.js's files.contentModel entry, which
+   concatenates this onto the widget SERVER script alongside url-policy.js / content-model.js,
+   in the same Rhino-safe bare-var style.
 
    GENERATED, do not hand-edit. This is js/data/seed.js's payload (jobTitles/methodologies/
    jargon/referenceSections only - not its blankSubPhase harness helper or version field, which
@@ -5628,7 +5628,6 @@ if (typeof self !== 'undefined') {
    (DMUrlPolicy, DMContentModel). input.action: load (default) | save | saveChangelogSeen.
    One GlideRecordSecure per function. */
 (function () {
-  data.canEdit = gs.hasRole('delivery_methodology_editor') || gs.hasRole('delivery_methodology_admin');
   data.error = '';
   data.empty = false;
   data.saved = false;
@@ -5644,23 +5643,39 @@ if (typeof self !== 'undefined') {
   };
   var maximumSaveRows = 5000;
 
-  function getContentTableName() {
+  function getAppScopeName() {
     try {
       if (typeof gs.getCurrentScopeName === 'function') {
         var scopeName = String(gs.getCurrentScopeName() || '');
 
         if (scopeName && scopeName !== 'global') {
-          return scopeName + '_content';
+          return scopeName;
         }
       }
     } catch (scopeError) {
-      gs.warn(logPrefix + 'could not resolve scope name - falling back to content: ' + scopeError);
+      gs.warn(logPrefix + 'could not resolve scope name: ' + scopeError);
+    }
+
+    return '';
+  }
+
+  function getContentTableName() {
+    var scopeName = getAppScopeName();
+
+    if (scopeName) {
+      return scopeName + '_content';
     }
 
     return 'content';
   }
 
+  var appScopeName = getAppScopeName();
+  data.canEdit = !!(appScopeName
+    && (gs.hasRole(appScopeName + '.editor') || gs.hasRole(appScopeName + '.admin')));
+
   var contentTable = getContentTableName();
+  // Client LiveSyncService watches this table via spUtil.recordWatch.
+  data.contentTable = contentTable;
 
   function isContentTableReady() {
     return !!(contentTable && contentTable !== '');
@@ -6131,8 +6146,8 @@ if (typeof self !== 'undefined') {
     }
   }
 
-  // One-time "Load standard content" action - offered to editors when a fresh instance's content
-  // table is empty (see js/data/standard-content.js's own header for provenance). Reuses
+  // One-time "Import Delivery 2.0 content" action - offered to editors when a fresh instance's
+  // content table is empty (see js/data/standard-content.js's own header for provenance). Reuses
   // saveContent() wholesale rather than a second insert path: dehydrate/validate/parent-link/
   // create is exactly the same job whether the payload came from a client's edit or from this
   // bundled starter. The ONLY new logic here is the emptiness guard, which is what makes this
@@ -6148,14 +6163,14 @@ if (typeof self !== 'undefined') {
 
   function seedStandard() {
     if (hasAnyContentRecords()) {
-      data.error = 'Content already exists - standard content only loads into an empty table.';
+      data.error = 'Content already exists - Delivery 2.0 content only imports into an empty table.';
       gs.warn(logPrefix + 'seedStandard refused - table is not empty');
       loadContent();
       return false;
     }
 
     if (typeof DMStandardContent === 'undefined') {
-      data.error = 'Standard content is not available on this instance.';
+      data.error = 'Delivery 2.0 content is not available on this instance.';
       gs.error(logPrefix + 'seedStandard: DMStandardContent missing from the server bundle - ' +
         'check deploy.manifest.js files.contentModel includes js/data/standard-content.js');
       return false;

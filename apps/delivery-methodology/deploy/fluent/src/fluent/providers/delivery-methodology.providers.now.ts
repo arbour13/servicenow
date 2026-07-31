@@ -21,6 +21,13 @@ export const DataService = SPAngularProvider({
     script: Now.include('DataService.js'),
 })
 
+export const LiveSyncService = SPAngularProvider({
+    $id: Now.ID['LiveSyncService'],
+    name: 'LiveSyncService',
+    type: 'service',
+    script: Now.include('LiveSyncService.js'),
+})
+
 export const MethodologyDomainService = SPAngularProvider({
     $id: Now.ID['MethodologyDomainService'],
     name: 'MethodologyDomainService',

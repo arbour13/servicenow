@@ -76,9 +76,17 @@
          capped at .docs-content's measure (940px) rather than stretching to fill the pane. The rail
          hides below 1260px; with no in-page nav at that width, the reader falls back to plain
          scrolling. -->
-    <div class="docs-layout">
+    <!-- .docs-layout-editing widens the reading column and collapses the rail while the editor is
+         open - see its rule in app.scss for why the rail is expendable exactly while editing. -->
+    <div class="docs-layout" ng-class="{'docs-layout-editing': vm.docsEditMode}">
 
       <aside class="docs-rail" aria-label="On this page">
+        <!-- Fixed-width inner wrapper. The rail collapses to width:0 while the editor is open, and
+             without this the rail's own text would RE-WRAP line by line as it narrowed - a
+             squeezing, visually noisy collapse. Pinning the content to its natural 240px and
+             letting the outer aside clip it (overflow:hidden) makes it read as sliding out of the
+             way instead. See .docs-layout-editing in app.scss. -->
+        <div class="docs-rail-inner">
         <!-- Search lives here (not just the header) so it sits with the rail - but the rail itself
              hides below 1260px (see its own media query at the bottom of app.scss), so this copy
              would disappear at exactly the width where search is needed most. The header keeps its
@@ -118,6 +126,7 @@
                       ng-click="vm.openPage(page.id, section.id)">{{section.title}}</button>
             </div>
           </div>
+        </div>
         </div>
       </aside>
 
@@ -201,7 +210,8 @@
 
           <!-- Editor: markdown + toolbar on the left, live preview (reusing .docs-content, the
                SAME styling the reader view uses, so the preview never lies about what a reader
-               will actually see) on the right. vm.updateDocsEditPreview() re-renders on every
+               will actually see) on the right. The two panes scroll together - see
+               DocsUiService.setupEditorScrollSync. vm.updateDocsEditPreview() re-renders on every
                keystroke via ng-change - see its own comment for why that's not a bare template
                expression. -->
           <div class="card-body docs-editor" ng-if="vm.docsEditMode">
@@ -215,7 +225,16 @@
               <button type="button" ng-click="vm.docsToolbarBadge()" title="Badge">Badge</button>
             </div>
             <div class="docs-editor-panes">
-              <textarea class="docs-editor-textarea" ng-model="vm.docsEditText" ng-change="vm.updateDocsEditPreview()" spellcheck="true"></textarea>
+              <!-- Syntax-highlighted source. A <textarea> can't render coloured text, so the
+                   colours live in a <pre> painted directly behind a transparent-text textarea -
+                   the textarea still owns typing, selection, native undo and the caret, and the
+                   layer underneath just shows through. The two must stay pixel-identical in font,
+                   padding and wrapping or the painted text drifts from the real caret; see
+                   .docs-editor-source in app.scss and DocsUiService.setupEditorHighlight. -->
+              <div class="docs-editor-source">
+                <pre class="docs-editor-highlight" aria-hidden="true"></pre>
+                <textarea class="docs-editor-textarea" ng-model="vm.docsEditText" ng-change="vm.updateDocsEditPreview()" spellcheck="true"></textarea>
+              </div>
               <div class="docs-editor-preview docs-content">
                 <h2 class="docs-editor-preview-title" ng-if="vm.docsEditPreview.title">{{vm.docsEditPreview.title}}</h2>
                 <div ng-bind-html="vm.docsEditPreview.lead"></div>
@@ -248,6 +267,7 @@
 <script src="js/services/theme.service.js"></script>
 <script src="js/services/docs.service.js"></script>
 <script src="js/services/docs-edit.service.js"></script>
+<script src="js/services/docs-highlight.service.js"></script>
 <script src="js/services/docs-ui.service.js"></script>
 <script src="js/controllers/main.controller.js"></script>
 </body>

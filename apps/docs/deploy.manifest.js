@@ -36,22 +36,24 @@
 
       angularModuleName: 'glidefastDocs',
       widgetScopeClass: 'gfd-widget',
+      // Every service MainController injects has to be here - a missing one is not a degraded
+      // feature but a hard Angular DI failure that stops the whole widget bootstrapping.
       providers: [
         { file: 'js/services/theme.service.js', name: 'ThemeService', type: 'service' },
         { file: 'js/services/docs.service.js', name: 'DocsService', type: 'service' },
+        { file: 'js/services/docs-edit.service.js', name: 'DocsEditService', type: 'service' },
+        { file: 'js/services/docs-highlight.service.js', name: 'DocsHighlightService', type: 'service' },
         { file: 'js/services/docs-ui.service.js', name: 'DocsUiService', type: 'service' },
       ],
       stubProviders: [],   // no Deploy modal of its own, so nothing to stub in the deployed widget
       features: { roles: true },
 
       // No userRoleName - reading is intentionally NOT role-gated (any portal visitor can read
-      // published pages; there is no "logged out" vs "logged in" distinction for this app). Only
-      // the two mutating actions in js/server/docs.server.js are gated, and its gs.hasRole() calls
-      // must use these exact prefixed strings - there is no indirection between this manifest and
-      // that script's literals, so a rename here needs the matching rename there too.
+      // published pages). Mutating actions in docs.server.js use gs.getCurrentScopeName() +
+      // '.editor' / '.admin' — short suffixes here; packager emits <scope>.editor / .admin.
       roles: {
-        editorRoleName: 'glidefast_docs_editor',
-        adminRoleName: 'glidefast_docs_admin',
+        editorRoleName: 'editor',
+        adminRoleName: 'admin',
         editorGroupName: 'GlideFast Docs Editors',
         adminGroupName: 'GlideFast Docs Admins',
         editorRoleDescription: 'Can save draft edits to GlideFast Docs pages.',

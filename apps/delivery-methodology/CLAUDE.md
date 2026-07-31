@@ -93,9 +93,6 @@ separate from this binding API and were not renamed.
 
 ## Roles
 
-Role names are prefixed (`delivery_methodology_user` / `_editor` / `_admin`, not bare
-`user`/`editor`/`admin`) in `deploy.manifest.js`'s `roles` block, matching every other app in this
-suite (see repo-root `CLAUDE.md`'s sys_id-collision reasoning — same idea applies to role names in
-a shared instance). `js/server/content.server.js`'s `gs.hasRole(...)` calls must use the exact
-same prefixed strings; there is no indirection between the manifest and the server script literal,
-so a rename in one requires the matching rename in the other.
+Manifest role names are short suffixes (`user` / `editor` / `admin`). The packager emits scoped
+names (`<scope>.user`, etc.). `js/server/content.server.js` builds the same strings from
+`gs.getCurrentScopeName()` for `hasRole()` — do not hardcode a vendor-prefixed scope there.

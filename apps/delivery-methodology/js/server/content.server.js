@@ -3,7 +3,6 @@
    (DMUrlPolicy, DMContentModel). input.action: load (default) | save | saveChangelogSeen.
    One GlideRecordSecure per function. */
 (function () {
-  data.canEdit = gs.hasRole('delivery_methodology_editor') || gs.hasRole('delivery_methodology_admin');
   data.error = '';
   data.empty = false;
   data.saved = false;
@@ -19,23 +18,39 @@
   };
   var maximumSaveRows = 5000;
 
-  function getContentTableName() {
+  function getAppScopeName() {
     try {
       if (typeof gs.getCurrentScopeName === 'function') {
         var scopeName = String(gs.getCurrentScopeName() || '');
 
         if (scopeName && scopeName !== 'global') {
-          return scopeName + '_content';
+          return scopeName;
         }
       }
     } catch (scopeError) {
-      gs.warn(logPrefix + 'could not resolve scope name - falling back to content: ' + scopeError);
+      gs.warn(logPrefix + 'could not resolve scope name: ' + scopeError);
+    }
+
+    return '';
+  }
+
+  function getContentTableName() {
+    var scopeName = getAppScopeName();
+
+    if (scopeName) {
+      return scopeName + '_content';
     }
 
     return 'content';
   }
 
+  var appScopeName = getAppScopeName();
+  data.canEdit = !!(appScopeName
+    && (gs.hasRole(appScopeName + '.editor') || gs.hasRole(appScopeName + '.admin')));
+
   var contentTable = getContentTableName();
+  // Client LiveSyncService watches this table via spUtil.recordWatch.
+  data.contentTable = contentTable;
 
   function isContentTableReady() {
     return !!(contentTable && contentTable !== '');
@@ -506,8 +521,8 @@
     }
   }
 
-  // One-time "Load standard content" action - offered to editors when a fresh instance's content
-  // table is empty (see js/data/standard-content.js's own header for provenance). Reuses
+  // One-time "Import Delivery 2.0 content" action - offered to editors when a fresh instance's
+  // content table is empty (see js/data/standard-content.js's own header for provenance). Reuses
   // saveContent() wholesale rather than a second insert path: dehydrate/validate/parent-link/
   // create is exactly the same job whether the payload came from a client's edit or from this
   // bundled starter. The ONLY new logic here is the emptiness guard, which is what makes this
@@ -523,14 +538,14 @@
 
   function seedStandard() {
     if (hasAnyContentRecords()) {
-      data.error = 'Content already exists - standard content only loads into an empty table.';
+      data.error = 'Content already exists - Delivery 2.0 content only imports into an empty table.';
       gs.warn(logPrefix + 'seedStandard refused - table is not empty');
       loadContent();
       return false;
     }
 
     if (typeof DMStandardContent === 'undefined') {
-      data.error = 'Standard content is not available on this instance.';
+      data.error = 'Delivery 2.0 content is not available on this instance.';
       gs.error(logPrefix + 'seedStandard: DMStandardContent missing from the server bundle - ' +
         'check deploy.manifest.js files.contentModel includes js/data/standard-content.js');
       return false;

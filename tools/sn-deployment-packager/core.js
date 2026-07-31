@@ -409,7 +409,7 @@
       manifest.roles && manifest.roles.editorRoleName);
   }
 
-  // Short table name (e.g. "content") → full scoped name (e.g. "x_dlvry_method_content").
+  // Short table name (e.g. "content") → full scoped name (e.g. "<scope>_content").
   // If the manifest already passed a fully-scoped name, leave it alone.
   function fullTableName(scope, shortName) {
     var s = String(shortName || '').trim();
@@ -417,6 +417,20 @@
     if (!s) { return s; }
     if (sc && (s === sc || s.indexOf(sc + '_') === 0)) { return s; }
     return sc ? (sc + '_' + s) : s;
+  }
+
+  // Role suffix (e.g. "user") → scoped name (e.g. "x_2168882_dlvry_2.user"). Names that already
+  // contain a dot are left alone so a manifest can pin a fully-qualified role if needed.
+  function scopedRoleName(scope, roleName) {
+    var name = String(roleName || '').trim();
+    var sc = String(scope || '').trim();
+    if (!name) {
+      return name;
+    }
+    if (name.indexOf('.') >= 0) {
+      return name;
+    }
+    return sc ? (sc + '.' + name) : name;
   }
 
   // Normalize manifest.tables[] into the structural model Fluent emits as Table().
@@ -791,30 +805,33 @@
     if (manifest.features && manifest.features.roles) {
       var r = manifest.roles;
       var withEditor = hasEditorRole(manifest);
+      var userRoleName = scopedRoleName(manifest.scope, r.userRoleName);
+      var editorRoleName = scopedRoleName(manifest.scope, r.editorRoleName);
+      var adminRoleName = scopedRoleName(manifest.scope, r.adminRoleName);
       records.push({ table: 'sys_user_role', sysId: ids.userRole, key: 'userRole', fields: [
         // Fluent's Data<"sys_user_role"> has no `active` field - omit it (roles are active by default).
         { name: 'description', value: r.userRoleDescription || ('Can view and use the ' + manifest.appName + ' tool.') },
-        { name: 'name', value: r.userRoleName },
+        { name: 'name', value: userRoleName },
         { name: 'sys_id', value: ids.userRole, xmlOnly: true },
-        { name: 'sys_name', value: r.userRoleName, xmlOnly: true },
+        { name: 'sys_name', value: userRoleName, xmlOnly: true },
         SC,
         { name: 'sys_update_name', value: 'sys_user_role_' + ids.userRole, xmlOnly: true },
       ] });
       if (withEditor) {
         records.push({ table: 'sys_user_role', sysId: ids.editorRole, key: 'editorRole', fields: [
           { name: 'description', value: r.editorRoleDescription || ('Can edit ' + manifest.appName + ' content in the tool.') },
-          { name: 'name', value: r.editorRoleName },
+          { name: 'name', value: editorRoleName },
           { name: 'sys_id', value: ids.editorRole, xmlOnly: true },
-          { name: 'sys_name', value: r.editorRoleName, xmlOnly: true },
+          { name: 'sys_name', value: editorRoleName, xmlOnly: true },
           SC,
           { name: 'sys_update_name', value: 'sys_user_role_' + ids.editorRole, xmlOnly: true },
         ] });
       }
       records.push({ table: 'sys_user_role', sysId: ids.adminRole, key: 'adminRole', fields: [
         { name: 'description', value: r.adminRoleDescription || ("Can edit " + manifest.appName + "'s own application records (widget, page, theme, layout).") },
-        { name: 'name', value: r.adminRoleName },
+        { name: 'name', value: adminRoleName },
         { name: 'sys_id', value: ids.adminRole, xmlOnly: true },
-        { name: 'sys_name', value: r.adminRoleName, xmlOnly: true },
+        { name: 'sys_name', value: adminRoleName, xmlOnly: true },
         SC,
         { name: 'sys_update_name', value: 'sys_user_role_' + ids.adminRole, xmlOnly: true },
       ] });
@@ -1119,6 +1136,11 @@
     if (manifest.features && manifest.features.roles) {
       var r2 = manifest.roles;
       var withEditorAcl = hasEditorRole(manifest);
+      var aclRoleLabels = {
+        userRoleName: scopedRoleName(manifest.scope, r2.userRoleName),
+        editorRoleName: scopedRoleName(manifest.scope, r2.editorRoleName),
+        adminRoleName: scopedRoleName(manifest.scope, r2.adminRoleName)
+      };
       var aclTables = ACL_TABLES.filter(function (t) {
         if (t === 'sp_theme') { return featureOn(manifest, 'theme'); }
         if (t === 'sp_portal') { return featureOn(manifest, 'portal'); }
@@ -1156,7 +1178,7 @@
       }
       aclTables.forEach(function (t) {
         pushAcl(t, 'write', t, [ids.adminRole],
-          'Lets ' + r2.adminRoleName + ' edit ' + t + ' records that belong to this application.');
+          'Lets ' + aclRoleLabels.adminRoleName + ' edit ' + t + ' records that belong to this application.');
       });
       tablesModel.forEach(function (t) {
         var readRoles = [ids.userRole, ids.adminRole];
@@ -1166,10 +1188,12 @@
           writeRoles = [ids.editorRole, ids.adminRole];
         }
         pushAcl(t.name, 'read', 'table:' + t.shortName + ':read', readRoles,
-          'Lets ' + appRoleNames(r2, withEditorAcl) + ' read ' + t.label + ' rows.');
+          'Lets ' + appRoleNames(aclRoleLabels, withEditorAcl) + ' read ' + t.label + ' rows.');
         ['write', 'create', 'delete'].forEach(function (op) {
           pushAcl(t.name, op, 'table:' + t.shortName + ':' + op, writeRoles,
-            'Lets ' + (withEditorAcl ? (r2.editorRoleName + '/' + r2.adminRoleName) : r2.adminRoleName) +
+            'Lets ' + (withEditorAcl
+              ? (aclRoleLabels.editorRoleName + '/' + aclRoleLabels.adminRoleName)
+              : aclRoleLabels.adminRoleName) +
             ' ' + op + ' ' + t.label + ' rows.');
         });
       });
@@ -1201,7 +1225,8 @@
     scopeSlug: scopeSlug, deriveVendorPrefix: deriveVendorPrefix, SCOPE_MAX: SCOPE_MAX,
     // assembly - buildRecordModel is the shared source of truth fluent.js's assembleFluent consumes.
     buildParts: buildParts, buildRecordModel: buildRecordModel,
-    buildTablesModel: buildTablesModel, fullTableName: fullTableName, hasEditorRole: hasEditorRole,
+    buildTablesModel: buildTablesModel, fullTableName: fullTableName, scopedRoleName: scopedRoleName,
+    hasEditorRole: hasEditorRole,
     ACL_TABLES: ACL_TABLES,
   };
 });

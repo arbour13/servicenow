@@ -211,6 +211,9 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
         serverApi = api;
       }
     },
+    getContentRevision: function () {
+      return cachedContentRevision || '';
+    },
     // Sync harness path - avoids a Loading… → content flash on first paint when there's no SN server.
     readLocalData: buildLocalPayload,
     getData: function () {
@@ -318,7 +321,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
         return responseData;
       });
     },
-    // One-time "Load standard content" action for an instance whose content table is empty.
+    // One-time "Import Delivery 2.0 content" action for an instance whose content table is empty.
     // Harness fallback re-derives the payload from window.DMSeed and PERSISTS it (not just an
     // in-memory resolve) - the harness's own "empty" state only exists after a real
     // structure-edit delete-everything-and-save, so this should make the load durable, matching
@@ -340,14 +343,14 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
         var responseData = (response && response.data) || {};
 
         if (responseData.error) {
-          return rejectServerError(responseData, 'Could not load standard content.');
+          return rejectServerError(responseData, 'Could not import Delivery 2.0 content.');
         }
 
         var payload = fromServerData(responseData);
         cacheLookups(payload);
         return payload;
       }, function () {
-        return rejectServerError(null, 'Could not load standard content.');
+        return rejectServerError(null, 'Could not import Delivery 2.0 content.');
       });
     },
     // Persist What's New read map. Harness is localStorage-only (WhatsNewService); SN writes

@@ -330,6 +330,7 @@ input::placeholder {
   gap: var(--sp-xxl);
   max-width: 1204px;
   margin: 0 auto;
+  transition: max-width 0.3s ease, gap 0.3s ease;
 }
 
 .docs-layout-main {
@@ -337,6 +338,7 @@ input::placeholder {
   min-width: 0;
   max-width: 940px;
   position: relative;
+  transition: max-width 0.3s ease;
 }
 
 .docs-rail {
@@ -346,10 +348,34 @@ input::placeholder {
   position: sticky;
   top: 75px;
   max-height: calc(100vh - 75px - var(--sp-xl));
+  overflow-x: hidden;
   overflow-y: auto;
+  transition: width 0.3s ease, opacity 0.2s ease;
+}
+
+.docs-rail-inner {
+  width: 240px;
   padding: 0 var(--sp-sm) var(--sp-lg);
 }
 
+.docs-layout-editing {
+  max-width: 1500px;
+  gap: 0;
+}
+.docs-layout-editing .docs-layout-main {
+  max-width: none;
+}
+.docs-layout-editing .docs-rail {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .docs-layout, .docs-layout-main, .docs-rail {
+    transition: none;
+  }
+}
 .docs-rail-home {
   display: block;
   width: 100%;
@@ -648,34 +674,112 @@ input::placeholder {
   align-items: stretch;
 }
 
-@media (max-width: 900px) {
-  .docs-editor-panes {
-    grid-template-columns: 1fr;
-  }
-}
-.docs-editor-textarea {
-  width: 100%;
-  min-height: 420px;
+.docs-editor-textarea, .docs-editor-highlight {
   padding: var(--sp-md);
-  resize: vertical;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--panel);
-  color: var(--text);
   font-family: var(--mono);
   font-size: 12.5px;
   line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 2;
+  border: 0;
 }
 
-.docs-editor-textarea:focus-visible {
+.docs-editor-source {
+  position: relative;
+  height: max(60vh, 100vh - 340px);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.docs-editor-source:focus-within {
   outline: none;
   box-shadow: 0 0 0 3px var(--accent-soft);
   border-color: var(--accent);
 }
 
+.docs-editor-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--text);
+  background: transparent;
+}
+
+.docs-editor-textarea {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  outline: none;
+  overflow-y: auto;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+}
+
+.docs-editor-textarea::selection {
+  background: var(--accent-soft-hover);
+}
+
+.docs-editor-highlight .md-heading {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.docs-editor-highlight .md-bold {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.docs-editor-highlight .md-italic {
+  color: var(--text);
+  font-style: italic;
+}
+
+.docs-editor-highlight .md-code {
+  color: var(--ed-str);
+}
+
+.docs-editor-highlight .md-fence {
+  color: var(--ed-com);
+}
+
+.docs-editor-highlight .md-code-block {
+  color: var(--ed-kw);
+}
+
+.docs-editor-highlight .md-link-text {
+  color: var(--accent);
+}
+
+.docs-editor-highlight .md-link-url {
+  color: var(--ed-str);
+}
+
+.docs-editor-highlight .md-wikilink {
+  color: var(--purple);
+}
+
+.docs-editor-highlight .md-marker {
+  color: var(--faint);
+}
+
+.docs-editor-highlight .md-comment {
+  color: var(--ed-com);
+  font-style: italic;
+}
+
 .docs-editor-preview {
-  min-height: 420px;
-  max-height: 620px;
+  height: max(60vh, 100vh - 340px);
   overflow-y: auto;
   padding: var(--sp-md);
   border: 1px solid var(--border);
@@ -683,6 +787,14 @@ input::placeholder {
   background: var(--panel-alt);
 }
 
+@media (max-width: 900px) {
+  .docs-editor-panes {
+    grid-template-columns: 1fr;
+  }
+  .docs-editor-textarea, .docs-editor-preview {
+    height: 340px;
+  }
+}
 .docs-editor-preview-title {
   font-size: 15px;
   font-weight: 650;

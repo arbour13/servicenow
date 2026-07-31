@@ -124,12 +124,14 @@
               <p class="pg-sub">{{c.pageSub()}}</p>
             </div>
             <div class="pagehdr-controls"
-              ng-if="(c.view === 'methodology' || c.view === 'raci') && (c.showMethodologySwitch() || (c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit))">
+              ng-if="(c.view === 'methodology' || c.view === 'raci') && (c.showMethodologySwitch() || c.showStructureEdit())">
               <div class="methodology-switch" ng-if="c.showMethodologySwitch()">
                 <button type="button" class="methodology-tab" ng-class="{on: methodology.id === c.methodologyId}"
                   ng-repeat="methodology in c.methodologies track by methodology.id" ng-click="c.switchMethodology(methodology.id)">{{methodology.name}}</button>
               </div>
-              <button type="button" class="struct-icon-btn" ng-if="c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit"
+              <!-- Structure edit only after content exists - Import Delivery 2.0 content is the
+                 sole empty-instance starting path (no blank methodology from the pencil). -->
+              <button type="button" class="struct-icon-btn" ng-if="c.showStructureEdit()"
                 ng-class="{on: c.structureEditMode}" ng-click="c.toggleStructureEdit()"
                 data-tip="Edit structure"
                 aria-label="Edit structure"
@@ -139,12 +141,11 @@
               </button>
             </div>
             <!-- RACI-only now: the Methodology view has its own richer empty state (the
-               "Load standard content" flow), so showing this SAME condition there too would be a
+               Import Delivery 2.0 content flow), so showing this SAME condition there too would be a
                confusing duplicate above it. RACI has no per-widget empty state of its own to defer
                to, so it still needs a fallback - pointed at Methodology, where the real action lives. -->
             <p class="empty" ng-if="!c.loading && !c.methodologies.length && c.view === 'raci'">
-              No methodology content yet. Switch to Methodology to load the standard content, or add one via
-              structure edit.
+              No methodology content yet. Switch to Methodology to import Delivery 2.0 content.
             </p>
           </div>
 

@@ -16,7 +16,7 @@
    and the controller writes them onto vm itself. Mode-routing (vm.docsView, vm.openPage,
    vm.showDocsHome) also stays in the controller - this service only does what happens once you're
    already looking at a page, not how you got there. */
-angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeout', 'DocsService', 'DocsEditService', '$sce', function ($rootScope, $timeout, DocsService, DocsEditService, $sce) {
+angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeout', 'DocsService', 'DocsEditService', 'DocsHighlightService', '$sce', function ($rootScope, $timeout, DocsService, DocsEditService, DocsHighlightService, $sce) {
   'use strict';
 
   // Plain-text search corpus: strips tags from rendered HTML and lowercases once here rather than
@@ -285,6 +285,96 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
     linkClickPane = pane;
   }
 
+  // Keeps the editor's markdown pane and its live preview scrolled to the same RELATIVE position,
+  // in both directions. Proportional (fraction of scrollable distance), not line-accurate: mapping
+  // a markdown line to the exact rendered element it produced would mean the renderer emitting
+  // source-line metadata for every block, and the payoff over proportional is small when the two
+  // panes are the same height and hold the same content in the same order.
+  // `drivingPane` is the feedback-loop guard - setting scrollTop on the target fires ITS scroll
+  // event, which would bounce straight back and fight the pane the user is actually dragging.
+  // Released on a timeout rather than requestAnimationFrame deliberately: rAF can be suspended
+  // entirely in a backgrounded or throttled tab (this app has already been bitten by that - see
+  // animateScrollTop's own safety net above), which would wedge the guard on forever and silently
+  // kill the sync until the next teardown.
+  var editorPanes = null;
+  var drivingPane = null;
+  var releaseTimer = null;
+  function syncPaneScroll(source, target) {
+    if (drivingPane && drivingPane !== source) { return; }
+    drivingPane = source;
+
+    var sourceScrollable = source.scrollHeight - source.clientHeight;
+    var targetScrollable = target.scrollHeight - target.clientHeight;
+    if (sourceScrollable > 0 && targetScrollable > 0) {
+      target.scrollTop = (source.scrollTop / sourceScrollable) * targetScrollable;
+    }
+
+    if (releaseTimer) { clearTimeout(releaseTimer); }
+    releaseTimer = setTimeout(function () { drivingPane = null; releaseTimer = null; }, 60);
+  }
+  // Repaints the syntax-highlight layer sitting behind the textarea. Called on every keystroke
+  // (from the controller's ng-change handler) - highlightMarkdown() is a linear scan over one
+  // page's text, which is cheap enough at this content size not to need debouncing.
+  function paintEditorHighlight(text) {
+    var layer = document.querySelector('.docs-editor-highlight');
+    if (!layer) { return; }
+    layer.innerHTML = DocsHighlightService.highlightMarkdown(text);
+    matchHighlightWidth();
+  }
+
+  // The textarea reserves space for its own scrollbar; the layer behind it does not. Left alone,
+  // that few-pixel difference makes long lines wrap at DIFFERENT points in the two layers, and the
+  // colours slide off the text. Measuring clientWidth (which excludes the scrollbar) and pinning
+  // the layer to it keeps both wrapping identically, whatever the platform's scrollbar width is.
+  function matchHighlightWidth() {
+    var textarea = document.querySelector('.docs-editor-textarea');
+    var layer = document.querySelector('.docs-editor-highlight');
+    if (!textarea || !layer) { return; }
+    layer.style.width = textarea.clientWidth + 'px';
+  }
+
+  function teardownEditorScrollSync() {
+    if (editorPanes) {
+      editorPanes.textarea.removeEventListener('scroll', editorPanes.onTextareaScroll);
+      editorPanes.preview.removeEventListener('scroll', editorPanes.onPreviewScroll);
+      window.removeEventListener('resize', editorPanes.onWindowResize);
+      editorPanes = null;
+    }
+    if (releaseTimer) { clearTimeout(releaseTimer); releaseTimer = null; }
+    drivingPane = null;
+  }
+  function setupEditorScrollSync() {
+    teardownEditorScrollSync();
+    var textarea = document.querySelector('.docs-editor-textarea');
+    var preview = document.querySelector('.docs-editor-preview');
+    var highlight = document.querySelector('.docs-editor-highlight');
+    if (!textarea || !preview) { return; }
+
+    function onTextareaScroll() {
+      // The highlight layer tracks the textarea EXACTLY (same box, same text) - unlike the preview,
+      // which is different content and only tracks proportionally.
+      if (highlight) {
+        highlight.scrollTop = textarea.scrollTop;
+        highlight.scrollLeft = textarea.scrollLeft;
+      }
+      syncPaneScroll(textarea, preview);
+    }
+    function onPreviewScroll() { syncPaneScroll(preview, textarea); }
+    function onWindowResize() { matchHighlightWidth(); }
+
+    textarea.addEventListener('scroll', onTextareaScroll, { passive: true });
+    preview.addEventListener('scroll', onPreviewScroll, { passive: true });
+    window.addEventListener('resize', onWindowResize);
+    editorPanes = {
+      textarea: textarea,
+      preview: preview,
+      onTextareaScroll: onTextareaScroll,
+      onPreviewScroll: onPreviewScroll,
+      onWindowResize: onWindowResize,
+    };
+    matchHighlightWidth();
+  }
+
   var service = {
     doc: built.doc,
     pagesById: built.pagesById,
@@ -307,6 +397,9 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
     setupScrollSpy: setupScrollSpy,
     teardownScrollSpy: teardownScrollSpy,
     setupDocsLinkClicks: setupDocsLinkClicks,
+    setupEditorScrollSync: setupEditorScrollSync,
+    teardownEditorScrollSync: teardownEditorScrollSync,
+    paintEditorHighlight: paintEditorHighlight,
   };
   return service;
 }]);

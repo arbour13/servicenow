@@ -273,14 +273,37 @@ input::placeholder { color: var(--faint); }
 // Rendered from DocsService's pre-parsed HTML (see scripts/build-docs.js). Two-column layout: the
 // reading column caps at .docs-content's measure (940px) rather than stretching to fill the pane,
 // and a sticky rail uses the reclaimed width for group/page/section navigation.
-.docs-layout { display: flex; align-items: flex-start; gap: var(--sp-xxl); max-width: 1204px; margin: 0 auto; }
-.docs-layout-main { flex: 1; min-width: 0; max-width: 940px; position: relative; }
+.docs-layout { display: flex; align-items: flex-start; gap: var(--sp-xxl); max-width: 1204px; margin: 0 auto; transition: max-width .3s ease, gap .3s ease; }
+.docs-layout-main { flex: 1; min-width: 0; max-width: 940px; position: relative; transition: max-width .3s ease; }
 
 .docs-rail {
   width: 240px; flex-shrink: 0; align-self: flex-start;
   position: sticky; top: 75px;
   max-height: calc(100vh - 75px - var(--sp-xl));
-  overflow-y: auto; padding: 0 var(--sp-sm) var(--sp-lg);
+  overflow-x: hidden; overflow-y: auto;
+  transition: width .3s ease, opacity .2s ease;
+}
+// Fixed width so the rail's content NEVER re-wraps while the rail collapses - the outer aside
+// clips it instead (see the wrapper's own comment in index.html). Padding lives here rather than
+// on .docs-rail so it collapses with the content instead of holding the rail open at 16px.
+.docs-rail-inner { width: 240px; padding: 0 var(--sp-sm) var(--sp-lg); }
+
+// Edit mode widens the reading column in place: the two-pane editor needs far more room than the
+// 940px prose measure, and on a typical laptop the rail's ~264px IS the available headroom.
+// Collapsing it is safe precisely while editing - navigating away mid-edit discards unsaved text
+// anyway (vm.openPage calls vm.exitDocsEdit), so the rail has nothing useful to offer here.
+// Capped at 1500px rather than going full-bleed: past that a single line of markdown gets too wide
+// to track comfortably - the same reason the reading column is capped in the first place.
+.docs-layout-editing {
+  max-width: 1500px;
+  // gap is a flex property on the container, so it survives the rail collapsing to width:0 and
+  // would otherwise leave a dead 24px indent down the editor's left edge.
+  gap: 0;
+  .docs-layout-main { max-width: none; }
+  .docs-rail { width: 0; opacity: 0; pointer-events: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .docs-layout, .docs-layout-main, .docs-rail { transition: none; }
 }
 .docs-rail-home {
   display: block; width: 100%; text-align: left; border: 0; border-left: 2px solid transparent; background: transparent; cursor: pointer;
@@ -378,26 +401,88 @@ input::placeholder { color: var(--faint); }
 }
 .docs-edit-btn { @extend .docs-btn; }
 
-// The editor itself - toolbar, then a two-column markdown/preview split, then any validation
-// errors, then Cancel/Save. .docs-editor-preview reuses .docs-content (see the class list on its
-// own element in index.html) so the live preview is styled IDENTICALLY to the real reader view -
-// what an author sees while typing is what a reader will actually get, not an approximation.
+// The editor - toolbar, a two-column markdown/preview split, any validation errors, then
+// Cancel/Save. .docs-editor-preview reuses .docs-content (see the class list on its own element in
+// index.html) so the live preview is styled IDENTICALLY to the real reader view - what an author
+// sees while typing is what a reader will actually get, not an approximation.
 .docs-editor { display: flex; flex-direction: column; gap: var(--sp-md); }
 .docs-editor-toolbar { display: flex; flex-wrap: wrap; gap: var(--sp-xs); }
 .docs-editor-toolbar button { @extend .docs-btn; }
 .docs-editor-panes { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-md); align-items: stretch; }
-@media (max-width: 900px) {
-  .docs-editor-panes { grid-template-columns: 1fr; }
+// Both panes share one viewport-derived height so source and preview line up - they scroll
+// together (see DocsUiService.setupEditorScrollSync), and that sync reads as one document in two
+// views only if the two viewports are the same size. The 60vh floor keeps a usable pane on a short
+// laptop screen; the subtraction accounts for the chrome above and below the panes (topbar, sticky
+// page title, toolbar, controls row) so the Save row stays on screen.
+$gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
+// The two-layer source pane. .docs-editor-highlight paints the colours; .docs-editor-textarea sits
+// on top with transparent text (but a visible caret) and handles all actual editing. EVERY
+// property that affects where a glyph lands has to be identical on both, or the colours drift out
+// from under the caret: font, size, line-height, padding, wrapping and tab-size. The shared
+// %docs-editor-typography placeholder is what keeps that from silently rotting when one of them is
+// tweaked later.
+%docs-editor-typography {
+  padding: var(--sp-md);
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+  white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; tab-size: 2;
+  border: 0;
+}
+.docs-editor-source {
+  position: relative;
+  height: $gfd-editor-pane-height;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel);
+  overflow: hidden;
+}
+// Focus ring moves to the WRAPPER (via :focus-within) since the textarea itself is now
+// border-less and transparent - the visible box belongs to the container now.
+.docs-editor-source:focus-within { @include gfd-focus-ring; border-color: var(--accent); }
+.docs-editor-highlight {
+  @extend %docs-editor-typography;
+  position: absolute; top: 0; left: 0; height: 100%;
+  margin: 0;
+  overflow: hidden;               // scrolled programmatically in lockstep with the textarea
+  pointer-events: none;
+  color: var(--text);             // fallback for any text the highlighter leaves untokenised
+  background: transparent;
 }
 .docs-editor-textarea {
-  width: 100%; min-height: 420px; padding: var(--sp-md); resize: vertical;
-  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
-  background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+  @extend %docs-editor-typography;
+  position: relative; z-index: 1;
+  width: 100%; height: 100%;
+  resize: none; outline: none;
+  overflow-y: auto;
+  background: transparent;
+  color: transparent;             // the colours come from the layer underneath
+  caret-color: var(--text);
 }
-.docs-editor-textarea:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+// Selection has to stay translucent - an opaque highlight would hide the coloured layer under it.
+.docs-editor-textarea::selection { background: var(--accent-soft-hover); }
+
+// Markdown token colours, reusing the app's own code-sample palette (--ed-*) so the editor stays
+// consistent with rendered code blocks and re-themes with everything else.
+.docs-editor-highlight .md-heading { color: var(--accent); font-weight: 700; }
+.docs-editor-highlight .md-bold { color: var(--text); font-weight: 700; }
+.docs-editor-highlight .md-italic { color: var(--text); font-style: italic; }
+.docs-editor-highlight .md-code { color: var(--ed-str); }
+.docs-editor-highlight .md-fence { color: var(--ed-com); }
+.docs-editor-highlight .md-code-block { color: var(--ed-kw); }
+.docs-editor-highlight .md-link-text { color: var(--accent); }
+.docs-editor-highlight .md-link-url { color: var(--ed-str); }
+.docs-editor-highlight .md-wikilink { color: var(--purple); }
+.docs-editor-highlight .md-marker { color: var(--faint); }
+.docs-editor-highlight .md-comment { color: var(--ed-com); font-style: italic; }
 .docs-editor-preview {
-  min-height: 420px; max-height: 620px; overflow-y: auto;
+  height: $gfd-editor-pane-height; overflow-y: auto;
   padding: var(--sp-md); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-alt);
+}
+// Below this the two panes can't sit side by side legibly, so they stack - and each drops to a
+// modest fixed height, since two viewport-tall panes stacked would be twice the window and turn
+// every edit into a long scroll between source and preview. Must stay AFTER the height rules
+// above: same specificity, so source order is what decides the override.
+@media (max-width: 900px) {
+  .docs-editor-panes { grid-template-columns: 1fr; }
+  .docs-editor-textarea, .docs-editor-preview { height: 340px; }
 }
 .docs-editor-preview-title { font-size: 15px; font-weight: 650; margin: 0 0 var(--sp-sm); color: var(--text); }
 .docs-editor-errors {

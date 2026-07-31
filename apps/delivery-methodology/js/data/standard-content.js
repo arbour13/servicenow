@@ -1,9 +1,9 @@
-/* Standard GlideFast Delivery 2.0 starter content - the one-time "Load standard content"
-   action offers this when an instance's content table is empty (see content.server.js's
-   seedStandard action and js/services/data.service.js's seedStandard()). Deployed (unlike
-   js/data/seed.js, which stays deploy: false / harness-only) - see deploy.manifest.js's
-   files.contentModel entry, which concatenates this onto the widget SERVER script alongside
-   url-policy.js / content-model.js, in the same Rhino-safe bare-var style.
+/* Delivery 2.0 content payload - the one-time "Import Delivery 2.0 content" action offers this
+   when an instance's content table is empty (see content.server.js's seedStandard action and
+   js/services/data.service.js's seedStandard()). Deployed (unlike js/data/seed.js, which stays
+   deploy: false / harness-only) - see deploy.manifest.js's files.contentModel entry, which
+   concatenates this onto the widget SERVER script alongside url-policy.js / content-model.js,
+   in the same Rhino-safe bare-var style.
 
    GENERATED, do not hand-edit. This is js/data/seed.js's payload (jobTitles/methodologies/
    jargon/referenceSections only - not its blankSubPhase harness helper or version field, which

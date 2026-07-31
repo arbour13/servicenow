@@ -35,15 +35,15 @@ content (self-referencing on `parent`, discriminated by `type`)
 
 ## Roles
 
-Explicit prefixed role names (same pattern as Glide Studio) — **not** bare `user` / `editor` /
-`admin`. Declared in `deploy.manifest.js` and checked with those exact strings in
-`content.server.js` (`gs.hasRole('delivery_methodology_editor')`, etc.).
+Manifest uses short suffixes (`user` / `editor` / `admin`); the packager emits scoped names
+(`<scope>.user`, etc.). `content.server.js` checks
+`gs.hasRole(gs.getCurrentScopeName() + '.editor')` (and `.admin`).
 
 | Role | Page | Edit in tool | Content table write | App metadata write |
 |---|---|---|---|---|
-| `delivery_methodology_user` | yes | no | no | no |
-| `delivery_methodology_editor` | yes | yes | yes | no |
-| `delivery_methodology_admin` | yes | yes | yes | yes |
+| `<scope>.user` | yes | no | no | no |
+| `<scope>.editor` | yes | yes | yes | no |
+| `<scope>.admin` | yes | yes | yes | yes |
 
 Widget server sets `data.canEdit` from editor/admin roles; local harness defaults to editable.
 
@@ -101,7 +101,7 @@ to reference — always a `job_title` row — lives inside `content` as a plain 
 3. **Cascade delete:** Fluent `parent` column `cascadeRule: 'cascade'` — platform deletes
    descendants when a parent row is deleted. Soft refs inside JSON are not cascaded.
 4. **`icon`:** on `sub_phase` content as `{ overview, objective, icon }`.
-5. **Roles:** `delivery_methodology_user` / `_editor` / `_admin` as above.
+5. **Roles:** `<scope>.user` / `.editor` / `.admin` as above.
 6. **Type choice values** are short labels (`task`, `raci`, `input`, …) — hierarchy is carried by
    `parent`, not by prefixes on the choice value.
 

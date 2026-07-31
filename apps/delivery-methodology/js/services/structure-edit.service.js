@@ -124,6 +124,11 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       cancelStructureEdit();
       return;
     }
+    // Empty instance: Import Delivery 2.0 content is the only starting path - no blank methodology first.
+    if (!(AppStateService.getMethodologies() || []).length) {
+      MessagingService.toast('Import Delivery 2.0 content first');
+      return;
+    }
     enterStructureEdit();
   }
 

@@ -12,12 +12,12 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   '$rootScope', '$scope', 'DataService', 'ThemeService', 'MessagingService', 'TipService',
   'AppStateService', 'MethodologyDomainService', 'NavigationService', 'SearchService',
   'WhatsNewService', 'ReferenceService', 'RaciGridService', 'ContentEditService', 'StructureEditService',
-  'IconService', 'MotionService',
+  'IconService', 'MotionService', 'LiveSyncService',
   function (
     $rootScope, $scope, DataService, ThemeService, MessagingService, TipService,
     AppStateService, MethodologyDomainService, NavigationService, SearchService,
     WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService,
-    IconService, MotionService
+    IconService, MotionService, LiveSyncService
   ) {
   'use strict';
   var c = this;
@@ -139,6 +139,13 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   // Structure edit adds "+ Add" beside the tabs (shell template) without cluttering the panel.
   c.showMethodologySwitch = function () {
     return (c.view === 'methodology' || c.view === 'raci') && c.methodologies.length >= 1;
+  };
+  // Pencil only after content exists - a fresh instance's only starting path is Import Delivery 2.0 content.
+  c.showStructureEdit = function () {
+    return c.view === 'methodology'
+      && c.structureEditUiEnabled
+      && c.canEdit
+      && c.methodologies.length >= 1;
   };
   c.pageTitle = function () {
     if (c.view === 'raci') {
@@ -370,6 +377,12 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   // is the only place changelogSeen is available (result itself only carries {empty,
   // methodologyId, subPhaseId}).
   function handleContentLoaded(result, loadedData) {
+    // Empty tree (fresh install or Clear all content): leave structure edit so the pencil/panel
+    // cannot be the starting path - Import Delivery 2.0 content is.
+    if (result.empty && StructureEditService.isEditing()) {
+      StructureEditService.exitStructureEdit();
+    }
+
     // Stamp changelog read flags from user preference + localStorage before What's New refresh.
     refreshWhatsNew(loadedData && loadedData.changelogSeen);
 
@@ -384,7 +397,8 @@ angular.module('deliveryMethodology').controller('DmShellController', [
 
     if (!result.empty) {
       NavigationService.remember(result.methodologyId, result.subPhaseId);
-      if (!NavigationService.applyDeepLinkFromUrl()) {
+      // Live sync keeps the viewer in place — do not re-apply deep links or push history.
+      if (!result.liveSync && !NavigationService.applyDeepLinkFromUrl()) {
         NavigationService.push();
       }
     }
@@ -399,6 +413,10 @@ angular.module('deliveryMethodology').controller('DmShellController', [
     onAfterLoad: handleContentLoaded
   });
 
+  LiveSyncService.bind({
+    onAfterLoad: handleContentLoaded
+  });
+
   function applyLoadedData(data) {
     AppStateService.applyLoadedData(data, {
       canEdit: c.data && c.data.canEdit,
@@ -409,7 +427,10 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   // Bootstrap after all helpers/counters exist. Harness hydrates sync (seed + localStorage) so the
   // first paint isn't Loading… → jump; instance loads stay async via the server.
   if (c.server) {
-    DataService.getData().then(applyLoadedData, function (error) {
+    DataService.getData().then(function (data) {
+      applyLoadedData(data);
+      LiveSyncService.start($scope, c.data && c.data.contentTable);
+    }, function (error) {
       var message = 'Could not load content.';
       if (error && error.error) {
         message = error.error;

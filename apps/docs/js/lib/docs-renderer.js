@@ -242,18 +242,25 @@ var DocsRenderer = (function () {
     var raw = String(markdown || '').replace(/\r\n/g, '\n');
     var lines = raw.split('\n');
 
-    if (!/^# /.test(lines[0] || '')) {
+    // A missing title is reported but NOT fatal - this used to bail out returning empty content,
+    // which blanked the editor's live preview the moment anything (a toolbar insertion at the
+    // caret, a half-finished retype of the first line) sat above the `# Title`. Blanking the whole
+    // preview over one malformed line contradicts this file's own collect-errors-and-render-anyway
+    // contract; the error still blocks an actual save (see docs.server.js's saveDraft), which is
+    // where refusing genuinely belongs.
+    var hasTitle = /^# /.test(lines[0] || '');
+    if (!hasTitle) {
       errors.push('Page must start with a single "# Title" heading on its first line.');
-      return { title: '', lead: '', sections: [], errors: errors };
     }
 
-    var title = lines[0].slice(2).trim();
+    var title = hasTitle ? lines[0].slice(2).trim() : '';
+    var bodyLines = hasTitle ? lines.slice(1) : lines;
     var leadLines = [];
     var sections = [];
     var currentSection = null;
     var buffer = leadLines;
 
-    lines.slice(1).forEach(function (line) {
+    bodyLines.forEach(function (line) {
       if (/^# /.test(line)) {
         errors.push('A second "# " heading was found and ignored - a page is exactly one title.');
         return;

@@ -234,7 +234,7 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   syncAll();
   AppStateService.subscribe($rootScope, $scope, syncAll);
 
-  // One-time "Load standard content" action offered by the empty-state below when this
+  // One-time "Import Delivery 2.0 content" action offered by the empty-state below when this
   // instance's content table is empty. Guarded by canEdit/isSaving in the template (same as
   // every other write action here) - AppStateService.seedStandard() itself also refuses a
   // double-fire via tryBeginSave(), and the server refuses outright if the table already has
@@ -243,7 +243,7 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
     AppStateService.seedStandard();
   };
 
-  // Testing affordance for the empty state / one-click load above: wipes all content so that flow
+  // Testing affordance for the empty state / one-click import above: wipes all content so that flow
   // can be run again. Destructive and irreversible (there is no undo - the save path deletes and
   // recreates rows wholesale), hence the confirm, the danger styling, and the structure-edit-only
   // placement rather than a button sitting on the read view. Content edit blocks it for the same
@@ -257,7 +257,7 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
     MessagingService.confirm({
       title: 'Clear all content?',
       body: 'Deletes every methodology, phase, sub-phase and task on this instance. This cannot be undone - ' +
-        'you can reload the standard content afterwards.',
+        'you can import Delivery 2.0 content afterwards.',
       cancel: 'Keep',
       ok: 'Clear everything'
     }).then(function (accepted) {

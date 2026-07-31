@@ -176,11 +176,17 @@ function main() {
     descriptor.manifest.scope = args.scope;
     delete descriptor.manifest.vendorPrefix;
   }
+  if (!descriptor.manifest.scope) {
+    throw new Error(
+      'No scope set for ' + args.appFolder + '. Pass --scope=<full-scope> ' +
+      '(connection apps omit a hardcoded scope from deploy.manifest.js).'
+    );
+  }
   var sources = loadSources(appRoot, descriptor);
   var parts = core.buildParts(descriptor.manifest, sources, {});
 
   console.log('Building ' + descriptor.manifest.appName + ' (' + args.appFolder + ')…');
-  if (args.scope) { console.log('  Scope:  ' + args.scope + ' (override)'); }
+  console.log('  Scope:  ' + descriptor.manifest.scope + (args.scope ? ' (override)' : ''));
   buildFluent(appRoot, descriptor, parts, args.fluentMode);
 }
 

@@ -302,9 +302,10 @@
     color: var(--text); overflow-x: auto; resize: vertical; min-height: 3.2em;
   }
   .saved-row {
-    display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: end;
+    display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: end;
     margin-bottom: 14px;
   }
+  .saved-row .action-btn { white-space: nowrap; }
   .panel-intro {
     margin: 0 0 14px; color: var(--muted); font-size: 12.5px; line-height: 1.5;
   }
@@ -541,6 +542,7 @@
         <option value="">New connection…</option>
       </select>
     </div>
+    <button type="button" class="action-btn secondary" id="saveInstanceBtn" data-tip="Save these credentials as a new connection">Save for later</button>
     <span class="tip-host" id="removeInstanceTip" data-tip="Choose a saved connection to remove">
       <button type="button" class="icon-btn danger" id="removeInstanceBtn" aria-label="Remove saved connection" disabled>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
@@ -566,7 +568,6 @@
     </div>
   </div>
   <div class="conn-actions">
-    <button type="button" class="action-btn secondary" id="saveInstanceBtn" data-tip="Save these credentials as a new connection">Save for later</button>
     <button type="button" class="action-btn" id="connectBtn" data-tip="Connect to detect the vendor prefix and check for an existing install">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8z"/></svg>
       Connect

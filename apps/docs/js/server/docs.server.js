@@ -10,8 +10,6 @@
    draft is no more dangerous than making it) by editor-or-admin - same split as
    deploy.manifest.js's roles block: editorRoleName can draft, adminRoleName can publish. */
 (function () {
-  data.canEdit = gs.hasRole('glidefast_docs_editor') || gs.hasRole('glidefast_docs_admin');
-  data.canPublish = gs.hasRole('glidefast_docs_admin');
   data.error = '';
   data.saved = false;
 
@@ -25,19 +23,32 @@
     seedStandard: true
   };
 
-  function getTableName(shortName) {
+  function getAppScopeName() {
     try {
       if (typeof gs.getCurrentScopeName === 'function') {
         var scopeName = String(gs.getCurrentScopeName() || '');
         if (scopeName && scopeName !== 'global') {
-          return scopeName + '_' + shortName;
+          return scopeName;
         }
       }
     } catch (scopeError) {
-      gs.warn(logPrefix + 'could not resolve scope name for ' + shortName + ' - ' + scopeError);
+      gs.warn(logPrefix + 'could not resolve scope name - ' + scopeError);
+    }
+    return '';
+  }
+
+  function getTableName(shortName) {
+    var scopeName = getAppScopeName();
+    if (scopeName) {
+      return scopeName + '_' + shortName;
     }
     return shortName;
   }
+
+  var appScopeName = getAppScopeName();
+  data.canEdit = !!(appScopeName
+    && (gs.hasRole(appScopeName + '.editor') || gs.hasRole(appScopeName + '.admin')));
+  data.canPublish = !!(appScopeName && gs.hasRole(appScopeName + '.admin'));
 
   var groupTable = getTableName('group');
   var pageTable = getTableName('page');

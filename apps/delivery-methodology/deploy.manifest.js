@@ -42,12 +42,8 @@
       // scoped app on redeploy.
       appName: 'Delivery Methodology',
 
-      // Fixed fallback only. This app derives its real scope per target instance (see
-      // deployOptions.showConnection below) - the deploy host detects the instance's own vendor
-      // prefix and recomputes scope via core.deriveScope(appName, companyCode), same as Glide
-      // Studio. vendorPrefix is deliberately OMITTED so the core derives it rather than pinning a
-      // wrong one; this literal is what you get if you build without connecting to an instance.
-      scope: 'x_dlvry_method',
+      // No fixed scope — showConnection derives it per target instance (vendor prefix + App ID).
+      // CLI builds must pass --scope=…; never hardcode a placeholder scope here.
       version: '1.0.0',
       // Still iterating on the target instance — packager allows redeploy at the same version and
       // does not force semver bumps. Flip to false (or remove) when this app is release-ready.
@@ -85,6 +81,7 @@
         { file: 'js/services/theme.service.js', name: 'ThemeService', type: 'service' },
         { file: 'js/services/motion.service.js', name: 'MotionService', type: 'service' },
         { file: 'js/services/data.service.js', name: 'DataService', type: 'service' },
+        { file: 'js/services/live-sync.service.js', name: 'LiveSyncService', type: 'service' },
         { file: 'js/services/methodology-domain.service.js', name: 'MethodologyDomainService', type: 'service' },
         { file: 'js/services/app-state.service.js', name: 'AppStateService', type: 'service' },
         { file: 'js/services/changelog-diff.service.js', name: 'ChangelogDiffService', type: 'service' },
@@ -166,13 +163,12 @@
       // view; editor + admin = edit content in the tool; admin also gets write ACLs on app metadata.
       features: { portal: false, theme: false, roles: true },
 
-      // Prefixed (not bare user/editor/admin) so these role names never collide with another
-      // app's roles of the same short name in the same instance - see gs.hasRole() calls in
-      // js/server/content.server.js, which must match these exactly.
+      // Short suffixes only — the packager emits scoped names (<scope>.user / .editor / .admin).
+      // content.server.js builds the same strings from gs.getCurrentScopeName() for hasRole().
       roles: {
-        userRoleName: 'delivery_methodology_user',
-        editorRoleName: 'delivery_methodology_editor',
-        adminRoleName: 'delivery_methodology_admin',
+        userRoleName: 'user',
+        editorRoleName: 'editor',
+        adminRoleName: 'admin',
         userGroupName: 'Delivery Methodology Users',
         editorGroupName: 'Delivery Methodology Editors',
         adminGroupName: 'Delivery Methodology Admins',

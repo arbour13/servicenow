@@ -233,7 +233,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     });
   }
 
-  // One-time "Load standard content" action, callable from any widget once loading has finished
+  // One-time "Import Delivery 2.0 content" action, callable from any widget once loading has finished
   // (unlike applyLoadedData, which is bootstrap-only). Runs the exact same post-load pipeline as
   // the initial load - recompute sids, backfill participants, pick a starting sub-phase, and
   // Shell's own bound onAfterLoad (RACI grid / job aids / What's New / nav push) - because a
@@ -258,7 +258,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     }, function (error) {
       state.isSaving = false;
       notify();
-      var message = 'Could not load standard content.';
+      var message = 'Could not import Delivery 2.0 content.';
       if (error && error.error) {
         message = error.error;
       }
@@ -358,6 +358,91 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     return result;
   }
 
+  // Live-sync path: replace content from the DB but keep the viewer's methodology/sub-phase/view
+  // when those ids still exist. Bootstrap still uses applyLoadedData() (first sub-phase + nav push).
+  function applySyncedData(data, options) {
+    var loadOptions = options || {};
+    var previousMethodologyId = state.methodologyId;
+    var previousSubPhaseId = state.subPhaseId;
+
+    silenced = true;
+    setJobTitles(data.jobTitles);
+    UrlPolicyService.normalizeMethodologies(data.methodologies);
+    setMethodologies(data.methodologies);
+    setJargon(data.jargon);
+    setReferenceSections(data.referenceSections);
+    MethodologyDomainService.backfillParticipants(state.methodologies);
+    state.methodologies.forEach(function (methodology) {
+      IdSeqService.recomputeSids(methodology);
+      (methodology.phases || []).forEach(function (phase) {
+        (phase.subPhases || []).forEach(function (subPhase) {
+          IconService.ensureIcon(subPhase);
+        });
+      });
+    });
+    IdSeqService.seedFromMethodologies(state.methodologies);
+    JargonService.setGlossary(state.jargon);
+    if (loadOptions.canEdit != null) {
+      setCanEdit(loadOptions.canEdit);
+    }
+
+    if (!state.methodologies.length) {
+      setMethodologyId(null);
+      setSubPhaseId(null);
+      refreshLocation();
+      setLoading(false);
+      silenced = false;
+      notify();
+      if (loadOptions.onAfterLoad) {
+        loadOptions.onAfterLoad({
+          empty: true,
+          liveSync: true
+        }, data);
+      }
+      return {
+        empty: true,
+        liveSync: true
+      };
+    }
+
+    var methodologyStillExists = !!MethodologyDomainService.currentMethodology(
+      state.methodologies,
+      previousMethodologyId
+    );
+    if (methodologyStillExists) {
+      setMethodologyId(previousMethodologyId);
+    } else {
+      setMethodologyId(state.methodologies[0].id);
+    }
+
+    var subPhaseStillExists = !!MethodologyDomainService.findSubPhase(
+      state.methodologies,
+      previousSubPhaseId
+    );
+    if (subPhaseStillExists) {
+      setSubPhaseId(previousSubPhaseId);
+    } else {
+      setSubPhaseId(MethodologyDomainService.firstContentSubPhase(
+        MethodologyDomainService.currentMethodology(state.methodologies, state.methodologyId)
+      ));
+    }
+
+    refreshLocation();
+    setLoading(false);
+    silenced = false;
+    notify();
+    var result = {
+      empty: false,
+      liveSync: true,
+      methodologyId: state.methodologyId,
+      subPhaseId: state.subPhaseId
+    };
+    if (loadOptions.onAfterLoad) {
+      loadOptions.onAfterLoad(result, data);
+    }
+    return result;
+  }
+
   function readState() {
     return {
       methodologies: state.methodologies,
@@ -421,6 +506,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     tryBeginSave: tryBeginSave,
     persistMethodologies: persistMethodologies,
     applyLoadedData: applyLoadedData,
+    applySyncedData: applySyncedData,
     seedStandard: seedStandard,
     resetAllContent: resetAllContent,
     readState: readState,
