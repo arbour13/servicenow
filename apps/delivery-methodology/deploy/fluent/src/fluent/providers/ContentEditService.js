@@ -66,7 +66,6 @@
   };
 
   var CORE_TEAM = ['em', 'bpc', 'arch', 'tc'];
-  var RACI_LETTERS = RaciGridService.LETTERS;
 
   var hooks = {};
   var state = {
@@ -496,9 +495,7 @@
       letters.splice(index, 1);
     } else {
       letters.push(letter);
-      letters.sort(function (left, right) {
-        return RACI_LETTERS.indexOf(left) - RACI_LETTERS.indexOf(right);
-      });
+      task.raci[roleId] = RaciGridService.sortLetters(letters);
     }
     invalidateDerived();
   }

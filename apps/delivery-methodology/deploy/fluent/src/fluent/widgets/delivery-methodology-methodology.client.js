@@ -15,7 +15,7 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
     if (!letters || !letters.length) {
       return '';
     }
-    return letters.map(function (letter) {
+    return RaciGridService.sortLetters(letters).map(function (letter) {
       return c.raciNames[letter];
     }).join(' / ');
   };

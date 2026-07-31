@@ -102,11 +102,11 @@
                 'If time sensitive and applicable (prior to IPKT), discuss with Sales team in advance'
               ],
               tasks: [
-                task('d2-1-1-t1', 1, 'Review SOW inputs', { arch: ['R'], em: ['A', 'R'], bpc: ['R'], tc: ['R'] }),
-                task('d2-1-1-t2', 2, 'Take thorough notes', { arch: ['R'], em: ['A', 'R'], bpc: ['R'], tc: ['R'] }),
+                task('d2-1-1-t1', 1, 'Review SOW inputs', { arch: ['R'], em: ['R', 'A'], bpc: ['R'], tc: ['R'] }),
+                task('d2-1-1-t2', 2, 'Take thorough notes', { arch: ['R'], em: ['R', 'A'], bpc: ['R'], tc: ['R'] }),
                 task('d2-1-1-t3', 3, 'Review and/or consult with AE / other Delivery personnel regarding previous / concurrent projects / GRSs conducted with the client', { arch: ['R'], em: ['R'], bpc: ['R'], tc: ['R'] }),
                 task('d2-1-1-t4', 4, 'Review lessons learned from previous engagements with the client', { arch: ['R'], em: ['R'], bpc: ['R'], tc: ['R'] }),
-                task('d2-1-1-t5', 5, 'Notate any questions or concerns in the IPKT document to discuss during IPKT', { arch: ['R'], em: ['A', 'R'], bpc: ['R'], tc: ['R'] }, [{ id: 'ja-d211t5-1', url: '#', roles: [] }])
+                task('d2-1-1-t5', 5, 'Notate any questions or concerns in the IPKT document to discuss during IPKT', { arch: ['R'], em: ['R', 'A'], bpc: ['R'], tc: ['R'] }, [{ id: 'ja-d211t5-1', url: '#', roles: [] }])
               ]
             }),
             Object.assign(blankSubPhase('d2-1-2', '1.2', 'IPKT', 2, 'exchange'), {
@@ -147,11 +147,11 @@
               tasks: [
                 task('d2-1-2-t1', 1, 'Sales presents the deal from their perspective', { ae: ['A'], arch: ['I'], em: ['I'], bpc: ['I'], tc: ['I'] }),
                 task('d2-1-2-t2', 2, 'Review of IPKT documentation', { arch: ['R'], em: ['R'], bpc: ['R'], tc: ['R'] }),
-                task('d2-1-2-t3', 3, 'Discussion and review of pre-IPKT highlights and notes', { arch: ['R'], em: ['A', 'R'], bpc: ['R'], tc: ['R'] }),
-                task('d2-1-2-t4', 4, 'Discuss Q&A, risks and issues. Document in RIDAC on the project record.', { em: ['A', 'R'], arch: ['R'], bpc: ['R'], tc: ['C'] }, [{ id: 'ja-d212t4-1', url: '#', roles: ['em'] }, { id: 'ja-d212t4-2', url: '#', roles: ['arch'] }]),
-                task('d2-1-2-t5', 5, 'Tailor the Customer Startup checklist', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['I'] }, [{ id: 'ja-d212t5-1', url: '#', roles: [] }]),
-                task('d2-1-2-t6', 6, 'Outline workshops, duration, and attendees', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d212t6-1', url: '#', roles: [] }]),
-                task('d2-1-2-t7', 7, 'Re-baseline resource plans', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] })
+                task('d2-1-2-t3', 3, 'Discussion and review of pre-IPKT highlights and notes', { arch: ['R'], em: ['R', 'A'], bpc: ['R'], tc: ['R'] }),
+                task('d2-1-2-t4', 4, 'Discuss Q&A, risks and issues. Document in RIDAC on the project record.', { em: ['R', 'A'], arch: ['R'], bpc: ['R'], tc: ['C'] }, [{ id: 'ja-d212t4-1', url: '#', roles: ['em'] }, { id: 'ja-d212t4-2', url: '#', roles: ['arch'] }]),
+                task('d2-1-2-t5', 5, 'Tailor the Customer Startup checklist', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['I'] }, [{ id: 'ja-d212t5-1', url: '#', roles: [] }]),
+                task('d2-1-2-t6', 6, 'Outline workshops, duration, and attendees', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d212t6-1', url: '#', roles: [] }]),
+                task('d2-1-2-t7', 7, 'Re-baseline resource plans', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-1-3', '1.3', 'Customer Pre-Kickoff', 3, 'door'), {
@@ -187,13 +187,13 @@
                 'Initial workshop schedule'
               ],
               tasks: [
-                task('d2-1-3-t1', 1, 'Introduction to the core GlideFast team', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['I'] }, [{ id: 'ja-d213t1-1', url: '#', roles: ['em'] }, { id: 'ja-d213t1-2', url: '#', roles: ['arch'] }]),
-                task('d2-1-3-t2', 2, 'Prepare and walk through the start-up checklist with the customer', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['I'] }, [{ id: 'ja-d213t2-1', url: '#', roles: [] }]),
-                task('d2-1-3-t3', 3, 'Identify customer stakeholders and subject matter experts', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
-                task('d2-1-3-t4', 4, 'Review the Workshop Outline with the customer', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }),
-                task('d2-1-3-t5', 5, 'Coordinate client schedules for kickoff and workshops', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['I'] }),
-                task('d2-1-3-t6', 6, 'Create the initial project plan', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d213t6-1', url: '#', roles: [] }]),
-                task('d2-1-3-t7', 7, 'Facilitate the meeting using the standard Customer Pre-Kickoff deck', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['I'] }, [{ id: 'ja-d213t7-1', url: '#', roles: [] }])
+                task('d2-1-3-t1', 1, 'Introduction to the core GlideFast team', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['I'] }, [{ id: 'ja-d213t1-1', url: '#', roles: ['em'] }, { id: 'ja-d213t1-2', url: '#', roles: ['arch'] }]),
+                task('d2-1-3-t2', 2, 'Prepare and walk through the start-up checklist with the customer', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['I'] }, [{ id: 'ja-d213t2-1', url: '#', roles: [] }]),
+                task('d2-1-3-t3', 3, 'Identify customer stakeholders and subject matter experts', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
+                task('d2-1-3-t4', 4, 'Review the Workshop Outline with the customer', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }),
+                task('d2-1-3-t5', 5, 'Coordinate client schedules for kickoff and workshops', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['I'] }),
+                task('d2-1-3-t6', 6, 'Create the initial project plan', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d213t6-1', url: '#', roles: [] }]),
+                task('d2-1-3-t7', 7, 'Facilitate the meeting using the standard Customer Pre-Kickoff deck', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['I'] }, [{ id: 'ja-d213t7-1', url: '#', roles: [] }])
               ]
             }),
             Object.assign(blankSubPhase('d2-1-4', '1.4', 'Get to Know the Team', 4, 'users'), {
@@ -217,12 +217,12 @@
                 'Tailored Customer Kickoff Deck'
               ],
               tasks: [
-                task('d2-1-4-t1', 1, 'Engagement Manager customizes the Get to Know You deck', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['I'] }, [{ id: 'ja-d214t1-1', url: '#', roles: [] }]),
-                task('d2-1-4-t2', 2, 'Introduction of all team members', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
-                task('d2-1-4-t3', 3, 'Facilitate project readiness review using the standard deck', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
-                task('d2-1-4-t4', 4, 'Review timekeeping guidelines and progress notes', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d214t4-1', url: '#', roles: [] }]),
-                task('d2-1-4-t5', 5, 'Tailor the customer kickoff deck in collaboration with BPC and Architect', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
-                task('d2-1-4-t6', 6, 'Initiate client onboarding and access to instances working with client stakeholders. Confirm if client equipment is required and facilitate distribution. Track equipment and understand the return process as we close down the project.', { em: ['A', 'R'], bpc: ['C'], arch: ['R'], tc: ['R'] })
+                task('d2-1-4-t1', 1, 'Engagement Manager customizes the Get to Know You deck', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['I'] }, [{ id: 'ja-d214t1-1', url: '#', roles: [] }]),
+                task('d2-1-4-t2', 2, 'Introduction of all team members', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
+                task('d2-1-4-t3', 3, 'Facilitate project readiness review using the standard deck', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
+                task('d2-1-4-t4', 4, 'Review timekeeping guidelines and progress notes', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d214t4-1', url: '#', roles: [] }]),
+                task('d2-1-4-t5', 5, 'Tailor the customer kickoff deck in collaboration with BPC and Architect', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
+                task('d2-1-4-t6', 6, 'Initiate client onboarding and access to instances working with client stakeholders. Confirm if client equipment is required and facilitate distribution. Track equipment and understand the return process as we close down the project.', { em: ['R', 'A'], bpc: ['C'], arch: ['R'], tc: ['R'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-1-5', '1.5', 'Kickoff', 5, 'flag'), {
@@ -249,12 +249,12 @@
                 'RIDAC modifications'
               ],
               tasks: [
-                task('d2-1-5-t1', 1, 'Review the draft kickoff deck', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'], es: ['C'] }),
-                task('d2-1-5-t2', 2, 'Facilitate the meeting using the standard kickoff deck covering project readiness', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'], es: ['C'] }, [{ id: 'ja-d215t2-1', url: '#', roles: [] }]),
-                task('d2-1-5-t3', 3, 'Introduce upcoming Change Enablement and Testing Strategy sessions', { em: ['C'], bpc: ['A', 'R'], arch: ['C'], tc: ['C'] }),
-                task('d2-1-5-t4', 4, 'Finalize schedule, agenda, and SMEs for future workshops', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d215t4-1', url: '#', roles: [] }]),
-                task('d2-1-5-t5', 5, 'Create the first status report / status meeting', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['I'] }, [{ id: 'ja-d215t5-1', url: '#', roles: [] }]),
-                task('d2-1-5-t6', 6, 'Determine leadership check-in cadence (Executive Sponsor)', { em: ['C'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['A', 'R'] }, [{ id: 'ja-d215t6-1', url: '#', roles: [] }])
+                task('d2-1-5-t1', 1, 'Review the draft kickoff deck', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'], es: ['C'] }),
+                task('d2-1-5-t2', 2, 'Facilitate the meeting using the standard kickoff deck covering project readiness', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'], es: ['C'] }, [{ id: 'ja-d215t2-1', url: '#', roles: [] }]),
+                task('d2-1-5-t3', 3, 'Introduce upcoming Change Enablement and Testing Strategy sessions', { em: ['C'], bpc: ['R', 'A'], arch: ['C'], tc: ['C'] }),
+                task('d2-1-5-t4', 4, 'Finalize schedule, agenda, and SMEs for future workshops', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d215t4-1', url: '#', roles: [] }]),
+                task('d2-1-5-t5', 5, 'Create the first status report / status meeting', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['I'] }, [{ id: 'ja-d215t5-1', url: '#', roles: [] }]),
+                task('d2-1-5-t6', 6, 'Determine leadership check-in cadence (Executive Sponsor)', { em: ['C'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['R', 'A'] }, [{ id: 'ja-d215t6-1', url: '#', roles: [] }])
               ]
             })
           ]
@@ -290,14 +290,14 @@
                 'Workshop assets finalized (demo instance, decks, etc.)'
               ],
               tasks: [
-                task('d2-2-1-t1', 1, 'Review completed Startup checklist', { em: ['R'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }),
-                task('d2-2-1-t2', 2, 'Align on future workshop needs (including agenda) and logistics', { em: ['R'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }),
-                task('d2-2-1-t3', 3, 'Role play prep for workshop', { em: ['R'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d221t3-1', url: '#', roles: [] }]),
-                task('d2-2-1-t4', 4, 'Prepare Demo instance', { em: ['I'], bpc: ['C'], arch: ['A', 'R'], tc: ['C'] }, [{ id: 'ja-d221t4-1', url: '#', roles: [] }]),
-                task('d2-2-1-t5', 5, 'Review current instance versions across instance stack (i.e. Dev/Test/Production) and ensure alignment ahead of proposed design and workshops. Coordinate with EM to document and mitigate issues.', { em: ['I'], bpc: ['C'], arch: ['A', 'R'], tc: ['C'] }),
-                task('d2-2-1-t6', 6, 'Lead Product Workshop preparation', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d221t6-1', url: '#', roles: [] }]),
-                task('d2-2-1-t7', 7, 'Coordinate Design team representative', { em: ['C'], bpc: ['A', 'R'], arch: ['C'], ux: ['R'] }),
-                task('d2-2-1-t8', 8, 'Work with customer to enable Agile 2.0 module in their instance to track user stories and agile components', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] })
+                task('d2-2-1-t1', 1, 'Review completed Startup checklist', { em: ['R'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }),
+                task('d2-2-1-t2', 2, 'Align on future workshop needs (including agenda) and logistics', { em: ['R'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }),
+                task('d2-2-1-t3', 3, 'Role play prep for workshop', { em: ['R'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d221t3-1', url: '#', roles: [] }]),
+                task('d2-2-1-t4', 4, 'Prepare Demo instance', { em: ['I'], bpc: ['C'], arch: ['R', 'A'], tc: ['C'] }, [{ id: 'ja-d221t4-1', url: '#', roles: [] }]),
+                task('d2-2-1-t5', 5, 'Review current instance versions across instance stack (i.e. Dev/Test/Production) and ensure alignment ahead of proposed design and workshops. Coordinate with EM to document and mitigate issues.', { em: ['I'], bpc: ['C'], arch: ['R', 'A'], tc: ['C'] }),
+                task('d2-2-1-t6', 6, 'Lead Product Workshop preparation', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d221t6-1', url: '#', roles: [] }]),
+                task('d2-2-1-t7', 7, 'Coordinate Design team representative', { em: ['C'], bpc: ['R', 'A'], arch: ['C'], ux: ['R'] }),
+                task('d2-2-1-t8', 8, 'Work with customer to enable Agile 2.0 module in their instance to track user stories and agile components', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-2-2', '2.2', 'Customer Workshops', 2, 'presentation'), {
@@ -337,14 +337,14 @@
                 'Consolidated action items and summary notes'
               ],
               tasks: [
-                task('d2-2-2-t1', 1, 'Load in any applicable GlideFast Starter Stories to help prepare for workshop topics and requirements-gathering discussions', { em: ['I'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }),
-                task('d2-2-2-t2', 2, 'Execute the Product Workshop', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d222t2-1', url: '#', roles: [] }]),
-                task('d2-2-2-t3', 3, 'Deliver workshop activities per plan', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }),
-                task('d2-2-2-t4', 4, 'Lead the effort to coordinate requirements gathering cadence', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d222t4-1', url: '#', roles: [] }]),
-                task('d2-2-2-t5', 5, 'Initiate Testing Strategy and UAT Planning working session(s)', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d222t5-1', url: '#', roles: [] }]),
-                task('d2-2-2-t6', 6, 'Initiate Change Enablement & Governance workshop session(s)', { em: ['C'], bpc: ['A', 'R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d222t6-1', url: '#', roles: [] }]),
-                task('d2-2-2-t7', 7, 'Coordinate training logistics', { em: ['C'], bpc: ['R'], tpm: ['A', 'R'], arch: ['I'] }),
-                task('d2-2-2-t8', 8, 'Initiate and lead design workshop', { em: ['C'], bpc: ['C'], arch: ['R'], ux: ['A', 'R'] })
+                task('d2-2-2-t1', 1, 'Load in any applicable GlideFast Starter Stories to help prepare for workshop topics and requirements-gathering discussions', { em: ['I'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }),
+                task('d2-2-2-t2', 2, 'Execute the Product Workshop', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d222t2-1', url: '#', roles: [] }]),
+                task('d2-2-2-t3', 3, 'Deliver workshop activities per plan', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }),
+                task('d2-2-2-t4', 4, 'Lead the effort to coordinate requirements gathering cadence', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d222t4-1', url: '#', roles: [] }]),
+                task('d2-2-2-t5', 5, 'Initiate Testing Strategy and UAT Planning working session(s)', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d222t5-1', url: '#', roles: [] }]),
+                task('d2-2-2-t6', 6, 'Initiate Change Enablement & Governance workshop session(s)', { em: ['C'], bpc: ['R', 'A'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d222t6-1', url: '#', roles: [] }]),
+                task('d2-2-2-t7', 7, 'Coordinate training logistics', { em: ['C'], bpc: ['R'], tpm: ['R', 'A'], arch: ['I'] }),
+                task('d2-2-2-t8', 8, 'Initiate and lead design workshop', { em: ['C'], bpc: ['C'], arch: ['R'], ux: ['R', 'A'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-2-3', '2.3', 'Post Workshop', 3, 'archive'), {
@@ -382,12 +382,12 @@
                 'Draft design concept(s)'
               ],
               tasks: [
-                task('d2-2-3-t1', 1, 'Draft / populate user stories capturing workshop information into the platform', { bpc: ['A', 'R'], arch: ['R'] }, [{ id: 'ja-d223t1-1', url: '#', roles: [] }]),
-                task('d2-2-3-t2', 2, 'Calibrate scope: compare draft with SoW and enter data into the RTM', { em: ['R'], bpc: ['A', 'R'], arch: ['R'] }, [{ id: 'ja-d223t2-1', url: '#', roles: [] }]),
-                task('d2-2-3-t3', 3, 'Risk assessment: work with EM on deviation risks from original scope/timeline', { em: ['A', 'R'], bpc: ['R'], arch: ['R'] }),
-                task('d2-2-3-t4', 4, 'Schedule scope rebalancing impact meetings with the client', { em: ['A', 'R'], bpc: ['R'], arch: ['R'] }),
-                task('d2-2-3-t5', 5, 'Create a deployment record on the ServiceNow partner portal', { em: ['A', 'R'], bpc: ['I'], arch: ['C'] }, [{ id: 'ja-d223t5-1', url: '#', roles: [] }]),
-                task('d2-2-3-t6', 6, 'Propose design concepts to the customer', { arch: ['R'], ux: ['A', 'R'] })
+                task('d2-2-3-t1', 1, 'Draft / populate user stories capturing workshop information into the platform', { bpc: ['R', 'A'], arch: ['R'] }, [{ id: 'ja-d223t1-1', url: '#', roles: [] }]),
+                task('d2-2-3-t2', 2, 'Calibrate scope: compare draft with SoW and enter data into the RTM', { em: ['R'], bpc: ['R', 'A'], arch: ['R'] }, [{ id: 'ja-d223t2-1', url: '#', roles: [] }]),
+                task('d2-2-3-t3', 3, 'Risk assessment: work with EM on deviation risks from original scope/timeline', { em: ['R', 'A'], bpc: ['R'], arch: ['R'] }),
+                task('d2-2-3-t4', 4, 'Schedule scope rebalancing impact meetings with the client', { em: ['R', 'A'], bpc: ['R'], arch: ['R'] }),
+                task('d2-2-3-t5', 5, 'Create a deployment record on the ServiceNow partner portal', { em: ['R', 'A'], bpc: ['I'], arch: ['C'] }, [{ id: 'ja-d223t5-1', url: '#', roles: [] }]),
+                task('d2-2-3-t6', 6, 'Propose design concepts to the customer', { arch: ['R'], ux: ['R', 'A'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-2-4', '2.4', 'Scope Rebalancing', 4, 'scales'), {
@@ -410,9 +410,9 @@
                 'Schedule additional calibration meetings until final decisions and alignment is met'
               ],
               tasks: [
-                task('d2-2-4-t1', 1, 'Review RTM with client', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
-                task('d2-2-4-t2', 2, 'Discuss approach for non-in-scope stories and determine next steps', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d224t2-1', url: '#', roles: [] }]),
-                task('d2-2-4-t3', 3, 'Facilitate change order based on scope rebalancing outcomes', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['I'], ae: ['I'] }, [{ id: 'ja-d224t3-1', url: '#', roles: [] }, { id: 'ja-d224t3-2', url: '#', roles: [] }])
+                task('d2-2-4-t1', 1, 'Review RTM with client', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
+                task('d2-2-4-t2', 2, 'Discuss approach for non-in-scope stories and determine next steps', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d224t2-1', url: '#', roles: [] }]),
+                task('d2-2-4-t3', 3, 'Facilitate change order based on scope rebalancing outcomes', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['I'], ae: ['I'] }, [{ id: 'ja-d224t3-1', url: '#', roles: [] }, { id: 'ja-d224t3-2', url: '#', roles: [] }])
               ]
             }),
             Object.assign(blankSubPhase('d2-2-5', '2.5', 'Refinement & Sprint Planning', 5, 'list'), {
@@ -441,15 +441,15 @@
                 'Refined project plan'
               ],
               tasks: [
-                task('d2-2-5-t1', 1, 'Add short descriptions, personas, acceptance criteria, story pointing, and technical approach within the customer instance or customer’s agile/project application', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d225t1-1', url: '#', roles: [] }]),
-                task('d2-2-5-t2', 2, 'Identify blockers (APIs, additional customer inputs needed, data sources, etc.) as they relate to the solution', { em: ['C'], bpc: ['R'], arch: ['A', 'R'], tc: ['R'] }),
-                task('d2-2-5-t3', 3, 'Add testing acceptance criteria for functional business requirements in user stories', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d225t3-1', url: '#', roles: [] }]),
-                task('d2-2-5-t4', 4, 'Draft high level technical approach to development within the High-Level Proposed Design (HLD) document', { em: ['I'], bpc: ['C'], arch: ['A', 'R'], tc: ['R'] }, [{ id: 'ja-d225t4-1', url: '#', roles: [] }]),
-                task('d2-2-5-t5', 5, 'User story sequencing & dependencies identified', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }),
-                task('d2-2-5-t6', 6, 'Organize sprint roadmap in customer instance', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }),
-                task('d2-2-5-t7', 7, 'Prepare draft sprint planning to review with customer', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }),
-                task('d2-2-5-t8', 8, 'Schedule customer sprint planning review', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['I'] }, [{ id: 'ja-d225t8-1', url: '#', roles: [] }]),
-                task('d2-2-5-t9', 9, 'Refine project plan', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['I'] })
+                task('d2-2-5-t1', 1, 'Add short descriptions, personas, acceptance criteria, story pointing, and technical approach within the customer instance or customer’s agile/project application', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d225t1-1', url: '#', roles: [] }]),
+                task('d2-2-5-t2', 2, 'Identify blockers (APIs, additional customer inputs needed, data sources, etc.) as they relate to the solution', { em: ['C'], bpc: ['R'], arch: ['R', 'A'], tc: ['R'] }),
+                task('d2-2-5-t3', 3, 'Add testing acceptance criteria for functional business requirements in user stories', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d225t3-1', url: '#', roles: [] }]),
+                task('d2-2-5-t4', 4, 'Draft high level technical approach to development within the High-Level Proposed Design (HLD) document', { em: ['I'], bpc: ['C'], arch: ['R', 'A'], tc: ['R'] }, [{ id: 'ja-d225t4-1', url: '#', roles: [] }]),
+                task('d2-2-5-t5', 5, 'User story sequencing & dependencies identified', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }),
+                task('d2-2-5-t6', 6, 'Organize sprint roadmap in customer instance', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }),
+                task('d2-2-5-t7', 7, 'Prepare draft sprint planning to review with customer', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }),
+                task('d2-2-5-t8', 8, 'Schedule customer sprint planning review', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['I'] }, [{ id: 'ja-d225t8-1', url: '#', roles: [] }]),
+                task('d2-2-5-t9', 9, 'Refine project plan', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['I'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-2-6', '2.6', 'Sprint Planning with Customer', 6, 'calendar'), {
@@ -478,9 +478,9 @@
                 'EM sends summary and next steps to customer & stakeholders'
               ],
               tasks: [
-                task('d2-2-6-t1', 1, 'Review proposed plan', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
-                task('d2-2-6-t2', 2, 'Obtain customer approval and signoff. Document approvals within user stories', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d226t2-1', url: '#', roles: [] }]),
-                task('d2-2-6-t3', 3, 'Core team assign stories for development, post-approval from the customer', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] })
+                task('d2-2-6-t1', 1, 'Review proposed plan', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
+                task('d2-2-6-t2', 2, 'Obtain customer approval and signoff. Document approvals within user stories', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d226t2-1', url: '#', roles: [] }]),
+                task('d2-2-6-t3', 3, 'Core team assign stories for development, post-approval from the customer', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] })
               ]
             })
           ]
@@ -516,21 +516,21 @@
                 'Sprint plan'
               ],
               tasks: [
-                task('d2-3-1-t1', 1, 'Facilitate and prepare for Sprint planning prior to start of the upcoming sprint', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d231t1-1', url: '#', roles: [] }]),
-                task('d2-3-1-t2', 2, 'Review stories with the project team and ensure plan for the sprint is aligned with GF and client', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d231t2-1', url: '#', roles: [] }]),
-                task('d2-3-1-t3', 3, 'User story refining and unblocking', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d231t3-1', url: '#', roles: [] }]),
-                task('d2-3-1-t4', 4, 'Establish Daily Standup (DSU) cadence with the client and GlideFast team', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d231t4-1', url: '#', roles: [] }]),
-                task('d2-3-1-t5', 5, 'Guide Architects / TCs on agreed-upon design concepts', { em: ['I'], bpc: ['C'], arch: ['A', 'R'], ux: ['R'], tc: ['C'] }),
-                task('d2-3-1-t6', 6, 'Development and configuration of user stories', { em: ['I'], bpc: ['C'], arch: ['C'], tc: ['A', 'R'] }),
-                task('d2-3-1-t7', 7, 'Defect remediation', { em: ['C'], bpc: ['C'], arch: ['R'], tc: ['A', 'R'] }, [{ id: 'ja-d231t7-1', url: '#', roles: [] }]),
-                task('d2-3-1-t8', 8, 'Create code notations and work notes within stories', { em: ['I'], bpc: ['C'], arch: ['C'], tc: ['A', 'R'] }, [{ id: 'ja-d231t8-1', url: '#', roles: [] }]),
-                task('d2-3-1-t9', 9, 'Conduct unit tests for developed features', { em: ['I'], bpc: ['C'], arch: ['C'], tc: ['A', 'R'] }, [{ id: 'ja-d231t9-1', url: '#', roles: [] }]),
-                task('d2-3-1-t10', 10, 'Conduct peer reviews of code / configurations', { em: ['I'], bpc: ['C'], arch: ['R'], tc: ['A', 'R'] }, [{ id: 'ja-d231t10-1', url: '#', roles: [] }]),
-                task('d2-3-1-t11', 11, 'Prepare for the demonstration at the end of the sprint', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d231t11-1', url: '#', roles: [] }]),
-                task('d2-3-1-t12', 12, 'Coordinate with team which stories are being reviewed in Sprint demos', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
-                task('d2-3-1-t13', 13, 'Deliver sprint demos', { em: ['R'], bpc: ['R'], arch: ['A', 'R'], tc: ['R'] }, [{ id: 'ja-d231t13-1', url: '#', roles: [] }]),
-                task('d2-3-1-t14', 14, 'Obtain customer approvals after sprint demo & adjust backlog as needed', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
-                task('d2-3-1-t15', 15, 'Reconcile RTM from planning phase and refine during sprint planning. Additional scope calibration sessions may be needed to ensure alignment with client post demos and/or sprint planning', { em: ['R'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] })
+                task('d2-3-1-t1', 1, 'Facilitate and prepare for Sprint planning prior to start of the upcoming sprint', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d231t1-1', url: '#', roles: [] }]),
+                task('d2-3-1-t2', 2, 'Review stories with the project team and ensure plan for the sprint is aligned with GF and client', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d231t2-1', url: '#', roles: [] }]),
+                task('d2-3-1-t3', 3, 'User story refining and unblocking', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d231t3-1', url: '#', roles: [] }]),
+                task('d2-3-1-t4', 4, 'Establish Daily Standup (DSU) cadence with the client and GlideFast team', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d231t4-1', url: '#', roles: [] }]),
+                task('d2-3-1-t5', 5, 'Guide Architects / TCs on agreed-upon design concepts', { em: ['I'], bpc: ['C'], arch: ['R', 'A'], ux: ['R'], tc: ['C'] }),
+                task('d2-3-1-t6', 6, 'Development and configuration of user stories', { em: ['I'], bpc: ['C'], arch: ['C'], tc: ['R', 'A'] }),
+                task('d2-3-1-t7', 7, 'Defect remediation', { em: ['C'], bpc: ['C'], arch: ['R'], tc: ['R', 'A'] }, [{ id: 'ja-d231t7-1', url: '#', roles: [] }]),
+                task('d2-3-1-t8', 8, 'Create code notations and work notes within stories', { em: ['I'], bpc: ['C'], arch: ['C'], tc: ['R', 'A'] }, [{ id: 'ja-d231t8-1', url: '#', roles: [] }]),
+                task('d2-3-1-t9', 9, 'Conduct unit tests for developed features', { em: ['I'], bpc: ['C'], arch: ['C'], tc: ['R', 'A'] }, [{ id: 'ja-d231t9-1', url: '#', roles: [] }]),
+                task('d2-3-1-t10', 10, 'Conduct peer reviews of code / configurations', { em: ['I'], bpc: ['C'], arch: ['R'], tc: ['R', 'A'] }, [{ id: 'ja-d231t10-1', url: '#', roles: [] }]),
+                task('d2-3-1-t11', 11, 'Prepare for the demonstration at the end of the sprint', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d231t11-1', url: '#', roles: [] }]),
+                task('d2-3-1-t12', 12, 'Coordinate with team which stories are being reviewed in Sprint demos', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
+                task('d2-3-1-t13', 13, 'Deliver sprint demos', { em: ['R'], bpc: ['R'], arch: ['R', 'A'], tc: ['R'] }, [{ id: 'ja-d231t13-1', url: '#', roles: [] }]),
+                task('d2-3-1-t14', 14, 'Obtain customer approvals after sprint demo & adjust backlog as needed', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
+                task('d2-3-1-t15', 15, 'Reconcile RTM from planning phase and refine during sprint planning. Additional scope calibration sessions may be needed to ensure alignment with client post demos and/or sprint planning', { em: ['R'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-3-2', '3.2', 'Build Validation and UAT Readiness', 2, 'flask'), {
@@ -561,13 +561,13 @@
                 'Requirements traceability matrix (RTM)'
               ],
               tasks: [
-                task('d2-3-2-t1', 1, 'Draft technical documentation and As Built documents', { em: ['I'], bpc: ['R'], arch: ['A', 'R'], tc: ['R'] }, [{ id: 'ja-d232t1-1', url: '#', roles: [] }]),
-                task('d2-3-2-t2', 2, 'Facilitate and prepare for end-to-end (E2E) demos, including testing all configuration from sprints', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
-                task('d2-3-2-t3', 3, 'Deliver E2E demos', { em: ['R'], bpc: ['R'], arch: ['A', 'R'], tc: ['R'] }, [{ id: 'ja-d232t3-1', url: '#', roles: [] }]),
-                task('d2-3-2-t4', 4, 'Schedule and conduct UAT Kickoff meetings (including deck preparation)', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d232t4-1', url: '#', roles: [] }]),
-                task('d2-3-2-t5', 5, 'Execute Change Enablement and Go-Live Support planning', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d232t5-1', url: '#', roles: [] }]),
-                task('d2-3-2-t6', 6, 'Execution of the training plan by the training team', { em: ['C'], bpc: ['C'], tpm: ['A', 'R'], trainer: ['R'] }),
-                task('d2-3-2-t7', 7, 'Validate the final set of user stories against the RTM', { em: ['C'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] })
+                task('d2-3-2-t1', 1, 'Draft technical documentation and As Built documents', { em: ['I'], bpc: ['R'], arch: ['R', 'A'], tc: ['R'] }, [{ id: 'ja-d232t1-1', url: '#', roles: [] }]),
+                task('d2-3-2-t2', 2, 'Facilitate and prepare for end-to-end (E2E) demos, including testing all configuration from sprints', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
+                task('d2-3-2-t3', 3, 'Deliver E2E demos', { em: ['R'], bpc: ['R'], arch: ['R', 'A'], tc: ['R'] }, [{ id: 'ja-d232t3-1', url: '#', roles: [] }]),
+                task('d2-3-2-t4', 4, 'Schedule and conduct UAT Kickoff meetings (including deck preparation)', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d232t4-1', url: '#', roles: [] }]),
+                task('d2-3-2-t5', 5, 'Execute Change Enablement and Go-Live Support planning', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d232t5-1', url: '#', roles: [] }]),
+                task('d2-3-2-t6', 6, 'Execution of the training plan by the training team', { em: ['C'], bpc: ['C'], tpm: ['R', 'A'], trainer: ['R'] }),
+                task('d2-3-2-t7', 7, 'Validate the final set of user stories against the RTM', { em: ['C'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] })
               ]
             })
           ]
@@ -595,10 +595,10 @@
                 'Backlog inventory within customer’s agile platform'
               ],
               tasks: [
-                task('d2-4-1-t1', 1, 'Execute UAT based on testing services in the SOW. Note: baseline testing efforts of premium testing not purchased by customer', { em: ['R'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }),
-                task('d2-4-1-t2', 2, 'Establish UAT reporting cadence', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d241t2-1', url: '#', roles: [] }]),
-                task('d2-4-1-t3', 3, 'Prioritize and address defects thru resolution', { em: ['C'], bpc: ['C'], arch: ['A', 'R'], tc: ['R'] }),
-                task('d2-4-1-t4', 4, 'Work with customer on backlog prioritization and plan for enhancements', { em: ['R'], bpc: ['A', 'R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d241t4-1', url: '#', roles: [] }])
+                task('d2-4-1-t1', 1, 'Execute UAT based on testing services in the SOW. Note: baseline testing efforts of premium testing not purchased by customer', { em: ['R'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }),
+                task('d2-4-1-t2', 2, 'Establish UAT reporting cadence', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d241t2-1', url: '#', roles: [] }]),
+                task('d2-4-1-t3', 3, 'Prioritize and address defects thru resolution', { em: ['C'], bpc: ['C'], arch: ['R', 'A'], tc: ['R'] }),
+                task('d2-4-1-t4', 4, 'Work with customer on backlog prioritization and plan for enhancements', { em: ['R'], bpc: ['R', 'A'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d241t4-1', url: '#', roles: [] }])
               ]
             }),
             Object.assign(blankSubPhase('d2-4-2', '4.2', 'Go Live Preparedness', 2, 'rocket'), {
@@ -625,13 +625,13 @@
                 'Hypercare plan'
               ],
               tasks: [
-                task('d2-4-2-t1', 1, 'Schedule and prepare for the Go Live readiness meeting with the customer', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d242t1-1', url: '#', roles: [] }]),
-                task('d2-4-2-t2', 2, 'Finalize the deployment runbook', { em: ['C'], bpc: ['C'], arch: ['A', 'R'], tc: ['R'] }, [{ id: 'ja-d242t2-1', url: '#', roles: [] }]),
-                task('d2-4-2-t3', 3, 'Finalize the As-Built technical document', { em: ['I'], bpc: ['C'], arch: ['A', 'R'], tc: ['R'] }, [{ id: 'ja-d242t3-1', url: '#', roles: [] }]),
-                task('d2-4-2-t4', 4, 'Review and validate all instance (i.e. Dev/Test/Production) versions are in sync in preparation for deployment', { em: ['C'], bpc: ['C'], arch: ['A', 'R'], tc: ['R'] }),
-                task('d2-4-2-t5', 5, 'Schedule and deliver Knowledge Transfer (KT) sessions to the client', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
-                task('d2-4-2-t6', 6, 'Finalize and deliver process documents and training', { em: ['C'], bpc: ['A', 'R'], tpm: ['R'], trainer: ['R'] }),
-                task('d2-4-2-t7', 7, 'Develop and finalize the hypercare plan', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d242t7-1', url: '#', roles: [] }])
+                task('d2-4-2-t1', 1, 'Schedule and prepare for the Go Live readiness meeting with the customer', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d242t1-1', url: '#', roles: [] }]),
+                task('d2-4-2-t2', 2, 'Finalize the deployment runbook', { em: ['C'], bpc: ['C'], arch: ['R', 'A'], tc: ['R'] }, [{ id: 'ja-d242t2-1', url: '#', roles: [] }]),
+                task('d2-4-2-t3', 3, 'Finalize the As-Built technical document', { em: ['I'], bpc: ['C'], arch: ['R', 'A'], tc: ['R'] }, [{ id: 'ja-d242t3-1', url: '#', roles: [] }]),
+                task('d2-4-2-t4', 4, 'Review and validate all instance (i.e. Dev/Test/Production) versions are in sync in preparation for deployment', { em: ['C'], bpc: ['C'], arch: ['R', 'A'], tc: ['R'] }),
+                task('d2-4-2-t5', 5, 'Schedule and deliver Knowledge Transfer (KT) sessions to the client', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['C'] }),
+                task('d2-4-2-t6', 6, 'Finalize and deliver process documents and training', { em: ['C'], bpc: ['R', 'A'], tpm: ['R'], trainer: ['R'] }),
+                task('d2-4-2-t7', 7, 'Develop and finalize the hypercare plan', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d242t7-1', url: '#', roles: [] }])
               ]
             }),
             Object.assign(blankSubPhase('d2-4-3', '4.3', 'Customer Signoff & Go Live Readiness', 3, 'stamp'), {
@@ -649,10 +649,10 @@
               deliverables: ['Summary email & customer sign off'],
               tasks: [
                 task('d2-4-3-t1', 1, 'Review standard go live readiness agenda deck (run book, RTM, Go Live checklist)', { em: ['A'], bpc: ['R'], arch: ['R'], tc: ['C'] }, [{ id: 'ja-d243t1-1', url: '#', roles: [] }]),
-                task('d2-4-3-t2', 2, 'Obtain signoff (go/no-go) from customer', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['I'] }),
-                task('d2-4-3-t3', 3, 'Prepare for “go live” / change enablement final phases of plan', { em: ['C'], bpc: ['A', 'R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d243t3-1', url: '#', roles: [] }]),
-                task('d2-4-3-t4', 4, 'Discuss schedule & logistics for “go live” celebration', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] }),
-                task('d2-4-3-t5', 5, 'Submit Go Live Request', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['I'] })
+                task('d2-4-3-t2', 2, 'Obtain signoff (go/no-go) from customer', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['I'] }),
+                task('d2-4-3-t3', 3, 'Prepare for “go live” / change enablement final phases of plan', { em: ['C'], bpc: ['R', 'A'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d243t3-1', url: '#', roles: [] }]),
+                task('d2-4-3-t4', 4, 'Discuss schedule & logistics for “go live” celebration', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'] }),
+                task('d2-4-3-t5', 5, 'Submit Go Live Request', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['I'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-4-4', '4.4', 'Deploy', 4, 'cloud'), {
@@ -682,12 +682,12 @@
                 'Deployment complete email to all stakeholders'
               ],
               tasks: [
-                task('d2-4-4-t1', 1, 'Schedule deployment window', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] }),
-                task('d2-4-4-t2', 2, 'Provide status and progress during the window', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
-                task('d2-4-4-t3', 3, 'Commit update sets to production', { em: ['C'], bpc: ['C'], arch: ['A', 'R'], tc: ['R'] }, [{ id: 'ja-d244t3-1', url: '#', roles: [] }]),
-                task('d2-4-4-t4', 4, 'Execute and complete smoke testing', { em: ['C'], bpc: ['R'], arch: ['A', 'R'], tc: ['R'] }, [{ id: 'ja-d244t4-1', url: '#', roles: [] }]),
-                task('d2-4-4-t5', 5, 'Execute “go live” / change enablement', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d244t5-1', url: '#', roles: [] }]),
-                task('d2-4-4-t6', 6, 'Training team executes training plan', { em: ['C'], bpc: ['C'], tpm: ['A', 'R'], trainer: ['R'] })
+                task('d2-4-4-t1', 1, 'Schedule deployment window', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'] }),
+                task('d2-4-4-t2', 2, 'Provide status and progress during the window', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
+                task('d2-4-4-t3', 3, 'Commit update sets to production', { em: ['C'], bpc: ['C'], arch: ['R', 'A'], tc: ['R'] }, [{ id: 'ja-d244t3-1', url: '#', roles: [] }]),
+                task('d2-4-4-t4', 4, 'Execute and complete smoke testing', { em: ['C'], bpc: ['R'], arch: ['R', 'A'], tc: ['R'] }, [{ id: 'ja-d244t4-1', url: '#', roles: [] }]),
+                task('d2-4-4-t5', 5, 'Execute “go live” / change enablement', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d244t5-1', url: '#', roles: [] }]),
+                task('d2-4-4-t6', 6, 'Training team executes training plan', { em: ['C'], bpc: ['C'], tpm: ['R', 'A'], trainer: ['R'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-4-5', '4.5', 'Hypercare', 5, 'lifebuoy'), {
@@ -712,10 +712,10 @@
                 'Documented defects or enhancements added to the backlog'
               ],
               tasks: [
-                task('d2-4-5-t1', 1, 'Document issues, defects, and enhancements', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
-                task('d2-4-5-t2', 2, 'Remediate issues and defects', { em: ['C'], bpc: ['C'], arch: ['R'], tc: ['A', 'R'] }),
-                task('d2-4-5-t3', 3, 'Send Hypercare end of day status', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d245t3-1', url: '#', roles: [] }]),
-                task('d2-4-5-t4', 4, 'Send Hypercare complete email with final status', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] })
+                task('d2-4-5-t1', 1, 'Document issues, defects, and enhancements', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
+                task('d2-4-5-t2', 2, 'Remediate issues and defects', { em: ['C'], bpc: ['C'], arch: ['R'], tc: ['R', 'A'] }),
+                task('d2-4-5-t3', 3, 'Send Hypercare end of day status', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d245t3-1', url: '#', roles: [] }]),
+                task('d2-4-5-t4', 4, 'Send Hypercare complete email with final status', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'] })
               ]
             })
           ]
@@ -742,12 +742,12 @@
                 'Draft marketing case study'
               ],
               tasks: [
-                task('d2-5-1-t1', 1, 'Schedule and facilitate internal retrospective & execute internal lesson learned gathering and document in SPACE', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'], pssc: ['R'], es: ['I', 'C'], mktg: ['R'], ae: ['I', 'C'] }, [{ id: 'ja-d251t1-1', url: '#', roles: [] }]),
-                task('d2-5-1-t2', 2, 'Confirm customer equipment return process and facilitate with each GlideFast team member', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] }),
-                task('d2-5-1-t3', 3, 'Schedule customer closure meeting', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'] }),
+                task('d2-5-1-t1', 1, 'Schedule and facilitate internal retrospective & execute internal lesson learned gathering and document in SPACE', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'], pssc: ['R'], es: ['C', 'I'], mktg: ['R'], ae: ['C', 'I'] }, [{ id: 'ja-d251t1-1', url: '#', roles: [] }]),
+                task('d2-5-1-t2', 2, 'Confirm customer equipment return process and facilitate with each GlideFast team member', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'] }),
+                task('d2-5-1-t3', 3, 'Schedule customer closure meeting', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'] }),
                 task('d2-5-1-t4', 4, 'Finalize case study questions and interviews with relevant team members', { em: ['R'], bpc: ['R'], arch: ['R'], tc: ['R'], mktg: ['A'] }),
-                task('d2-5-1-t5', 5, 'Confirm go live celebration logistics with Marketing team and client stakeholders', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['C'] }, [{ id: 'ja-d251t5-1', url: '#', roles: [] }]),
-                task('d2-5-1-t6', 6, 'EM schedules customer retrospective', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['I'], ae: ['I'] })
+                task('d2-5-1-t5', 5, 'Confirm go live celebration logistics with Marketing team and client stakeholders', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['C'] }, [{ id: 'ja-d251t5-1', url: '#', roles: [] }]),
+                task('d2-5-1-t6', 6, 'EM schedules customer retrospective', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['C'], es: ['I'], ae: ['I'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-5-2', '5.2', 'Customer Retrospective', 2, 'refresh'), {
@@ -779,11 +779,11 @@
                 'Draft customer closure deck'
               ],
               tasks: [
-                task('d2-5-2-t1', 1, 'EM facilitates delivery of retrospective deck', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d252t1-1', url: '#', roles: [] }]),
-                task('d2-5-2-t2', 2, 'Update customer project closure deck (EM)', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['I'] }, [{ id: 'ja-d252t2-1', url: '#', roles: [] }]),
-                task('d2-5-2-t3', 3, 'EM, BPC, Architect, and TC participate with client', { em: ['A', 'R'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
-                task('d2-5-2-t4', 4, 'EM documents lessons learned in the project record', { em: ['A', 'R'], bpc: ['C'], arch: ['C'], tc: ['I'] }),
-                task('d2-5-2-t5', 5, 'EM schedules an internal meeting if there are feedback and or concerns identified during client retrospective that requires further debrief and next steps', { em: ['A', 'R'], bpc: ['R'], arch: ['C'], tc: ['C'] })
+                task('d2-5-2-t1', 1, 'EM facilitates delivery of retrospective deck', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }, [{ id: 'ja-d252t1-1', url: '#', roles: [] }]),
+                task('d2-5-2-t2', 2, 'Update customer project closure deck (EM)', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['I'] }, [{ id: 'ja-d252t2-1', url: '#', roles: [] }]),
+                task('d2-5-2-t3', 3, 'EM, BPC, Architect, and TC participate with client', { em: ['R', 'A'], bpc: ['R'], arch: ['R'], tc: ['R'] }),
+                task('d2-5-2-t4', 4, 'EM documents lessons learned in the project record', { em: ['R', 'A'], bpc: ['C'], arch: ['C'], tc: ['I'] }),
+                task('d2-5-2-t5', 5, 'EM schedules an internal meeting if there are feedback and or concerns identified during client retrospective that requires further debrief and next steps', { em: ['R', 'A'], bpc: ['R'], arch: ['C'], tc: ['C'] })
               ]
             }),
             Object.assign(blankSubPhase('d2-5-3', '5.3', 'Customer Closure Meeting', 3, 'check'), {
@@ -811,13 +811,13 @@
                 'Post closure meeting notes'
               ],
               tasks: [
-                task('d2-5-3-t1', 1, 'EM facilitates delivery of closure deck', { em: ['A'], bpc: ['R'], arch: ['R'], tc: ['I'], es: ['I', 'C'], ae: ['I', 'C'] }, [{ id: 'ja-d253t1-1', url: '#', roles: [] }]),
-                task('d2-5-3-t2', 2, 'EM facilitates go live celebration and takes virtual/live pictures (upon client approval) to provide to marketing@glidefast.com', { em: ['A'], bpc: ['I'], arch: ['I'], tc: ['I'], ae: ['I', 'C'], es: ['I'] }),
-                task('d2-5-3-t3', 3, 'EM confirms ServiceNow CSAT risk of the project', { em: ['A'], bpc: ['R'], arch: ['R'], tc: ['I'], es: ['I', 'C'], ae: ['I', 'C'] }, [{ id: 'ja-d253t3-1', url: '#', roles: [] }]),
+                task('d2-5-3-t1', 1, 'EM facilitates delivery of closure deck', { em: ['A'], bpc: ['R'], arch: ['R'], tc: ['I'], es: ['C', 'I'], ae: ['C', 'I'] }, [{ id: 'ja-d253t1-1', url: '#', roles: [] }]),
+                task('d2-5-3-t2', 2, 'EM facilitates go live celebration and takes virtual/live pictures (upon client approval) to provide to marketing@glidefast.com', { em: ['A'], bpc: ['I'], arch: ['I'], tc: ['I'], ae: ['C', 'I'], es: ['I'] }),
+                task('d2-5-3-t3', 3, 'EM confirms ServiceNow CSAT risk of the project', { em: ['A'], bpc: ['R'], arch: ['R'], tc: ['I'], es: ['C', 'I'], ae: ['C', 'I'] }, [{ id: 'ja-d253t3-1', url: '#', roles: [] }]),
                 task('d2-5-3-t4', 4, 'EM notifies Chief Customer / Delivery officer to send project completion thank you email to customer contacts (cc ServiceNow rep)', { em: ['A'], bpc: ['I'], arch: ['I'], tc: ['I'], es: ['I'] }, [{ id: 'ja-d253t4-1', url: '#', roles: [] }]),
                 task('d2-5-3-t5', 5, 'EM validates data on ServiceNow partner portal and closes deployment record', { em: ['A'], bpc: ['C'], arch: ['C'], tc: ['C'] }, [{ id: 'ja-d253t5-1', url: '#', roles: [] }]),
-                task('d2-5-3-t6', 6, 'EM closes timesheet project tasks and resource plans', { em: ['A'], bpc: ['I', 'C'], arch: ['I', 'C'], tc: ['I', 'C'] }, [{ id: 'ja-d253t6-1', url: '#', roles: [] }]),
-                task('d2-5-3-t7', 7, 'EM consolidates and archives all project documentation and ensures it resides on project drive', { em: ['A'], bpc: ['I', 'C'], arch: ['I', 'C'], tc: ['I', 'C'] })
+                task('d2-5-3-t6', 6, 'EM closes timesheet project tasks and resource plans', { em: ['A'], bpc: ['C', 'I'], arch: ['C', 'I'], tc: ['C', 'I'] }, [{ id: 'ja-d253t6-1', url: '#', roles: [] }]),
+                task('d2-5-3-t7', 7, 'EM consolidates and archives all project documentation and ensures it resides on project drive', { em: ['A'], bpc: ['C', 'I'], arch: ['C', 'I'], tc: ['C', 'I'] })
               ]
             })
           ]
@@ -884,7 +884,7 @@
       body: [
         'Every task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person\'s relationship to the work?',
         'Exactly one A per task. Accountability shouldn\'t be shared - if two people sign off, no one does.',
-        'R and A can be the same person (shown together as A R) - they do it and own it.',
+        'R and A can be the same person (shown together as R A) - they do it and own it.',
         'Every task needs at least an R and an A - someone doing the work, someone owning the result.',
         'The customer appears in the RACI wherever the engagement requires their input, approval, or participation.'
       ].join('\n\n')
@@ -897,7 +897,7 @@
   ];
 
   root.DMSeed = {
-    version: 21,
+    version: 22,
     jobTitles: JOB_TITLES,
     methodologies: METHODOLOGIES,
     jargon: JARGON,

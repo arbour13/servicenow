@@ -1599,6 +1599,8 @@ textarea:focus-visible {
   padding: 30px 34px;
   margin-top: 20px;
   box-shadow: var(--shadow-md);
+  /* Deep-link scrollIntoView(block: start) — keep the panel clear of sticky portal chrome. */
+  scroll-margin-top: 16px;
 }
 
 .crumb {
@@ -1671,7 +1673,9 @@ h1.sp-title {
   color: var(--on-accent-ink);
 }
 
-/* Deep-link / RACI jump target - fill + inset ring so it reads on <tr>, panels, and SP themes.
+/* Deep-link / RACI jump targets.
+   Sub-phase panels: pulse the outer border (not a fill) so the whole panel reads as the target.
+   Task rows keep a fill pulse — borders on <tr> are unreliable across table layouts.
    Prefer plain rgba over color-mix: older portal browsers / SP CSS pipelines drop color-mix. */
 @keyframes jumpPulse {
   0% {
@@ -1687,8 +1691,26 @@ h1.sp-title {
     box-shadow: none;
   }
 }
+@keyframes jumpBorderPulse {
+  0% {
+    border-color: var(--line);
+    box-shadow: var(--shadow-md);
+  }
+  14% {
+    border-color: var(--teal);
+    box-shadow: var(--shadow-md), 0 0 0 3px rgba(45, 212, 191, 0.4);
+  }
+  100% {
+    border-color: var(--line);
+    box-shadow: var(--shadow-md);
+  }
+}
 .jump-hl {
   animation: jumpPulse 2.4s ease-out 1;
+}
+
+.panel.jump-hl {
+  animation: jumpBorderPulse 2.4s ease-out 1;
 }
 
 .pchange-list {

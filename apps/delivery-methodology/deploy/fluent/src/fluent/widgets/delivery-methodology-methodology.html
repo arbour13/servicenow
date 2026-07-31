@@ -179,7 +179,8 @@
 
         </div>
 
-        <div class="panel" ng-if="c.location && !c.editMode && !c.structureEditMode">
+        <div class="panel" ng-if="c.location && !c.editMode && !c.structureEditMode"
+          data-el="sub:{{c.location.subPhase.id}}">
           <div class="sp-header">
             <div>
               <div class="crumb">{{c.location.phase.name}} &rsaquo; {{c.location.subPhase.sid}}</div>
@@ -207,7 +208,7 @@
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('pencil')"></svg></b> button above to add its overview, tasks and deliverables.</p>
           <p class="obj faint stub-hint" ng-if="!c.hasContent(c.location.subPhase) && !c.canEdit">Not yet written.</p>
 
-          <div ng-if="c.hasContent(c.location.subPhase)" class="sp-content" data-el="sub:{{c.location.subPhase.id}}">
+          <div ng-if="c.hasContent(c.location.subPhase)" class="sp-content">
             <div class="pchange" ng-if="c.justRead.length">
               <div><b>What changed</b> - you're seeing this because it's new since your last visit:
                 <ul class="pchange-list">

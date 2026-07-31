@@ -305,10 +305,38 @@
     controller.raciHex = RACI_HEX;
   }
 
+  function sortLetters(letters) {
+    return (letters || []).slice().sort(function (left, right) {
+      return RACI_LETTERS.indexOf(left) - RACI_LETTERS.indexOf(right);
+    });
+  }
+
+  // Display and tips iterate letter arrays in stored order — keep every task's letters in
+  // R-A-C-I sequence so "RA" never renders as "AR" (or "CI" as "IC") after load/edit/import.
+  function normalizeMethodologies(methodologies) {
+    (methodologies || []).forEach(function (methodology) {
+      (methodology.phases || []).forEach(function (phase) {
+        (phase.subPhases || []).forEach(function (subPhase) {
+          (subPhase.tasks || []).forEach(function (task) {
+            var raci = task && task.raci;
+            if (!raci) {
+              return;
+            }
+            Object.keys(raci).forEach(function (roleId) {
+              raci[roleId] = sortLetters(raci[roleId]);
+            });
+          });
+        });
+      });
+    });
+  }
+
   return {
     LETTERS: RACI_LETTERS,
     NAMES: RACI_NAMES,
     HEX: RACI_HEX,
+    sortLetters: sortLetters,
+    normalizeMethodologies: normalizeMethodologies,
     readState: readState,
     getActivePhases: getActivePhases,
     setActivePhases: setActivePhases,

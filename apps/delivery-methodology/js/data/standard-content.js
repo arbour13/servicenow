@@ -12,7 +12,7 @@
    vm.createContext(sandbox);vm.runInContext(fs.readFileSync('js/data/seed.js','utf8'),
    sandbox);var s=sandbox.self.DMSeed;console.log(JSON.stringify({jobTitles:s.jobTitles,
    methodologies:s.methodologies,jargon:s.jargon,referenceSections:s.referenceSections},null,2));"
-   then paste the output into the DMStandardContent literal below. Verified 2026-07-30 against
+   then paste the output into the DMStandardContent literal below. Verified 2026-07-31 against
    content.server.js's real validation path: dehydrates to 1310 rows, 0 soft-ref errors, under
    the 5000-row save cap. */
 var DMStandardContent = {
@@ -197,8 +197,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -218,8 +218,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -279,8 +279,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -403,8 +403,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -421,8 +421,8 @@ var DMStandardContent = {
                   "text": "Discuss Q&A, risks and issues. Document in RIDAC on the project record.",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -457,8 +457,8 @@ var DMStandardContent = {
                   "text": "Tailor the Customer Startup checklist",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -487,8 +487,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -511,8 +511,8 @@ var DMStandardContent = {
                   "text": "Re-baseline resource plans",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -606,8 +606,8 @@ var DMStandardContent = {
                   "text": "Introduction to the core GlideFast team",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -642,8 +642,8 @@ var DMStandardContent = {
                   "text": "Prepare and walk through the start-up checklist with the customer",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -669,8 +669,8 @@ var DMStandardContent = {
                   "text": "Identify customer stakeholders and subject matter experts",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -693,8 +693,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -711,8 +711,8 @@ var DMStandardContent = {
                   "text": "Coordinate client schedules for kickoff and workshops",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -732,8 +732,8 @@ var DMStandardContent = {
                   "text": "Create the initial project plan",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -759,8 +759,8 @@ var DMStandardContent = {
                   "text": "Facilitate the meeting using the standard Customer Pre-Kickoff deck",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -845,8 +845,8 @@ var DMStandardContent = {
                   "text": "Engagement Manager customizes the Get to Know You deck",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -872,8 +872,8 @@ var DMStandardContent = {
                   "text": "Introduction of all team members",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -893,8 +893,8 @@ var DMStandardContent = {
                   "text": "Facilitate project readiness review using the standard deck",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -914,8 +914,8 @@ var DMStandardContent = {
                   "text": "Review timekeeping guidelines and progress notes",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -941,8 +941,8 @@ var DMStandardContent = {
                   "text": "Tailor the customer kickoff deck in collaboration with BPC and Architect",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -962,8 +962,8 @@ var DMStandardContent = {
                   "text": "Initiate client onboarding and access to instances working with client stakeholders. Confirm if client equipment is required and facilitate distribution. Track equipment and understand the return process as we close down the project.",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -1036,8 +1036,8 @@ var DMStandardContent = {
                   "text": "Review the draft kickoff deck",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -1060,8 +1060,8 @@ var DMStandardContent = {
                   "text": "Facilitate the meeting using the standard kickoff deck covering project readiness",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -1093,8 +1093,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "C"
@@ -1114,8 +1114,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1138,8 +1138,8 @@ var DMStandardContent = {
                   "text": "Create the first status report / status meeting",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -1180,8 +1180,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "es": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ]
                   },
                   "jobAids": [
@@ -1263,8 +1263,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1284,8 +1284,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1305,8 +1305,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1335,8 +1335,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "C"
@@ -1362,8 +1362,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "C"
@@ -1380,8 +1380,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1407,8 +1407,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "C"
@@ -1425,8 +1425,8 @@ var DMStandardContent = {
                   "text": "Work with customer to enable Agile 2.0 module in their instance to track user stories and agile components",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -1522,8 +1522,8 @@ var DMStandardContent = {
                       "I"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1543,8 +1543,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1570,8 +1570,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1591,8 +1591,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1618,8 +1618,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1645,8 +1645,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "C"
@@ -1675,8 +1675,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "tpm": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "I"
@@ -1699,8 +1699,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "ux": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ]
                   },
                   "jobAids": []
@@ -1784,8 +1784,8 @@ var DMStandardContent = {
                   "text": "Draft / populate user stories capturing workshop information into the platform",
                   "raci": {
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1808,8 +1808,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -1829,8 +1829,8 @@ var DMStandardContent = {
                   "text": "Risk assessment: work with EM on deviation risks from original scope/timeline",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -1847,8 +1847,8 @@ var DMStandardContent = {
                   "text": "Schedule scope rebalancing impact meetings with the client",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -1865,8 +1865,8 @@ var DMStandardContent = {
                   "text": "Create a deployment record on the ServiceNow partner portal",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "I"
@@ -1892,8 +1892,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "ux": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ]
                   },
                   "jobAids": []
@@ -1959,8 +1959,8 @@ var DMStandardContent = {
                   "text": "Review RTM with client",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -1980,8 +1980,8 @@ var DMStandardContent = {
                   "text": "Discuss approach for non-in-scope stories and determine next steps",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2007,8 +2007,8 @@ var DMStandardContent = {
                   "text": "Facilitate change order based on scope rebalancing outcomes",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -2093,8 +2093,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -2123,8 +2123,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -2141,8 +2141,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -2171,8 +2171,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -2195,8 +2195,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -2216,8 +2216,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -2237,8 +2237,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -2255,8 +2255,8 @@ var DMStandardContent = {
                   "text": "Schedule customer sprint planning review",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2282,8 +2282,8 @@ var DMStandardContent = {
                   "text": "Refine project plan",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2358,8 +2358,8 @@ var DMStandardContent = {
                   "text": "Review proposed plan",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2379,8 +2379,8 @@ var DMStandardContent = {
                   "text": "Obtain customer approval and signoff. Document approvals within user stories",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2406,8 +2406,8 @@ var DMStandardContent = {
                   "text": "Core team assign stories for development, post-approval from the customer",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2500,8 +2500,8 @@ var DMStandardContent = {
                   "text": "Facilitate and prepare for Sprint planning prior to start of the upcoming sprint",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2527,8 +2527,8 @@ var DMStandardContent = {
                   "text": "Review stories with the project team and ensure plan for the sprint is aligned with GF and client",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2557,8 +2557,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -2581,8 +2581,8 @@ var DMStandardContent = {
                   "text": "Establish Daily Standup (DSU) cadence with the client and GlideFast team",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2614,8 +2614,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "ux": [
                       "R"
@@ -2641,8 +2641,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "tc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ]
                   },
                   "jobAids": []
@@ -2662,8 +2662,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "tc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ]
                   },
                   "jobAids": [
@@ -2689,8 +2689,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "tc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ]
                   },
                   "jobAids": [
@@ -2716,8 +2716,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "tc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ]
                   },
                   "jobAids": [
@@ -2743,8 +2743,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "tc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ]
                   },
                   "jobAids": [
@@ -2761,8 +2761,8 @@ var DMStandardContent = {
                   "text": "Prepare for the demonstration at the end of the sprint",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2788,8 +2788,8 @@ var DMStandardContent = {
                   "text": "Coordinate with team which stories are being reviewed in Sprint demos",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2815,8 +2815,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -2836,8 +2836,8 @@ var DMStandardContent = {
                   "text": "Obtain customer approvals after sprint demo & adjust backlog as needed",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2860,8 +2860,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -2936,8 +2936,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -2957,8 +2957,8 @@ var DMStandardContent = {
                   "text": "Facilitate and prepare for end-to-end (E2E) demos, including testing all configuration from sprints",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -2984,8 +2984,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -3005,8 +3005,8 @@ var DMStandardContent = {
                   "text": "Schedule and conduct UAT Kickoff meetings (including deck preparation)",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -3032,8 +3032,8 @@ var DMStandardContent = {
                   "text": "Execute Change Enablement and Go-Live Support planning",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -3065,8 +3065,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "tpm": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "trainer": [
                       "R"
@@ -3083,8 +3083,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -3149,8 +3149,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -3167,8 +3167,8 @@ var DMStandardContent = {
                   "text": "Establish UAT reporting cadence",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -3200,8 +3200,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -3218,8 +3218,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "R"
@@ -3290,8 +3290,8 @@ var DMStandardContent = {
                   "text": "Schedule and prepare for the Go Live readiness meeting with the customer",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -3323,8 +3323,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -3350,8 +3350,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -3377,8 +3377,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -3392,8 +3392,8 @@ var DMStandardContent = {
                   "text": "Schedule and deliver Knowledge Transfer (KT) sessions to the client",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -3416,8 +3416,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tpm": [
                       "R"
@@ -3434,8 +3434,8 @@ var DMStandardContent = {
                   "text": "Develop and finalize the hypercare plan",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -3529,8 +3529,8 @@ var DMStandardContent = {
                   "text": "Obtain signoff (go/no-go) from customer",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -3553,8 +3553,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "bpc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "arch": [
                       "C"
@@ -3577,8 +3577,8 @@ var DMStandardContent = {
                   "text": "Discuss schedule & logistics for “go live” celebration",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -3598,8 +3598,8 @@ var DMStandardContent = {
                   "text": "Submit Go Live Request",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -3665,8 +3665,8 @@ var DMStandardContent = {
                   "text": "Schedule deployment window",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -3686,8 +3686,8 @@ var DMStandardContent = {
                   "text": "Provide status and progress during the window",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -3713,8 +3713,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -3740,8 +3740,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "arch": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "tc": [
                       "R"
@@ -3761,8 +3761,8 @@ var DMStandardContent = {
                   "text": "Execute “go live” / change enablement",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -3794,8 +3794,8 @@ var DMStandardContent = {
                       "C"
                     ],
                     "tpm": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "trainer": [
                       "R"
@@ -3866,8 +3866,8 @@ var DMStandardContent = {
                   "text": "Document issues, defects, and enhancements",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -3896,8 +3896,8 @@ var DMStandardContent = {
                       "R"
                     ],
                     "tc": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ]
                   },
                   "jobAids": []
@@ -3908,8 +3908,8 @@ var DMStandardContent = {
                   "text": "Send Hypercare end of day status",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -3935,8 +3935,8 @@ var DMStandardContent = {
                   "text": "Send Hypercare complete email with final status",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -4027,8 +4027,8 @@ var DMStandardContent = {
                   "text": "Schedule and facilitate internal retrospective & execute internal lesson learned gathering and document in SPACE",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -4043,15 +4043,15 @@ var DMStandardContent = {
                       "R"
                     ],
                     "es": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ],
                     "mktg": [
                       "R"
                     ],
                     "ae": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ]
                   },
                   "jobAids": [
@@ -4068,8 +4068,8 @@ var DMStandardContent = {
                   "text": "Confirm customer equipment return process and facilitate with each GlideFast team member",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -4089,8 +4089,8 @@ var DMStandardContent = {
                   "text": "Schedule customer closure meeting",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -4133,8 +4133,8 @@ var DMStandardContent = {
                   "text": "Confirm go live celebration logistics with Marketing team and client stakeholders",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -4163,8 +4163,8 @@ var DMStandardContent = {
                   "text": "EM schedules customer retrospective",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -4241,8 +4241,8 @@ var DMStandardContent = {
                   "text": "EM facilitates delivery of retrospective deck",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -4268,8 +4268,8 @@ var DMStandardContent = {
                   "text": "Update customer project closure deck (EM)",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -4295,8 +4295,8 @@ var DMStandardContent = {
                   "text": "EM, BPC, Architect, and TC participate with client",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -4316,8 +4316,8 @@ var DMStandardContent = {
                   "text": "EM documents lessons learned in the project record",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "C"
@@ -4337,8 +4337,8 @@ var DMStandardContent = {
                   "text": "EM schedules an internal meeting if there are feedback and or concerns identified during client retrospective that requires further debrief and next steps",
                   "raci": {
                     "em": [
-                      "A",
-                      "R"
+                      "R",
+                      "A"
                     ],
                     "bpc": [
                       "R"
@@ -4432,12 +4432,12 @@ var DMStandardContent = {
                       "I"
                     ],
                     "es": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ],
                     "ae": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ]
                   },
                   "jobAids": [
@@ -4466,8 +4466,8 @@ var DMStandardContent = {
                       "I"
                     ],
                     "ae": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ],
                     "es": [
                       "I"
@@ -4493,12 +4493,12 @@ var DMStandardContent = {
                       "I"
                     ],
                     "es": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ],
                     "ae": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ]
                   },
                   "jobAids": [
@@ -4573,16 +4573,16 @@ var DMStandardContent = {
                       "A"
                     ],
                     "bpc": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ],
                     "arch": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ],
                     "tc": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ]
                   },
                   "jobAids": [
@@ -4602,16 +4602,16 @@ var DMStandardContent = {
                       "A"
                     ],
                     "bpc": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ],
                     "arch": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ],
                     "tc": [
-                      "I",
-                      "C"
+                      "C",
+                      "I"
                     ]
                   },
                   "jobAids": []
@@ -4890,7 +4890,7 @@ var DMStandardContent = {
     {
       "key": "raci",
       "title": "How to use RACI",
-      "body": "Every task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person's relationship to the work?\n\nExactly one A per task. Accountability shouldn't be shared - if two people sign off, no one does.\n\nR and A can be the same person (shown together as A R) - they do it and own it.\n\nEvery task needs at least an R and an A - someone doing the work, someone owning the result.\n\nThe customer appears in the RACI wherever the engagement requires their input, approval, or participation."
+      "body": "Every task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person's relationship to the work?\n\nExactly one A per task. Accountability shouldn't be shared - if two people sign off, no one does.\n\nR and A can be the same person (shown together as R A) - they do it and own it.\n\nEvery task needs at least an R and an A - someone doing the work, someone owning the result.\n\nThe customer appears in the RACI wherever the engagement requires their input, approval, or participation."
     },
     {
       "key": "escalation",
@@ -4899,10 +4899,3 @@ var DMStandardContent = {
     }
   ]
 };
-
-if (typeof module === 'object' && module.exports) {
-  module.exports = DMStandardContent;
-}
-if (typeof self !== 'undefined') {
-  self.DMStandardContent = DMStandardContent;
-}

@@ -29,6 +29,28 @@ var DMContentModel = (function () {
     reference_section: true
   };
 
+  // Same order as RaciGridService.LETTERS — hydrate must not depend on Angular.
+  var RACI_LETTER_ORDER = {
+    R: 0,
+    A: 1,
+    C: 2,
+    I: 3
+  };
+
+  function sortRaciLetters(letters) {
+    return (letters || []).slice().sort(function (left, right) {
+      var leftRank = RACI_LETTER_ORDER[left];
+      var rightRank = RACI_LETTER_ORDER[right];
+      if (leftRank == null) {
+        leftRank = 99;
+      }
+      if (rightRank == null) {
+        rightRank = 99;
+      }
+      return leftRank - rightRank;
+    });
+  }
+
   function parseContent(raw) {
     if (raw == null || raw === '') {
       return {};
@@ -474,6 +496,10 @@ var DMContentModel = (function () {
                     if (raci[roleId].indexOf(letter) < 0) {
                       raci[roleId].push(letter);
                     }
+                  });
+
+                  Object.keys(raci).forEach(function (roleId) {
+                    raci[roleId] = sortRaciLetters(raci[roleId]);
                   });
 
                   return {

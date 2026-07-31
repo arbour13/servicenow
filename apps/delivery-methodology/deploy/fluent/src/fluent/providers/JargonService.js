@@ -32,7 +32,7 @@
     jargonCache = {};
   }
 
-  // Standalone RACI letters in prose ("Exactly one A per task", "shown together as A R") render as
+  // Standalone RACI letters in prose ("Exactly one A per task", "shown together as R A") render as
   // the same coloured mono letters the grid uses (.rl-*). Two of the four letters are English
   // words, so each has a guard: A and I never chip at a sentence start ("A strong methodology…"),
   // and I additionally needs letter-referring context before it (an/one/the/each/and/or, or an

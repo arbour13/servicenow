@@ -10,9 +10,9 @@
    ServiceNow/apps/delivery-methodology/CLAUDE.md for the full cross-widget sync writeup. */
 angular.module('deliveryMethodology').factory('AppStateService', [
   'DataService', '$q', '$rootScope', '$timeout', 'MessagingService', 'MethodologyDomainService', 'IdSeqService', 'IconService', 'JargonService',
-  'UrlPolicyService',
+  'UrlPolicyService', 'RaciGridService',
   function (DataService, $q, $rootScope, $timeout, MessagingService, MethodologyDomainService, IdSeqService, IconService, JargonService,
-    UrlPolicyService) {
+    UrlPolicyService, RaciGridService) {
   'use strict';
 
   // applyLoadedData() below calls a dozen-plus setters in one pass while bootstrapping; without
@@ -328,6 +328,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     silenced = true;
     setJobTitles(data.jobTitles);
     UrlPolicyService.normalizeMethodologies(data.methodologies);
+    RaciGridService.normalizeMethodologies(data.methodologies);
     setMethodologies(data.methodologies);
     setJargon(data.jargon);
     setReferenceSections(data.referenceSections);
@@ -391,6 +392,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     silenced = true;
     setJobTitles(data.jobTitles);
     UrlPolicyService.normalizeMethodologies(data.methodologies);
+    RaciGridService.normalizeMethodologies(data.methodologies);
     setMethodologies(data.methodologies);
     setJargon(data.jargon);
     setReferenceSections(data.referenceSections);

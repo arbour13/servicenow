@@ -299,6 +299,8 @@
     }
     var attempts = 0;
     var maxAttempts = 20;
+    // Sub-phase panels pin to the top of the viewport; task rows stay centered in view.
+    var alignStart = elementKey.indexOf('sub:') === 0;
 
     function attempt() {
       attempts += 1;
@@ -331,7 +333,7 @@
 
       target.scrollIntoView({
         behavior: behavior,
-        block: 'center'
+        block: alignStart ? 'start' : 'center'
       });
       target.classList.remove('jump-hl');
       void target.offsetWidth;
@@ -364,7 +366,7 @@
       afterOpenSubPhase();
     });
     push();
-    focusJumpTarget(elementKey);
+    focusJumpTarget(elementKey || ('sub:' + subPhaseId));
   }
 
   function applyDeepLinkFromUrl() {
@@ -391,8 +393,8 @@
       });
       push();
 
-      // Task rows use data-el="task:…"; the content panel uses data-el="sub:…" so a bare
-      // sub-phase link still scrolls and pulses something visible.
+      // Task rows use data-el="task:…"; the .panel uses data-el="sub:…" so a bare sub-phase
+      // link scrolls the panel to the top and pulses its border.
       var elementKey = link.el || ('sub:' + subPhaseId);
       focusJumpTarget(elementKey);
       return true;

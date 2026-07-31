@@ -29,7 +29,7 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
     if (!letters || !letters.length) {
       return '';
     }
-    return letters.map(function (letter) {
+    return RaciGridService.sortLetters(letters).map(function (letter) {
       return c.raciNames[letter];
     }).join(' / ');
   };
