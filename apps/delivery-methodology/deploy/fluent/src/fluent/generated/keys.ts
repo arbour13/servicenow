@@ -1593,7 +1593,6 @@ declare global {
                 ]
                 deleted: {}
             }
-            }
         }
     }
 }

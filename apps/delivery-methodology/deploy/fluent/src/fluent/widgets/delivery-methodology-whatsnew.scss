@@ -461,29 +461,92 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
 }.dm-widget .theme-toggle svg {
   width: 16px;
   height: 16px;
-}/* Service Portal / Bootstrap paint a mint/green :focus outline on mouse click. Kill ALL :focus
-   outlines inside this widget (!important + outline-offset beat theme CSS Includes that also use
-   !important), then restore a theme-matched rounded ring only for keyboard focus
-   (:focus-visible). Resting border/background/fill stay unchanged - only the ring signals
-   keyboard focus. --focus-gap matches the surface behind the control (defaults to --paper). */.dm-widget button:focus, .dm-widget a:focus, .dm-widget summary:focus, .dm-widget [role="button"]:focus, .dm-widget [role="tab"]:focus, .dm-widget [role="menuitem"]:focus, .dm-widget [tabindex]:focus, .dm-widget input[type="button"]:focus, .dm-widget input[type="submit"]:focus, .dm-widget input[type="reset"]:focus, .dm-widget input[type="checkbox"]:focus, .dm-widget input[type="radio"]:focus, .dm-widget input:focus, .dm-widget select:focus, .dm-widget textarea:focus {
-  outline: none !important;
-  outline-offset: 0 !important;
-}.dm-widget button:focus:not(:focus-visible), .dm-widget a:focus:not(:focus-visible), .dm-widget summary:focus:not(:focus-visible), .dm-widget [role="button"]:focus:not(:focus-visible), .dm-widget [role="tab"]:focus:not(:focus-visible), .dm-widget [role="menuitem"]:focus:not(:focus-visible), .dm-widget [tabindex]:focus:not(:focus-visible), .dm-widget input[type="button"]:focus:not(:focus-visible), .dm-widget input[type="submit"]:focus:not(:focus-visible), .dm-widget input[type="reset"]:focus:not(:focus-visible), .dm-widget input[type="checkbox"]:focus:not(:focus-visible), .dm-widget input[type="radio"]:focus:not(:focus-visible) {
-  box-shadow: none !important;
+}/* Service Portal / Bootstrap paint a mint/green :focus outline (and often a glow box-shadow) on
+   mouse click. Nested under .app so after packager scoping the selector is
+   `.dm-widget .app …:focus` — higher specificity than theme `button:focus !important` that
+   loads later. Kill every outline channel + mouse-focus shadows, then restore our teal ring
+   only for keyboard focus (:focus-visible). --focus-gap matches the surface behind the control. */.dm-widget .app {
+  button::-moz-focus-inner,
+  input[type="button"]::-moz-focus-inner,
+  input[type="submit"]::-moz-focus-inner,
+  input[type="reset"]::-moz-focus-inner {
+    border: 0 !important;
+    padding: 0 !important;
+  }
+
+  button:focus,
+  button:focus:focus,
+  a:focus,
+  a:focus:focus,
+  summary:focus,
+  [role="button"]:focus,
+  [role="tab"]:focus,
+  [role="menuitem"]:focus,
+  [tabindex]:focus,
+  .btn:focus,
+  input[type="button"]:focus,
+  input[type="submit"]:focus,
+  input[type="reset"]:focus,
+  input[type="checkbox"]:focus,
+  input[type="radio"]:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none !important;
+    outline-width: 0 !important;
+    outline-style: none !important;
+    outline-color: transparent !important;
+    outline-offset: 0 !important;
+    -webkit-focus-ring-color: transparent !important;
+  }
+
+  button:focus:not(:focus-visible),
+  a:focus:not(:focus-visible),
+  summary:focus:not(:focus-visible),
+  [role="button"]:focus:not(:focus-visible),
+  [role="tab"]:focus:not(:focus-visible),
+  [role="menuitem"]:focus:not(:focus-visible),
+  [tabindex]:focus:not(:focus-visible),
+  .btn:focus:not(:focus-visible),
+  input[type="button"]:focus:not(:focus-visible),
+  input[type="submit"]:focus:not(:focus-visible),
+  input[type="reset"]:focus:not(:focus-visible),
+  input[type="checkbox"]:focus:not(:focus-visible),
+  input[type="radio"]:focus:not(:focus-visible),
+  input:focus:not(:focus-visible),
+  select:focus:not(:focus-visible),
+  textarea:focus:not(:focus-visible) {
+    box-shadow: none !important;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  summary:focus-visible,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="menuitem"]:focus-visible,
+  [tabindex]:focus-visible,
+  .btn:focus-visible,
+  input:focus-visible:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
+  }
 }.dm-widget a {
   border-radius: var(--radius-round);
-}.dm-widget a:focus-visible, .dm-widget button:focus-visible, .dm-widget summary:focus-visible, .dm-widget [role="button"]:focus-visible, .dm-widget [role="tab"]:focus-visible, .dm-widget [role="menuitem"]:focus-visible, .dm-widget [tabindex]:focus-visible, .dm-widget input:focus-visible:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), .dm-widget select:focus-visible, .dm-widget textarea:focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
 }/* Buttons styled as inline links (RACI task jump, reference sub-phase crumb). */.dm-widget .rg-task-link, .dm-widget .ref-aid-crumb {
   border-radius: var(--radius-round);
 }.dm-widget .rg-table td.tname, .dm-widget .jt-task, .dm-widget .ref-aid {
   --focus-gap: var(--surface-2);
-}/* Phase road: ring the station digit only, not the name/count column beneath it. */.dm-widget .station:focus, .dm-widget .station:focus-visible {
+}/* Phase road: ring the station digit only, not the name/count column beneath it. */.dm-widget .app .station:focus, .dm-widget .app .station:focus-visible {
   outline: none !important;
+  outline-offset: 0 !important;
   box-shadow: none !important;
-}.dm-widget .station:focus-visible .station-num {
+}.dm-widget .app .station:focus-visible .station-num {
   outline: none !important;
+  outline-offset: 0 !important;
   box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
 }.dm-widget .pagehdr-title {
   margin-bottom: 14px;

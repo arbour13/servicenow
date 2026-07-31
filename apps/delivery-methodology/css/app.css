@@ -543,61 +543,79 @@ button {
   height: 16px;
 }
 
-/* Service Portal / Bootstrap paint a mint/green :focus outline on mouse click. Kill ALL :focus
-   outlines inside this widget (!important + outline-offset beat theme CSS Includes that also use
-   !important), then restore a theme-matched rounded ring only for keyboard focus
-   (:focus-visible). Resting border/background/fill stay unchanged - only the ring signals
-   keyboard focus. --focus-gap matches the surface behind the control (defaults to --paper). */
-button:focus,
-a:focus,
-summary:focus,
-[role=button]:focus,
-[role=tab]:focus,
-[role=menuitem]:focus,
-[tabindex]:focus,
-input[type=button]:focus,
-input[type=submit]:focus,
-input[type=reset]:focus,
-input[type=checkbox]:focus,
-input[type=radio]:focus,
-input:focus,
-select:focus,
-textarea:focus {
+/* Service Portal / Bootstrap paint a mint/green :focus outline (and often a glow box-shadow) on
+   mouse click. Nested under .app so after packager scoping the selector is
+   `.dm-widget .app …:focus` — higher specificity than theme `button:focus !important` that
+   loads later. Kill every outline channel + mouse-focus shadows, then restore our teal ring
+   only for keyboard focus (:focus-visible). --focus-gap matches the surface behind the control. */
+.app button::-moz-focus-inner,
+.app input[type=button]::-moz-focus-inner,
+.app input[type=submit]::-moz-focus-inner,
+.app input[type=reset]::-moz-focus-inner {
+  border: 0 !important;
+  padding: 0 !important;
+}
+.app button:focus,
+.app button:focus:focus,
+.app a:focus,
+.app a:focus:focus,
+.app summary:focus,
+.app [role=button]:focus,
+.app [role=tab]:focus,
+.app [role=menuitem]:focus,
+.app [tabindex]:focus,
+.app .btn:focus,
+.app input[type=button]:focus,
+.app input[type=submit]:focus,
+.app input[type=reset]:focus,
+.app input[type=checkbox]:focus,
+.app input[type=radio]:focus,
+.app input:focus,
+.app select:focus,
+.app textarea:focus {
+  outline: none !important;
+  outline-width: 0 !important;
+  outline-style: none !important;
+  outline-color: transparent !important;
+  outline-offset: 0 !important;
+  -webkit-focus-ring-color: transparent !important;
+}
+.app button:focus:not(:focus-visible),
+.app a:focus:not(:focus-visible),
+.app summary:focus:not(:focus-visible),
+.app [role=button]:focus:not(:focus-visible),
+.app [role=tab]:focus:not(:focus-visible),
+.app [role=menuitem]:focus:not(:focus-visible),
+.app [tabindex]:focus:not(:focus-visible),
+.app .btn:focus:not(:focus-visible),
+.app input[type=button]:focus:not(:focus-visible),
+.app input[type=submit]:focus:not(:focus-visible),
+.app input[type=reset]:focus:not(:focus-visible),
+.app input[type=checkbox]:focus:not(:focus-visible),
+.app input[type=radio]:focus:not(:focus-visible),
+.app input:focus:not(:focus-visible),
+.app select:focus:not(:focus-visible),
+.app textarea:focus:not(:focus-visible) {
+  box-shadow: none !important;
+}
+.app a:focus-visible,
+.app button:focus-visible,
+.app summary:focus-visible,
+.app [role=button]:focus-visible,
+.app [role=tab]:focus-visible,
+.app [role=menuitem]:focus-visible,
+.app [tabindex]:focus-visible,
+.app .btn:focus-visible,
+.app input:focus-visible:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]),
+.app select:focus-visible,
+.app textarea:focus-visible {
   outline: none !important;
   outline-offset: 0 !important;
-}
-
-button:focus:not(:focus-visible),
-a:focus:not(:focus-visible),
-summary:focus:not(:focus-visible),
-[role=button]:focus:not(:focus-visible),
-[role=tab]:focus:not(:focus-visible),
-[role=menuitem]:focus:not(:focus-visible),
-[tabindex]:focus:not(:focus-visible),
-input[type=button]:focus:not(:focus-visible),
-input[type=submit]:focus:not(:focus-visible),
-input[type=reset]:focus:not(:focus-visible),
-input[type=checkbox]:focus:not(:focus-visible),
-input[type=radio]:focus:not(:focus-visible) {
-  box-shadow: none !important;
+  box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
 }
 
 a {
   border-radius: var(--radius-round);
-}
-
-a:focus-visible,
-button:focus-visible,
-summary:focus-visible,
-[role=button]:focus-visible,
-[role=tab]:focus-visible,
-[role=menuitem]:focus-visible,
-[tabindex]:focus-visible,
-input:focus-visible:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset]),
-select:focus-visible,
-textarea:focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
 }
 
 /* Buttons styled as inline links (RACI task jump, reference sub-phase crumb). */
@@ -613,14 +631,16 @@ textarea:focus-visible {
 }
 
 /* Phase road: ring the station digit only, not the name/count column beneath it. */
-.station:focus,
-.station:focus-visible {
+.app .station:focus,
+.app .station:focus-visible {
   outline: none !important;
+  outline-offset: 0 !important;
   box-shadow: none !important;
 }
 
-.station:focus-visible .station-num {
+.app .station:focus-visible .station-num {
   outline: none !important;
+  outline-offset: 0 !important;
   box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
 }
 
