@@ -435,15 +435,20 @@
     border: 1px solid var(--border-strong); background: var(--panel);
     color: var(--text); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
   }
-  .modal-btn:hover { background: var(--accent-soft); border-color: var(--accent-border); }
+  .modal-btn:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent-border); }
   .modal-btn.primary {
     background: var(--accent-fill); border-color: var(--accent-fill); color: #fff;
   }
-  .modal-btn.primary:hover { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); }
+  .modal-btn.primary:hover:not(:disabled) { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); }
   .modal-btn.danger {
     background: var(--danger); border-color: var(--danger); color: #fff;
   }
-  .modal-btn.danger:hover { filter: brightness(.92); }
+  .modal-btn.danger:hover:not(:disabled) { filter: brightness(.92); }
+  /* The deploy modal's Done button stays PRESENT but disabled while a deploy runs (rather than
+     hidden until it finishes) - so the exit is visibly promised from the start and the modal
+     doesn't grow 32px taller the moment it appears. Every :hover above is guarded so a disabled
+     button never lights up as though it were clickable. Matches button.action-btn:disabled. */
+  .modal-btn:disabled { opacity: .55; cursor: default; }
   .modal-btn[hidden] { display: none; }
 
   .fluent-controls {
@@ -699,7 +704,7 @@
       <div class="deploy-progress-log" id="deployProgressLog" aria-live="polite" aria-atomic="false"></div>
     </div>
     <div class="modal-actions">
-      <button type="button" class="modal-btn primary" id="deployModalDoneBtn" hidden>Done</button>
+      <button type="button" class="modal-btn primary" id="deployModalDoneBtn" disabled>Done</button>
     </div>
   </div>
 </div>
@@ -708,6 +713,6 @@
 <script src="semver.js?v=20260727o"></script>
 <script src="instance.js?v=20260727o"></script>
 <script src="fluent.js?v=20260727o"></script>
-<script src="console.js?v=20260731c"></script>
+<script src="console.js?v=20260731d"></script>
 </body>
 </html>

@@ -1297,8 +1297,8 @@
   var deployModalFinished = false;
 
   function onDeployModalKeydown(e) {
-    // Escape only dismisses once finished - matches Done/Close being hidden until then, so there's
-    // no way to lose track of whether a still-running deploy got dismissed or not.
+    // Escape only dismisses once finished - matches Done/Close being disabled until then, so
+    // there's no way to lose track of whether a still-running deploy got dismissed or not.
     if (e.key === 'Escape' && deployModalFinished) {
       e.preventDefault();
       closeDeployModal();
@@ -1312,12 +1312,18 @@
     setDeployStatus('Starting…');
     deployProgressLog.innerHTML = '';
     setDeployProgress(0);
-    deployModalDoneBtn.hidden = true;
+    // Present but disabled, not hidden - the way out is visible from the start (and the modal
+    // doesn't grow 32px taller the moment it appears at the end). Disabled still can't be clicked,
+    // so a deploy in flight is no more dismissible than it was when this was hidden.
+    deployModalDoneBtn.hidden = false;
+    deployModalDoneBtn.disabled = true;
+    deployModalDoneBtn.textContent = 'Done';
     deployModalOverlay.hidden = false;
     syncModalBackdrop();
     document.addEventListener('keydown', onDeployModalKeydown, true);
-    // Nothing inside is focusable until Done appears (see trapTabWithin) - park focus on the modal
-    // itself so Tab has a sane starting point instead of staying wherever it was on the page behind.
+    // A DISABLED button still isn't focusable, so there's genuinely nothing tabbable in here until
+    // the deploy finishes (see trapTabWithin) - park focus on the modal itself so Tab has a sane
+    // starting point instead of staying wherever it was on the page behind.
     var modalEl = deployModalOverlay.querySelector('.modal');
     if (modalEl) { modalEl.setAttribute('tabindex', '-1'); modalEl.focus(); }
   }
@@ -1339,11 +1345,12 @@
     deployModalStatus.textContent = text || '';
   }
 
-  // Only Done ends the modal. While a deploy is in flight the button stays hidden so the modal
-  // cannot be dismissed mid-stream.
+  // Only Done ends the modal. While a deploy is in flight the button is present but disabled (see
+  // openDeployModal) so the modal cannot be dismissed mid-stream; finishing enables it.
   function finishDeployModal(success) {
     deployModalFinished = true;
     deployModalDoneBtn.hidden = false;
+    deployModalDoneBtn.disabled = false;
     deployModalDoneBtn.textContent = success ? 'Done' : 'Close';
     // Keep deployInFlight until the modal is dismissed so bridge polls cannot re-enable Deploy
     // while Done/Close is still up (and so a second deploy cannot start underneath it).
