@@ -1640,8 +1640,12 @@
     });
     var paths = sortedFluentPaths();
     if (paths.indexOf(fluentActivePath) === -1) {
-      // Default to the widget's .now.ts - the most useful file to land on.
-      fluentActivePath = paths.filter(function (p) { return /widgets\/.*\.now\.ts$/.test(p); })[0] || paths[0] || '';
+      // README first: it explains what the generated project IS and how to deploy it, which is what
+      // you want on landing. The previous default (the first widgets/*.now.ts) was a poor fit for a
+      // multi-widget app - it silently picked one of five arbitrarily, by filename order.
+      fluentActivePath = (paths.indexOf('README.md') !== -1 ? 'README.md' : '') ||
+        paths.filter(function (p) { return /widgets\/.*\.now\.ts$/.test(p); })[0] ||
+        paths[0] || '';
     }
     fluentFileSelect.innerHTML = paths.map(function (p) {
       return '<option value="' + p + '"' + (p === fluentActivePath ? ' selected' : '') + '>' + p + '</option>';
@@ -1734,7 +1738,7 @@
       fldVersion.value = descriptor.manifest.version || '1.0.0';
       versionDirty = false;
 
-      fluentActivePath = ''; // let the Fluent view re-default to the widget file for the new app
+      fluentActivePath = ''; // let the Fluent view re-default (see rebuildFluent) for the new app
       overridesSection.style.display = '';
       if (bridgeSection) { bridgeSection.style.display = ''; }
       outputSection.style.display = '';
