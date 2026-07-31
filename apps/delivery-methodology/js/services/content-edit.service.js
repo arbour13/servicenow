@@ -9,15 +9,15 @@
    only ever mutate state.editSubPhase, which only the Methodology widget's own template reads. */
 angular.module('deliveryMethodology').factory('ContentEditService', [
   'ChangelogDiffService', 'IdSeqService', 'MessagingService', 'AppStateService', 'MethodologyDomainService',
-  'RaciGridService', 'WhatsNewService', '$rootScope',
+  'RaciGridService', 'WhatsNewService',
   function (
     ChangelogDiffService, IdSeqService, MessagingService, AppStateService, MethodologyDomainService,
-    RaciGridService, WhatsNewService, $rootScope
+    RaciGridService, WhatsNewService
   ) {
   'use strict';
 
   function notify() {
-    $rootScope.$broadcast('dm-state');
+    AppStateService.notify();
   }
 
   // Template helpers used to allocate fresh arrays every digest. Cache until the next mutator.
@@ -169,8 +169,8 @@ angular.module('deliveryMethodology').factory('ContentEditService', [
     AppStateService.setTmpLevelOfEffortRoleId('');
     state.editMode = true;
     invalidateDerived();
-    MessagingService.scrollToEditBar();
     notify();
+    MessagingService.scrollToEditBar();
   }
 
   function cancelEdit() {

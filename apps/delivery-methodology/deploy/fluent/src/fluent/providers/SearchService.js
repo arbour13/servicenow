@@ -1,9 +1,17 @@
-['$sce', 'MessagingService', function ($sce, MessagingService) {
+[
+  '$sce', 'MessagingService', 'AppStateService',
+  function ($sce, MessagingService, AppStateService) {
   'use strict';
 
   var searchQuery = '';
   var searchResultGroups = [];
   var searchResultCount = 0;
+
+  // View widgets bind .view-blur off isOpen(); without a dm-state kick, Service Portal leaves
+  // sibling widgets undigested so the blur lags until some later interaction.
+  function notifyUi() {
+    AppStateService.notify();
+  }
 
   function escapeHtml(text) {
     var value = '';
@@ -54,6 +62,7 @@
     searchQuery = '';
     searchResultGroups = [];
     searchResultCount = 0;
+    notifyUi();
     return readState();
   }
 
@@ -198,6 +207,7 @@
     if (query.length < 2) {
       searchResultGroups = [];
       searchResultCount = 0;
+      notifyUi();
       return readState();
     }
 
@@ -216,6 +226,7 @@
     searchResultCount = searchResultGroups.reduce(function (total, group) {
       return total + group.results.length;
     }, 0);
+    notifyUi();
     return readState();
   }
 

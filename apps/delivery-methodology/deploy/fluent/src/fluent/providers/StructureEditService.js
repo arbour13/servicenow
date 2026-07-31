@@ -1,14 +1,14 @@
 [
   'DataService', 'IdSeqService', 'NavigationService', 'RaciGridService', 'MessagingService',
-  'WhatsNewService', 'ReferenceService', 'AppStateService', 'MethodologyDomainService', '$rootScope',
+  'WhatsNewService', 'ReferenceService', 'AppStateService', 'MethodologyDomainService',
   function (
     DataService, IdSeqService, NavigationService, RaciGridService, MessagingService,
-    WhatsNewService, ReferenceService, AppStateService, MethodologyDomainService, $rootScope
+    WhatsNewService, ReferenceService, AppStateService, MethodologyDomainService
   ) {
   'use strict';
 
   function notify() {
-    $rootScope.$broadcast('dm-state');
+    AppStateService.notify();
   }
 
   var hooks = {};
@@ -91,8 +91,8 @@
       navHistory: NavigationService.getHistory()
     };
     state.structureEditMode = true;
-    MessagingService.scrollToEditBar();
     notify();
+    MessagingService.scrollToEditBar();
   }
 
   function exitStructureEdit() {

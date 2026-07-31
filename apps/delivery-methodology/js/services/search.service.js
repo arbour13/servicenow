@@ -2,12 +2,20 @@
    What's New (changelog), glossary terms, and Reference sections. One search box, sectioned
    results - a matching job aid and the sub-phase that carries it both appear, each under its own
    heading, so neither drowns the other. Builds trusted snippets once per runSearch. */
-angular.module('deliveryMethodology').factory('SearchService', ['$sce', 'MessagingService', function ($sce, MessagingService) {
+angular.module('deliveryMethodology').factory('SearchService', [
+  '$sce', 'MessagingService', 'AppStateService',
+  function ($sce, MessagingService, AppStateService) {
   'use strict';
 
   var searchQuery = '';
   var searchResultGroups = [];
   var searchResultCount = 0;
+
+  // View widgets bind .view-blur off isOpen(); without a dm-state kick, Service Portal leaves
+  // sibling widgets undigested so the blur lags until some later interaction.
+  function notifyUi() {
+    AppStateService.notify();
+  }
 
   function escapeHtml(text) {
     var value = '';
@@ -58,6 +66,7 @@ angular.module('deliveryMethodology').factory('SearchService', ['$sce', 'Messagi
     searchQuery = '';
     searchResultGroups = [];
     searchResultCount = 0;
+    notifyUi();
     return readState();
   }
 
@@ -202,6 +211,7 @@ angular.module('deliveryMethodology').factory('SearchService', ['$sce', 'Messagi
     if (query.length < 2) {
       searchResultGroups = [];
       searchResultCount = 0;
+      notifyUi();
       return readState();
     }
 
@@ -220,6 +230,7 @@ angular.module('deliveryMethodology').factory('SearchService', ['$sce', 'Messagi
     searchResultCount = searchResultGroups.reduce(function (total, group) {
       return total + group.results.length;
     }, 0);
+    notifyUi();
     return readState();
   }
 

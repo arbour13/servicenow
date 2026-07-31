@@ -60,30 +60,62 @@
     closeConfirm(false);
   }
 
+  function scrollBehavior() {
+    try {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return 'auto';
+      }
+    } catch (error) {
+      // matchMedia can throw in older embedded browsers; fall through to smooth.
+    }
+    return 'smooth';
+  }
+
   function scrollPageToTop() {
     $timeout(function () {
+      // scrollIntoView on a top sentinel is more reliable than window.scrollTo in Service Portal,
+      // where the real scroller is often a portal container rather than the window.
+      var root = document.querySelector('.app--chrome') || document.querySelector('.dm-widget') || document.body;
+      if (root && root.scrollIntoView) {
+        root.scrollIntoView({
+          behavior: scrollBehavior(),
+          block: 'start'
+        });
+      }
       window.scrollTo({
         top: 0,
-        behavior: 'smooth'
+        behavior: scrollBehavior()
       });
     }, 0);
   }
 
   function scrollToEditBar() {
-    $timeout(function () {
+    var attempts = 0;
+    var maxAttempts = 12;
+
+    function attempt() {
+      attempts += 1;
       // Broadened from '.main .edit-bar' to a page-wide query: '.main' no longer exists once the
       // Methodology view (the only widget with an edit bar) is its own widget/DOM subtree - see
       // ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget note.
       var bar = document.querySelector('.edit-bar');
-      if (bar) {
-        var stickyTop = parseFloat(window.getComputedStyle(bar).top) || 0;
-        var target = Math.max(0, window.scrollY + bar.getBoundingClientRect().top - stickyTop);
-        window.scrollTo({
-          top: target,
-          behavior: 'smooth'
-        });
+      if (!bar) {
+        if (attempts < maxAttempts) {
+          $timeout(attempt, 50);
+        }
+        return;
       }
-    }, 0);
+
+      // scrollIntoView walks ancestor overflow containers (SP page scrollers). window.scrollTo
+      // alone is a no-op when the portal, not the window, is the scrolling box.
+      bar.scrollIntoView({
+        behavior: scrollBehavior(),
+        block: 'start'
+      });
+    }
+
+    // Retries cover ng-if mount after dm-state + the sibling-widget $timeout digest kick.
+    $timeout(attempt, 0);
   }
 
   function readState() {

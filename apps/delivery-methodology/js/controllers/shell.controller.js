@@ -93,7 +93,7 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   // read as off) while the grid itself renders from data actually already switched over.
   function refreshRaciGrid() {
     RaciGridService.refresh(raciGridContext());
-    $rootScope.$broadcast('dm-state');
+    AppStateService.notify();
   }
   function refreshWhatsNew(serverSeen) {
     WhatsNewService.hydrateSeen(c.methodologies, serverSeen);
@@ -409,7 +409,7 @@ angular.module('deliveryMethodology').controller('DmShellController', [
     // has no $rootScope of its own to broadcast from - one explicit nudge here lets the
     // What's New / Reference widgets (already mounted and listening) pick up the fresh data,
     // matching every other cross-widget state change in this app (see AppStateService header).
-    $rootScope.$broadcast('dm-state');
+    AppStateService.notify();
   }
 
   AppStateService.bind({

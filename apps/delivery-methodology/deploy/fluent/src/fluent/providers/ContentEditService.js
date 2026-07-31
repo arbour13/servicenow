@@ -1,14 +1,14 @@
 [
   'ChangelogDiffService', 'IdSeqService', 'MessagingService', 'AppStateService', 'MethodologyDomainService',
-  'RaciGridService', 'WhatsNewService', '$rootScope',
+  'RaciGridService', 'WhatsNewService',
   function (
     ChangelogDiffService, IdSeqService, MessagingService, AppStateService, MethodologyDomainService,
-    RaciGridService, WhatsNewService, $rootScope
+    RaciGridService, WhatsNewService
   ) {
   'use strict';
 
   function notify() {
-    $rootScope.$broadcast('dm-state');
+    AppStateService.notify();
   }
 
   // Template helpers used to allocate fresh arrays every digest. Cache until the next mutator.
@@ -160,8 +160,8 @@
     AppStateService.setTmpLevelOfEffortRoleId('');
     state.editMode = true;
     invalidateDerived();
-    MessagingService.scrollToEditBar();
     notify();
+    MessagingService.scrollToEditBar();
   }
 
   function cancelEdit() {

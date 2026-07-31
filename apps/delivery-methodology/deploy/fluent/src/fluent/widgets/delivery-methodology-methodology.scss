@@ -1366,19 +1366,20 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   opacity: 0.5;
   filter: #{'blur(2.5px)'} #{'saturate(0.7)'};
   pointer-events: none;
-  transition: filter 0.2s, opacity 0.2s;
+  /* Opacity only - transitioning filter on large Service Portal layers lags ~1s before paint. */
+  transition: opacity 0.12s ease;
 }/* Same treatment as edit mode: blur the page behind search. History + search + theme stay
    sharp via .hdr-search-group's raised z-index. */.dm-widget .app.search-active .views, .dm-widget .app.search-active .pagehdr-title, .dm-widget .app.search-active .pagehdr-controls, .dm-widget .app.search-active .main > *:not(.pagehdr) {
   opacity: 0.5;
   filter: #{'blur(2.5px)'} #{'saturate(0.7)'};
   pointer-events: none;
-  transition: filter 0.2s, opacity 0.2s;
+  transition: opacity 0.12s ease;
 }/* The four view widgets are sibling DOM trees, so Shell's .search-active can't reach them with a
    descendant selector. Each view partial's root carries .view-root and flips .view-blur itself
    off SearchService.isOpen() - same blur values as the chrome rules above, so the whole page
    reads as one dimmed layer under the search overlay. */.dm-widget .view-root {
   cursor: default;
-  transition: filter 0.2s, opacity 0.2s;
+  transition: opacity 0.12s ease;
 }.dm-widget .view-root.view-blur {
   opacity: 0.5;
   filter: #{'blur(2.5px)'} #{'saturate(0.7)'};
@@ -1777,6 +1778,7 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
 }/* ---------- Phase 2: edit mode ---------- */.dm-widget .edit-bar {
   position: sticky;
   top: 12px;
+  scroll-margin-top: 12px;
   z-index: 30;
   display: flex;
   align-items: center;

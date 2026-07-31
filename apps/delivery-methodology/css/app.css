@@ -1883,7 +1883,8 @@ h1.sp-title {
   opacity: 0.5;
   filter: blur(2.5px) saturate(0.7);
   pointer-events: none;
-  transition: filter 0.2s, opacity 0.2s;
+  /* Opacity only - transitioning filter on large Service Portal layers lags ~1s before paint. */
+  transition: opacity 0.12s ease;
 }
 
 /* Same treatment as edit mode: blur the page behind search. History + search + theme stay
@@ -1895,7 +1896,7 @@ h1.sp-title {
   opacity: 0.5;
   filter: blur(2.5px) saturate(0.7);
   pointer-events: none;
-  transition: filter 0.2s, opacity 0.2s;
+  transition: opacity 0.12s ease;
 }
 
 /* The four view widgets are sibling DOM trees, so Shell's .search-active can't reach them with a
@@ -1904,7 +1905,7 @@ h1.sp-title {
    reads as one dimmed layer under the search overlay. */
 .view-root {
   cursor: default;
-  transition: filter 0.2s, opacity 0.2s;
+  transition: opacity 0.12s ease;
 }
 
 .view-root.view-blur {
@@ -2464,6 +2465,7 @@ table.ttbl .jobaid {
 .edit-bar {
   position: sticky;
   top: 12px;
+  scroll-margin-top: 12px;
   z-index: 30;
   display: flex;
   align-items: center;

@@ -1,7 +1,7 @@
 [
-  'DataService', '$q', '$rootScope', 'MessagingService', 'MethodologyDomainService', 'IdSeqService', 'IconService', 'JargonService',
+  'DataService', '$q', '$rootScope', '$timeout', 'MessagingService', 'MethodologyDomainService', 'IdSeqService', 'IconService', 'JargonService',
   'UrlPolicyService',
-  function (DataService, $q, $rootScope, MessagingService, MethodologyDomainService, IdSeqService, IconService, JargonService,
+  function (DataService, $q, $rootScope, $timeout, MessagingService, MethodologyDomainService, IdSeqService, IconService, JargonService,
     UrlPolicyService) {
   'use strict';
 
@@ -22,11 +22,16 @@
     hooks = hostHooks || {};
   }
 
+  // Service Portal often digests only the widget that handled the click/ng-change. Sibling
+  // widgets still receive dm-state and update their `c` mirrors, but ng-class (edit/search blur)
+  // will not paint until those scopes digest. A zero-delay $timeout runs $apply from $rootScope
+  // so every widget paints on the next tick - instant in the harness, required on the instance.
   function notify() {
     if (silenced) {
       return;
     }
     $rootScope.$broadcast('dm-state');
+    $timeout(angular.noop, 0);
   }
 
   // Run several setters as one logical update (one dm-state at the end). Nested batch() calls
@@ -527,6 +532,7 @@
     bindActiveView: bindActiveView,
     subscribe: subscribe,
     batch: batch,
-    bind: bind
+    bind: bind,
+    notify: notify
   };
 }]
