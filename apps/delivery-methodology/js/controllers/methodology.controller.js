@@ -234,6 +234,15 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   syncAll();
   AppStateService.subscribe($rootScope, $scope, syncAll);
 
+  // One-time "Load standard content" action offered by the empty-state below when this
+  // instance's content table is empty. Guarded by canEdit/isSaving in the template (same as
+  // every other write action here) - AppStateService.seedStandard() itself also refuses a
+  // double-fire via tryBeginSave(), and the server refuses outright if the table already has
+  // rows, so this button cannot clobber existing content no matter how it's triggered.
+  c.seedStandard = function () {
+    AppStateService.seedStandard();
+  };
+
   // Is the panel far enough down that selecting a sub-phase would change only off-screen content?
   // Measured BEFORE the swap, because the answer decides which of two mutually exclusive motions
   // runs (see openPanelContent) - and the panel's top edge is set by the chrome above it, which
@@ -355,6 +364,9 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   };
   c.addMethodology = function () {
     StructureEditService.addMethodology();
+  };
+  c.methodologyNeedsSetup = function (methodology) {
+    return StructureEditService.methodologyNeedsSetup(methodology);
   };
   c.deleteMethodology = function () {
     StructureEditService.deleteMethodology();

@@ -342,6 +342,9 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   c.addMethodology = function () {
     StructureEditService.addMethodology();
   };
+  c.methodologyNeedsSetup = function (methodology) {
+    return StructureEditService.methodologyNeedsSetup(methodology);
+  };
   c.deleteMethodology = function () {
     StructureEditService.deleteMethodology();
   };

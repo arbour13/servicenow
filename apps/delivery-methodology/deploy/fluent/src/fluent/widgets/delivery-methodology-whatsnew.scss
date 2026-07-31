@@ -509,9 +509,17 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
 }.dm-widget .theme-toggle svg {
   width: 16px;
   height: 16px;
-}/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */.dm-widget .nav-btn:focus-visible, .dm-widget .theme-toggle:focus-visible, .dm-widget .edit-pencil:focus-visible, .dm-widget .struct-icon-btn:focus-visible, .dm-widget .methodology-tab:focus-visible, .dm-widget .vtab:focus-visible, .dm-widget .loe-mode-btn:focus-visible, .dm-widget .btn:focus-visible, .dm-widget .participant-chip:focus-visible, .dm-widget .ja-rolechip:focus-visible, .dm-widget .rg-pchip:focus-visible, .dm-widget .rg-colnote-btn:focus-visible, .dm-widget .jt-pick-btn:focus-visible, .dm-widget .raci-toggle:focus-visible, .dm-widget .reorder-btn:focus-visible, .dm-widget .field-x:focus-visible, .dm-widget .x-btn:focus-visible, .dm-widget .add-item-btn:focus-visible, .dm-widget .loe-flag-btn:focus-visible, .dm-widget .methodology-intro-toggle:focus-visible, .dm-widget .sp-brief-toggle:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
+}/* Service Portal / Bootstrap paint a green :focus outline or glow on mouse click. Kill that
+   chrome inside this widget (!important beats theme CSS Includes), then restore a theme-matched
+   ring only for keyboard focus (:focus-visible). Text fields keep outline off on :focus so their
+   own border/glow rules can apply; they still get --focus-ring via :focus-visible. */.dm-widget button:focus, .dm-widget a:focus, .dm-widget summary:focus, .dm-widget [role="button"]:focus, .dm-widget [role="tab"]:focus, .dm-widget [role="menuitem"]:focus, .dm-widget [tabindex]:focus, .dm-widget input[type="button"]:focus, .dm-widget input[type="submit"]:focus, .dm-widget input[type="reset"]:focus, .dm-widget input[type="checkbox"]:focus, .dm-widget input[type="radio"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}.dm-widget input:focus, .dm-widget select:focus, .dm-widget textarea:focus {
+  outline: none !important;
+}.dm-widget button:focus-visible, .dm-widget a:focus-visible, .dm-widget summary:focus-visible, .dm-widget [role="button"]:focus-visible, .dm-widget [role="tab"]:focus-visible, .dm-widget [role="menuitem"]:focus-visible, .dm-widget [tabindex]:focus-visible, .dm-widget input:focus-visible, .dm-widget select:focus-visible, .dm-widget textarea:focus-visible {
+  outline: var(--focus-ring) !important;
+  outline-offset: var(--focus-ring-offset) !important;
 }.dm-widget .pagehdr-title {
   margin-bottom: 14px;
 }.dm-widget .pagehdr-title h1 {
@@ -1871,7 +1879,8 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   color: var(--ink-faint);
 }.dm-widget .edit-in:focus {
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(23, 184, 166, 0.22);
+  /* !important so portal's green input glow cannot win over our teal wash. */
+  box-shadow: 0 0 0 3px rgba(23, 184, 166, 0.22) !important;
 }.dm-widget textarea.edit-in {
   line-height: 1.5;
 }.dm-widget select.edit-in {

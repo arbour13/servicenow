@@ -91,9 +91,9 @@
           </div>
 
           <div ng-if="c.currentMethodology()">
-            <p class="struct-toolbar-hint">Rename this methodology, its phases, and sub-phases inline. Reorder with the
-              arrows, or remove them with &times;. Add another methodology from the header. Changes stay in a draft
-              until you save. Exit structure edit, then use the pencil to write content.</p>
+            <p class="struct-toolbar-hint">Rename the methodology, phases, and sub-phases inline. Reorder with the
+              arrows, or remove them with &times;. Name a new methodology before adding another. Changes stay in a
+              draft until you save. Exit structure edit, then use the pencil to write content.</p>
             <div class="struct-methodology">
               <span class="struct-methodology-label">Methodology</span>
               <input type="text" class="edit-in struct-rename" ng-model="c.currentMethodology().name"
@@ -102,6 +102,10 @@
               <button type="button" class="field-x" ng-click="c.deleteMethodology()"
                 data-tip="Delete this methodology" aria-label="Delete this methodology">&times;</button>
             </div>
+            <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()"
+              ng-disabled="c.isSaving || c.methodologyNeedsSetup(c.currentMethodology())"
+              data-tip="{{c.methodologyNeedsSetup(c.currentMethodology()) ? 'Name this methodology before adding another' : 'Add a methodology'}}">+ Add
+              methodology</button>
             <div class="struct-phase" ng-repeat="phase in c.currentMethodology().phases track by phase.id">
               <div class="struct-phase-head">
                 <span class="struct-num">{{$index + 1}}</span>

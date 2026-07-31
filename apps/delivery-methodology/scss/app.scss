@@ -614,30 +614,44 @@ button {
   height: 16px;
 }
 
-/* One keyboard-focus treatment for chrome + in-panel toggles. Mouse clicks stay outline-free. */
-.nav-btn:focus-visible,
-.theme-toggle:focus-visible,
-.edit-pencil:focus-visible,
-.struct-icon-btn:focus-visible,
-.methodology-tab:focus-visible,
-.vtab:focus-visible,
-.loe-mode-btn:focus-visible,
-.btn:focus-visible,
-.participant-chip:focus-visible,
-.ja-rolechip:focus-visible,
-.rg-pchip:focus-visible,
-.rg-colnote-btn:focus-visible,
-.jt-pick-btn:focus-visible,
-.raci-toggle:focus-visible,
-.reorder-btn:focus-visible,
-.field-x:focus-visible,
-.x-btn:focus-visible,
-.add-item-btn:focus-visible,
-.loe-flag-btn:focus-visible,
-.methodology-intro-toggle:focus-visible,
-.sp-brief-toggle:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
+/* Service Portal / Bootstrap paint a green :focus outline or glow on mouse click. Kill that
+   chrome inside this widget (!important beats theme CSS Includes), then restore a theme-matched
+   ring only for keyboard focus (:focus-visible). Text fields keep outline off on :focus so their
+   own border/glow rules can apply; they still get --focus-ring via :focus-visible. */
+button:focus,
+a:focus,
+summary:focus,
+[role="button"]:focus,
+[role="tab"]:focus,
+[role="menuitem"]:focus,
+[tabindex]:focus,
+input[type="button"]:focus,
+input[type="submit"]:focus,
+input[type="reset"]:focus,
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+}
+
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[tabindex]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: var(--focus-ring) !important;
+  outline-offset: var(--focus-ring-offset) !important;
 }
 
 .pagehdr-title {
@@ -2570,7 +2584,8 @@ table.ttbl .jobaid {
 
 .edit-in:focus {
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(23, 184, 166, 0.22);
+  /* !important so portal's green input glow cannot win over our teal wash. */
+  box-shadow: 0 0 0 3px rgba(23, 184, 166, 0.22) !important;
 }
 
 textarea.edit-in {
@@ -3397,6 +3412,25 @@ select.edit-in option {
   font-size: 14px;
   padding: 30px 0;
   text-align: center;
+}
+
+/* Fresh-instance empty state on the Methodology view - a real call to action (not just .empty's
+   quiet status text) since this is the one moment an editor takes a genuine, deliberate action
+   rather than reading. */
+.content-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 60px 0;
+  text-align: center;
+}
+
+.content-empty-lede {
+  color: var(--ink-soft);
+  font-size: 15px;
+  max-width: 48ch;
+  margin: 0;
 }
 
 .rg-controls {

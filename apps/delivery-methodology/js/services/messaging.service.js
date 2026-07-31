@@ -77,15 +77,14 @@ angular.module('deliveryMethodology').factory('MessagingService', ['$timeout', '
       // Methodology view (the only widget with an edit bar) is its own widget/DOM subtree - see
       // ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget note.
       var bar = document.querySelector('.edit-bar');
-      if (!bar) {
-        return;
+      if (bar) {
+        var stickyTop = parseFloat(window.getComputedStyle(bar).top) || 0;
+        var target = Math.max(0, window.scrollY + bar.getBoundingClientRect().top - stickyTop);
+        window.scrollTo({
+          top: target,
+          behavior: 'smooth'
+        });
       }
-      var stickyTop = parseFloat(window.getComputedStyle(bar).top) || 0;
-      var target = Math.max(0, window.scrollY + bar.getBoundingClientRect().top - stickyTop);
-      window.scrollTo({
-        top: target,
-        behavior: 'smooth'
-      });
     }, 0);
   }
 

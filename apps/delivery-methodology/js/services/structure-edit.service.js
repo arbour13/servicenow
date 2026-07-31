@@ -216,6 +216,20 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     notify();
   }
 
+  // Default placeholder from addMethodology - must be renamed before another can be added,
+  // otherwise the header tabs stack identical "New Methodology" labels while the form only
+  // ever edits the current one.
+  function methodologyNeedsSetup(methodology) {
+    if (!methodology) {
+      return false;
+    }
+    var name = String(methodology.name || '').trim();
+    if (!name) {
+      return true;
+    }
+    return name.toLowerCase() === 'new methodology';
+  }
+
   function addMethodology() {
     if (!hooks.canEdit()) {
       MessagingService.toast('You do not have permission to edit');
@@ -227,6 +241,15 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     }
     if (!state.structureEditMode) {
       enterStructureEdit();
+    }
+    var unsettled = AppStateService.getMethodologies().find(methodologyNeedsSetup);
+    if (unsettled) {
+      AppStateService.setMethodologyId(unsettled.id);
+      AppStateService.setSubPhaseId(null);
+      AppStateService.refreshLocation();
+      notify();
+      MessagingService.toast('Name this methodology before adding another');
+      return;
     }
     var methodologyId = IdSeqService.next('methodology');
     var methodology = {
@@ -523,6 +546,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     cancelStructureEdit: cancelStructureEdit,
     saveStructureEdit: saveStructureEdit,
     renameMethodology: renameMethodology,
+    methodologyNeedsSetup: methodologyNeedsSetup,
     addMethodology: addMethodology,
     deleteMethodology: deleteMethodology,
     renamePhase: renamePhase,

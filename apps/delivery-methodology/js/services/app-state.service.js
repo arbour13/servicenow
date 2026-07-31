@@ -21,6 +21,17 @@ angular.module('deliveryMethodology').factory('AppStateService', [
   // other caller (one setter at a time, mid-session) is unaffected - silenced stays false.
   var silenced = false;
 
+  // Post-load side effects (RACI grid, job aids index, What's New hydration, the initial nav
+  // push) live in Shell's own closures over services this factory does not inject - see
+  // shell.controller.js's bootstrap call. bind() lets seedStandard() below reuse that SAME
+  // callback instead of duplicating it, the same way ContentEditService/StructureEditService/
+  // NavigationService already take a hostHooks object from Shell.
+  var hooks = {};
+
+  function bind(hostHooks) {
+    hooks = hostHooks || {};
+  }
+
   function notify() {
     if (silenced) {
       return;
@@ -222,6 +233,40 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     });
   }
 
+  // One-time "Load standard content" action, callable from any widget once loading has finished
+  // (unlike applyLoadedData, which is bootstrap-only). Runs the exact same post-load pipeline as
+  // the initial load - recompute sids, backfill participants, pick a starting sub-phase, and
+  // Shell's own bound onAfterLoad (RACI grid / job aids / What's New / nav push) - because a
+  // table that was empty a moment ago now has real methodologies/phases/tasks that every one of
+  // those needs to see for the first time, same as any other fresh load.
+  function seedStandard() {
+    if (!tryBeginSave()) {
+      return $q.reject({
+        error: 'Save already in progress'
+      });
+    }
+
+    return DataService.seedStandard().then(function (data) {
+      // No extra notify() here: applyLoadedData() below already broadcasts once at the end of
+      // its own run (in both its empty and non-empty branches), and by then state.isSaving is
+      // already false - a second broadcast would be pure redundancy, not a missed update.
+      state.isSaving = false;
+      return applyLoadedData(data, {
+        canEdit: state.canEdit,
+        onAfterLoad: hooks.onAfterLoad
+      });
+    }, function (error) {
+      state.isSaving = false;
+      notify();
+      var message = 'Could not load standard content.';
+      if (error && error.error) {
+        message = error.error;
+      }
+      MessagingService.toast(message);
+      return $q.reject(error);
+    });
+  }
+
   function applyLoadedData(data, options) {
     var loadOptions = options || {};
     silenced = true;
@@ -253,7 +298,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
       if (loadOptions.onAfterLoad) {
         loadOptions.onAfterLoad({
           empty: true
-        });
+        }, data);
       }
       return {
         empty: true
@@ -274,7 +319,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
       subPhaseId: state.subPhaseId
     };
     if (loadOptions.onAfterLoad) {
-      loadOptions.onAfterLoad(result);
+      loadOptions.onAfterLoad(result, data);
     }
     return result;
   }
@@ -342,9 +387,11 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     tryBeginSave: tryBeginSave,
     persistMethodologies: persistMethodologies,
     applyLoadedData: applyLoadedData,
+    seedStandard: seedStandard,
     readState: readState,
     bindActiveView: bindActiveView,
     subscribe: subscribe,
-    batch: batch
+    batch: batch,
+    bind: bind
   };
 }]);

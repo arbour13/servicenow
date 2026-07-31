@@ -6,7 +6,18 @@
         <div class="view-root" ng-class="{editing: c.editMode || c.structureEditMode, 'view-blur': c.searchOpen()}"
           ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
-        <p class="empty" ng-if="!c.loading && !c.methodologies.length">No methodology content yet. Use structure edit in the header to add a methodology.</p>
+        <!-- Fresh-instance empty state (methodologies.length === 0 - no seed ships with the deploy
+           artifact, so this is genuinely what a brand-new install looks like before the one-time
+           load). Editors get the action; a plain viewer gets an honest status line and no button
+           they couldn't use anyway (c.seedStandard is gated server-side on the editor/admin role,
+           same as any other write). -->
+        <div class="content-empty-state" ng-if="!c.loading && !c.methodologies.length">
+          <p class="content-empty-lede" ng-if="c.canEdit">The standard GlideFast Delivery 2.0 content hasn&rsquo;t
+            been loaded on this instance yet.</p>
+          <p class="content-empty-lede" ng-if="!c.canEdit">No methodology content yet.</p>
+          <button type="button" class="btn primary" ng-if="c.canEdit" ng-click="c.seedStandard()"
+            ng-disabled="c.isSaving">{{c.isSaving ? 'Loading…' : 'Load standard content'}}</button>
+        </div>
 
         <!-- One mounted methodology chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
          toggles visibility instead of destroying/rebuilding every station + film card. -->
@@ -89,9 +100,9 @@
           </div>
 
           <div ng-if="c.currentMethodology()">
-            <p class="struct-toolbar-hint">Rename this methodology, its phases, and sub-phases inline. Reorder with the
-              arrows, or remove them with &times;. Add another methodology from the header. Changes stay in a draft
-              until you save. Exit structure edit, then use the pencil to write content.</p>
+            <p class="struct-toolbar-hint">Rename the methodology, phases, and sub-phases inline. Reorder with the
+              arrows, or remove them with &times;. Name a new methodology before adding another. Changes stay in a
+              draft until you save. Exit structure edit, then use the pencil to write content.</p>
             <div class="struct-methodology">
               <span class="struct-methodology-label">Methodology</span>
               <input type="text" class="edit-in struct-rename" ng-model="c.currentMethodology().name"
@@ -100,6 +111,10 @@
               <button type="button" class="field-x" ng-click="c.deleteMethodology()"
                 data-tip="Delete this methodology" aria-label="Delete this methodology">&times;</button>
             </div>
+            <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()"
+              ng-disabled="c.isSaving || c.methodologyNeedsSetup(c.currentMethodology())"
+              data-tip="{{c.methodologyNeedsSetup(c.currentMethodology()) ? 'Name this methodology before adding another' : 'Add a methodology'}}">+ Add
+              methodology</button>
             <div class="struct-phase" ng-repeat="phase in c.currentMethodology().phases track by phase.id">
               <div class="struct-phase-head">
                 <span class="struct-num">{{$index + 1}}</span>

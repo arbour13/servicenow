@@ -277,6 +277,38 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
         return responseData;
       });
     },
+    // One-time "Load standard content" action for an instance whose content table is empty.
+    // Harness fallback re-derives the payload from window.DMSeed and PERSISTS it (not just an
+    // in-memory resolve) - the harness's own "empty" state only exists after a real
+    // structure-edit delete-everything-and-save, so this should make the load durable, matching
+    // what the server path does. The server itself refuses if the table isn't actually empty
+    // (see content.server.js's seedStandard action) - this method does not duplicate that guard.
+    seedStandard: function () {
+      if (!serverApi) {
+        var payload = seedPayload();
+        var seed = readSeed();
+        var seedVersion = (seed && seed.version) || 0;
+        storeMethodologies(payload.methodologies, seedVersion);
+        cacheLookups(payload);
+        return $q.resolve(payload);
+      }
+
+      return serverApi.get({
+        action: 'seedStandard'
+      }).then(function (response) {
+        var responseData = (response && response.data) || {};
+
+        if (responseData.error) {
+          return rejectServerError(responseData, 'Could not load standard content.');
+        }
+
+        var payload = fromServerData(responseData);
+        cacheLookups(payload);
+        return payload;
+      }, function () {
+        return rejectServerError(null, 'Could not load standard content.');
+      });
+    },
     // Persist What's New read map. Harness is localStorage-only (WhatsNewService); SN writes
     // the dm.changelog.seen user preference. Failures are ignored — unread UI still works in-session.
     saveChangelogSeen: function (seenMap) {

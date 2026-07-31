@@ -14,7 +14,8 @@
   var allowedActions = {
     load: true,
     save: true,
-    saveChangelogSeen: true
+    saveChangelogSeen: true,
+    seedStandard: true
   };
   var maximumSaveRows = 5000;
 
@@ -505,6 +506,44 @@
     }
   }
 
+  // One-time "Load standard content" action - offered to editors when a fresh instance's content
+  // table is empty (see js/data/standard-content.js's own header for provenance). Reuses
+  // saveContent() wholesale rather than a second insert path: dehydrate/validate/parent-link/
+  // create is exactly the same job whether the payload came from a client's edit or from this
+  // bundled starter. The ONLY new logic here is the emptiness guard, which is what makes this
+  // action structurally incapable of clobbering existing content - it refuses outright rather
+  // than relying on the save path's contentRevision check (that only catches CONCURRENT edits,
+  // not "there was already content here").
+  function hasAnyContentRecords() {
+    var contentRecord = new GlideRecordSecure(contentTable);
+    contentRecord.setLimit(1);
+    contentRecord.query();
+    return contentRecord.next();
+  }
+
+  function seedStandard() {
+    if (hasAnyContentRecords()) {
+      data.error = 'Content already exists - standard content only loads into an empty table.';
+      gs.warn(logPrefix + 'seedStandard refused - table is not empty');
+      loadContent();
+      return false;
+    }
+
+    if (typeof DMStandardContent === 'undefined') {
+      data.error = 'Standard content is not available on this instance.';
+      gs.error(logPrefix + 'seedStandard: DMStandardContent missing from the server bundle - ' +
+        'check deploy.manifest.js files.contentModel includes js/data/standard-content.js');
+      return false;
+    }
+
+    return saveContent({
+      methodologies: DMStandardContent.methodologies,
+      jobTitles: DMStandardContent.jobTitles,
+      jargon: DMStandardContent.jargon,
+      referenceSections: DMStandardContent.referenceSections
+    });
+  }
+
   function loadContent() {
     try {
       return publishContentToClient(DMContentModel.hydrate(getAllContentRecords()));
@@ -556,6 +595,18 @@
       referenceSections: input.referenceSections || [],
       contentRevision: input.contentRevision
     });
+    return;
+  }
+
+  if (action === 'seedStandard') {
+    if (!data.canEdit) {
+      data.error = 'Not authorized to edit content.';
+      gs.warn(logPrefix + 'seedStandard denied - caller lacks editor/admin');
+      loadContent();
+      return;
+    }
+
+    seedStandard();
     return;
   }
 

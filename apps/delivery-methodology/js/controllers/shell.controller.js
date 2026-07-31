@@ -129,16 +129,11 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   syncSearch();
   AppStateService.subscribe($rootScope, $scope, syncAll);
 
-  // Tabs when there is more than one methodology to switch between, or while structure-editing
-  // (so "+ Add" can sit next to the current methodology without cluttering the structure panel).
+  // Always show the switch when there is at least one methodology so a lone methodology still
+  // reads as selected (the .on tab). With more than one, the same control is the switcher.
+  // Structure edit adds "+ Add" beside the tabs (shell template) without cluttering the panel.
   c.showMethodologySwitch = function () {
-    if (c.view !== 'methodology' && c.view !== 'raci') {
-      return false;
-    }
-    if (c.methodologies.length > 1) {
-      return true;
-    }
-    return c.view === 'methodology' && c.structureEditMode && c.methodologies.length >= 1;
+    return (c.view === 'methodology' || c.view === 'raci') && c.methodologies.length >= 1;
   };
   c.pageTitle = function () {
     if (c.view === 'raci') {
@@ -241,9 +236,6 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   };
   c.switchMethodology = function (methodologyId) {
     NavigationService.switchMethodology(methodologyId);
-  };
-  c.addMethodology = function () {
-    StructureEditService.addMethodology();
   };
   c.toggleStructureEdit = function () {
     StructureEditService.toggleStructureEdit();
@@ -376,26 +368,40 @@ angular.module('deliveryMethodology').controller('DmShellController', [
     }
   });
 
+  // Runs after EITHER kind of content load: the bootstrap getData() below, or a later
+  // AppStateService.seedStandard() call from the Methodology widget's empty-state button (a
+  // table that was empty a moment ago now has real content none of these derived caches have
+  // ever seen). Named and bound via AppStateService.bind() rather than left as bootstrap's own
+  // inline closure, so seedStandard() can reuse it instead of duplicating this list. loadedData
+  // is AppStateService.applyLoadedData()'s own first argument, passed through unchanged - this
+  // is the only place changelogSeen is available (result itself only carries {empty,
+  // methodologyId, subPhaseId}).
+  function handleContentLoaded(result, loadedData) {
+    // Stamp changelog read flags from user preference + localStorage before What's New refresh.
+    refreshWhatsNew(loadedData && loadedData.changelogSeen);
+    if (!result.empty) {
+      NavigationService.remember(result.methodologyId, result.subPhaseId);
+      refreshJobAids();
+      refreshRaciGrid();
+      if (!NavigationService.applyDeepLinkFromUrl()) {
+        NavigationService.push();
+      }
+    }
+    // WhatsNewService/ReferenceService refresh() above updates THEIR OWN internal state, which
+    // has no $rootScope of its own to broadcast from - one explicit nudge here lets the
+    // What's New / Reference widgets (already mounted and listening) pick up the fresh data,
+    // matching every other cross-widget state change in this app (see AppStateService header).
+    $rootScope.$broadcast('dm-state');
+  }
+
+  AppStateService.bind({
+    onAfterLoad: handleContentLoaded
+  });
+
   function applyLoadedData(data) {
     AppStateService.applyLoadedData(data, {
       canEdit: c.data && c.data.canEdit,
-      onAfterLoad: function (result) {
-        // Stamp changelog read flags from user preference + localStorage before What's New refresh.
-        refreshWhatsNew(data && data.changelogSeen);
-        if (!result.empty) {
-          NavigationService.remember(result.methodologyId, result.subPhaseId);
-          refreshJobAids();
-          refreshRaciGrid();
-          if (!NavigationService.applyDeepLinkFromUrl()) {
-            NavigationService.push();
-          }
-        }
-        // WhatsNewService/ReferenceService refresh() above updates THEIR OWN internal state, which
-        // has no $rootScope of its own to broadcast from - one explicit nudge here lets the
-        // What's New / Reference widgets (already mounted and listening) pick up the fresh data,
-        // matching every other cross-widget state change in this app (see AppStateService header).
-        $rootScope.$broadcast('dm-state');
-      }
+      onAfterLoad: handleContentLoaded
     });
   }
 

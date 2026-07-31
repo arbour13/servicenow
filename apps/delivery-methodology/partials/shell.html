@@ -144,9 +144,6 @@
               <div class="methodology-switch" ng-if="c.showMethodologySwitch()">
                 <button type="button" class="methodology-tab" ng-class="{on: methodology.id === c.methodologyId}"
                   ng-repeat="methodology in c.methodologies track by methodology.id" ng-click="c.switchMethodology(methodology.id)">{{methodology.name}}</button>
-                <button type="button" class="methodology-tab methodology-add"
-                  ng-if="c.view === 'methodology' && c.structureEditMode && c.canEdit"
-                  ng-click="c.addMethodology()" data-tip="Add a methodology" aria-label="Add a methodology">+ Add</button>
               </div>
               <button type="button" class="struct-icon-btn" ng-if="c.view === 'methodology' && c.structureEditUiEnabled && c.canEdit"
                 ng-class="{on: c.structureEditMode}" ng-click="c.toggleStructureEdit()"
@@ -157,9 +154,13 @@
                   stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('pencil')"></svg>
               </button>
             </div>
-            <p class="empty" ng-if="!c.loading && !c.methodologies.length && (c.view === 'methodology' || c.view === 'raci')">
-              No methodology content is loaded yet. Editors can use the structure edit button to add a methodology.
-              This page needs all five Delivery Methodology widgets (Shell plus the four view widgets) stacked in one column — not Shell alone.
+            <!-- RACI-only now: the Methodology view has its own richer empty state (the
+               "Load standard content" flow), so showing this SAME condition there too would be a
+               confusing duplicate above it. RACI has no per-widget empty state of its own to defer
+               to, so it still needs a fallback - pointed at Methodology, where the real action lives. -->
+            <p class="empty" ng-if="!c.loading && !c.methodologies.length && c.view === 'raci'">
+              No methodology content yet. Switch to Methodology to load the standard content, or add one via
+              structure edit.
             </p>
           </div>
 
