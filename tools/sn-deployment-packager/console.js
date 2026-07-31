@@ -530,6 +530,7 @@
   function closeModal(result) {
     if (!modalResolve) { return; }
     modalOverlay.hidden = true;
+    syncModalBackdrop();
     var resolve = modalResolve;
     modalResolve = null;
     document.removeEventListener('keydown', onModalKeydown, true);
@@ -578,6 +579,7 @@
         modalInput.value = '';
       }
       modalOverlay.hidden = false;
+      syncModalBackdrop();
       document.addEventListener('keydown', onModalKeydown, true);
       setTimeout(function () {
         if (opts.input) { modalInput.focus(); modalInput.select(); }
@@ -1015,22 +1017,29 @@
     return { ok: true, tip: '' };
   }
 
+  // True from Deploy click until the progress modal finishes (success or failure). Bridge polling
+  // and credential-sync callbacks also call updateSdkBridgeButtons(); without this flag those
+  // refresh paths re-enable the button mid-deploy because every other gate is still satisfied.
+  var deployInFlight = false;
+
   function updateSdkBridgeButtons() {
     var credsReady = !!(fldInstanceUrl.value.trim() && fldUsername.value.trim() && fldPassword.value);
     var versionGate = versionReadyForDeploy();
-    var canDeploy = !!(sdkBridgeUp && sessionConnected && credsReady && currentFolder && currentParts &&
-      isScopeComplete() && versionGate.ok);
-    var reason = !sdkBridgeUp
-      ? 'Start the SDK bridge: ' + bridgeStartCommand()
-      : (!sessionConnected
-        ? 'Connect to the instance first'
-        : (!credsReady
-          ? 'Enter the instance URL, username, and password'
-          : (!isScopeComplete()
-            ? 'Finish the App ID before deploying'
-            : (!versionGate.ok
-              ? versionGate.tip
-              : 'Sync Connect credentials to Now SDK, rebuild Fluent, and install on the instance'))));
+    var canDeploy = !deployInFlight && !!(sdkBridgeUp && sessionConnected && credsReady && currentFolder &&
+      currentParts && isScopeComplete() && versionGate.ok);
+    var reason = deployInFlight
+      ? 'Deploy already in progress'
+      : (!sdkBridgeUp
+        ? 'Start the SDK bridge: ' + bridgeStartCommand()
+        : (!sessionConnected
+          ? 'Connect to the instance first'
+          : (!credsReady
+            ? 'Enter the instance URL, username, and password'
+            : (!isScopeComplete()
+              ? 'Finish the App ID before deploying'
+              : (!versionGate.ok
+                ? versionGate.tip
+                : 'Sync Connect credentials to Now SDK, rebuild Fluent, and install on the instance')))));
     if (deploySdkBtn) {
       deploySdkBtn.disabled = !canDeploy;
       setTip(deploySdkBtnTip, reason);
@@ -1041,6 +1050,12 @@
     if (deployReadiness) {
       deployReadiness.textContent = canDeploy ? '' : reason;
     }
+  }
+
+  function syncModalBackdrop() {
+    var dialogOpen = !!(modalOverlay && !modalOverlay.hidden);
+    var deployOpen = !!(deployModalOverlay && !deployModalOverlay.hidden);
+    document.body.classList.toggle('modal-open', dialogOpen || deployOpen);
   }
 
   // Upload/Download used to live here; SDK-only console has just the one button - alias kept so
@@ -1299,6 +1314,7 @@
     setDeployProgress(0);
     deployModalDoneBtn.hidden = true;
     deployModalOverlay.hidden = false;
+    syncModalBackdrop();
     document.addEventListener('keydown', onDeployModalKeydown, true);
     // Nothing inside is focusable until Done appears (see trapTabWithin) - park focus on the modal
     // itself so Tab has a sane starting point instead of staying wherever it was on the page behind.
@@ -1329,12 +1345,17 @@
     deployModalFinished = true;
     deployModalDoneBtn.hidden = false;
     deployModalDoneBtn.textContent = success ? 'Done' : 'Close';
+    // Keep deployInFlight until the modal is dismissed so bridge polls cannot re-enable Deploy
+    // while Done/Close is still up (and so a second deploy cannot start underneath it).
   }
 
   function closeDeployModal() {
     if (!deployModalFinished) { return; }
     deployModalOverlay.hidden = true;
+    deployInFlight = false;
+    syncModalBackdrop();
     document.removeEventListener('keydown', onDeployModalKeydown, true);
+    updateSdkBridgeButtons();
   }
 
   // Maps a 0-100 bridge-reported pct onto a sub-range of the modal's overall bar, so auth and
@@ -1345,9 +1366,12 @@
   }
 
   function onDeploySdkClick() {
-    if (!sessionConnected || !sdkBridgeUp || !currentFolder || !currentParts) { return; }
+    if (deployInFlight || !sessionConnected || !sdkBridgeUp || !currentFolder || !currentParts) {
+      return;
+    }
     var alias = sdkSyncedAlias || aliasFromInstanceUrl(fldInstanceUrl.value);
-    if (deploySdkBtn) { deploySdkBtn.disabled = true; }
+    deployInFlight = true;
+    updateSdkBridgeButtons();
     openDeployModal();
     setDeployStatus('Syncing Connect credentials to Now SDK…');
 
@@ -1368,7 +1392,6 @@
       if (authFailed) {
         setDeployStatus('Deploy failed during credential sync.');
         finishDeployModal(false);
-        updateSdkBridgeButtons();
         return;
       }
       setDeployStatus('Building the Fluent project and installing on the instance…');
@@ -1394,13 +1417,11 @@
           finishDeployModal(true);
           runDetectAndLookup();
         }
-        updateSdkBridgeButtons();
       });
     }).catch(function (err) {
       appendDeployLog('Deploy failed: ' + ((err && err.message) || err), true);
       setDeployStatus('Deploy failed.');
       finishDeployModal(false);
-      updateSdkBridgeButtons();
     });
   }
 

@@ -900,15 +900,36 @@ textarea:focus-visible {
   animation: dmColumnIn 0.22s ease-out both;
 }
 
-/* Filmstrip cards render instantly, no entry animation - see .fcard's own comment on why transform
-   is :hover's alone, and methodology.controller.js's note on selectPhase/openSubPhase for why
-   selection itself carries no motion either. */
+/* Filmstrip cards stagger in when the selected PHASE changes. Every phase's strip stays mounted
+   (ng-show, not ng-if - see the template note about not rebuilding cards), so the cards are never
+   recreated and there is no enter event to hook; selectPhase restages dmCardIn via the Web
+   Animations API. Per-card delay comes from --i (set on each card in the template), capped so a
+   long phase never trails a long ripple. */
+@keyframes dmCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.film .fcard {
+  /* backwards (not both): keep the from-state during the stagger delay, then RELEASE transform
+     when the animation ends so .fcard:hover's translateY lift can apply. `both`/`forwards` left
+     transform: translateY(0) pinned and silently killed the hover. */
+  animation: dmCardIn 0.24s ease-out backwards;
+  animation-delay: calc(var(--i, 0) * 0.035s);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .search-overlay,
   .msg-overlay,
   .search-modal,
   .msg-dialog,
+  .film .fcard,
   .rg-roles-shown .rg-table th.rg-rolecol,
   .rg-roles-shown .rg-table tbody td:not(.tname),
   .rg-roles-shown .rg-table tfoot td:not(.tname) {

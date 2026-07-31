@@ -642,17 +642,17 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
    pinned to this app's other transition timing (0.24s, same as .clp above) rather than left at
    the browser's own default so it doesn't silently drift. prefers-reduced-motion is handled in
    JS (the controller skips the API entirely), matching how .clp handles it above - a duration
-   override here would be a no-op in that case since the API is never invoked. */.dm-widget ::view-transition-old(root), .dm-widget ::view-transition-new(root) {
+   override here would be a no-op in that case since the API is never invoked. */::view-transition-old(root), ::view-transition-new(root) {
   animation-duration: 0.24s;
 }/* Modal entry (search results, confirm dialog). Both used to pop in with no transition at all,
    which read as a jump-cut against the backdrop blur fading in behind them over 0.2s. Timing and
    shape deliberately match .toast (opacity + a small translate, ~0.2s) so every overlay in the app
    arrives the same way. Scale starts at 0.98 rather than something showier: these are interruptions
    the reader did not ask to admire, and a large scale reads as a bounce. Entry only - AngularJS
-   removes these from the DOM on close with no ngAnimate leave hook available. */.dm-widget @keyframes dmOverlayIn {
+   removes these from the DOM on close with no ngAnimate leave hook available. */@keyframes dmOverlayIn {
   from { opacity: 0; }
   to { opacity: 1; }
-}.dm-widget @keyframes dmDialogIn {
+}@keyframes dmDialogIn {
   from {
     opacity: 0;
     transform: translateY(8px) scale(0.98);
@@ -668,14 +668,31 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
 }/* Role columns revealed by "Show all roles" fade in rather than snapping: seven columns appearing
    at once is a large layout change, and the fade is what connects the button press to the result.
    Applied to the cells (not a width animation on the columns) because the table lays itself out in
-   one pass - animating column width would fight the layout algorithm and reflow every row. */.dm-widget @keyframes dmColumnIn {
+   one pass - animating column width would fight the layout algorithm and reflow every row. */@keyframes dmColumnIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }.dm-widget .rg-roles-shown .rg-table th.rg-rolecol, .dm-widget .rg-roles-shown .rg-table tbody td:not(.tname), .dm-widget .rg-roles-shown .rg-table tfoot td:not(.tname) {
   animation: dmColumnIn 0.22s ease-out both;
-}/* Filmstrip cards render instantly, no entry animation - see .fcard's own comment on why transform
-   is :hover's alone, and methodology.controller.js's note on selectPhase/openSubPhase for why
-   selection itself carries no motion either. */@media (prefers-reduced-motion: reduce) {.dm-widget .search-overlay, .dm-widget .msg-overlay, .dm-widget .search-modal, .dm-widget .msg-dialog, .dm-widget .rg-roles-shown .rg-table th.rg-rolecol, .dm-widget .rg-roles-shown .rg-table tbody td:not(.tname), .dm-widget .rg-roles-shown .rg-table tfoot td:not(.tname) {
+}/* Filmstrip cards stagger in when the selected PHASE changes. Every phase's strip stays mounted
+   (ng-show, not ng-if - see the template note about not rebuilding cards), so the cards are never
+   recreated and there is no enter event to hook; selectPhase restages dmCardIn via the Web
+   Animations API. Per-card delay comes from --i (set on each card in the template), capped so a
+   long phase never trails a long ripple. */@keyframes dmCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}.dm-widget .film .fcard {
+  /* backwards (not both): keep the from-state during the stagger delay, then RELEASE transform
+     when the animation ends so .fcard:hover's translateY lift can apply. `both`/`forwards` left
+     transform: translateY(0) pinned and silently killed the hover. */
+  animation: dmCardIn 0.24s ease-out backwards;
+  animation-delay: #{'calc(var(--i, 0) * 0.035s)'};
+}@media (prefers-reduced-motion: reduce) {.dm-widget .search-overlay, .dm-widget .msg-overlay, .dm-widget .search-modal, .dm-widget .msg-dialog, .dm-widget .film .fcard, .dm-widget .rg-roles-shown .rg-table th.rg-rolecol, .dm-widget .rg-roles-shown .rg-table tbody td:not(.tname), .dm-widget .rg-roles-shown .rg-table tfoot td:not(.tname) {
     animation: none;
   }
 }@media (prefers-reduced-motion: reduce) {.dm-widget .clp, .dm-widget .clp-inner {
@@ -1198,7 +1215,7 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   max-width: 72ch;
 }.dm-widget .pchange b {
   color: var(--on-accent-ink);
-}/* Deep-link / RACI jump target - background pulse (fill, not box-shadow) so it works on <tr>. */.dm-widget @keyframes jumpPulse {
+}/* Deep-link / RACI jump target - background pulse (fill, not box-shadow) so it works on <tr>. */@keyframes jumpPulse {
   0% { background-color: transparent; }
   8% { background-color: #{'color-mix(in srgb, var(--teal) 35%, transparent)'}; }
   100% { background-color: transparent; }

@@ -385,10 +385,16 @@
   .modal-overlay {
     position: fixed; inset: 0; z-index: 200;
     background: rgba(10, 12, 18, .55);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
     display: flex; align-items: center; justify-content: center;
     padding: var(--sp-xxl);
   }
   .modal-overlay[hidden] { display: none; }
+  /* While any modal is open: freeze page scroll under the overlay. */
+  body.modal-open {
+    overflow: hidden;
+  }
   .modal {
     width: min(420px, 100%);
     background: var(--panel); border: 1px solid var(--border-strong);
@@ -702,6 +708,6 @@
 <script src="semver.js?v=20260727o"></script>
 <script src="instance.js?v=20260727o"></script>
 <script src="fluent.js?v=20260727o"></script>
-<script src="console.js?v=20260731a"></script>
+<script src="console.js?v=20260731c"></script>
 </body>
 </html>

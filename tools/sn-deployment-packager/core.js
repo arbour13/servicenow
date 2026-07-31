@@ -211,11 +211,20 @@
         if (!s) { return s; }
         if (s === 'html' || s === 'body' || s === ':root' || s === 'html, body') { return scope; }
         if (s.indexOf(':root[') === 0) { return scope + s.slice(5); }
+        // View-transition pseudos live on the document overlay, not under the widget root.
+        if (s.indexOf('::view-transition') === 0) { return s; }
         if (s === '*') { return scope + ' *'; }
         if (s.indexOf('body ') === 0) { return scope + ' ' + s.slice(5); }
         if (s.indexOf('html ') === 0) { return scope + ' ' + s.slice(5); }
         return scope + ' ' + s;
       }).join(', ');
+    }
+    function isAtRuleWithoutScopedBody(selector) {
+      // @keyframes names are global; prefixing yields invalid ".scope @keyframes name".
+      // @font-face / @property similarly must stay unprefixed.
+      return /^@(?:-?\w+-)?keyframes\b/.test(selector)
+        || /^@font-face\b/.test(selector)
+        || /^@property\b/.test(selector);
     }
     function findRuleEnd(src, openBraceIdx, end) {
       var depth = 1, j = openBraceIdx + 1, strc = null;
@@ -269,8 +278,10 @@
         if (ch === '{') {
           var selector = src.slice(stmtStart, i).trim();
           var bodyEnd = findRuleEnd(src, i, end);
-          if (/^@media/.test(selector)) {
+          if (/^@media\b/.test(selector) || /^@supports\b/.test(selector) || /^@container\b/.test(selector)) {
             out += selector + ' {' + scanBlock(src, i + 1, bodyEnd) + '}';
+          } else if (isAtRuleWithoutScopedBody(selector)) {
+            out += selector + ' {' + src.slice(i + 1, bodyEnd) + '}';
           } else {
             out += prefixSelector(selector) + ' {' + src.slice(i + 1, bodyEnd) + '}';
           }
@@ -305,16 +316,57 @@
     function replaceFn(src, name, shouldWrap) {
       var out = '', i = 0, needle = name + '(';
       while (i < src.length) {
+        // Skip already-wrapped Sass literals from an earlier pass (e.g. calc then min) so we
+        // never nest #{'…#{'…'}…'} and break the quote escaping. Also skip ordinary Sass
+        // interpolations (#{…}) so a later function name inside them is left alone and we never
+        // spin on `#{$token}` (hashAt === 0 with no quoted-literal skip).
+        if (src[i] === '#' && src[i + 1] === '{') {
+          var quote = src[i + 2];
+          var litEnd = i + 2;
+          if (quote === "'" || quote === '"') {
+            litEnd = i + 3;
+            while (litEnd < src.length) {
+              if (src[litEnd] === '\\') { litEnd += 2; continue; }
+              if (src[litEnd] === quote && src[litEnd + 1] === '}') {
+                litEnd += 2;
+                break;
+              }
+              litEnd++;
+            }
+          } else {
+            var braceDepth = 1;
+            litEnd = i + 2;
+            while (litEnd < src.length && braceDepth > 0) {
+              if (src[litEnd] === '{') { braceDepth++; }
+              else if (src[litEnd] === '}') { braceDepth--; }
+              litEnd++;
+            }
+          }
+          out += src.slice(i, litEnd);
+          i = litEnd;
+          continue;
+        }
         var idx = src.indexOf(needle, i);
         if (idx < 0) { out += src.slice(i); break; }
+        // Copy up to the match, but stop early if a #{…} appears first so the skip above can
+        // consume it (avoids matching function names that only exist inside interpolations).
+        if (idx > i) {
+          var chunk = src.slice(i, idx);
+          var hashAt = chunk.indexOf('#{');
+          if (hashAt >= 0) {
+            out += src.slice(i, i + hashAt);
+            i = i + hashAt;
+            continue;
+          }
+          out += chunk;
+        }
         // Word boundary: don't match `rgb` inside `rgba`, `max` inside `minmax`, etc.
         var prev = idx === 0 ? '' : src[idx - 1];
         if (prev && /[A-Za-z0-9_-]/.test(prev)) {
-          out += src.slice(i, idx + 1);
+          out += src.slice(idx, idx + 1);
           i = idx + 1;
           continue;
         }
-        out += src.slice(i, idx);
         var open = idx + needle.length - 1;
         var depth = 0, j = open;
         for (; j < src.length; j++) {

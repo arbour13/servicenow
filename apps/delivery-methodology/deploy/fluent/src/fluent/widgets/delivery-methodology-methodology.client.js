@@ -1,4 +1,4 @@
-api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService, ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService, RaciGridService, UrlPolicyService, SearchService, MessagingService) {
+api.controller = function ($rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService, ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService, RaciGridService, UrlPolicyService, SearchService, MessagingService) {
   'use strict';
   var c = this;
 
@@ -274,15 +274,39 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
     });
   };
 
-  // Selecting a phase or sub-phase applies INSTANTLY - no animation of any kind on the cards or
-  // on the panel content, and no scroll. Several layered attempts at motion here (a whole-page
-  // View Transition, then a panel-scoped one, a filmstrip stagger, an entry translate, an animated
-  // accent rail, a scroll-into-view) each produced their own visible jump on click. Selection is a
-  // high-frequency, precise action taken with the pointer already resting on the target - it wants
-  // to feel like nothing moved except the content being replaced. The card's ONLY movement is
-  // :hover's lift; the panel just swaps.
+  // Replays the filmstrip's stagger when the selected PHASE changes. Every phase's strip stays
+  // mounted (ng-show), so cards are never recreated - and a display:none → visible flip does NOT
+  // restart their CSS animation. Sub-phase clicks do not restage (and do not View-Transition the
+  // panel) - only the card set change wants motion.
+  function restageFilmstrip() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    $timeout(function () {
+      var cards = document.querySelectorAll(
+        '.view-root .methodology-chrome:not(.ng-hide) .film:not(.ng-hide) .fcard'
+      );
+      var index;
+
+      for (index = 0; index < cards.length; index++) {
+        if (typeof cards[index].getAnimations !== 'function') {
+          return;
+        }
+
+        cards[index].getAnimations().forEach(function (animation) {
+          if (animation.animationName === 'dmCardIn') {
+            animation.cancel();
+            animation.play();
+          }
+        });
+      }
+    }, 0);
+  }
+
   c.selectPhase = function (phaseIndex) {
     NavigationService.selectPhase(phaseIndex);
+    restageFilmstrip();
   };
   c.openSubPhase = function (subPhaseId) {
     NavigationService.openSubPhase(subPhaseId);
