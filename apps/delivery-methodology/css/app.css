@@ -1671,20 +1671,24 @@ h1.sp-title {
   color: var(--on-accent-ink);
 }
 
-/* Deep-link / RACI jump target - background pulse (fill, not box-shadow) so it works on <tr>. */
+/* Deep-link / RACI jump target - fill + inset ring so it reads on <tr>, panels, and SP themes.
+   Prefer plain rgba over color-mix: older portal browsers / SP CSS pipelines drop color-mix. */
 @keyframes jumpPulse {
   0% {
     background-color: transparent;
+    box-shadow: none;
   }
-  8% {
-    background-color: color-mix(in srgb, var(--teal) 35%, transparent);
+  12% {
+    background-color: rgba(45, 212, 191, 0.32);
+    box-shadow: inset 0 0 0 2px var(--teal);
   }
   100% {
     background-color: transparent;
+    box-shadow: none;
   }
 }
 .jump-hl {
-  animation: jumpPulse 2s ease-out 1;
+  animation: jumpPulse 2.4s ease-out 1;
 }
 
 .pchange-list {

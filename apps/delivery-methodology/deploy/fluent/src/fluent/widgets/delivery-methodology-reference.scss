@@ -1215,12 +1215,22 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   max-width: 72ch;
 }.dm-widget .pchange b {
   color: var(--on-accent-ink);
-}/* Deep-link / RACI jump target - background pulse (fill, not box-shadow) so it works on <tr>. */@keyframes jumpPulse {
-  0% { background-color: transparent; }
-  8% { background-color: #{'color-mix(in srgb, var(--teal) 35%, transparent)'}; }
-  100% { background-color: transparent; }
+}/* Deep-link / RACI jump target - fill + inset ring so it reads on <tr>, panels, and SP themes.
+   Prefer plain rgba over color-mix: older portal browsers / SP CSS pipelines drop color-mix. */@keyframes jumpPulse {
+  0% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+  12% {
+    background-color: rgba(45, 212, 191, 0.32);
+    box-shadow: inset 0 0 0 2px var(--teal);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
 }.dm-widget .jump-hl {
-  animation: jumpPulse 2s ease-out 1;
+  animation: jumpPulse 2.4s ease-out 1;
 }.dm-widget .pchange-list {
   list-style: none;
   margin: 8px 0 0;

@@ -2,8 +2,8 @@
    Bind host hooks once after the controller's location helpers exist - avoids DI cycles
    with Raci/Search/WhatsNew. */
 angular.module('deliveryMethodology').factory('NavigationService', [
-  '$timeout', 'MessagingService', 'SearchService', 'AppStateService', 'MethodologyDomainService',
-  function ($timeout, MessagingService, SearchService, AppStateService, MethodologyDomainService) {
+  '$timeout', '$location', 'MessagingService', 'SearchService', 'AppStateService', 'MethodologyDomainService',
+  function ($timeout, $location, MessagingService, SearchService, AppStateService, MethodologyDomainService) {
   'use strict';
 
   var navStack = [];
@@ -12,12 +12,136 @@ angular.module('deliveryMethodology').factory('NavigationService', [
   var methodologySubPhaseById = {};
   var hooks = {};
 
+  // Service Portal / ESC often rewrites the URL (Angular $location) and can drop unknown query
+  // params before content finishes loading. Capture deep-link intent as soon as this factory
+  // first runs, then also re-read at apply time from search + hash + top.location.
+  var pendingDeepLink = captureDeepLinkFromWindow();
+
   function bind(hostHooks) {
     if (hostHooks) {
       hooks = hostHooks;
     } else {
       hooks = {};
     }
+  }
+
+  function decodeParam(value) {
+    try {
+      return decodeURIComponent(String(value || '').replace(/\+/g, ' '));
+    } catch (error) {
+      return String(value || '');
+    }
+  }
+
+  function parseQueryString(query) {
+    var params = {};
+    String(query || '').split('&').forEach(function (pair) {
+      if (!pair) {
+        return;
+      }
+      var eq = pair.indexOf('=');
+      var key = decodeParam(eq >= 0 ? pair.slice(0, eq) : pair);
+      var value = decodeParam(eq >= 0 ? pair.slice(eq + 1) : '');
+      if (key) {
+        params[key] = value;
+      }
+    });
+    return params;
+  }
+
+  function queryStringsFromHref(href) {
+    var queries = [];
+    if (!href) {
+      return queries;
+    }
+    var hashIndex = href.indexOf('#');
+    var beforeHash = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
+    var hash = hashIndex >= 0 ? href.slice(hashIndex + 1) : '';
+    var qIndex = beforeHash.indexOf('?');
+    if (qIndex >= 0) {
+      queries.push(beforeHash.slice(qIndex + 1));
+    }
+    if (hash) {
+      var hashQueryIndex = hash.indexOf('?');
+      if (hashQueryIndex >= 0) {
+        queries.push(hash.slice(hashQueryIndex + 1));
+      } else if (hash.indexOf('=') >= 0) {
+        queries.push(hash);
+      }
+    }
+    return queries;
+  }
+
+  function readLocationHrefs() {
+    var hrefs = [];
+    try {
+      if (window.location && window.location.href) {
+        hrefs.push(window.location.href);
+      }
+    } catch (error) {
+      // ignore
+    }
+    try {
+      if (window.top && window.top.location && window.top.location.href) {
+        hrefs.push(window.top.location.href);
+      }
+    } catch (crossOriginError) {
+      // Widget may be cross-origin relative to top; search/hash on window still work.
+    }
+    return hrefs;
+  }
+
+  function deepLinkFromParams(params) {
+    var sub = params.dm_sub || params.sub || '';
+    var el = params.dm_el || params.el || '';
+    var sid = params.dm_sid || params.sid || '';
+    var meth = params.dm_meth || params.meth || params.methodology || '';
+    if (!sub && !sid) {
+      return null;
+    }
+    return {
+      sub: sub,
+      el: el,
+      sid: sid,
+      meth: meth
+    };
+  }
+
+  function captureDeepLinkFromWindow() {
+    var hrefs = readLocationHrefs();
+    var index;
+    for (index = 0; index < hrefs.length; index++) {
+      var queries = queryStringsFromHref(hrefs[index]);
+      var queryIndex;
+      for (queryIndex = 0; queryIndex < queries.length; queryIndex++) {
+        var link = deepLinkFromParams(parseQueryString(queries[queryIndex]));
+        if (link) {
+          return link;
+        }
+      }
+    }
+    try {
+      if ($location && typeof $location.search === 'function') {
+        return deepLinkFromParams($location.search() || {});
+      }
+    } catch (locationError) {
+      // $location may throw if used too early; href parse above is enough.
+    }
+    return null;
+  }
+
+  function resolveDeepLinkLocation(link) {
+    var methodologies = AppStateService.getMethodologies();
+    if (link.sub) {
+      var byId = MethodologyDomainService.findSubPhase(methodologies, link.sub);
+      if (byId) {
+        return byId;
+      }
+    }
+    if (link.sid) {
+      return MethodologyDomainService.findSubPhaseBySid(methodologies, link.sid, link.meth || null);
+    }
+    return null;
   }
 
   function snapshot() {
@@ -176,7 +300,11 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     if (!elementKey) {
       return;
     }
-    $timeout(function () {
+    var attempts = 0;
+    var maxAttempts = 20;
+
+    function attempt() {
+      attempts += 1;
       // Broadened from '.main [data-el]' to a page-wide query: '.main' no longer exists once the
       // Methodology view is its own widget/DOM subtree, separate from Shell's - see
       // ServiceNow/apps/delivery-methodology/CLAUDE.md's multi-widget note.
@@ -189,10 +317,23 @@ angular.module('deliveryMethodology').factory('NavigationService', [
         }
       }
       if (!target) {
+        if (attempts < maxAttempts) {
+          $timeout(attempt, 50);
+        }
         return;
       }
+
+      var behavior = 'smooth';
+      try {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          behavior = 'auto';
+        }
+      } catch (error) {
+        behavior = 'smooth';
+      }
+
       target.scrollIntoView({
-        behavior: 'smooth',
+        behavior: behavior,
         block: 'center'
       });
       target.classList.remove('jump-hl');
@@ -200,8 +341,11 @@ angular.module('deliveryMethodology').factory('NavigationService', [
       target.classList.add('jump-hl');
       $timeout(function () {
         target.classList.remove('jump-hl');
-      }, 2000);
-    }, 0);
+      }, 2400);
+    }
+
+    // Retries cover Methodology ng-if mount + the sibling-widget digest kick on Service Portal.
+    $timeout(attempt, 0);
   }
 
   function jumpTo(subPhaseId, methodologyId, elementKey) {
@@ -228,15 +372,18 @@ angular.module('deliveryMethodology').factory('NavigationService', [
 
   function applyDeepLinkFromUrl() {
     try {
-      var params = new URLSearchParams(window.location.search || '');
-      var subPhaseId = params.get('sub');
-      if (!subPhaseId) {
+      var link = pendingDeepLink || captureDeepLinkFromWindow();
+      pendingDeepLink = null;
+      if (!link) {
         return false;
       }
-      var location = MethodologyDomainService.findSubPhase(AppStateService.getMethodologies(), subPhaseId);
-      if (!location) {
+
+      var location = resolveDeepLinkLocation(link);
+      if (!location || !location.subPhase) {
         return false;
       }
+
+      var subPhaseId = location.subPhase.id;
       AppStateService.batch(function () {
         AppStateService.setMethodologyId(location.methodology.id);
         AppStateService.setView('methodology');
@@ -246,7 +393,11 @@ angular.module('deliveryMethodology').factory('NavigationService', [
         afterOpenSubPhase();
       });
       push();
-      focusJumpTarget(params.get('el'));
+
+      // Task rows use data-el="task:…"; the content panel uses data-el="sub:…" so a bare
+      // sub-phase link still scrolls and pulses something visible.
+      var elementKey = link.el || ('sub:' + subPhaseId);
+      focusJumpTarget(elementKey);
       return true;
     } catch (deepLinkError) {
       return false;

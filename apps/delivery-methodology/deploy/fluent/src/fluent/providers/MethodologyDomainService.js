@@ -105,6 +105,42 @@
     return null;
   }
 
+  // Deep links can use display sids (1.2) when the stable seed id is unknown. Optional
+  // methodologyId disambiguates Project vs GRS (both have a 1.2).
+  function findSubPhaseBySid(methodologies, sid, methodologyId) {
+    if (!sid) {
+      return null;
+    }
+    var want = String(sid);
+    var match = null;
+    for (var methodologyIndex = 0; methodologyIndex < (methodologies || []).length; methodologyIndex++) {
+      var methodology = methodologies[methodologyIndex];
+      if (methodologyId && methodology.id !== methodologyId) {
+        continue;
+      }
+      for (var phaseIndex = 0; phaseIndex < (methodology.phases || []).length; phaseIndex++) {
+        var phase = methodology.phases[phaseIndex];
+        var subPhase = (phase.subPhases || []).find(function (candidate) {
+          return String(candidate.sid) === want;
+        });
+        if (subPhase) {
+          match = {
+            methodology: methodology,
+            phase: phase,
+            phaseIndex: phaseIndex,
+            subPhase: subPhase
+          };
+          if (methodologyId) {
+            return match;
+          }
+          // Prefer the first methodology (seed order: Project before GRS) when meth is omitted.
+          return match;
+        }
+      }
+    }
+    return match;
+  }
+
   function participantsOf(jobTitles, subPhase) {
     return sortJobTitleIds(jobTitles, subPhase && subPhase.participants).map(function (jobTitleId) {
       return jobTitleById(jobTitles, jobTitleId);
@@ -216,6 +252,7 @@
     sortJobTitleIds: sortJobTitleIds,
     isExternalJobTitle: isExternalJobTitle,
     findSubPhase: findSubPhase,
+    findSubPhaseBySid: findSubPhaseBySid,
     participantsOf: participantsOf,
     taskTableRoles: taskTableRoles,
     computeLoeRows: computeLoeRows,
