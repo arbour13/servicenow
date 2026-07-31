@@ -5639,7 +5639,8 @@ if (typeof self !== 'undefined') {
     load: true,
     save: true,
     saveChangelogSeen: true,
-    seedStandard: true
+    seedStandard: true,
+    clearAll: true
   };
   var maximumSaveRows = 5000;
 
@@ -5670,8 +5671,13 @@ if (typeof self !== 'undefined') {
   }
 
   var appScopeName = getAppScopeName();
-  data.canEdit = !!(appScopeName
-    && (gs.hasRole(appScopeName + '.editor') || gs.hasRole(appScopeName + '.admin')));
+  var isSystemAdmin = gs.hasRole('admin');
+  var isAppAdmin = !!(appScopeName && gs.hasRole(appScopeName + '.admin'));
+  var isAppEditor = !!(appScopeName && gs.hasRole(appScopeName + '.editor'));
+  // Import + normal content edit: app editor/admin, or platform admin.
+  data.canEdit = !!(isAppEditor || isAppAdmin || isSystemAdmin);
+  // Clear all content: app admin or platform admin only (not editors).
+  data.canAdmin = !!(isAppAdmin || isSystemAdmin);
 
   var contentTable = getContentTableName();
   // Client LiveSyncService watches this table via spUtil.recordWatch.
@@ -6247,6 +6253,24 @@ if (typeof self !== 'undefined') {
     }
 
     seedStandard();
+    return;
+  }
+
+  if (action === 'clearAll') {
+    if (!data.canAdmin) {
+      data.error = 'Not authorized to clear all content.';
+      gs.warn(logPrefix + 'clearAll denied - caller lacks app/system admin');
+      loadContent();
+      return;
+    }
+
+    saveContent({
+      methodologies: [],
+      jobTitles: [],
+      jargon: {},
+      referenceSections: [],
+      contentRevision: input && input.contentRevision
+    });
     return;
   }
 

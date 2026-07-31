@@ -198,7 +198,6 @@
   var deployModalStatus = document.getElementById('deployModalStatus');
   var deployProgressFill = document.getElementById('deployProgressFill');
   var deployProgressLog = document.getElementById('deployProgressLog');
-  var deployModalCloseBtn = document.getElementById('deployModalCloseBtn');
   var deployModalDoneBtn = document.getElementById('deployModalDoneBtn');
 
   var eligibleApps = {};    // folder -> descriptor
@@ -1191,7 +1190,6 @@
     setDeployStatus('Starting…');
     deployProgressLog.innerHTML = '';
     setDeployProgress(0);
-    deployModalCloseBtn.hidden = true;
     deployModalDoneBtn.hidden = true;
     deployModalOverlay.hidden = false;
   }
@@ -1213,11 +1211,10 @@
     deployModalStatus.textContent = text || '';
   }
 
-  // Only Done/Close ends the modal - see openDeployModal's header comment: while a deploy is in
-  // flight both buttons stay hidden so there's no way to dismiss progress mid-stream.
+  // Only Done ends the modal. While a deploy is in flight the button stays hidden so the modal
+  // cannot be dismissed mid-stream.
   function finishDeployModal(success) {
     deployModalFinished = true;
-    deployModalCloseBtn.hidden = false;
     deployModalDoneBtn.hidden = false;
     deployModalDoneBtn.textContent = success ? 'Done' : 'Close';
   }
@@ -1777,7 +1774,6 @@
   connectBtn.addEventListener('click', runDetectAndLookup);
   disconnectBtn.addEventListener('click', function () { disconnectSession(); });
   if (deploySdkBtn) { deploySdkBtn.addEventListener('click', onDeploySdkClick); }
-  if (deployModalCloseBtn) { deployModalCloseBtn.addEventListener('click', closeDeployModal); }
   if (deployModalDoneBtn) { deployModalDoneBtn.addEventListener('click', closeDeployModal); }
   savedInstanceSelect.addEventListener('change', onSavedInstanceSelected);
   saveInstanceBtn.addEventListener('click', onSaveInstanceClick);

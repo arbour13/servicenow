@@ -54,6 +54,7 @@
     view: 'methodology',
     location: null,
     canEdit: true,
+    canAdmin: true,
     loading: true,
     isSaving: false,
     justRead: [],
@@ -137,6 +138,13 @@
   }
   function setCanEdit(canEdit) {
     state.canEdit = canEdit !== false;
+    notify();
+  }
+  function getCanAdmin() {
+    return state.canAdmin;
+  }
+  function setCanAdmin(canAdmin) {
+    state.canAdmin = canAdmin !== false;
     notify();
   }
   function getLoading() {
@@ -243,6 +251,7 @@
       state.isSaving = false;
       return applyLoadedData(data, {
         canEdit: state.canEdit,
+        canAdmin: state.canAdmin,
         onAfterLoad: hooks.onAfterLoad
       });
     }, function (error) {
@@ -260,8 +269,15 @@
   // Testing counterpart to seedStandard() - clears all content so the fresh-instance empty state
   // can be exercised repeatedly. Runs the same applyLoadedData() pipeline on the way back, which
   // takes its own empty branch (null methodologyId/subPhaseId, no nav push) and leaves every
-  // widget correctly showing nothing.
+  // widget correctly showing nothing. Server clearAll requires canAdmin.
   function resetAllContent() {
+    if (!state.canAdmin) {
+      MessagingService.toast('Only admins can clear all content');
+      return $q.reject({
+        error: 'Not authorized to clear all content.'
+      });
+    }
+
     if (!tryBeginSave()) {
       return $q.reject({
         error: 'Save already in progress'
@@ -277,6 +293,7 @@
         referenceSections: []
       }, {
         canEdit: state.canEdit,
+        canAdmin: state.canAdmin,
         onAfterLoad: hooks.onAfterLoad
       });
     }, function (error) {
@@ -311,6 +328,7 @@
     IdSeqService.seedFromMethodologies(state.methodologies);
     JargonService.setGlossary(state.jargon);
     setCanEdit(loadOptions.canEdit);
+    setCanAdmin(loadOptions.canAdmin);
 
     if (!state.methodologies.length) {
       setMethodologyId(null);
@@ -374,6 +392,9 @@
     JargonService.setGlossary(state.jargon);
     if (loadOptions.canEdit != null) {
       setCanEdit(loadOptions.canEdit);
+    }
+    if (loadOptions.canAdmin != null) {
+      setCanAdmin(loadOptions.canAdmin);
     }
 
     if (!state.methodologies.length) {
@@ -444,6 +465,7 @@
       view: state.view,
       location: state.location,
       canEdit: state.canEdit,
+      canAdmin: state.canAdmin,
       loading: state.loading,
       isSaving: state.isSaving,
       justRead: state.justRead,
@@ -484,6 +506,8 @@
     setLocation: setLocation,
     getCanEdit: getCanEdit,
     setCanEdit: setCanEdit,
+    getCanAdmin: getCanAdmin,
+    setCanAdmin: setCanAdmin,
     getLoading: getLoading,
     setLoading: setLoading,
     getIsSaving: getIsSaving,

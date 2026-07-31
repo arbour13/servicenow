@@ -196,6 +196,7 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
     c.subPhaseId = appState.subPhaseId;
     c.location = appState.location;
     c.canEdit = appState.canEdit;
+    c.canAdmin = appState.canAdmin;
     c.loading = appState.loading;
     c.isSaving = appState.isSaving;
     c.justRead = appState.justRead;
@@ -235,6 +236,11 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
   // placement rather than a button sitting on the read view. Content edit blocks it for the same
   // reason every other structural write does: a half-finished sub-phase edit would be lost.
   c.resetAllContent = function () {
+    if (!c.canAdmin) {
+      MessagingService.toast('Only admins can clear all content');
+      return;
+    }
+
     if (c.editMode) {
       MessagingService.toast('Finish editing first');
       return;

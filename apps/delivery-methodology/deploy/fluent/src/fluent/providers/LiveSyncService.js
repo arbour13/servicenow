@@ -75,6 +75,7 @@
 
       AppStateService.applySyncedData(payload, {
         canEdit: AppStateService.getCanEdit(),
+        canAdmin: AppStateService.getCanAdmin(),
         onAfterLoad: hooksOnAfterLoad
       });
       MessagingService.toast('Content updated');

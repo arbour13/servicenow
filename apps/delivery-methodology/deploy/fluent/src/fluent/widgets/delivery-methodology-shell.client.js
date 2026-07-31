@@ -22,9 +22,11 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
     });
   };
 
-  // Editor/admin roles set data.canEdit in the widget server script. Local harness has no server
-  // payload, so default true. Read-only users (role `user` only) cannot enter edit.
+  // Editor/app-admin/system-admin set data.canEdit; app-admin/system-admin set data.canAdmin.
+  // Local harness has no server payload, so both default true. Read-only users (role `user` only)
+  // cannot enter edit; editors cannot Clear all content.
   AppStateService.setCanEdit(!(c.data && c.data.canEdit === false));
+  AppStateService.setCanAdmin(!(c.data && c.data.canAdmin === false));
 
   // Service Portal exposes c.server on the widget carrying the real server script (this one);
   // the local harness does not. Bind so getData/saveData hit the content table when deployed.
@@ -89,6 +91,7 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
     c.methodologyId = appState.methodologyId;
     c.view = appState.view;
     c.canEdit = appState.canEdit;
+    c.canAdmin = appState.canAdmin;
     c.loading = appState.loading;
   }
   function syncStructure() {
@@ -400,6 +403,7 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
   function applyLoadedData(data) {
     AppStateService.applyLoadedData(data, {
       canEdit: c.data && c.data.canEdit,
+      canAdmin: c.data && c.data.canAdmin,
       onAfterLoad: handleContentLoaded
     });
   }

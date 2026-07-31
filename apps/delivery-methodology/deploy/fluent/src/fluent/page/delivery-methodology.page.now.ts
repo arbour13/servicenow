@@ -7,7 +7,7 @@ Record({
         category: 'custom',
         id: 'delivery_methodology',
         internal: false,
-        roles: ['a4b5c6d7e8f5108920f5108921f51089', 'a4b5c6d7e8d464193ed464193fd46419', 'a4b5c6d7e8f404b51cf404b51df404b5'],
+        roles: ['x_2168882_dlvry_2.user', 'x_2168882_dlvry_2.editor', 'x_2168882_dlvry_2.admin'],
         short_description: 'Delivery Methodology page',
         title: 'Delivery 2.0',
     },

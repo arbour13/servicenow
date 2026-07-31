@@ -11,7 +11,8 @@
         <!-- Fresh-instance empty state (methodologies.length === 0 - no seed ships with the deploy
            artifact, so this is genuinely what a brand-new install looks like before the one-time
            import). Editors get the action; a plain viewer gets an honest status line and no button
-           they couldn't use anyway (c.seedStandard is gated server-side on the editor/admin role,
+           they couldn't use anyway (c.seedStandard is gated server-side on editor/app-admin/admin;
+           Clear all content is canAdmin only — app admin or system admin),
            same as any other write). -->
         <div class="content-empty-state" ng-if="!c.loading && !c.methodologies.length">
           <p class="content-empty-lede" ng-if="c.canEdit">Delivery 2.0 content hasn&rsquo;t been imported on this
@@ -26,7 +27,7 @@
            behind a confirm and danger styling since it deletes everything. Editors only - a viewer
            has no write path to it anyway. Remove this block when the seeding flow no longer needs
            exercising. -->
-        <div class="reset-content-zone" ng-if="!c.loading && c.canEdit && c.methodologies.length">
+        <div class="reset-content-zone" ng-if="!c.loading && c.canAdmin && c.methodologies.length">
           <button type="button" class="btn danger" ng-click="c.resetAllContent()"
             ng-disabled="c.isSaving">Clear all content</button>
           <span class="reset-content-hint">Temporary: wipes every methodology so the &ldquo;Import Delivery 2.0

@@ -933,9 +933,15 @@
     var containerName = pageTitle + ' - Container 1';
     var pageRolesTag = '';
     if (manifest.features && manifest.features.roles) {
-      // All declared roles can open the page. Editor/admin groups also carry the user role, but
-      // listing every role sys_id keeps page access correct even if group membership is incomplete.
-      pageRolesTag = [ids.userRole, ids.editorRole, ids.adminRole].filter(Boolean).join(',');
+      // sp_page.roles is type user_roles — it stores role NAMES, not sys_ids. Putting sys_ids here
+      // makes the form show three "non-existent" roles. List every declared role name so page
+      // access works even if group membership is incomplete.
+      var pageRoleNames = [
+        scopedRoleName(manifest.scope, manifest.roles.userRoleName),
+        scopedRoleName(manifest.scope, manifest.roles.editorRoleName),
+        scopedRoleName(manifest.scope, manifest.roles.adminRoleName)
+      ].filter(Boolean);
+      pageRolesTag = pageRoleNames.join(',');
     }
     records.push({ table: 'sp_page', sysId: ids.page, key: 'page', fields: [
       { name: 'category', value: 'custom' },

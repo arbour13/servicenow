@@ -301,11 +301,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
       }
 
       return serverApi.get({
-        action: 'save',
-        methodologies: [],
-        jobTitles: [],
-        jargon: {},
-        referenceSections: [],
+        action: 'clearAll',
         contentRevision: cachedContentRevision || ''
       }).then(function (response) {
         var responseData = (response && response.data) || {};
