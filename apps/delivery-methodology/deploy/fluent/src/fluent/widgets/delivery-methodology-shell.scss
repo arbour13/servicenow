@@ -1332,14 +1332,6 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   border-color: #912018;
   color: #fff;
   box-shadow: var(--shadow-inset);
-}.dm-widget .btn.danger:disabled {
-  opacity: 0.55;
-  color: #fff;
-  background: #b42318;
-  border-color: #b42318;
-  cursor: not-allowed;
-  pointer-events: none;
-  box-shadow: none;
 }.dm-widget .task {
   background: var(--surface-2);
   border-radius: 12px;
@@ -1825,6 +1817,15 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   cursor: not-allowed;
   pointer-events: none;
   box-shadow: none;
+}.dm-widget .btn.danger:disabled, .dm-widget .btn.danger[disabled] {
+  opacity: 0.55;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  background: #b42318 !important;
+  border-color: #b42318 !important;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none !important;
 }.dm-widget .btn.sm {
   height: 28px;
   padding: 0 12px;

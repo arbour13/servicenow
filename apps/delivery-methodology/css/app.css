@@ -1827,16 +1827,6 @@ h1.sp-title {
   box-shadow: var(--shadow-inset);
 }
 
-.btn.danger:disabled {
-  opacity: 0.55;
-  color: #fff;
-  background: #b42318;
-  border-color: #b42318;
-  cursor: not-allowed;
-  pointer-events: none;
-  box-shadow: none;
-}
-
 .task {
   background: var(--surface-2);
   border-radius: 12px;
@@ -2521,6 +2511,18 @@ table.ttbl .jobaid {
   cursor: not-allowed;
   pointer-events: none;
   box-shadow: none;
+}
+
+.btn.danger:disabled,
+.btn.danger[disabled] {
+  opacity: 0.55;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  background: #b42318 !important;
+  border-color: #b42318 !important;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none !important;
 }
 
 .btn.sm {
