@@ -257,11 +257,13 @@
     padding-left: var(--sp-md); padding-right: 0;
     font-family: var(--mono); font-size: 13px;
   }
-  /* Auto-set / locked prefix reads as placeholder text, not as typed content.
-     Keep the same transparent background as the sibling name field (the compound shell is the surface). */
+  /* Locked, not placeholder - this is real App ID data the user will read back later, not a hint
+     they haven't typed yet, so it needs real text contrast (--muted, not --faint - see --faint's
+     own comment below). Keep the same transparent background as the sibling name field (the
+     compound shell is the surface). */
   .scope-compound .scope-prefix:read-only,
   .scope-compound .scope-name:read-only {
-    cursor: default; color: var(--faint); background: transparent;
+    cursor: default; color: var(--muted); background: transparent;
   }
   .scope-compound .scope-name {
     flex: 1 1 auto; min-width: 4ch;
@@ -310,7 +312,9 @@
     margin: 0 0 14px; color: var(--muted); font-size: 12.5px; line-height: 1.5;
   }
   .field-hint {
-    margin: 6px 0 0; color: var(--faint); font-size: 12px; line-height: 1.45;
+    /* --muted, not --faint - this carries real instructions (bridge command steps, saved-connection
+       how-to), and --faint fails WCAG's 4.5:1 text-contrast minimum at this size in both themes. */
+    margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45;
   }
   .field-hint code {
     font-family: var(--mono); font-size: 0.92em;
@@ -323,7 +327,7 @@
   .version-tip {
     display: inline-flex; align-items: center; justify-content: center;
     width: 18px; height: 18px; border-radius: 50%;
-    color: var(--faint); cursor: help;
+    color: var(--muted); cursor: help; /* matches .icon-btn's resting color, not --faint */
   }
   .version-tip:hover,
   .version-tip:focus-visible {
@@ -391,6 +395,9 @@
     border-radius: var(--radius); box-shadow: var(--shadow);
     display: flex; flex-direction: column; overflow: hidden;
   }
+  /* The deploy modal parks focus on the container itself (tabindex="-1") while nothing inside it
+     is focusable yet - programmatic, not a keyboard Tab landing here, so no visible ring needed. */
+  .modal:focus { outline: none; }
   .modal-head {
     display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md);
     padding: var(--sp-lg) var(--sp-xl); border-bottom: 1px solid var(--border);
@@ -464,7 +471,10 @@
     background: var(--panel-alt); border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-family: var(--mono); font-size: 12px; line-height: 1.45;
-    color: var(--text-muted); white-space: pre-wrap;
+    /* --text-muted isn't a token this palette defines (leftover from an earlier dark-only build) -
+       it was silently inheriting --text from the ancestor, which is the right color anyway for a
+       log the user is actively reading during a live deploy; made explicit instead of accidental. */
+    color: var(--text); white-space: pre-wrap;
   }
   .deploy-progress-log .err { color: var(--danger); }
   .modal.deploy-modal { max-width: 520px; width: min(520px, calc(100vw - 32px)); }
@@ -534,7 +544,7 @@
 </div>
 
 <div class="panel" id="connectionSection" style="display:none;">
-  <p class="panel-intro">Choose a saved connection to fill credentials, or New connection to type them. Saved connections can be edited and updated in place. Connect detects the vendor prefix and whether this app is already installed. Requires CORS from this origin to the instance. Deploy uses the local SDK bridge with these credentials.</p>
+  <p class="panel-intro">Choose a saved connection to fill credentials, or New connection to type them. Connect detects the vendor prefix and whether this app is already installed.</p>
   <div class="saved-row">
     <div class="field">
       <label for="savedInstanceSelect">Saved connection</label>
@@ -578,7 +588,7 @@
     </button>
     <span id="detectStatus" class="status" style="margin:0;"></span>
   </div>
-  <p class="field-hint" id="connectionHint">To add a saved connection, leave New connection selected, fill in the fields, then click Save for later.</p>
+  <p class="field-hint" id="connectionHint">To add a saved connection, leave New connection selected, fill in the fields, then click Save for later. Saved in this browser's local storage, including the password in plain text.</p>
 </div>
 
 <div class="panel" id="bridgeSection" style="display:none;">
@@ -640,13 +650,14 @@
     <span id="sysIdSummary"></span>
     <div class="output-action-btns">
       <span class="tip-host" id="deploySdkBtnTip" data-tip="Rebuild Fluent and now-sdk install (syncs Connect credentials first)">
-        <button type="button" class="action-btn" id="deploySdkBtn" disabled>
+        <button type="button" class="action-btn" id="deploySdkBtn" disabled aria-describedby="deployReadiness">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Deploy with Now SDK
         </button>
       </span>
     </div>
   </div>
+  <p class="field-hint" id="deployReadiness" aria-live="polite"></p>
 </div>
 
 </div>
@@ -675,11 +686,11 @@
       <span id="deployModalTitle">Deploying with Now SDK</span>
     </div>
     <div class="deploy-modal-body">
-      <p class="modal-hint" id="deployModalStatus">Starting…</p>
+      <p class="modal-hint" id="deployModalStatus" role="status" aria-live="polite">Starting…</p>
       <div class="deploy-progress-bar" aria-hidden="true">
         <div class="deploy-progress-fill" id="deployProgressFill"></div>
       </div>
-      <div class="deploy-progress-log" id="deployProgressLog"></div>
+      <div class="deploy-progress-log" id="deployProgressLog" aria-live="polite" aria-atomic="false"></div>
     </div>
     <div class="modal-actions">
       <button type="button" class="modal-btn primary" id="deployModalDoneBtn" hidden>Done</button>

@@ -158,6 +158,7 @@
   var disconnectBtn = document.getElementById('disconnectBtn');
   var deploySdkBtn = document.getElementById('deploySdkBtn');
   var deploySdkBtnTip = document.getElementById('deploySdkBtnTip');
+  var deployReadiness = document.getElementById('deployReadiness');
   var bridgeSection = document.getElementById('bridgeSection');
   var bridgeDot = document.getElementById('bridgeDot');
   var bridgeStatusLabel = document.getElementById('bridgeStatusLabel');
@@ -478,13 +479,15 @@
       saveInstanceBtn.textContent = 'Update connection';
       setTip(saveInstanceBtn, 'Save URL, username, password, and name changes to this saved connection');
       if (connectionHint) {
-        connectionHint.textContent = 'Edit the fields below, then Update connection to save changes (including a new password). Connect again after updating credentials.';
+        connectionHint.textContent = 'Edit the fields below, then Update connection to save changes (including a new password). Connect again after updating credentials. ' +
+          "Saved in this browser's local storage, including the password in plain text.";
       }
     } else {
       saveInstanceBtn.textContent = 'Save for later';
       setTip(saveInstanceBtn, 'Save these credentials as a new named connection');
       if (connectionHint) {
-        connectionHint.textContent = 'To add a saved connection, leave New connection selected, fill in the fields, then click Save for later.';
+        connectionHint.textContent = 'To add a saved connection, leave New connection selected, fill in the fields, then click Save for later. ' +
+          "Saved in this browser's local storage, including the password in plain text.";
       }
     }
   }
@@ -502,6 +505,27 @@
   //   - string from the input when opts.input is set
   //   - true for a plain confirm
   //   - null when cancelled / dismissed
+  // Keeps Tab/Shift+Tab cycling inside an open modal instead of escaping into the page behind the
+  // overlay - wraps from the last focusable element back to the first, and vice versa. `container`
+  // must already be visible (offsetParent check filters out hidden/[hidden] descendants).
+  function trapTabWithin(container, e) {
+    if (e.key !== 'Tab') { return; }
+    var focusable = Array.prototype.slice.call(
+      container.querySelectorAll('button, input, select, textarea, a[href], [tabindex]')
+    ).filter(function (el) { return !el.disabled && el.offsetParent !== null; });
+    // Nothing focusable yet (e.g. the deploy modal mid-stream, before Done appears) - keep Tab from
+    // escaping to the page behind the overlay rather than silently doing nothing.
+    if (!focusable.length) { e.preventDefault(); return; }
+    var first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   var modalResolve = null;
   function closeModal(result) {
     if (!modalResolve) { return; }
@@ -520,7 +544,9 @@
     if (e.key === 'Enter' && e.target === modalInput) {
       e.preventDefault();
       acceptModal();
+      return;
     }
+    trapTabWithin(modalOverlay.querySelector('.modal'), e);
   }
   function acceptModal() {
     if (!modalResolve) { return; }
@@ -691,8 +717,31 @@
     else { el.removeAttribute('data-tip'); }
     el.removeAttribute('title');
   }
+  // Adds/removes ONE token from a space-separated attribute (aria-describedby can legitimately
+  // already carry another id - e.g. deploySdkBtn's own static reference to #deployReadiness -
+  // so this only touches its own token, never clobbers whatever else is already there.
+  function toggleDescribedBy(el, id, on) {
+    var tokens = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+    var idx = tokens.indexOf(id);
+    if (on && idx === -1) { tokens.push(id); }
+    else if (!on && idx !== -1) { tokens.splice(idx, 1); }
+    if (tokens.length) { el.setAttribute('aria-describedby', tokens.join(' ')); }
+    else { el.removeAttribute('aria-describedby'); }
+  }
+  var FOCUSABLE_SELECTOR = 'button, input, select, textarea, a[href], [tabindex]';
+  // A .tip-host span (used to tip a disabled control - native :hover/:focus never fires on a
+  // disabled button, so the wrapper carries data-tip instead) isn't itself what receives focus;
+  // aria-describedby has to land on the actual focusable element or a screen reader never
+  // announces it. Falls back to the tip-triggering element itself when it's already focusable
+  // (e.g. #versionTipHost, which has its own tabindex="0").
+  function describedByTarget(el) {
+    if (el.matches(FOCUSABLE_SELECTOR)) { return el; }
+    return el.querySelector(FOCUSABLE_SELECTOR) || el;
+  }
+
   function initTooltips() {
     var tip = document.createElement('div');
+    tip.id = 'uiTip';
     tip.className = 'ui-tip';
     tip.setAttribute('role', 'tooltip');
     tip.hidden = true;
@@ -708,6 +757,7 @@
       hideTimer = setTimeout(function () {
         if (!tip.classList.contains('is-visible')) { tip.hidden = true; }
       }, 120);
+      if (active) { toggleDescribedBy(describedByTarget(active), 'uiTip', false); }
       active = null;
     }
 
@@ -735,6 +785,7 @@
       void tip.offsetWidth;
       tip.classList.add('is-visible');
       active = el;
+      toggleDescribedBy(describedByTarget(el), 'uiTip', true);
     }
 
     function scheduleShow(el) {
@@ -791,13 +842,18 @@
   function runDiscovery() {
     setStatus(discoveryStatus, 'Checking apps…', false);
     return Promise.all(KNOWN_APP_FOLDERS.map(probeApp)).then(function (results) {
+      var ineligible = [];
       results.forEach(function (r) {
         if (r.descriptor) { eligibleApps[r.folder] = r.descriptor; }
+        else { ineligible.push(r.folder); }
       });
       populateDropdown();
       var eligibleCount = Object.keys(eligibleApps).length;
       if (!eligibleCount) {
         setStatus(discoveryStatus, 'No deployable apps found (each needs a deploy.manifest.js).', true);
+      } else if (ineligible.length) {
+        setStatus(discoveryStatus, ineligible.length + ' app' + (ineligible.length === 1 ? '' : 's') +
+          ' not offered (no deploy.manifest.js, or deployable: false): ' + ineligible.sort().join(', ') + '.', false);
       } else {
         setStatus(discoveryStatus, '', false);
       }
@@ -962,19 +1018,26 @@
     var versionGate = versionReadyForDeploy();
     var canDeploy = !!(sdkBridgeUp && sessionConnected && credsReady && currentFolder && currentParts &&
       isScopeComplete() && versionGate.ok);
+    var reason = !sdkBridgeUp
+      ? 'Start the SDK bridge: ' + bridgeStartCommand()
+      : (!sessionConnected
+        ? 'Connect to the instance first'
+        : (!credsReady
+          ? 'Enter the instance URL, username, and password'
+          : (!isScopeComplete()
+            ? 'Finish the App ID before deploying'
+            : (!versionGate.ok
+              ? versionGate.tip
+              : 'Sync Connect credentials to Now SDK, rebuild Fluent, and install on the instance'))));
     if (deploySdkBtn) {
       deploySdkBtn.disabled = !canDeploy;
-      setTip(deploySdkBtnTip, !sdkBridgeUp
-        ? 'Start the SDK bridge: ' + bridgeStartCommand()
-        : (!sessionConnected
-          ? 'Connect to the instance first'
-          : (!credsReady
-            ? 'Enter the instance URL, username, and password'
-            : (!isScopeComplete()
-              ? 'Finish the App ID before deploying'
-              : (!versionGate.ok
-                ? versionGate.tip
-                : 'Sync Connect credentials to Now SDK, rebuild Fluent, and install on the instance')))));
+      setTip(deploySdkBtnTip, reason);
+    }
+    // Same reason the tooltip shows, but always visible - a disabled button with a hover-only
+    // explanation is invisible until you happen to hover it. Blank once every gate clears, since
+    // "Ready to deploy" would just repeat the button's own label back at the user.
+    if (deployReadiness) {
+      deployReadiness.textContent = canDeploy ? '' : reason;
     }
   }
 
@@ -1126,11 +1189,29 @@
   // each parsed line as it arrives. Resolves once the stream ends. If the bridge answers with a
   // plain JSON body (an error caught before the stream started, e.g. bad request), that's parsed
   // and thrown instead.
+  // No progress chunk for this long means something's actually stuck (a wedged now-sdk child
+  // process, a dropped connection the browser hasn't noticed yet) - not just a slow install step,
+  // which keeps streaming heartbeats well inside this window. Long enough that a real multi-minute
+  // "Building the Fluent project…" phase (bridge sends periodic keep-alive events) never trips it.
+  var BRIDGE_STREAM_INACTIVITY_MS = 45000;
+
   function bridgePostStream(pathName, body, onEvent) {
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var idleTimer = null;
+    function resetIdleTimer() {
+      if (idleTimer) { clearTimeout(idleTimer); }
+      if (!controller) { return; }
+      idleTimer = setTimeout(function () {
+        controller.abort();
+      }, BRIDGE_STREAM_INACTIVITY_MS);
+    }
+    resetIdleTimer();
+
     return fetch(SDK_BRIDGE + pathName, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: controller ? controller.signal : undefined,
     }).then(function (r) {
       var contentType = r.headers.get('Content-Type') || '';
       if (contentType.indexOf('application/json') === 0) {
@@ -1154,6 +1235,7 @@
       var buffer = '';
       function pump() {
         return reader.read().then(function (result) {
+          resetIdleTimer();
           if (result.value) {
             buffer += decoder.decode(result.value, { stream: !result.done });
             var lines = buffer.split('\n');
@@ -1168,6 +1250,18 @@
         });
       }
       return pump();
+    }).catch(function (err) {
+      if (err && err.name === 'AbortError') {
+        throw new Error('No response from the SDK bridge for ' + (BRIDGE_STREAM_INACTIVITY_MS / 1000) +
+          's - it may have crashed or wedged. Check that terminal window, then try again.');
+      }
+      throw err;
+    }).then(function (result) {
+      if (idleTimer) { clearTimeout(idleTimer); }
+      return result;
+    }, function (err) {
+      if (idleTimer) { clearTimeout(idleTimer); }
+      throw err;
     });
   }
 
@@ -1185,6 +1279,17 @@
 
   var deployModalFinished = false;
 
+  function onDeployModalKeydown(e) {
+    // Escape only dismisses once finished - matches Done/Close being hidden until then, so there's
+    // no way to lose track of whether a still-running deploy got dismissed or not.
+    if (e.key === 'Escape' && deployModalFinished) {
+      e.preventDefault();
+      closeDeployModal();
+      return;
+    }
+    trapTabWithin(deployModalOverlay.querySelector('.modal'), e);
+  }
+
   function openDeployModal() {
     deployModalFinished = false;
     setDeployStatus('Starting…');
@@ -1192,6 +1297,11 @@
     setDeployProgress(0);
     deployModalDoneBtn.hidden = true;
     deployModalOverlay.hidden = false;
+    document.addEventListener('keydown', onDeployModalKeydown, true);
+    // Nothing inside is focusable until Done appears (see trapTabWithin) - park focus on the modal
+    // itself so Tab has a sane starting point instead of staying wherever it was on the page behind.
+    var modalEl = deployModalOverlay.querySelector('.modal');
+    if (modalEl) { modalEl.setAttribute('tabindex', '-1'); modalEl.focus(); }
   }
 
   function appendDeployLog(msg, isError) {
@@ -1222,6 +1332,7 @@
   function closeDeployModal() {
     if (!deployModalFinished) { return; }
     deployModalOverlay.hidden = true;
+    document.removeEventListener('keydown', onDeployModalKeydown, true);
   }
 
   // Maps a 0-100 bridge-reported pct onto a sub-range of the modal's overall bar, so auth and
@@ -1622,12 +1733,23 @@
       outputSection.style.display = '';
       refreshBridgeLabel();
       pollSdkBridge();
+      // Everything from here down was hidden a moment ago - on a normal viewport the "Built
+      // successfully" status at the top has nothing visible next to it until the user scrolls.
+      // Scroll to the top of what just appeared (App ID/Version, then Bridge, then the output
+      // preview below it) rather than jumping straight to the bottom, so a connection-panel app's
+      // Connect step - already visible above this - isn't skipped past. behavior: 'auto' (instant),
+      // not 'smooth' - smooth-scroll animation runs on requestAnimationFrame, which a throttled or
+      // backgrounded tab can silently never fire, so the "smooth" version can just never complete.
+      overridesSection.scrollIntoView({ behavior: 'auto', block: 'start' });
 
       return fetchPriorFluentSources(folder).then(function (files) {
         if (folder !== currentFolder) { return; } // the user switched apps while this was in flight
         priorFluentFiles = files || {};
         rebuildFluent();
-        setStatus(buildStatus, 'Built ' + descriptor.manifest.appName + ' successfully.', false);
+        // No "Built successfully" message - the App ID/Version fields and the output preview
+        // becoming visible (and now scrolled into view) already ARE the success signal; a text
+        // message saying so too is redundant. Just clear the "Fetching sources…" line it replaces.
+        setStatus(buildStatus, '', false);
         updateScopeFieldUI();
         scheduleScopeUniquenessCheck();
         updateActionButtons();
