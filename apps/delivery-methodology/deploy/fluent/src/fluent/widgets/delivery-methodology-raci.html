@@ -39,7 +39,7 @@
                   ng-style="{background: group.color}">{{group.subPhase.sid}}</span>{{group.phase.name}} - {{group.subPhase.name}}</div>
               <div class="jt-task" ng-repeat="t in group.tasks track by t.id">
                 <span class="rt-raci"><span ng-repeat="l in t.raci[c.byRoleFocusRoleId] track by l"
-                    ng-class="'rl-' + l">{{l}}</span></span>
+                    ng-class="'rl-' + l" data-tip-name="{{c.raciNames[l]}}" data-tip="{{c.raciDescs[l]}}">{{l}}</span></span>
                 <button type="button" class="rt-text rg-task-link"
                   ng-click="c.jumpTo(group.subPhase.id, c.methodologyId, 'task:' + t.id)">{{t.text}}</button>
               </div>
@@ -60,7 +60,8 @@
               </button>
             </div>
             <div class="rg-legend">
-              <span class="lg" ng-repeat="l in c.raciLetters track by l"><span class="sw"
+              <span class="lg" ng-repeat="l in c.raciLetters track by l"
+                data-tip-tone="{{l}}" data-tip-name="{{c.raciNames[l]}}" data-tip="{{c.raciDescs[l]}}"><span class="sw"
                   ng-style="{background: c.raciHex[l]}">{{l}}</span>{{c.raciNames[l]}}</span>
             </div>
           </div>
@@ -124,7 +125,7 @@
                   <td ng-repeat="id in c.raciGrid.visibleRoleIds track by id"
                     ng-class="{dimmed: c.gridFocusRoleId && id !== c.gridFocusRoleId, colhi: !c.gridFocusRoleId && c.hoverColumnRoleId === id}">
                     <span ng-if="row.task.raci[id]" class="rg-lt"><span ng-repeat="l in row.task.raci[id] track by l"
-                        ng-class="'rl-' + l">{{l}}</span></span>
+                        ng-class="'rl-' + l" data-tip-name="{{c.raciNames[l]}}" data-tip="{{c.raciDescs[l]}}">{{l}}</span></span>
                     <span ng-if="!row.task.raci[id]" class="rg-dash">&ndash;</span>
                   </td>
                 </tr>

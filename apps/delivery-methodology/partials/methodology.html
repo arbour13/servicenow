@@ -189,10 +189,6 @@
               </h1>
             </div>
             <div class="sp-header-actions">
-              <label class="loe-billable-toggle jargon-toggle" ng-if="c.hasContent(c.location.subPhase)"
-                data-tip="Highlight jargon and acronyms with hover-over definitions">
-                Explain terms <input type="checkbox" ng-model="c.jargonModel" ng-model-options="{getterSetter: true}">
-              </label>
               <button type="button" class="edit-pencil" ng-if="c.canEdit" ng-click="c.enterEdit()"
                 data-tip="Edit this sub-phase" aria-label="Edit this sub-phase">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -337,10 +333,9 @@
                           </div>
                         </td>
                         <td class="cell" ng-repeat="r in c.location.taskTableRoles track by r.id"
-                          ng-class="{off: !(t.raci[r.id] && t.raci[r.id].length)}"
-                          ng-attr-data-tip-name="{{t.raci[r.id] && t.raci[r.id].length ? r.abbr : undefined}}"
-                          ng-attr-data-tip="{{t.raci[r.id] && t.raci[r.id].length ? c.raciTip(t.raci[r.id]) : undefined}}">
-                          <span ng-repeat="l in t.raci[r.id]" ng-class="'rl-' + l">{{l}}</span><span
+                          ng-class="{off: !(t.raci[r.id] && t.raci[r.id].length)}">
+                          <span ng-repeat="l in t.raci[r.id]" ng-class="'rl-' + l"
+                            data-tip-name="{{c.raciNames[l]}}" data-tip="{{c.raciDescs[l]}}">{{l}}</span><span
                             ng-if="!(t.raci[r.id] && t.raci[r.id].length)">&middot;</span></td>
                       </tr>
                     </tbody>
@@ -348,7 +343,8 @@
                 </div>
                 <p ng-if="!c.location.subPhase.tasks.length" class="no-tasks-hint">None yet</p>
                 <div class="rlegend" ng-if="c.location.subPhase.tasks.length">
-                  <span class="lg" ng-repeat="l in c.raciLetters"><span class="sw"
+                  <span class="lg" ng-repeat="l in c.raciLetters track by l"
+                    data-tip-tone="{{l}}" data-tip-name="{{c.raciNames[l]}}" data-tip="{{c.raciDescs[l]}}"><span class="sw"
                       ng-style="{background: c.raciHex[l]}">{{l}}</span>{{c.raciNames[l]}}</span>
                 </div>
               </div>

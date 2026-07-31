@@ -1,21 +1,10 @@
-['$sce', function ($sce) {
+[
+  '$sce', 'RaciGridService',
+  function ($sce, RaciGridService) {
   'use strict';
 
   var glossary = {};
   var jargonCache = {};
-  // "Explain terms" is a global reading preference, not a per-view one - it used to be two
-  // unsynced local booleans (Methodology's own c.showJargon, Reference's own), so toggling it on
-  // one view silently reset on the other. One flag here, one control in Shell's header; every
-  // view controller reads getShowJargon() instead of owning its own copy.
-  var showJargon = false;
-
-  function getShowJargon() {
-    return showJargon;
-  }
-
-  function setShowJargon(value) {
-    showJargon = !!value;
-  }
 
   function escapeHtml(text) {
     var value = '';
@@ -76,25 +65,25 @@
           return match;
         }
 
-        return lead + '<span class="rl-prose rl-' + letter + '">' + letter + '</span>';
+        var name = RaciGridService.NAMES[letter] || letter;
+        var desc = RaciGridService.DESCS[letter] || '';
+        return lead
+          + '<span class="rl-prose rl-' + letter + '" data-tip-name="' + escapeHtml(name)
+          + '" data-tip="' + escapeHtml(desc) + '">' + letter + '</span>';
       });
     }).join('');
   }
 
-  function jargonHtml(text, showJargon) {
+  function jargonHtml(text) {
     if (!text) {
       return $sce.trustAsHtml('');
     }
-    var cacheKey = '0|' + text;
-    if (showJargon) {
-      cacheKey = '1|' + text;
-    }
-    if (jargonCache[cacheKey]) {
-      return jargonCache[cacheKey];
+    if (jargonCache[text]) {
+      return jargonCache[text];
     }
     var html = escapeHtml(text);
     var terms = Object.keys(glossary);
-    if (showJargon && terms.length) {
+    if (terms.length) {
       var pattern = new RegExp('\\b(' + terms.map(function (term) {
         return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       }).join('|') + ')\\b', 'g');
@@ -105,14 +94,12 @@
     html = chipRaciLetters(html);
 
     var trusted = $sce.trustAsHtml(html);
-    jargonCache[cacheKey] = trusted;
+    jargonCache[text] = trusted;
     return trusted;
   }
 
   return {
     setGlossary: setGlossary,
-    jargonHtml: jargonHtml,
-    getShowJargon: getShowJargon,
-    setShowJargon: setShowJargon
+    jargonHtml: jargonHtml
   };
 }]

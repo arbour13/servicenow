@@ -1,4 +1,4 @@
-api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService, JargonService, TipService, IconService, UrlPolicyService, SearchService) {
+api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService, JargonService, TipService, IconService, UrlPolicyService, SearchService, RaciGridService) {
   'use strict';
   var c = this;
 
@@ -9,17 +9,10 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
   TipService.bind(c);
   IconService.bind(c);
   UrlPolicyService.bind(c);
+  RaciGridService.bindLegend(c);
 
-  // Shares the one JargonService flag with the Methodology view's copy of this control - see that
-  // controller's note; getterSetter avoids a per-controller mirror going stale.
-  c.jargonModel = function (value) {
-    if (arguments.length) {
-      JargonService.setShowJargon(value);
-    }
-    return JargonService.getShowJargon();
-  };
   c.jargonHtml = function (text) {
-    return JargonService.jargonHtml(text, JargonService.getShowJargon());
+    return JargonService.jargonHtml(text);
   };
   c.sectionParagraphs = function (section) {
     var body = section && section.body != null ? String(section.body) : '';

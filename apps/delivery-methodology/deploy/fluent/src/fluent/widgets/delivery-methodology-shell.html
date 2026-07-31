@@ -12,7 +12,8 @@
         <div class="dm-loading" ng-if="c.loading">Loading…</div>
 
         <div id="dm-tip" class="tip" ng-class="{show: c.tip.show}" ng-style="{left: c.tip.x + 'px', top: c.tip.y + 'px'}">
-          <span class="tname" ng-if="c.tip.name">{{c.tip.name}}</span>{{c.tip.text}}
+          <span class="tname" ng-if="c.tip.name" ng-class="c.tip.nameTone ? ('tn-' + c.tip.nameTone) : null">{{c.tip.name}}</span>
+          <span class="tbody" ng-if="c.tip.text">{{c.tip.text}}</span>
         </div>
 
         <div class="toast" ng-class="{show: c.toast.show}">{{c.toast.msg}}</div>

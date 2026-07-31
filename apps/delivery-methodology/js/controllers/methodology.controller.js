@@ -25,27 +25,8 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   UrlPolicyService.bind(c);
   RaciGridService.bindLegend(c);
   c.phaseColor = MethodologyDomainService.phaseColor;
-  c.raciTip = function (letters) {
-    if (!letters || !letters.length) {
-      return '';
-    }
-    return RaciGridService.sortLetters(letters).map(function (letter) {
-      return c.raciNames[letter];
-    }).join(' / ');
-  };
-
-  // "Explain terms" appears on this view AND on Reference; both drive the ONE JargonService flag
-  // (each used to own a separate local boolean, so switching views silently reset the setting).
-  // getterSetter reads live from the service every digest rather than mirroring onto `c`, so the
-  // other view toggling it can never leave this checkbox stale.
-  c.jargonModel = function (value) {
-    if (arguments.length) {
-      JargonService.setShowJargon(value);
-    }
-    return JargonService.getShowJargon();
-  };
   c.jargonHtml = function (text) {
-    return JargonService.jargonHtml(text, JargonService.getShowJargon());
+    return JargonService.jargonHtml(text);
   };
 
   // Methodology intro panel: expanded by default. Collapsing remembers per methodology (and user

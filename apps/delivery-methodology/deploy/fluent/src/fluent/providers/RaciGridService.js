@@ -10,6 +10,13 @@
     C: 'Consulted',
     I: 'Informed'
   };
+  // Same copy as the Reference RACI cards — tips and that page share this so neither drifts short.
+  var RACI_DESCS = {
+    R: 'Does the work. At least one per task - the people who actually carry it out.',
+    A: 'Owns the outcome and signs off. Exactly one per task - the single point of ownership.',
+    C: 'Two-way input. Consulted for their expertise before or while the work happens.',
+    I: 'One-way update. Kept informed of progress or completion, but not part of the doing.'
+  };
   var RACI_HEX = {
     R: '#01cc52',
     A: '#e5c20b',
@@ -302,6 +309,7 @@
   function bindLegend(controller) {
     controller.raciLetters = RACI_LETTERS;
     controller.raciNames = RACI_NAMES;
+    controller.raciDescs = RACI_DESCS;
     controller.raciHex = RACI_HEX;
   }
 
@@ -334,6 +342,7 @@
   return {
     LETTERS: RACI_LETTERS,
     NAMES: RACI_NAMES,
+    DESCS: RACI_DESCS,
     HEX: RACI_HEX,
     sortLetters: sortLetters,
     normalizeMethodologies: normalizeMethodologies,

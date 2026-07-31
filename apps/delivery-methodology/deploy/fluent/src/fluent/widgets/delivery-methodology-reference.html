@@ -7,43 +7,15 @@
           ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
         <div class="refdoc">
-          <div class="refdoc-toolbar">
-            <label class="loe-billable-toggle jargon-toggle"
-              data-tip="Highlight jargon and acronyms with hover-over definitions">
-              Explain terms <input type="checkbox" ng-model="c.jargonModel" ng-model-options="{getterSetter: true}">
-            </label>
-          </div>
-
           <section class="ref-sec" ng-repeat="section in c.referenceSections track by section.key">
             <h3 class="ref-h">{{section.title || section.name}}</h3>
 
             <div class="ref-raci-grid" ng-if="section.key === 'raci'">
-              <div class="ref-raci-card"><span class="ref-raci-badge rl-R">R</span>
+              <div class="ref-raci-card" ng-repeat="letter in c.raciLetters track by letter">
+                <span class="ref-raci-badge" ng-class="'rl-' + letter">{{letter}}</span>
                 <div>
-                  <div class="ref-raci-name">Responsible</div>
-                  <div class="ref-raci-desc">Does the work. At least one per task - the people who actually carry it
-                    out.</div>
-                </div>
-              </div>
-              <div class="ref-raci-card"><span class="ref-raci-badge rl-A">A</span>
-                <div>
-                  <div class="ref-raci-name">Accountable</div>
-                  <div class="ref-raci-desc">Owns the outcome and signs off. Exactly one per task - the single point of
-                    ownership.</div>
-                </div>
-              </div>
-              <div class="ref-raci-card"><span class="ref-raci-badge rl-C">C</span>
-                <div>
-                  <div class="ref-raci-name">Consulted</div>
-                  <div class="ref-raci-desc">Two-way input. Consulted for their expertise before or while the work
-                    happens.</div>
-                </div>
-              </div>
-              <div class="ref-raci-card"><span class="ref-raci-badge rl-I">I</span>
-                <div>
-                  <div class="ref-raci-name">Informed</div>
-                  <div class="ref-raci-desc">One-way update. Kept informed of progress or completion, but not part of
-                    the doing.</div>
+                  <div class="ref-raci-name">{{c.raciNames[letter]}}</div>
+                  <div class="ref-raci-desc">{{c.raciDescs[letter]}}</div>
                 </div>
               </div>
             </div>

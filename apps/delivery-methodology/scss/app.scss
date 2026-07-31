@@ -653,12 +653,6 @@ textarea:focus-visible {
   flex-shrink: 0;
 }
 
-.refdoc-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin: 0 0 16px;
-}
-
 .loe-billable-toggle {
   display: inline-flex;
   align-items: center;
@@ -714,18 +708,6 @@ textarea:focus-visible {
 .loe-billable-toggle input:focus-visible {
   outline: none !important;
   box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
-}
-
-/* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
-   faint color - the element carries both classes. Match in-panel control weight (loe-mode /
-   chips): readable ink on the panel, teal when the aid is on. */
-.loe-billable-toggle.jargon-toggle {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.loe-billable-toggle.jargon-toggle:has(input:checked) {
-  color: var(--teal);
 }
 
 .pagehdr-controls {
@@ -1749,7 +1731,7 @@ h1.sp-title {
 .tip {
   position: fixed;
   z-index: 100;
-  max-width: 260px;
+  max-width: 320px;
   background: #04131f;
   color: #fff;
   padding: 9px 12px;
@@ -1774,6 +1756,24 @@ h1.sp-title {
   display: block;
   margin-bottom: 3px;
   letter-spacing: 0.04em;
+}
+
+/* Tip chrome is always dark navy — use the bright RACI fills, not --r-*-text (those darken
+   for light-mode content surfaces and would fail contrast on this tooltip). */
+.tip .tname.tn-R {
+  color: var(--r-r);
+}
+
+.tip .tname.tn-A {
+  color: var(--r-a);
+}
+
+.tip .tname.tn-C {
+  color: var(--r-c);
+}
+
+.tip .tname.tn-I {
+  color: var(--r-i);
 }
 
 .toast {
@@ -2434,6 +2434,16 @@ table.ttbl .jobaid {
 .rl-prose {
   font-family: var(--font-mono);
   font-weight: 700;
+}
+
+/* RACI letter chips + legend rows carry tips — help cursor signals "definition on hover", not click. */
+.rl-R[data-tip],
+.rl-A[data-tip],
+.rl-C[data-tip],
+.rl-I[data-tip],
+.rlegend .lg[data-tip],
+.rg-legend .lg[data-tip] {
+  cursor: help;
 }
 
 .rl-R {

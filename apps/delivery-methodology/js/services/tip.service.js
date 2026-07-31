@@ -12,10 +12,26 @@ angular.module('deliveryMethodology').factory('TipService', ['$timeout', functio
   var tip = {
     show: false,
     name: '',
+    // R|A|C|I when the target is a RACI letter chip — colors the tip heading to match.
+    nameTone: '',
     text: '',
     x: 0,
     y: 0
   };
+
+  function raciToneFromElement(element) {
+    if (!element || !element.classList) {
+      return '';
+    }
+    var letters = ['R', 'A', 'C', 'I'];
+    var index;
+    for (index = 0; index < letters.length; index++) {
+      if (element.classList.contains('rl-' + letters[index])) {
+        return letters[index];
+      }
+    }
+    return '';
+  }
 
   function positionTipNear(element) {
     var tipElement = document.getElementById('dm-tip');
@@ -42,6 +58,7 @@ angular.module('deliveryMethodology').factory('TipService', ['$timeout', functio
 
   function showTip(element) {
     tip.name = element.getAttribute('data-tip-name') || '';
+    tip.nameTone = element.getAttribute('data-tip-tone') || raciToneFromElement(element);
     tip.text = element.getAttribute('data-tip') || '';
     tip.show = true;
     $timeout(function () {
@@ -75,6 +92,7 @@ angular.module('deliveryMethodology').factory('TipService', ['$timeout', functio
         tipDelay = null;
       }
       tip.show = false;
+      tip.nameTone = '';
     }
   }
 
@@ -84,6 +102,7 @@ angular.module('deliveryMethodology').factory('TipService', ['$timeout', functio
       tipDelay = null;
     }
     tip.show = false;
+    tip.nameTone = '';
   }
 
   // Keyboard path for the same data-tip content (e.g. RACI column headers).

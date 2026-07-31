@@ -505,10 +505,6 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   align-items: center;
   gap: 14px;
   flex-shrink: 0;
-}.dm-widget .refdoc-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin: 0 0 16px;
 }.dm-widget .loe-billable-toggle {
   display: inline-flex;
   align-items: center;
@@ -553,13 +549,6 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
    mouse clicks too and outlined the whole rectangular label. */.dm-widget .loe-billable-toggle input:focus-visible {
   outline: none !important;
   box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
-}/* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
-   faint color - the element carries both classes. Match in-panel control weight (loe-mode /
-   chips): readable ink on the panel, teal when the aid is on. */.dm-widget .loe-billable-toggle.jargon-toggle {
-  color: var(--ink);
-  font-weight: 600;
-}.dm-widget .loe-billable-toggle.jargon-toggle:has(input:checked) {
-  color: var(--teal);
 }.dm-widget .pagehdr-controls {
   display: flex;
   align-items: center;
@@ -1276,7 +1265,7 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
 }.dm-widget .tip {
   position: fixed;
   z-index: 100;
-  max-width: 260px;
+  max-width: 320px;
   background: #04131f;
   color: #fff;
   padding: 9px 12px;
@@ -1297,6 +1286,15 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   display: block;
   margin-bottom: 3px;
   letter-spacing: 0.04em;
+}/* Tip chrome is always dark navy — use the bright RACI fills, not --r-*-text (those darken
+   for light-mode content surfaces and would fail contrast on this tooltip). */.dm-widget .tip .tname.tn-R {
+  color: var(--r-r);
+}.dm-widget .tip .tname.tn-A {
+  color: var(--r-a);
+}.dm-widget .tip .tname.tn-C {
+  color: var(--r-c);
+}.dm-widget .tip .tname.tn-I {
+  color: var(--r-i);
 }.dm-widget .toast {
   position: fixed;
   bottom: 22px;
@@ -1769,6 +1767,8 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
    typo in the sentence. */.dm-widget .rl-prose {
   font-family: var(--font-mono);
   font-weight: 700;
+}/* RACI letter chips + legend rows carry tips — help cursor signals "definition on hover", not click. */.dm-widget .rl-R[data-tip], .dm-widget .rl-A[data-tip], .dm-widget .rl-C[data-tip], .dm-widget .rl-I[data-tip], .dm-widget .rlegend .lg[data-tip], .dm-widget .rg-legend .lg[data-tip] {
+  cursor: help;
 }.dm-widget .rl-R {
   color: var(--r-r-text);
 }.dm-widget .rl-A {

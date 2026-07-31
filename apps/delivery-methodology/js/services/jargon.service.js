@@ -1,22 +1,12 @@
-/* Glossary term highlighting with memoized trusted HTML output. */
-angular.module('deliveryMethodology').factory('JargonService', ['$sce', function ($sce) {
+/* Glossary term highlighting with memoized trusted HTML output. Always on — terms and standalone
+   RACI letters in prose carry data-tip so TipService can show definitions on hover. */
+angular.module('deliveryMethodology').factory('JargonService', [
+  '$sce', 'RaciGridService',
+  function ($sce, RaciGridService) {
   'use strict';
 
   var glossary = {};
   var jargonCache = {};
-  // "Explain terms" is a global reading preference, not a per-view one - it used to be two
-  // unsynced local booleans (Methodology's own c.showJargon, Reference's own), so toggling it on
-  // one view silently reset on the other. One flag here, one control in Shell's header; every
-  // view controller reads getShowJargon() instead of owning its own copy.
-  var showJargon = false;
-
-  function getShowJargon() {
-    return showJargon;
-  }
-
-  function setShowJargon(value) {
-    showJargon = !!value;
-  }
 
   function escapeHtml(text) {
     var value = '';
@@ -77,25 +67,25 @@ angular.module('deliveryMethodology').factory('JargonService', ['$sce', function
           return match;
         }
 
-        return lead + '<span class="rl-prose rl-' + letter + '">' + letter + '</span>';
+        var name = RaciGridService.NAMES[letter] || letter;
+        var desc = RaciGridService.DESCS[letter] || '';
+        return lead
+          + '<span class="rl-prose rl-' + letter + '" data-tip-name="' + escapeHtml(name)
+          + '" data-tip="' + escapeHtml(desc) + '">' + letter + '</span>';
       });
     }).join('');
   }
 
-  function jargonHtml(text, showJargon) {
+  function jargonHtml(text) {
     if (!text) {
       return $sce.trustAsHtml('');
     }
-    var cacheKey = '0|' + text;
-    if (showJargon) {
-      cacheKey = '1|' + text;
-    }
-    if (jargonCache[cacheKey]) {
-      return jargonCache[cacheKey];
+    if (jargonCache[text]) {
+      return jargonCache[text];
     }
     var html = escapeHtml(text);
     var terms = Object.keys(glossary);
-    if (showJargon && terms.length) {
+    if (terms.length) {
       var pattern = new RegExp('\\b(' + terms.map(function (term) {
         return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       }).join('|') + ')\\b', 'g');
@@ -106,14 +96,12 @@ angular.module('deliveryMethodology').factory('JargonService', ['$sce', function
     html = chipRaciLetters(html);
 
     var trusted = $sce.trustAsHtml(html);
-    jargonCache[cacheKey] = trusted;
+    jargonCache[text] = trusted;
     return trusted;
   }
 
   return {
     setGlossary: setGlossary,
-    jargonHtml: jargonHtml,
-    getShowJargon: getShowJargon,
-    setShowJargon: setShowJargon
+    jargonHtml: jargonHtml
   };
 }]);
