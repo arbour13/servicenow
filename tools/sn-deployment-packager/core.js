@@ -294,9 +294,10 @@
 
   // Service Portal compiles the widget <css> field as SCSS (older libsass). Modern CSS that
   // libsass tries to evaluate — rgba(var(--rgb), a), color-mix(...), calc(… / var(…)),
-  // min(560px, 100%) — fails the compile and the widget ships with no styles. Wrap those
-  // calls in #{'…'} so Sass emits them as literal CSS. Plain rgba(0,0,0,.25) / calc(1px + 2px)
-  // are left alone (Sass handles them).
+  // min(560px, 100%), and CSS filter funcs that collide with Sass color funcs (saturate,
+  // grayscale, …) — fails the compile and the widget ships with no / partial styles. Wrap
+  // those calls in #{'…'} so Sass emits them as literal CSS. Plain rgba(0,0,0,.25) /
+  // calc(1px + 2px) are left alone (Sass handles them).
   function sassSafeCss(text) {
     function wrapLiteral(call) {
       return '#{\'' + String(call).replace(/\\/g, '\\\\').replace(/'/g, '\\\'') + '\'}';
@@ -329,20 +330,33 @@
       }
       return out;
     }
+    function wrapAlways() {
+      return true;
+    }
     function wrapIfVarOrColorSpace(call) {
       return /\bvar\s*\(|\bin\s+srgb\b|\bin\s+lab\b|\bin\s+oklab\b/.test(call);
     }
     // Order matters: longer/more-specific names first where one is a prefix of another.
     text = replaceFn(text, 'rgba', wrapIfVarOrColorSpace);
     text = replaceFn(text, 'rgb', wrapIfVarOrColorSpace);
-    text = replaceFn(text, 'color-mix', function () { return true; });
+    text = replaceFn(text, 'color-mix', wrapAlways);
     text = replaceFn(text, 'calc', function (call) {
       return /[/*]|\bvar\s*\(/.test(call);
     });
-    text = replaceFn(text, 'clamp', function () { return true; });
-    text = replaceFn(text, 'minmax', function () { return true; });
-    text = replaceFn(text, 'min', function () { return true; });
-    text = replaceFn(text, 'max', function () { return true; });
+    text = replaceFn(text, 'clamp', wrapAlways);
+    text = replaceFn(text, 'minmax', wrapAlways);
+    text = replaceFn(text, 'min', wrapAlways);
+    text = replaceFn(text, 'max', wrapAlways);
+    // CSS filter() args that libsass resolves as Sass color functions (or otherwise mangles).
+    text = replaceFn(text, 'hue-rotate', wrapAlways);
+    text = replaceFn(text, 'drop-shadow', wrapAlways);
+    text = replaceFn(text, 'grayscale', wrapAlways);
+    text = replaceFn(text, 'brightness', wrapAlways);
+    text = replaceFn(text, 'contrast', wrapAlways);
+    text = replaceFn(text, 'saturate', wrapAlways);
+    text = replaceFn(text, 'sepia', wrapAlways);
+    text = replaceFn(text, 'invert', wrapAlways);
+    text = replaceFn(text, 'blur', wrapAlways);
     return text;
   }
 

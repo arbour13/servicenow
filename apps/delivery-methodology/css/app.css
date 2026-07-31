@@ -283,11 +283,16 @@ button {
 
 /* Constrained, centered content column. Post five-widget split there are TWO .app roots stacked
    (Shell chrome, then the active view) - full padding on both left a ~150px void under pagehdr.
-   .app--chrome: top/side only. .app--view: side + bottom breathing room, no extra top. */
+   .app--chrome: top/side only. .app--view: side + bottom breathing room, no extra top.
+
+   cursor: default — Service Portal themes commonly style [ng-click] { cursor: pointer }. Our
+   .app / .view-root roots use ng-click only to dismiss tooltips, so without this reset the whole
+   page header (and empty chrome) looks clickable. Real controls keep their own cursor rules. */
 .app {
   max-width: 1120px;
   margin: 0 auto;
   padding: 28px 40px 100px;
+  cursor: default;
 }
 
 .app--chrome {
@@ -538,11 +543,30 @@ button {
   height: 16px;
 }
 
-/* Service Portal / Bootstrap paint a green :focus outline or glow on mouse click. Kill that
-   chrome inside this widget (!important beats theme CSS Includes), then restore a theme-matched
-   rounded ring only for keyboard focus (:focus-visible). Resting border, background, and fill stay
-   unchanged on focus - only the ring signals keyboard focus. --focus-gap matches the surface
-   behind the control (defaults to --paper). */
+/* Service Portal / Bootstrap paint a mint/green :focus outline on mouse click. Kill ALL :focus
+   outlines inside this widget (!important + outline-offset beat theme CSS Includes that also use
+   !important), then restore a theme-matched rounded ring only for keyboard focus
+   (:focus-visible). Resting border/background/fill stay unchanged - only the ring signals
+   keyboard focus. --focus-gap matches the surface behind the control (defaults to --paper). */
+button:focus,
+a:focus,
+summary:focus,
+[role=button]:focus,
+[role=tab]:focus,
+[role=menuitem]:focus,
+[tabindex]:focus,
+input[type=button]:focus,
+input[type=submit]:focus,
+input[type=reset]:focus,
+input[type=checkbox]:focus,
+input[type=radio]:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
 button:focus:not(:focus-visible),
 a:focus:not(:focus-visible),
 summary:focus:not(:focus-visible),
@@ -555,14 +579,7 @@ input[type=submit]:focus:not(:focus-visible),
 input[type=reset]:focus:not(:focus-visible),
 input[type=checkbox]:focus:not(:focus-visible),
 input[type=radio]:focus:not(:focus-visible) {
-  outline: none !important;
   box-shadow: none !important;
-}
-
-input:focus:not(:focus-visible),
-select:focus:not(:focus-visible),
-textarea:focus:not(:focus-visible) {
-  outline: none !important;
 }
 
 a {
@@ -1865,6 +1882,7 @@ h1.sp-title {
    off SearchService.isOpen() - same blur values as the chrome rules above, so the whole page
    reads as one dimmed layer under the search overlay. */
 .view-root {
+  cursor: default;
   transition: filter 0.2s, opacity 0.2s;
 }
 

@@ -48,9 +48,11 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
     return JargonService.jargonHtml(text, JargonService.getShowJargon());
   };
 
-  // Methodology intro panel: expanded until the user collapses it once, then remember collapsed
-  // (per methodology) in localStorage. Expanding again updates the preference so it stays open.
+  // Methodology intro panel: expanded by default. Collapsing remembers per methodology (and user
+  // browser) in localStorage. Seed/clear wipe these prefs (stable seed ids would otherwise keep a
+  // prior collapse after "Import Delivery 2.0 content").
   var METHODOLOGY_INTRO_COLLAPSED_KEY = 'gf-dm-methodology-intro-collapsed';
+  var SP_BRIEF_COLLAPSED_KEY = 'gf-dm-sp-brief-collapsed';
 
   function loadCollapsedMap(key) {
     try {
@@ -74,6 +76,17 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
     } catch (storeError) {
       /* storage unavailable - preference is session-only */
     }
+  }
+
+  function clearCollapsedPreferences() {
+    try {
+      window.localStorage.removeItem(METHODOLOGY_INTRO_COLLAPSED_KEY);
+      window.localStorage.removeItem(SP_BRIEF_COLLAPSED_KEY);
+    } catch (clearError) {
+      /* storage unavailable */
+    }
+    methodologyIntroCollapsedById = {};
+    subPhaseBriefCollapsedById = {};
   }
 
   var methodologyIntroCollapsedById = loadCollapsedMap(METHODOLOGY_INTRO_COLLAPSED_KEY);
@@ -102,7 +115,6 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
 
   // Sub-phase Overview + Objective share one collapse (same pattern as About). Preference is
   // per sub-phase so collapsing Kickoff does not hide IPKT's briefing.
-  var SP_BRIEF_COLLAPSED_KEY = 'gf-dm-sp-brief-collapsed';
   var subPhaseBriefCollapsedById = loadCollapsedMap(SP_BRIEF_COLLAPSED_KEY);
 
   c.hasSubPhaseBrief = function (subPhase) {
@@ -241,6 +253,7 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   // double-fire via tryBeginSave(), and the server refuses outright if the table already has
   // rows, so this button cannot clobber existing content no matter how it's triggered.
   c.seedStandard = function () {
+    clearCollapsedPreferences();
     AppStateService.seedStandard();
   };
 
@@ -270,6 +283,7 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
       if (!accepted) {
         return;
       }
+      clearCollapsedPreferences();
       AppStateService.resetAllContent();
     });
   };

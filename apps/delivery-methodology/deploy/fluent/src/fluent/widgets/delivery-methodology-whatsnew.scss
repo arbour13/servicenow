@@ -280,10 +280,15 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   cursor: pointer;
 }/* Constrained, centered content column. Post five-widget split there are TWO .app roots stacked
    (Shell chrome, then the active view) - full padding on both left a ~150px void under pagehdr.
-   .app--chrome: top/side only. .app--view: side + bottom breathing room, no extra top. */.dm-widget .app {
+   .app--chrome: top/side only. .app--view: side + bottom breathing room, no extra top.
+
+   cursor: default — Service Portal themes commonly style [ng-click] { cursor: pointer }. Our
+   .app / .view-root roots use ng-click only to dismiss tooltips, so without this reset the whole
+   page header (and empty chrome) looks clickable. Real controls keep their own cursor rules. */.dm-widget .app {
   max-width: 1120px;
   margin: 0 auto;
   padding: 28px 40px 100px;
+  cursor: default;
 }.dm-widget .app--chrome {
   padding-bottom: 0;
 }.dm-widget .app--view {
@@ -456,15 +461,15 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
 }.dm-widget .theme-toggle svg {
   width: 16px;
   height: 16px;
-}/* Service Portal / Bootstrap paint a green :focus outline or glow on mouse click. Kill that
-   chrome inside this widget (!important beats theme CSS Includes), then restore a theme-matched
-   rounded ring only for keyboard focus (:focus-visible). Resting border, background, and fill stay
-   unchanged on focus - only the ring signals keyboard focus. --focus-gap matches the surface
-   behind the control (defaults to --paper). */.dm-widget button:focus:not(:focus-visible), .dm-widget a:focus:not(:focus-visible), .dm-widget summary:focus:not(:focus-visible), .dm-widget [role="button"]:focus:not(:focus-visible), .dm-widget [role="tab"]:focus:not(:focus-visible), .dm-widget [role="menuitem"]:focus:not(:focus-visible), .dm-widget [tabindex]:focus:not(:focus-visible), .dm-widget input[type="button"]:focus:not(:focus-visible), .dm-widget input[type="submit"]:focus:not(:focus-visible), .dm-widget input[type="reset"]:focus:not(:focus-visible), .dm-widget input[type="checkbox"]:focus:not(:focus-visible), .dm-widget input[type="radio"]:focus:not(:focus-visible) {
+}/* Service Portal / Bootstrap paint a mint/green :focus outline on mouse click. Kill ALL :focus
+   outlines inside this widget (!important + outline-offset beat theme CSS Includes that also use
+   !important), then restore a theme-matched rounded ring only for keyboard focus
+   (:focus-visible). Resting border/background/fill stay unchanged - only the ring signals
+   keyboard focus. --focus-gap matches the surface behind the control (defaults to --paper). */.dm-widget button:focus, .dm-widget a:focus, .dm-widget summary:focus, .dm-widget [role="button"]:focus, .dm-widget [role="tab"]:focus, .dm-widget [role="menuitem"]:focus, .dm-widget [tabindex]:focus, .dm-widget input[type="button"]:focus, .dm-widget input[type="submit"]:focus, .dm-widget input[type="reset"]:focus, .dm-widget input[type="checkbox"]:focus, .dm-widget input[type="radio"]:focus, .dm-widget input:focus, .dm-widget select:focus, .dm-widget textarea:focus {
   outline: none !important;
+  outline-offset: 0 !important;
+}.dm-widget button:focus:not(:focus-visible), .dm-widget a:focus:not(:focus-visible), .dm-widget summary:focus:not(:focus-visible), .dm-widget [role="button"]:focus:not(:focus-visible), .dm-widget [role="tab"]:focus:not(:focus-visible), .dm-widget [role="menuitem"]:focus:not(:focus-visible), .dm-widget [tabindex]:focus:not(:focus-visible), .dm-widget input[type="button"]:focus:not(:focus-visible), .dm-widget input[type="submit"]:focus:not(:focus-visible), .dm-widget input[type="reset"]:focus:not(:focus-visible), .dm-widget input[type="checkbox"]:focus:not(:focus-visible), .dm-widget input[type="radio"]:focus:not(:focus-visible) {
   box-shadow: none !important;
-}.dm-widget input:focus:not(:focus-visible), .dm-widget select:focus:not(:focus-visible), .dm-widget textarea:focus:not(:focus-visible) {
-  outline: none !important;
 }.dm-widget a {
   border-radius: var(--radius-round);
 }.dm-widget a:focus-visible, .dm-widget button:focus-visible, .dm-widget summary:focus-visible, .dm-widget [role="button"]:focus-visible, .dm-widget [role="tab"]:focus-visible, .dm-widget [role="menuitem"]:focus-visible, .dm-widget [tabindex]:focus-visible, .dm-widget input:focus-visible:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), .dm-widget select:focus-visible, .dm-widget textarea:focus-visible {
@@ -1342,23 +1347,24 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   background: repeating-linear-gradient(45deg, transparent, transparent 22px, rgba(255, 210, 63, 0.045) 22px, rgba(255, 210, 63, 0.045) 23px);
 }.dm-widget .editing .pagehdr, .dm-widget .editing .methodology-chrome {
   opacity: 0.5;
-  filter: blur(2.5px) saturate(0.7);
+  filter: #{'blur(2.5px)'} #{'saturate(0.7)'};
   pointer-events: none;
   transition: filter 0.2s, opacity 0.2s;
 }/* Same treatment as edit mode: blur the page behind search. History + search + theme stay
    sharp via .hdr-search-group's raised z-index. */.dm-widget .app.search-active .views, .dm-widget .app.search-active .pagehdr-title, .dm-widget .app.search-active .pagehdr-controls, .dm-widget .app.search-active .main > *:not(.pagehdr) {
   opacity: 0.5;
-  filter: blur(2.5px) saturate(0.7);
+  filter: #{'blur(2.5px)'} #{'saturate(0.7)'};
   pointer-events: none;
   transition: filter 0.2s, opacity 0.2s;
 }/* The four view widgets are sibling DOM trees, so Shell's .search-active can't reach them with a
    descendant selector. Each view partial's root carries .view-root and flips .view-blur itself
    off SearchService.isOpen() - same blur values as the chrome rules above, so the whole page
    reads as one dimmed layer under the search overlay. */.dm-widget .view-root {
+  cursor: default;
   transition: filter 0.2s, opacity 0.2s;
 }.dm-widget .view-root.view-blur {
   opacity: 0.5;
-  filter: blur(2.5px) saturate(0.7);
+  filter: #{'blur(2.5px)'} #{'saturate(0.7)'};
   pointer-events: none;
 }.dm-widget .app.search-active .search-overlay {
   background: rgba(4, 19, 31, 0.28);
@@ -2876,7 +2882,7 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   cursor: pointer;
 }.dm-widget .whatsnew-item:hover {
   border-left-color: var(--hs-mint);
-  filter: brightness(1.08);
+  filter: #{'brightness(1.08)'};
 }.dm-widget .wn-group {
   margin-bottom: 26px;
 }.dm-widget .wn-group:last-child {
