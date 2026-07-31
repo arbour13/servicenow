@@ -858,11 +858,13 @@
         setStatus(discoveryStatus, '', false);
       }
 
-      // Restore the last selected app if it's still deployable.
+      // Restore the last selected app if it's still deployable. Not a user action, so this must
+      // NOT scroll - a page refresh should leave you at the top of the page, not jumped down to
+      // the output preview.
       var last = loadLastApp();
       if (last && eligibleApps[last]) {
         appSelect.value = last;
-        onAppSelected();
+        onAppSelected({ restoring: true });
       }
     });
   }
@@ -1652,7 +1654,12 @@
     updateActionButtons();
   }
 
-  function onAppSelected() {
+  // opts.restoring: true when called by runDiscovery to re-select the last app on page load,
+  // rather than by the user actually picking one. Suppresses the scroll-into-view below - a
+  // refresh should leave you where a fresh page load belongs (the top), not scrolled down to the
+  // output preview as though you'd just chosen something.
+  function onAppSelected(opts) {
+    var restoring = !!(opts && opts.restoring);
     var folder = appSelect.value;
     saveLastApp(folder);
     outputSection.style.display = 'none';
@@ -1733,14 +1740,17 @@
       outputSection.style.display = '';
       refreshBridgeLabel();
       pollSdkBridge();
-      // Everything from here down was hidden a moment ago - on a normal viewport the "Built
-      // successfully" status at the top has nothing visible next to it until the user scrolls.
-      // Scroll to the top of what just appeared (App ID/Version, then Bridge, then the output
-      // preview below it) rather than jumping straight to the bottom, so a connection-panel app's
-      // Connect step - already visible above this - isn't skipped past. behavior: 'auto' (instant),
-      // not 'smooth' - smooth-scroll animation runs on requestAnimationFrame, which a throttled or
-      // backgrounded tab can silently never fire, so the "smooth" version can just never complete.
-      overridesSection.scrollIntoView({ behavior: 'auto', block: 'start' });
+      // Everything from here down was hidden a moment ago - on a normal viewport the panels the
+      // user needs next have nothing visible next to them until they scroll. Scroll to the top of
+      // what just appeared (App ID/Version, then Bridge, then the output preview below it) rather
+      // than jumping straight to the bottom, so a connection-panel app's Connect step - already
+      // visible above this - isn't skipped past. behavior: 'auto' (instant), not 'smooth' -
+      // smooth-scroll animation runs on requestAnimationFrame, which a throttled or backgrounded
+      // tab can silently never fire, so the "smooth" version can just never complete.
+      // Skipped when restoring on page load (see onAppSelected's opts).
+      if (!restoring) {
+        overridesSection.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
 
       return fetchPriorFluentSources(folder).then(function (files) {
         if (folder !== currentFolder) { return; } // the user switched apps while this was in flight
@@ -1868,7 +1878,8 @@
     return 'Connection failed: ' + msg;
   }
 
-  appSelect.addEventListener('change', onAppSelected);
+  // Wrapped, not passed directly - otherwise the DOM Event lands in onAppSelected's opts slot.
+  appSelect.addEventListener('change', function () { onAppSelected(); });
   fldAppName.addEventListener('input', rebuildFluent);
   function onScopePartInput(el) {
     scopeUserTouched = true;
