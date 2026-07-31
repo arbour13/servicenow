@@ -1,7 +1,7 @@
 import { Table, ChoiceColumn, ReferenceColumn, StringColumn, IntegerColumn, JsonColumn } from '@servicenow/sdk/core'
 
-export const x_2168882_dlvry_2_content = Table({
-    name: 'x_2168882_dlvry_2_content',
+export const x_dlvry_method_content = Table({
+    name: 'x_dlvry_method_content',
     label: 'Content',
     schema: {
         type: ChoiceColumn({
@@ -28,7 +28,7 @@ export const x_2168882_dlvry_2_content = Table({
         }),
         parent: ReferenceColumn({
             label: 'Parent',
-            referenceTable: 'x_2168882_dlvry_2_content',
+            referenceTable: 'x_dlvry_method_content',
             cascadeRule: 'cascade',
         }),
         name: StringColumn({

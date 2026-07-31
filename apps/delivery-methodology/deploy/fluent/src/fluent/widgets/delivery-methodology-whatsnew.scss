@@ -304,40 +304,9 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   gap: 14px;
   flex-wrap: wrap;
   margin-bottom: 18px;
-}/* Connected pill, not two separate circles: the GROUP carries the border + radius-round shape
-   (overflow: hidden clips the two flush buttons to that shape); each button is borderless and
-   square, with a shared 1px divider between them instead of its own full border. */.dm-widget .nav-history {
-  display: inline-flex;
-  flex-shrink: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-round);
-  overflow: hidden;
-}.dm-widget .nav-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: none;
-  background: var(--surface-flat);
-  color: var(--ink-2);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, opacity 0.12s;
-}.dm-widget .nav-btn + .nav-btn {
-  border-left: 1px solid var(--line);
-}.dm-widget .nav-btn svg {
-  width: 16px;
-  height: 16px;
-}.dm-widget .nav-btn:hover:not(:disabled) {
-  color: var(--ink);
-  background: var(--surface-2);
-}.dm-widget .nav-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
 }.dm-widget .pagehdr-top .views {
   margin-bottom: 0;
-}/* Right-side chrome: history, search, theme. space-between pins this cluster opposite the tabs. */.dm-widget .hdr-search-group {
+}/* Right-side chrome: search, theme. space-between pins this cluster opposite the tabs. */.dm-widget .hdr-search-group {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -357,32 +326,9 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   font-family: inherit;
   font-size: 13px;
   outline: none;
+  --focus-gap: var(--surface-flat);
 }.dm-widget .hsearch input::placeholder {
   color: var(--ink-faint);
-}.dm-widget .hsearch input:focus {
-  border-color: var(--teal);
-}/* Discoverability for the "/" shortcut. Right-aligned inside the field, non-interactive, and it
-   steps aside the moment the field is focused or has a query (:placeholder-shown is false once
-   the user has typed) so it never overlaps real text. */.dm-widget .hsearch-kbd {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  line-height: 1;
-  color: var(--ink-faint);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 3px 6px;
-  transition: opacity 0.12s;
-}.dm-widget .hsearch input:focus ~ .hsearch-kbd, .dm-widget .hsearch input:not(:placeholder-shown) ~ .hsearch-kbd {
-  opacity: 0;
-}.dm-widget .hsearch input:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
 }.dm-widget .hsearch svg {
   position: absolute;
   left: 12px;
@@ -499,6 +445,7 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   color: var(--ink-faint);
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
+  --focus-gap: var(--surface-flat);
 }.dm-widget .theme-toggle {
   width: 34px;
   height: 34px;
@@ -511,15 +458,28 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   height: 16px;
 }/* Service Portal / Bootstrap paint a green :focus outline or glow on mouse click. Kill that
    chrome inside this widget (!important beats theme CSS Includes), then restore a theme-matched
-   ring only for keyboard focus (:focus-visible). Text fields keep outline off on :focus so their
-   own border/glow rules can apply; they still get --focus-ring via :focus-visible. */.dm-widget button:focus, .dm-widget a:focus, .dm-widget summary:focus, .dm-widget [role="button"]:focus, .dm-widget [role="tab"]:focus, .dm-widget [role="menuitem"]:focus, .dm-widget [tabindex]:focus, .dm-widget input[type="button"]:focus, .dm-widget input[type="submit"]:focus, .dm-widget input[type="reset"]:focus, .dm-widget input[type="checkbox"]:focus, .dm-widget input[type="radio"]:focus {
+   rounded ring only for keyboard focus (:focus-visible). Resting border, background, and fill stay
+   unchanged on focus - only the ring signals keyboard focus. --focus-gap matches the surface
+   behind the control (defaults to --paper). */.dm-widget button:focus:not(:focus-visible), .dm-widget a:focus:not(:focus-visible), .dm-widget summary:focus:not(:focus-visible), .dm-widget [role="button"]:focus:not(:focus-visible), .dm-widget [role="tab"]:focus:not(:focus-visible), .dm-widget [role="menuitem"]:focus:not(:focus-visible), .dm-widget [tabindex]:focus:not(:focus-visible), .dm-widget input[type="button"]:focus:not(:focus-visible), .dm-widget input[type="submit"]:focus:not(:focus-visible), .dm-widget input[type="reset"]:focus:not(:focus-visible), .dm-widget input[type="checkbox"]:focus:not(:focus-visible), .dm-widget input[type="radio"]:focus:not(:focus-visible) {
   outline: none !important;
   box-shadow: none !important;
-}.dm-widget input:focus, .dm-widget select:focus, .dm-widget textarea:focus {
+}.dm-widget input:focus:not(:focus-visible), .dm-widget select:focus:not(:focus-visible), .dm-widget textarea:focus:not(:focus-visible) {
   outline: none !important;
-}.dm-widget button:focus-visible, .dm-widget a:focus-visible, .dm-widget summary:focus-visible, .dm-widget [role="button"]:focus-visible, .dm-widget [role="tab"]:focus-visible, .dm-widget [role="menuitem"]:focus-visible, .dm-widget [tabindex]:focus-visible, .dm-widget input:focus-visible, .dm-widget select:focus-visible, .dm-widget textarea:focus-visible {
-  outline: var(--focus-ring) !important;
-  outline-offset: var(--focus-ring-offset) !important;
+}.dm-widget a {
+  border-radius: var(--radius-round);
+}.dm-widget a:focus-visible, .dm-widget button:focus-visible, .dm-widget summary:focus-visible, .dm-widget [role="button"]:focus-visible, .dm-widget [role="tab"]:focus-visible, .dm-widget [role="menuitem"]:focus-visible, .dm-widget [tabindex]:focus-visible, .dm-widget input:focus-visible:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), .dm-widget select:focus-visible, .dm-widget textarea:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
+}/* Buttons styled as inline links (RACI task jump, reference sub-phase crumb). */.dm-widget .rg-task-link, .dm-widget .ref-aid-crumb {
+  border-radius: var(--radius-round);
+}.dm-widget .rg-table td.tname, .dm-widget .jt-task, .dm-widget .ref-aid {
+  --focus-gap: var(--surface-2);
+}/* Phase road: ring the station digit only, not the name/count column beneath it. */.dm-widget .station:focus, .dm-widget .station:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}.dm-widget .station:focus-visible .station-num {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
 }.dm-widget .pagehdr-title {
   margin-bottom: 14px;
 }.dm-widget .pagehdr-title h1 {
@@ -586,8 +546,8 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
    click on the label never triggers) and drawn on the input itself, whose --radius-round border
    makes the ring follow the pill. The label-level :focus-within variant was removed: it fired on
    mouse clicks too and outlined the whole rectangular label. */.dm-widget .loe-billable-toggle input:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
 }/* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
    faint color - the element carries both classes. Match in-panel control weight (loe-mode /
    chips): readable ink on the panel, teal when the aid is on. */.dm-widget .loe-billable-toggle.jargon-toggle {
@@ -708,27 +668,9 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   to { opacity: 1; }
 }.dm-widget .rg-roles-shown .rg-table th.rg-rolecol, .dm-widget .rg-roles-shown .rg-table tbody td:not(.tname), .dm-widget .rg-roles-shown .rg-table tfoot td:not(.tname) {
   animation: dmColumnIn 0.22s ease-out both;
-}/* Filmstrip cards stagger in when the selected PHASE changes. Every phase's strip stays mounted
-   (ng-show, not ng-if - see the template note about not rebuilding cards), so the cards are never
-   recreated and there is no enter event to hook; this relies instead on ng-show's display:none →
-   visible flip, which restarts a CSS animation from the beginning. That also means it fires on
-   first paint for the initially-visible strip, which is wanted. Per-card delay comes from --i,
-   set on each card in the template, capped so a long phase never trails a visible ripple. */.dm-widget @keyframes dmCardIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}.dm-widget .film .fcard {
-  /* backwards (not both): keep the from-state during the stagger delay, then RELEASE transform
-     when the animation ends so .fcard:hover's translateY lift can apply. `both`/`forwards` left
-     transform: translateY(0) pinned and silently killed the hover. */
-  animation: dmCardIn 0.24s ease-out backwards;
-  animation-delay: #{'calc(#{'min(var(--i, 0), 5)'} * 0.035s)'};
-}@media (prefers-reduced-motion: reduce) {.dm-widget .search-overlay, .dm-widget .msg-overlay, .dm-widget .search-modal, .dm-widget .msg-dialog, .dm-widget .film .fcard, .dm-widget .rg-roles-shown .rg-table th.rg-rolecol, .dm-widget .rg-roles-shown .rg-table tbody td:not(.tname), .dm-widget .rg-roles-shown .rg-table tfoot td:not(.tname) {
+}/* Filmstrip cards render instantly, no entry animation - see .fcard's own comment on why transform
+   is :hover's alone, and methodology.controller.js's note on selectPhase/openSubPhase for why
+   selection itself carries no motion either. */@media (prefers-reduced-motion: reduce) {.dm-widget .search-overlay, .dm-widget .msg-overlay, .dm-widget .search-modal, .dm-widget .msg-dialog, .dm-widget .rg-roles-shown .rg-table th.rg-rolecol, .dm-widget .rg-roles-shown .rg-table tbody td:not(.tname), .dm-widget .rg-roles-shown .rg-table tfoot td:not(.tname) {
     animation: none;
   }
 }@media (prefers-reduced-motion: reduce) {.dm-widget .clp, .dm-widget .clp-inner {
@@ -745,13 +687,16 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   align-items: center;
   gap: 8px;
   margin: 0;
-  padding: 6px 0;
+  padding: 6px 12px;
   border: 0;
+  border-radius: var(--radius-round);
   background: none;
   color: var(--ink-soft);
   cursor: pointer;
   text-align: left;
   font: inherit;
+  width: fit-content;
+  max-width: 100%;
 }.dm-widget .methodology-intro-toggle:hover, .dm-widget .sp-brief-toggle:hover {
   color: var(--ink);
 }.dm-widget .methodology-intro-chevron, .dm-widget .sp-brief-chevron {
@@ -780,6 +725,8 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   font-size: 12.5px;
   font-weight: 600;
   text-decoration: none;
+  border-radius: var(--radius-round);
+  padding: 6px 12px;
 }.dm-widget .methodology-intro-feedback:hover {
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -931,13 +878,14 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   cursor: pointer;
   flex-shrink: 0;
   transition: color 0.12s, border-color 0.12s, background 0.12s;
+  --focus-gap: var(--navy-2);
 }.dm-widget .struct-icon-btn svg {
   width: 15px;
   height: 15px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
-}.dm-widget .struct-icon-btn:hover, .dm-widget .struct-icon-btn:focus-visible {
+}.dm-widget .struct-icon-btn:hover {
   color: var(--teal);
   border-color: var(--teal);
   background: var(--surface-flat);
@@ -945,14 +893,13 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   color: var(--teal);
   border-color: var(--teal);
   background: var(--teal-wash);
-}.dm-widget .struct-icon-btn:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
 }/* Structure editor lives in a normal .panel (same navy surface as sub-phase edit). Cancel
    restores a snapshot; Save commits the draft. */.dm-widget .struct-toolbar-hint {
   font-size: 12.5px;
   color: var(--ink-faint);
   margin: 0 0 16px;
+}.dm-widget .struct-methodology-block {
+  margin-bottom: 26px;
 }.dm-widget .struct-methodology {
   display: flex;
   align-items: center;
@@ -1030,7 +977,7 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   color: var(--ink-faint);
   text-align: right;
 }.dm-widget .struct-add-methodology {
-  margin: -8px 0 18px;
+  margin: 4px 0 0;
 }.dm-widget .struct-add-phase {
   margin-top: 4px;
 }.dm-widget .fcard {
@@ -1050,7 +997,11 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   font-family: inherit;
   overflow: hidden;
   transition: transform 0.16s, box-shadow 0.16s;
-}.dm-widget .fcard::before {
+}/* Accent rail. Width changes 3px -> 5px on select and is deliberately NOT transitioned: animating
+   it meant every click grew a bar along the card's left edge over 0.16s, which reads as the card
+   itself shifting even though the rail is absolutely positioned and reflows nothing. Selecting
+   should leave the card completely static - :hover's lift is the only movement a card ever makes.
+   The colour/fill difference carries the selected state; the width step just needs to be instant. */.dm-widget .fcard::before {
   content: "";
   position: absolute;
   left: 0;
@@ -1059,10 +1010,13 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   width: 3px;
   background: var(--pc);
   opacity: 0.9;
-  transition: width 0.16s;
 }.dm-widget .fcard:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-lift);
+}/* Outline (not box-shadow): sits outside the card and is not clipped by overflow: hidden. */.dm-widget .fcard:focus-visible {
+  outline: var(--focus-ring) !important;
+  outline-offset: var(--focus-ring-offset) !important;
+  box-shadow: none !important;
 }/* Selected cue is the phase-coloured RING, not the fill. The fill alone measured 1.71:1 (dark) and
    1.23:1 (light) against an unselected sibling - under WCAG 1.4.11's 3:1 for a meaningful state
    indicator, and the light figure is near-imperceptible. It also inverted between themes (selected
@@ -1329,6 +1283,7 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   border-radius: 14px;
   box-shadow: var(--shadow-md);
   padding: 18px 20px 16px;
+  --focus-gap: var(--navy-2);
 }.dm-widget .msg-dialog-head {
   display: flex;
   align-items: flex-start;
@@ -1354,9 +1309,6 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
 }.dm-widget .msg-dialog-x:hover {
   color: var(--ink);
   background: var(--surface-flat);
-}.dm-widget .msg-dialog-x:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
 }.dm-widget .msg-dialog-body {
   margin: 10px 0 18px;
   font-size: 14px;
@@ -1375,8 +1327,19 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   border-color: #912018;
   color: #fff;
   box-shadow: var(--shadow-md);
+}.dm-widget .btn.danger:active {
+  background: #912018;
+  border-color: #912018;
+  color: #fff;
+  box-shadow: var(--shadow-inset);
 }.dm-widget .btn.danger:disabled {
   opacity: 0.55;
+  color: #fff;
+  background: #b42318;
+  border-color: #b42318;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
 }.dm-widget .task {
   background: var(--surface-2);
   border-radius: 12px;
@@ -1739,6 +1702,8 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   text-decoration: none;
   white-space: nowrap;
   margin-top: 3px;
+  border-radius: var(--radius-round);
+  padding: 2px 8px;
 }.dm-widget .ttbl .ja {
   display: flex;
   align-items: center;
@@ -1875,12 +1840,9 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   background: var(--surface-2);
   resize: vertical;
   outline: none;
+  --focus-gap: var(--surface-2);
 }.dm-widget .edit-in::placeholder {
   color: var(--ink-faint);
-}.dm-widget .edit-in:focus {
-  border-color: var(--teal);
-  /* !important so portal's green input glow cannot win over our teal wash. */
-  box-shadow: 0 0 0 3px rgba(23, 184, 166, 0.22) !important;
 }.dm-widget textarea.edit-in {
   line-height: 1.5;
 }.dm-widget select.edit-in {
@@ -2412,6 +2374,7 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   border-radius: 10px;
   padding: 3px;
   margin-bottom: 20px;
+  --focus-gap: var(--surface-flat);
 }.dm-widget .vtab {
   display: inline-flex;
   align-items: center;
@@ -2470,16 +2433,19 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   font-size: 14px;
   padding: 30px 0;
   text-align: center;
-}/* Destructive testing action at the foot of structure edit - separated by a rule and pushed well
-   clear of the add buttons above so it can't be hit by accident while reorganising. */.dm-widget .struct-danger-zone {
+}/* TEMPORARY destructive testing action at the foot of the Methodology view - separated by a rule
+   and pushed well clear of the content above so it can't be hit by accident. Remove alongside the
+   .reset-content-zone block in partials/methodology.html when seeding no longer needs testing. */.dm-widget .reset-content-zone {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 34px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line-soft);
-}.dm-widget .struct-danger-hint {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface-flat);
+}.dm-widget .reset-content-hint {
   font-size: 12px;
   color: var(--ink-faint);
 }/* Fresh-instance empty state on the Methodology view - a real call to action (not just .empty's
@@ -2684,8 +2650,8 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   cursor: pointer;
   box-sizing: border-box;
 }.dm-widget .rg-role-btn:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: -2px;
+  outline: none !important;
+  box-shadow: none !important;
 }/* Role columns only - Task is not a focus control. Mix teal into surface-2 (opaque) rather than
    --teal-wash, which is translucent and lets underlying row borders show through while sticky. */.dm-widget .rg-table thead th:not(.taskcol):hover, .dm-widget .rg-table thead th.colhi:not(.focused) {
   background: #{'color-mix(in srgb, var(--teal) 16%, var(--surface-2))'};
@@ -2759,21 +2725,19 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   padding-left: 16px;
   padding-right: 16px;
 }.dm-widget .rg-task-link {
-  display: inline;
+  display: inline-block;
   margin: 0;
-  padding: 0;
+  padding: 2px 4px;
   border: none;
   background: none;
   font: inherit;
   color: inherit;
   text-align: left;
   cursor: pointer;
+  border-radius: var(--radius-round);
 }.dm-widget .rg-task-link:hover, .dm-widget .rg-task-link:focus-visible {
   color: inherit;
   text-decoration: underline;
-}.dm-widget .rg-task-link:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
 }.dm-widget .rg-empty-cell {
   padding: 26px;
   color: var(--ink-faint);
@@ -3130,6 +3094,8 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   color: var(--hs-mint);
   text-decoration: none;
   white-space: nowrap;
+  border-radius: var(--radius-round);
+  padding: 4px 10px;
 }.dm-widget .ref-aid .jobaid svg {
   width: 13px;
   height: 13px;
@@ -3151,7 +3117,8 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   color: var(--hs-mint);
   background: none;
   border: none;
-  padding: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-round);
   cursor: pointer;
   text-align: left;
 }.dm-widget .ref-aid-crumb:hover {

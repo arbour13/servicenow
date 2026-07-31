@@ -20,7 +20,7 @@
   // adding a new app means adding its folder name here so the console probes it. An app with no
   // deploy.manifest.js just comes back ineligible; nothing else has to change.
   var KNOWN_APP_FOLDERS = [
-    'glide-studio', 'standards',
+    'glide-studio', 'docs',
     'theme-generator', 'widget-studio', 'scss-mixin-generator', 'delivery-methodology',
   ];
 

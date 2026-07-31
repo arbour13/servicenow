@@ -1,0 +1,533 @@
+/* GlideFast Docs - visual identity: card-based layout, light/dark theming, and docs-page (.docs-*)
+   treatment, trimmed to only what this standalone reference viewer needs (no builder forms, no
+   output pane, no sidenav/mode-switcher).
+
+   SCSS SOURCE, not hand-edited CSS - css/app.css is a BUILD OUTPUT (npx sass scss/app.scss
+   css/app.css --no-source-map). Edit this file, not that one.
+
+   Color tokens stay real SCSS variables with `!default` so a future ServiceNow deploy (see
+   deploy.manifest.js) can ship them as a Theme's actual CSS Variables and have this file's
+   content ship as a CSS Include that references them uncompiled. */
+
+// ---------- Light (default) palette ----------
+$gfd-bg: #f4f5f7 !default;
+$gfd-panel: #ffffff !default;
+$gfd-panel-alt: #fbfbfd !default;
+$gfd-border: #e2e5ea !default;
+$gfd-border-strong: #d2d6dd !default;
+$gfd-text: #1c2128 !default;
+$gfd-muted: #6b7280 !default;
+$gfd-faint: #9aa1ab !default;
+$gfd-accent: #054b80 !default;
+$gfd-accent-hover: #043a63 !default;
+$gfd-accent-soft: #e6eef5 !default;
+$gfd-accent-soft-hover: #d6e6f2 !default;
+$gfd-accent-border: #b3cae0 !default;
+// Topbar background - the brand navy this app has always used, kept for continuity even though
+// there's no sidenav here, just a slim top bar.
+$gfd-topbar-bg: #054b80 !default;
+
+$gfd-purple: #6d3fc9 !default;
+$gfd-purple-soft: #f1ecfb !default;
+$gfd-purple-border: #d3c2ee !default;
+$gfd-green: #15803d !default;
+$gfd-green-soft: #e8f5ec !default;
+$gfd-green-border: #bfe3cb !default;
+// Local-edit UI only (the "Edited locally" badge, editor validation errors) - no reader content
+// uses this today, but it's a real semantic color (danger/error) so it gets a proper token trio
+// like purple/green above, not a hardcoded hex buried in the editor's own rules.
+$gfd-red: #b42318 !default;
+$gfd-red-soft: #fbeae8 !default;
+$gfd-red-border: #f0c4bd !default;
+
+// Code-sample palette - the docs' <pre> blocks use a generated-script-style highlighter look
+// (.c-kw/.c-str/.c-num/.c-com/.c-fn). Bound directly to these $gfd-ed-* values (not var(--...)) per
+// app THEME - see the .docs-pre rule below for why.
+$gfd-ed-bg: #ffffff !default;
+$gfd-ed-text: #1c2128 !default;
+$gfd-ed-border: #e2e5ea !default;
+$gfd-ed-kw: #8250df !default;
+$gfd-ed-str: #116329 !default;
+$gfd-ed-num: #953800 !default;
+$gfd-ed-com: #6b7280 !default;
+$gfd-ed-fn: #0550ae !default;
+
+$gfd-ed-bg-dark: #1b1f2a !default;
+$gfd-ed-text-dark: #e6e9ef !default;
+$gfd-ed-border-dark: #2c3242 !default;
+$gfd-ed-kw-dark: #c792ea !default;
+$gfd-ed-str-dark: #c3e88d !default;
+$gfd-ed-num-dark: #f78c6c !default;
+$gfd-ed-com-dark: #5a6275 !default;
+$gfd-ed-fn-dark: #82aaff !default;
+
+// ---------- Dark palette ----------
+$gfd-bg-dark: #10131a !default;
+$gfd-panel-dark: #1a1f29 !default;
+$gfd-panel-alt-dark: #20262f !default;
+$gfd-border-dark: #2a3040 !default;
+$gfd-border-strong-dark: #3b4353 !default;
+$gfd-text-dark: #e7ebf2 !default;
+$gfd-muted-dark: #9aa3b6 !default;
+$gfd-faint-dark: #6b7385 !default;
+$gfd-accent-dark: #5b9fe0 !default;
+$gfd-accent-hover-dark: #7ab3ea !default;
+$gfd-accent-soft-dark: rgba(91, 159, 224, 0.16) !default;
+$gfd-accent-soft-hover-dark: rgba(91, 159, 224, 0.28) !default;
+$gfd-accent-border-dark: rgba(91, 159, 224, 0.4) !default;
+$gfd-topbar-bg-dark: #043962 !default;
+$gfd-purple-dark: #b79cf0 !default;
+$gfd-purple-soft-dark: rgba(183, 156, 240, 0.16) !default;
+$gfd-purple-border-dark: rgba(183, 156, 240, 0.4) !default;
+$gfd-green-dark: #6ee7a0 !default;
+$gfd-green-soft-dark: rgba(110, 231, 160, 0.14) !default;
+$gfd-green-border-dark: rgba(110, 231, 160, 0.36) !default;
+$gfd-red-dark: #f0968c !default;
+$gfd-red-soft-dark: rgba(240, 150, 140, 0.14) !default;
+$gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
+
+:root {
+  --bg: #{$gfd-bg};
+  --panel: #{$gfd-panel};
+  --panel-alt: #{$gfd-panel-alt};
+  --border: #{$gfd-border};
+  --border-strong: #{$gfd-border-strong};
+  --text: #{$gfd-text};
+  --muted: #{$gfd-muted};
+  --faint: #{$gfd-faint};
+  --accent: #{$gfd-accent};
+  --accent-hover: #{$gfd-accent-hover};
+  --accent-soft: #{$gfd-accent-soft};
+  --accent-soft-hover: #{$gfd-accent-soft-hover};
+  --accent-border: #{$gfd-accent-border};
+  --topbar-bg: #{$gfd-topbar-bg};
+  --ed-bg: #{$gfd-ed-bg};
+  --ed-text: #{$gfd-ed-text};
+  --ed-border: #{$gfd-ed-border};
+  --ed-kw: #{$gfd-ed-kw};
+  --ed-str: #{$gfd-ed-str};
+  --ed-num: #{$gfd-ed-num};
+  --ed-com: #{$gfd-ed-com};
+  --ed-fn: #{$gfd-ed-fn};
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+  --sp-xxs: 2px;
+  --sp-xs:  4px;
+  --sp-sm:  8px;
+  --sp-md:  12px;
+  --sp-lg:  16px;
+  --sp-xl:  20px;
+  --sp-xxl: 24px;
+  --font: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+  --purple: #{$gfd-purple};
+  --purple-soft: #{$gfd-purple-soft};
+  --purple-border: #{$gfd-purple-border};
+  --green: #{$gfd-green};
+  --green-soft: #{$gfd-green-soft};
+  --green-border: #{$gfd-green-border};
+  --red: #{$gfd-red};
+  --red-soft: #{$gfd-red-soft};
+  --red-border: #{$gfd-red-border};
+}
+/* Dark mode. `data-theme` is set on <html> by vm.toggleTheme() (see ThemeService) - overriding the
+   custom properties here is enough to re-theme every component that already references
+   var(--...) instead of a literal color; the handful that don't (the .docs-pre code-sample surface)
+   get their own explicit :root[data-theme="dark"] overrides further down. */
+:root[data-theme="dark"] {
+  --bg: #{$gfd-bg-dark};
+  --panel: #{$gfd-panel-dark};
+  --panel-alt: #{$gfd-panel-alt-dark};
+  --border: #{$gfd-border-dark};
+  --border-strong: #{$gfd-border-strong-dark};
+  --text: #{$gfd-text-dark};
+  --muted: #{$gfd-muted-dark};
+  --faint: #{$gfd-faint-dark};
+  --accent: #{$gfd-accent-dark};
+  --accent-hover: #{$gfd-accent-hover-dark};
+  --accent-soft: #{$gfd-accent-soft-dark};
+  --accent-soft-hover: #{$gfd-accent-soft-hover-dark};
+  --accent-border: #{$gfd-accent-border-dark};
+  --topbar-bg: #{$gfd-topbar-bg-dark};
+  --shadow: 0 1px 2px rgba(0,0,0,.24), 0 1px 3px rgba(0,0,0,.32);
+  --purple: #{$gfd-purple-dark};
+  --purple-soft: #{$gfd-purple-soft-dark};
+  --purple-border: #{$gfd-purple-border-dark};
+  --green: #{$gfd-green-dark};
+  --green-soft: #{$gfd-green-soft-dark};
+  --green-border: #{$gfd-green-border-dark};
+  --red: #{$gfd-red-dark};
+  --red-soft: #{$gfd-red-soft-dark};
+  --red-border: #{$gfd-red-border-dark};
+}
+
+// The one shared focus-ring shape for every focusable element in the app - a soft-glow treatment
+// (border-color + a soft box-shadow "halo"), picked over a solid outset outline or an
+// adaptive-per-surface outline after a live comparison across this app's own components.
+// Deliberately just the ring itself: callers compose it with whatever grounding THEIR element
+// already has (border-color for bordered controls, a background tint for borderless rows). $inset
+// exists for elements that sit flush against a container edge (the topbar) where an outset ring
+// would get clipped by that container's own edge.
+@mixin gfd-focus-ring($glow: var(--accent-soft), $spread: 3px, $inset: false) {
+  outline: none;
+  @if $inset {
+    box-shadow: inset 0 0 0 $spread $glow;
+  } @else {
+    box-shadow: 0 0 0 $spread $glow;
+  }
+}
+
+/* ---------- Base reset ---------- */
+* { box-sizing: border-box; }
+// Angular's built-in ngCloak directive strips the ng-cloak attribute once it compiles the element
+// that carries it, but the HIDING has to come from plain CSS (not JS) - this rule is what keeps
+// raw, not-yet-compiled markup off the screen during the gap between the browser parsing the
+// static HTML and Angular (loaded from a CDN) finishing bootstrap.
+[ng-cloak] { display: none !important; }
+/* Animates the light/dark toggle: vm.toggleTheme() just flips the data-theme attribute, which
+   changes every var(--...) custom property at once - transitioning the few concrete properties
+   that actually consume them is what makes that swap read as a fade instead of a hard cut. */
+*, *::before, *::after {
+  transition: background-color .22s ease, color .22s ease, border-color .22s ease, box-shadow .22s ease, fill .22s ease, stroke .22s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  font-size: 13.5px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: var(--sp-lg); overflow: hidden; }
+.card-head { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--border); }
+.card-head h2 { margin: 0; font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.card-body { padding: var(--sp-md) var(--sp-lg); }
+.hint { font-size: 11.5px; color: var(--muted); margin: 0 0 var(--sp-md); line-height: 1.5; }
+.empty { font-size: 12px; color: var(--faint); font-style: italic; padding: var(--sp-xs) 0; }
+
+input[type=text] {
+  width: 100%; height: 34px; padding: 0 var(--sp-md);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel); font: inherit; font-size: 13px; color: var(--text);
+  transition: border-color .12s, box-shadow .12s;
+}
+input:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+input::placeholder { color: var(--faint); }
+
+/* ---------- App shell ---------- */
+// No sidenav/mode-switcher (this app is nothing but the docs) - just a slim brand bar pinned above
+// the scrolling content pane.
+.app { display: flex; flex-direction: column; height: 100vh; }
+.topbar {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-md); padding: var(--sp-sm) var(--sp-lg);
+  background: var(--topbar-bg);
+}
+.topbar-brand { display: flex; align-items: center; gap: var(--sp-sm); font-weight: 650; font-size: 13px; color: #fff; white-space: nowrap; }
+.topbar-logo { width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0; }
+.topbar-theme-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; flex-shrink: 0; padding: 0;
+  border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.12); color: #fff; cursor: pointer; transition: background .12s, border-color .12s;
+}
+.topbar-theme-toggle:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4); }
+// Inverse ring: var(--accent-soft) has poor contrast against this permanent navy background
+// regardless of app theme, so this uses a white glow instead - inset so it doesn't get clipped by
+// the topbar's own edge.
+.topbar-theme-toggle:focus-visible {
+  @include gfd-focus-ring($glow: rgba(255,255,255,.55), $spread: 2px, $inset: true);
+  border-color: rgba(255,255,255,.4);
+}
+
+// The scrolling content pane - DocsUiService's scrollTo/scrollToTop/setupScrollSpy and
+// MainController's docs-link click delegation all query `.docs-pane` by class name for this
+// element.
+.docs-pane { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; padding: 0 var(--sp-xl) 80px; }
+.page-title { display: flex; align-items: flex-start; gap: var(--sp-md); margin: 0 0 var(--sp-xxl); padding-top: var(--sp-xl); }
+.page-title > span:first-child { display: flex; color: var(--accent); }
+.page-title-name { font-size: 20px; font-weight: 650; color: var(--text); line-height: 1.1; }
+.page-title-sub { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-top: var(--sp-xxs); }
+.page-title-actions { margin-left: auto; align-self: center; display: flex; gap: var(--sp-sm); flex-wrap: wrap; justify-content: flex-end; }
+// Sticky header - stays reachable (title + search) while scrolled, since a page can run longer
+// than one screen. Background covers its own padding-top so nothing peeks through above it while
+// pinned.
+.page-title-sticky { position: sticky; top: 0; z-index: 5; background: var(--bg); }
+// Below this, the title text plus the search box's fixed 220px width no longer fit on one row -
+// wrap the search onto its own row rather than letting it run off the right edge (the fixed
+// docs-search-wrap-header width was measured against a desktop-width header, not a phone one).
+@media (max-width: 560px) {
+  .page-title { flex-wrap: wrap; }
+  .page-title-actions { margin-left: 0; width: 100%; justify-content: flex-start; }
+  .docs-search-wrap-header .docs-search-input { width: 100%; }
+}
+
+/* ---------- Docs (hosted reference pages) ---------- */
+// Rendered from DocsService's pre-parsed HTML (see scripts/build-docs.js). Two-column layout: the
+// reading column caps at .docs-content's measure (940px) rather than stretching to fill the pane,
+// and a sticky rail uses the reclaimed width for group/page/section navigation.
+.docs-layout { display: flex; align-items: flex-start; gap: var(--sp-xxl); max-width: 1204px; margin: 0 auto; }
+.docs-layout-main { flex: 1; min-width: 0; max-width: 940px; position: relative; }
+
+.docs-rail {
+  width: 240px; flex-shrink: 0; align-self: flex-start;
+  position: sticky; top: 75px;
+  max-height: calc(100vh - 75px - var(--sp-xl));
+  overflow-y: auto; padding: 0 var(--sp-sm) var(--sp-lg);
+}
+.docs-rail-home {
+  display: block; width: 100%; text-align: left; border: 0; border-left: 2px solid transparent; background: transparent; cursor: pointer;
+  font: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted);
+  padding: var(--sp-xs) 0 var(--sp-xs) var(--sp-sm); margin-left: -1px; margin-bottom: var(--sp-lg);
+  transition: color .12s, border-color .12s;
+}
+.docs-rail .docs-search-wrap {
+  position: sticky; top: 0; z-index: 1; background: var(--bg);
+  margin-bottom: var(--sp-md);
+}
+.docs-rail .docs-search-wrap .docs-search-input { width: 100%; }
+.docs-rail-home:hover { color: var(--text); }
+.docs-rail-home.active { color: var(--accent); border-left-color: var(--accent); }
+.docs-rail-home:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+.docs-rail-band + .docs-rail-band { margin-top: var(--sp-xl); }
+// Not a button (see index.html) - a group is a structural label, not something to navigate to.
+.docs-rail-band-title {
+  display: block; width: 100%; text-align: left;
+  font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text); margin-left: -1px; margin-bottom: var(--sp-sm);
+}
+.docs-rail-chapter { margin-bottom: 2px; }
+.docs-rail-part-row { display: flex; align-items: stretch; }
+.docs-rail-part {
+  flex: 1; min-width: 0; text-align: left; border: 0; background: transparent;
+  border-left: 2px solid transparent; margin-left: -1px;
+  padding: 3px 0 3px var(--sp-sm); cursor: pointer; font: inherit; font-size: 12px; line-height: 1.5;
+  color: var(--muted);
+}
+.docs-rail-part:hover { color: var(--text); }
+.docs-rail-part.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; letter-spacing: -0.02em; }
+.docs-rail-part:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+.docs-rail-expand {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 20px; border: 0; background: transparent; border-radius: var(--radius-sm);
+  color: var(--faint); cursor: pointer; padding: 0;
+  transition: color .12s, background .12s;
+}
+.docs-rail-expand svg { transition: transform .15s; }
+.docs-rail-expand.expanded svg { transform: rotate(90deg); }
+.docs-rail-expand:hover { color: var(--text); background: var(--panel-alt); }
+.docs-rail-expand:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+.docs-rail-sections { margin-bottom: 2px; }
+.docs-rail-section {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  border-left: 2px solid transparent; margin-left: -1px;
+  padding: 2px 0 2px var(--sp-lg); cursor: pointer; font: inherit; font-size: 11.5px; line-height: 1.6;
+  color: var(--faint);
+}
+.docs-rail-section:hover { color: var(--text); }
+.docs-rail-section.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+.docs-rail-section:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+// Below this, .docs-layout-main alone (940px) plus padding doesn't leave enough room for a 240px
+// rail without cramping the reading column - the rail is the ONLY in-page nav, so below this
+// width the reader falls back to plain scrolling.
+@media (max-width: 1260px) {
+  .docs-rail { display: none; }
+}
+
+.docs-link {
+  border: 0; background: transparent; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 600; color: var(--accent); white-space: nowrap;
+}
+.docs-link:hover { text-decoration: underline; }
+.docs-link:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+
+// Breadcrumb on an open page's card-head ("Group / Page Title") - the group half stays muted so
+// the page's own title (plain text alongside it, not its own span) is what reads as the heading.
+.docs-breadcrumb { color: var(--faint); font-weight: 650; }
+.docs-breadcrumb-sep { color: var(--faint); margin: 0 var(--sp-xs); font-weight: 400; }
+
+// Shared small-button base for every editor control (Edit/Cancel/Save/toolbar buttons) - this app
+// otherwise only has icon toggles and text-styled .docs-link buttons, nothing this size before now.
+.docs-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 26px; padding: 0 var(--sp-sm); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--text); font: inherit; font-size: 11.5px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: border-color .12s, background .12s;
+}
+.docs-btn:hover { background: var(--panel-alt); }
+.docs-btn:focus-visible { @include gfd-focus-ring; }
+.docs-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.docs-btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.docs-btn-primary[disabled] { opacity: .5; cursor: not-allowed; }
+.docs-btn-primary[disabled]:hover { background: var(--accent); border-color: var(--accent); }
+
+// Edit-mode header row (card-head, alongside the breadcrumb) - the badge and Reset link only ever
+// show together with the Edit button (all three gated by !vm.docsEditMode in index.html).
+.docs-page-actions { display: flex; align-items: center; gap: var(--sp-sm); flex-shrink: 0; }
+.docs-local-badge {
+  font-size: 10.5px; font-weight: 650; letter-spacing: .02em; text-transform: uppercase;
+  color: var(--purple); background: var(--purple-soft); border: 1px solid var(--purple-border);
+  border-radius: var(--radius-sm); padding: 2px var(--sp-sm); white-space: nowrap;
+}
+.docs-edit-btn { @extend .docs-btn; }
+
+// The editor itself - toolbar, then a two-column markdown/preview split, then any validation
+// errors, then Cancel/Save. .docs-editor-preview reuses .docs-content (see the class list on its
+// own element in index.html) so the live preview is styled IDENTICALLY to the real reader view -
+// what an author sees while typing is what a reader will actually get, not an approximation.
+.docs-editor { display: flex; flex-direction: column; gap: var(--sp-md); }
+.docs-editor-toolbar { display: flex; flex-wrap: wrap; gap: var(--sp-xs); }
+.docs-editor-toolbar button { @extend .docs-btn; }
+.docs-editor-panes { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-md); align-items: stretch; }
+@media (max-width: 900px) {
+  .docs-editor-panes { grid-template-columns: 1fr; }
+}
+.docs-editor-textarea {
+  width: 100%; min-height: 420px; padding: var(--sp-md); resize: vertical;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+}
+.docs-editor-textarea:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+.docs-editor-preview {
+  min-height: 420px; max-height: 620px; overflow-y: auto;
+  padding: var(--sp-md); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-alt);
+}
+.docs-editor-preview-title { font-size: 15px; font-weight: 650; margin: 0 0 var(--sp-sm); color: var(--text); }
+.docs-editor-errors {
+  margin: 0; padding: var(--sp-sm) var(--sp-md); list-style: none;
+  border: 1px solid var(--red-border); background: var(--red-soft); border-radius: var(--radius-sm);
+  color: var(--red); font-size: 12px; line-height: 1.6;
+}
+.docs-editor-controls { display: flex; justify-content: flex-end; gap: var(--sp-sm); }
+.docs-editor-cancel { @extend .docs-btn; }
+.docs-editor-save { @extend .docs-btn; @extend .docs-btn-primary; }
+
+// Search results box - lives in the sticky .page-title so it stays reachable regardless of scroll
+// position or viewport width, unlike the rail's own copy (which hides below 1260px). The clear "x"
+// sits INSIDE the input's own box, not as a flex sibling, so typing a query never widens the row.
+.docs-search-wrap { position: relative; display: flex; align-items: center; }
+.docs-search-wrap .docs-search-input { width: 220px; padding-right: 26px; }
+.docs-search-clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; padding: 0; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; line-height: 1;
+}
+.docs-search-clear:hover { color: var(--text); background: var(--panel-alt); }
+// The rail carries its own search box, but it hides below 1260px - the header keeps a second copy
+// (.docs-search-wrap-header) as the sole fallback below that width; hidden here whenever the
+// rail's own copy is on-screen so exactly one of the two ever renders.
+@media (min-width: 1261px) {
+  .docs-search-wrap-header { display: none; }
+}
+
+// Flat search-results list (see vm.docsSearchResults) - a page heading row (breadcrumb + title)
+// followed by its own matched sections, indented, borrowing the rail's own muted/hover language
+// but with roomier spacing since this lives in the main content column, not the narrow rail.
+.docs-results-list { display: flex; flex-direction: column; gap: var(--sp-lg); }
+.docs-results-page-title {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  width: 100%; text-align: left; border: 0; border-radius: var(--radius-sm);
+  background: transparent; cursor: pointer; font: inherit; padding: var(--sp-xs) var(--sp-sm);
+  margin: 0 0 0 calc(-1 * var(--sp-sm));
+}
+.docs-results-page-title:hover { background: var(--panel-alt); }
+.docs-results-page-title:focus-visible { @include gfd-focus-ring; }
+.docs-results-breadcrumb { font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .03em; color: var(--faint); }
+.docs-results-page-title > span:last-child { font-size: 13.5px; font-weight: 650; color: var(--text); }
+.docs-results-section {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  border-radius: var(--radius-sm); cursor: pointer; font: inherit; font-size: 12px; color: var(--muted);
+  padding: 3px var(--sp-sm) 3px var(--sp-lg); margin-left: calc(-1 * var(--sp-sm));
+}
+.docs-results-section:hover { color: var(--text); background: var(--panel-alt); }
+.docs-results-section:focus-visible { @include gfd-focus-ring; }
+
+.docs-content { font-size: 13px; line-height: 1.65; color: var(--text); max-width: 940px; }
+.docs-content h2 { font-size: 16px; font-weight: 650; margin: var(--sp-xxl) 0 var(--sp-sm); }
+.docs-content h3 { font-size: 13.5px; font-weight: 650; margin: var(--sp-xl) 0 var(--sp-sm); }
+.docs-content h2:first-child, .docs-content > div > h2:first-child { margin-top: var(--sp-sm); }
+.docs-content h2, .docs-content h3 { scroll-margin-top: var(--sp-lg); }
+.docs-content p { margin: 0 0 var(--sp-md); }
+.docs-content ul, .docs-content ol { margin: 0 0 var(--sp-md); padding-left: 22px; }
+.docs-content li { margin-bottom: var(--sp-xxs); }
+.docs-content code {
+  font-family: var(--mono); font-size: 12px;
+  background: var(--panel-alt); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+}
+.docs-content a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.docs-content a:hover { color: var(--accent-hover); }
+// Code samples use the generated-script highlighter's .c-* token spans (see the .c-* rules
+// below), bound to the editor palette per APP theme so a snippet stays legible in both themes.
+.docs-pre {
+  margin: 0 0 var(--sp-md); padding: var(--sp-md) var(--sp-lg); overflow-x: auto;
+  font-family: var(--mono); border-radius: var(--radius-sm);
+  background: #{$gfd-ed-bg}; border: 1px solid #{$gfd-ed-border};
+}
+.docs-pre code { background: transparent; border: 0; padding: 0; font-size: 12.5px; line-height: 1.6; color: #{$gfd-ed-text}; }
+:root[data-theme="dark"] .docs-pre { background: #{$gfd-ed-bg-dark}; border-color: #{$gfd-ed-border-dark}; }
+:root[data-theme="dark"] .docs-pre code { color: #{$gfd-ed-text-dark}; }
+.c-kw  { color: var(--ed-kw); }
+.c-str { color: var(--ed-str); }
+.c-num { color: var(--ed-num); }
+.c-com { color: var(--ed-com); font-style: italic; }
+.c-fn  { color: var(--ed-fn); }
+:root[data-theme="dark"] .docs-content .c-kw  { color: #{$gfd-ed-kw-dark}; }
+:root[data-theme="dark"] .docs-content .c-str { color: #{$gfd-ed-str-dark}; }
+:root[data-theme="dark"] .docs-content .c-num { color: #{$gfd-ed-num-dark}; }
+:root[data-theme="dark"] .docs-content .c-com { color: #{$gfd-ed-com-dark}; }
+:root[data-theme="dark"] .docs-content .c-fn  { color: #{$gfd-ed-fn-dark}; }
+
+.docs-badge {
+  display: inline-flex; align-items: center;
+  margin-left: var(--sp-sm); vertical-align: middle;
+  border: 1px solid var(--border); background: var(--panel-alt); color: var(--muted);
+  border-radius: var(--radius-sm); padding: 2px var(--sp-sm);
+  font-size: 10.5px; font-weight: 650; letter-spacing: .02em; text-transform: uppercase;
+}
+
+.docs-table { border-collapse: collapse; margin: 0 0 var(--sp-md); width: 100%; }
+.docs-table th, .docs-table td { border: 1px solid var(--border); padding: var(--sp-xs) var(--sp-md); text-align: left; vertical-align: top; }
+.docs-table th { background: var(--panel-alt); font-weight: 650; }
+
+.docs-hub { margin-top: var(--sp-xl); }
+.docs-hub-band + .docs-hub-band { margin-top: var(--sp-xl); }
+.docs-hub-band-title {
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--faint); margin: 0 0 var(--sp-md);
+}
+.docs-hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-md); }
+.docs-hub-tile {
+  display: flex; flex-direction: column; gap: var(--sp-xxs); text-align: left;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel);
+  padding: var(--sp-md); font: inherit; cursor: pointer; transition: border-color .12s, box-shadow .12s;
+}
+.docs-hub-tile:hover { border-color: var(--accent-border); box-shadow: var(--shadow); }
+.docs-hub-tile:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+.docs-hub-tile .ic { display: block; width: 15px; height: 15px; margin-bottom: 2px; color: var(--accent); }
+.docs-hub-tile-alt .ic { color: var(--purple); }
+.docs-hub-tile.ghost .ic { color: var(--faint); }
+.docs-hub-tile .t { font-size: 12.5px; font-weight: 650; color: var(--text); line-height: 1.35; }
+.docs-hub-tile .meta { font-size: 10.5px; color: var(--faint); }
+.docs-hub-tile.ghost { border-style: dashed; cursor: default; opacity: .7; }
+.docs-hub-tile.ghost:hover { border-color: var(--border); box-shadow: none; }
+.docs-hub-tile .badge {
+  align-self: flex-start; margin-top: 2px; font-size: 9px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--faint); background: var(--panel-alt); border: 1px solid var(--border-strong);
+  border-radius: 20px; padding: 2px 7px;
+}
+
+// Deep-link landing flash - marks WHICH heading a rail/hub/docs-link pointed at (targets are often
+// mid-page). Animation, not a transition, so the reduced-motion override above still kills it.
+@keyframes docsFlash {
+  0% { background: var(--accent-soft); box-shadow: 0 0 0 6px var(--accent-soft); }
+  100% { background: transparent; box-shadow: 0 0 0 6px transparent; }
+}
+.docs-flash { animation: docsFlash 1.5s ease-out; border-radius: var(--radius-sm); }

@@ -322,55 +322,11 @@ button {
   margin-bottom: 18px;
 }
 
-/* Connected pill, not two separate circles: the GROUP carries the border + radius-round shape
-   (overflow: hidden clips the two flush buttons to that shape); each button is borderless and
-   square, with a shared 1px divider between them instead of its own full border. */
-.nav-history {
-  display: inline-flex;
-  flex-shrink: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-round);
-  overflow: hidden;
-}
-
-.nav-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: none;
-  background: var(--surface-flat);
-  color: var(--ink-2);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, opacity 0.12s;
-}
-
-.nav-btn + .nav-btn {
-  border-left: 1px solid var(--line);
-}
-
-.nav-btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-.nav-btn:hover:not(:disabled) {
-  color: var(--ink);
-  background: var(--surface-2);
-}
-
-.nav-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
 .pagehdr-top .views {
   margin-bottom: 0;
 }
 
-/* Right-side chrome: history, search, theme. space-between pins this cluster opposite the tabs. */
+/* Right-side chrome: search, theme. space-between pins this cluster opposite the tabs. */
 .hdr-search-group {
   display: flex;
   align-items: center;
@@ -398,44 +354,11 @@ button {
   font-family: inherit;
   font-size: 13px;
   outline: none;
+  --focus-gap: var(--surface-flat);
 }
 
 .hsearch input::placeholder {
   color: var(--ink-faint);
-}
-
-.hsearch input:focus {
-  border-color: var(--teal);
-}
-
-/* Discoverability for the "/" shortcut. Right-aligned inside the field, non-interactive, and it
-   steps aside the moment the field is focused or has a query (:placeholder-shown is false once
-   the user has typed) so it never overlaps real text. */
-.hsearch-kbd {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  line-height: 1;
-  color: var(--ink-faint);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 3px 6px;
-  transition: opacity 0.12s;
-}
-
-.hsearch input:focus ~ .hsearch-kbd,
-.hsearch input:not(:placeholder-shown) ~ .hsearch-kbd {
-  opacity: 0;
-}
-
-.hsearch input:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
 }
 
 .hsearch svg {
@@ -595,6 +518,7 @@ button {
   color: var(--ink-faint);
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
+  --focus-gap: var(--surface-flat);
 }
 
 .theme-toggle {
@@ -616,42 +540,71 @@ button {
 
 /* Service Portal / Bootstrap paint a green :focus outline or glow on mouse click. Kill that
    chrome inside this widget (!important beats theme CSS Includes), then restore a theme-matched
-   ring only for keyboard focus (:focus-visible). Text fields keep outline off on :focus so their
-   own border/glow rules can apply; they still get --focus-ring via :focus-visible. */
-button:focus,
-a:focus,
-summary:focus,
-[role="button"]:focus,
-[role="tab"]:focus,
-[role="menuitem"]:focus,
-[tabindex]:focus,
-input[type="button"]:focus,
-input[type="submit"]:focus,
-input[type="reset"]:focus,
-input[type="checkbox"]:focus,
-input[type="radio"]:focus {
+   rounded ring only for keyboard focus (:focus-visible). Resting border, background, and fill stay
+   unchanged on focus - only the ring signals keyboard focus. --focus-gap matches the surface
+   behind the control (defaults to --paper). */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+summary:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible),
+[role="tab"]:focus:not(:focus-visible),
+[role="menuitem"]:focus:not(:focus-visible),
+[tabindex]:focus:not(:focus-visible),
+input[type="button"]:focus:not(:focus-visible),
+input[type="submit"]:focus:not(:focus-visible),
+input[type="reset"]:focus:not(:focus-visible),
+input[type="checkbox"]:focus:not(:focus-visible),
+input[type="radio"]:focus:not(:focus-visible) {
   outline: none !important;
   box-shadow: none !important;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
   outline: none !important;
 }
 
-button:focus-visible,
+a {
+  border-radius: var(--radius-round);
+}
+
 a:focus-visible,
+button:focus-visible,
 summary:focus-visible,
 [role="button"]:focus-visible,
 [role="tab"]:focus-visible,
 [role="menuitem"]:focus-visible,
 [tabindex]:focus-visible,
-input:focus-visible,
+input:focus-visible:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
 select:focus-visible,
 textarea:focus-visible {
-  outline: var(--focus-ring) !important;
-  outline-offset: var(--focus-ring-offset) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
+}
+
+/* Buttons styled as inline links (RACI task jump, reference sub-phase crumb). */
+.rg-task-link,
+.ref-aid-crumb {
+  border-radius: var(--radius-round);
+}
+
+.rg-table td.tname,
+.jt-task,
+.ref-aid {
+  --focus-gap: var(--surface-2);
+}
+
+/* Phase road: ring the station digit only, not the name/count column beneath it. */
+.station:focus,
+.station:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.station:focus-visible .station-num {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
 }
 
 .pagehdr-title {
@@ -742,8 +695,8 @@ textarea:focus-visible {
    makes the ring follow the pill. The label-level :focus-within variant was removed: it fired on
    mouse clicks too and outlined the whole rectangular label. */
 .loe-billable-toggle input:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--focus-gap, var(--paper)), 0 0 0 4px var(--hs-teal) !important;
 }
 
 /* Compound selector (not just .jargon-toggle) so this reliably outranks .loe-billable-toggle's
@@ -968,13 +921,16 @@ textarea:focus-visible {
   align-items: center;
   gap: 8px;
   margin: 0;
-  padding: 6px 0;
+  padding: 6px 12px;
   border: 0;
+  border-radius: var(--radius-round);
   background: none;
   color: var(--ink-soft);
   cursor: pointer;
   text-align: left;
   font: inherit;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .methodology-intro-toggle:hover,
@@ -1025,6 +981,8 @@ textarea:focus-visible {
   font-size: 12.5px;
   font-weight: 600;
   text-decoration: none;
+  border-radius: var(--radius-round);
+  padding: 6px 12px;
 }
 
 .methodology-intro-feedback:hover {
@@ -1233,6 +1191,7 @@ textarea:focus-visible {
   cursor: pointer;
   flex-shrink: 0;
   transition: color 0.12s, border-color 0.12s, background 0.12s;
+  --focus-gap: var(--navy-2);
 }
 
 .struct-icon-btn svg {
@@ -1243,8 +1202,7 @@ textarea:focus-visible {
   stroke-width: 2;
 }
 
-.struct-icon-btn:hover,
-.struct-icon-btn:focus-visible {
+.struct-icon-btn:hover {
   color: var(--teal);
   border-color: var(--teal);
   background: var(--surface-flat);
@@ -1254,11 +1212,6 @@ textarea:focus-visible {
   color: var(--teal);
   border-color: var(--teal);
   background: var(--teal-wash);
-}
-
-.struct-icon-btn:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
 }
 
 /* Structure editor lives in a normal .panel (same navy surface as sub-phase edit). Cancel
@@ -1435,6 +1388,13 @@ textarea:focus-visible {
 .fcard:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-lift);
+}
+
+/* Outline (not box-shadow): sits outside the card and is not clipped by overflow: hidden. */
+.fcard:focus-visible {
+  outline: var(--focus-ring) !important;
+  outline-offset: var(--focus-ring-offset) !important;
+  box-shadow: none !important;
 }
 
 /* Selected cue is the phase-coloured RING, not the fill. The fill alone measured 1.71:1 (dark) and
@@ -1791,6 +1751,7 @@ h1.sp-title {
   border-radius: 14px;
   box-shadow: var(--shadow-md);
   padding: 18px 20px 16px;
+  --focus-gap: var(--navy-2);
 }
 
 .msg-dialog-head {
@@ -1826,11 +1787,6 @@ h1.sp-title {
   background: var(--surface-flat);
 }
 
-.msg-dialog-x:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
-}
-
 .msg-dialog-body {
   margin: 10px 0 18px;
   font-size: 14px;
@@ -1857,8 +1813,21 @@ h1.sp-title {
   box-shadow: var(--shadow-md);
 }
 
+.btn.danger:active {
+  background: #912018;
+  border-color: #912018;
+  color: #fff;
+  box-shadow: var(--shadow-inset);
+}
+
 .btn.danger:disabled {
   opacity: 0.55;
+  color: #fff;
+  background: #b42318;
+  border-color: #b42318;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
 }
 
 .task {
@@ -2373,6 +2342,8 @@ table.ttbl .jobaid {
   text-decoration: none;
   white-space: nowrap;
   margin-top: 3px;
+  border-radius: var(--radius-round);
+  padding: 2px 8px;
 }
 
 .ttbl .ja {
@@ -2562,16 +2533,11 @@ table.ttbl .jobaid {
   background: var(--surface-2);
   resize: vertical;
   outline: none;
+  --focus-gap: var(--surface-2);
 }
 
 .edit-in::placeholder {
   color: var(--ink-faint);
-}
-
-.edit-in:focus {
-  border-color: var(--teal);
-  /* !important so portal's green input glow cannot win over our teal wash. */
-  box-shadow: 0 0 0 3px rgba(23, 184, 166, 0.22) !important;
 }
 
 textarea.edit-in {
@@ -3315,6 +3281,7 @@ select.edit-in option {
   border-radius: 10px;
   padding: 3px;
   margin-bottom: 20px;
+  --focus-gap: var(--surface-flat);
 }
 
 .vtab {
@@ -3691,8 +3658,8 @@ select.edit-in option {
 }
 
 .rg-role-btn:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: -2px;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Role columns only - Task is not a focus control. Mix teal into surface-2 (opaque) rather than
@@ -3797,26 +3764,22 @@ select.edit-in option {
 }
 
 .rg-task-link {
-  display: inline;
+  display: inline-block;
   margin: 0;
-  padding: 0;
+  padding: 2px 4px;
   border: none;
   background: none;
   font: inherit;
   color: inherit;
   text-align: left;
   cursor: pointer;
+  border-radius: var(--radius-round);
 }
 
 .rg-task-link:hover,
 .rg-task-link:focus-visible {
   color: inherit;
   text-decoration: underline;
-}
-
-.rg-task-link:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
 }
 
 .rg-empty-cell {
@@ -4307,6 +4270,8 @@ select.edit-in option {
   color: var(--hs-mint);
   text-decoration: none;
   white-space: nowrap;
+  border-radius: var(--radius-round);
+  padding: 4px 10px;
 }
 
 .ref-aid .jobaid svg {
@@ -4338,7 +4303,8 @@ select.edit-in option {
   color: var(--hs-mint);
   background: none;
   border: none;
-  padding: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-round);
   cursor: pointer;
   text-align: left;
 }

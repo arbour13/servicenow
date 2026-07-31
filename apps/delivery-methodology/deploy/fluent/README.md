@@ -25,6 +25,6 @@ If the SDK is not authenticated yet, follow the SDK docs to log in before `npm r
 - `src/fluent/widgets/` - `SPWidget` plus template/css/client/server files
 - `src/fluent/providers/` - each `SPAngularProvider` (injected by name at runtime)
 - `src/fluent/page/` - page / container / row / column / instance layout
-- `src/fluent/tables/` - Fluent `Table()` definitions (x_2168882_dlvry_2_content)
+- `src/fluent/tables/` - Fluent `Table()` definitions (x_dlvry_method_content)
 - `src/fluent/generated/keys.ts` - stable record identity
 - `README.md` - this file

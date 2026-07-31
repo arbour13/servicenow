@@ -33,6 +33,7 @@ angular.module('deliveryMethodology').factory('RaciGridService', [
 
   var raciMode = 'grid';
   var activePhases = null;
+  var lastRefreshedMethodologyId = null;
   var gridFocusRoleId = null;
   var byRoleFocusRoleId = null;
   var showAllRoles = false;
@@ -49,7 +50,7 @@ angular.module('deliveryMethodology').factory('RaciGridService', [
   function readState() {
     return {
       raciMode: raciMode,
-      activePhases: activePhases,
+      activePhases: activePhases ? Object.assign({}, activePhases) : null,
       gridFocusRoleId: gridFocusRoleId,
       byRoleFocusRoleId: byRoleFocusRoleId,
       showAllRoles: showAllRoles,
@@ -83,12 +84,17 @@ angular.module('deliveryMethodology').factory('RaciGridService', [
       || Object.keys(activePhases).some(function (phaseId) {
         return phaseIds.indexOf(phaseId) < 0;
       });
-    if (!needsReset) {
+    if (needsReset) {
+      activePhases = {};
+      phaseIds.forEach(function (phaseId) {
+        activePhases[phaseId] = true;
+      });
       return;
     }
-    activePhases = {};
     phaseIds.forEach(function (phaseId) {
-      activePhases[phaseId] = true;
+      if (!Object.prototype.hasOwnProperty.call(activePhases, phaseId)) {
+        activePhases[phaseId] = true;
+      }
     });
   }
 
@@ -99,8 +105,10 @@ angular.module('deliveryMethodology').factory('RaciGridService', [
   // "a phase was just ADDED to an already-active methodology" (it only resets on phase REMOVAL),
   // hence the explicit add/remove pair here.
   function activatePhase(phaseId) {
+    // Only mutate an existing all-phases map. Creating a one-key object here would leave every
+    // other phase filtered out until the next full ensureActivePhases reset.
     if (!activePhases) {
-      activePhases = {};
+      return;
     }
     activePhases[phaseId] = true;
   }
@@ -125,7 +133,14 @@ angular.module('deliveryMethodology').factory('RaciGridService', [
         groups: [],
         byRoleGroups: []
       };
+      lastRefreshedMethodologyId = null;
       return readState();
+    }
+
+    if (methodology.id !== lastRefreshedMethodologyId) {
+      activePhases = null;
+      gridFocusRoleId = null;
+      lastRefreshedMethodologyId = methodology.id;
     }
 
     ensureActivePhases(methodology);

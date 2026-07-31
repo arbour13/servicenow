@@ -4,12 +4,13 @@
    groups when structure changes elsewhere (Methodology widget), which is why this controller
    re-syncs c.raciGrid on every 'dm-state' broadcast rather than only after its own actions. */
 angular.module('deliveryMethodology').controller('DmRaciController', [
-  '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'RaciGridService', 'TipService',
+  '$rootScope', '$scope', '$timeout', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'RaciGridService', 'TipService',
   'IconService', 'SearchService',
-  function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, RaciGridService, TipService,
+  function ($rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, RaciGridService, TipService,
     IconService, SearchService) {
   'use strict';
   var c = this;
+  var wasRaciView = false;
 
   c.hoverColumnRoleId = null;
   // Drives this widget's own .view-blur while the Shell's search overlay is open - Shell's
@@ -21,19 +22,23 @@ angular.module('deliveryMethodology').controller('DmRaciController', [
   RaciGridService.bindLegend(c);
 
   function currentMethodology() {
-    return MethodologyDomainService.currentMethodology(c.methodologies, c.methodologyId);
+    return MethodologyDomainService.currentMethodology(
+      AppStateService.getMethodologies(),
+      AppStateService.getMethodologyId()
+    );
   }
-  c.currentMethodology = currentMethodology;
+  c.currentMethodology = function () {
+    return MethodologyDomainService.currentMethodology(c.methodologies, c.methodologyId);
+  };
   c.jobTitleById = function (jobTitleId) {
     return MethodologyDomainService.jobTitleById(c.jobTitles, jobTitleId);
   };
-  function sortJobTitleIds(jobTitleIds) {
-    return MethodologyDomainService.sortJobTitleIds(c.jobTitles, jobTitleIds);
-  }
   function raciGridContext() {
     return {
       methodology: currentMethodology(),
-      sortJobTitleIds: sortJobTitleIds,
+      sortJobTitleIds: function (jobTitleIds) {
+        return MethodologyDomainService.sortJobTitleIds(AppStateService.getJobTitles(), jobTitleIds);
+      },
       hasContent: MethodologyDomainService.hasContent
     };
   }
@@ -48,23 +53,46 @@ angular.module('deliveryMethodology').controller('DmRaciController', [
   function syncRaciGrid() {
     var state = RaciGridService.readState();
     c.raciMode = state.raciMode;
-    c.activePhases = state.activePhases;
+    // Copy so chip bindings cannot mutate the service map by reference.
+    c.activePhases = state.activePhases ? Object.assign({}, state.activePhases) : null;
     c.gridFocusRoleId = state.gridFocusRoleId;
     c.byRoleFocusRoleId = state.byRoleFocusRoleId;
     c.showAllRoles = state.showAllRoles;
     c.raciGrid = state.raciGrid;
   }
+  function refreshAndSync() {
+    RaciGridService.refresh(raciGridContext());
+    syncRaciGrid();
+  }
+  // Rebuild after the panel is actually shown. Building the table while the view is display:none
+  // (or mid View Transition into RACI) left ng-repeat with a partial tbody set - only a couple of
+  // sub-phase groups - until a later in-view refresh (e.g. toggling a phase chip) forced a full
+  // re-link. $timeout(0) runs after the current digest / transition update callback.
+  function refreshWhenVisible() {
+    $timeout(function () {
+      if (AppStateService.getView() !== 'raci') {
+        return;
+      }
+      refreshAndSync();
+    }, 0);
+  }
   function syncAll() {
     syncAppState();
     syncRaciGrid();
+    var isRaciView = AppStateService.getView() === 'raci';
+    if (isRaciView && !wasRaciView) {
+      refreshWhenVisible();
+    }
+    wasRaciView = isRaciView;
   }
-  syncAll();
-  AppStateService.subscribe($rootScope, $scope, syncAll);
 
-  // Enter this view with a stale grid (e.g. tasks changed while on another view) - refresh once
-  // up front so the grid is never a run behind the current methodology.
-  RaciGridService.refresh(raciGridContext());
-  syncRaciGrid();
+  syncAppState();
+  refreshAndSync();
+  wasRaciView = AppStateService.getView() === 'raci';
+  if (wasRaciView) {
+    refreshWhenVisible();
+  }
+  AppStateService.subscribe($rootScope, $scope, syncAll);
 
   c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
     NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);

@@ -50,15 +50,20 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
   }
   function raciGridContext() {
     return {
-      methodology: currentMethodology(),
-      sortJobTitleIds: sortJobTitleIds,
+      methodology: MethodologyDomainService.currentMethodology(
+        AppStateService.getMethodologies(),
+        AppStateService.getMethodologyId()
+      ),
+      sortJobTitleIds: function (jobTitleIds) {
+        return MethodologyDomainService.sortJobTitleIds(AppStateService.getJobTitles(), jobTitleIds);
+      },
       hasContent: MethodologyDomainService.hasContent
     };
   }
   // RaciGridService has no $rootScope of its own to broadcast from (same reasoning as
   // WhatsNewService/ReferenceService below), so this nudge is required - not optional - whenever
-  // Shell triggers a refresh as a SIDE EFFECT of navigation (switching methodology, view tabs,
-  // back/forward) rather than as a direct user action inside the RACI widget itself. Without it,
+  // Shell triggers a refresh as a SIDE EFFECT of navigation (switching methodology, view tabs)
+  // rather than as a direct user action inside the RACI widget itself. Without it,
   // the RACI controller's own c.activePhases/c.raciGrid keep showing whatever was live at the
   // LAST broadcast: ensureActivePhases() resets the phase-active map here against the new
   // methodology's phase ids, but the RACI widget - a separate always-mounted scope - never hears
@@ -154,22 +159,10 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
     return WhatsNewService.anyUnread(c.methodologies);
   };
 
-  c.canGoBack = function () {
-    return NavigationService.canGoBack();
-  };
-  c.canGoForward = function () {
-    return NavigationService.canGoForward();
-  };
-  c.goBack = function () {
-    NavigationService.goBack();
-  };
-  c.goForward = function () {
-    NavigationService.goForward();
-  };
   // Each view is its own always-mounted widget gated by ng-if, so switching tabs replaces the
   // whole page body with no element left over to transition - crossfade the snapshots instead.
   // Guard reads AppStateService rather than the mirrored c.view: the mirror only catches up on the
-  // next dm-state broadcast, so back-to-back clicks (or a double-click) could both pass a stale
+  // next dm-state broadcast, so back-to-back tab clicks (or a double-click) could both pass a stale
   // check and fire a pointless second crossfade over identical content.
   c.setView = function (view) {
     if (view === AppStateService.getView()) {

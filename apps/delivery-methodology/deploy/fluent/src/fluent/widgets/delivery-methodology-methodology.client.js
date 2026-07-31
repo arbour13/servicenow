@@ -1,4 +1,4 @@
-api.controller = function ($rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService, ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService, RaciGridService, UrlPolicyService, SearchService, MotionService, MessagingService) {
+api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService, ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService, RaciGridService, UrlPolicyService, SearchService, MessagingService) {
   'use strict';
   var c = this;
 
@@ -254,58 +254,18 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
     });
   };
 
-  // Selecting a sub-phase never moves scroll position, on purpose - an earlier version scrolled
-  // the panel into view when it was off-screen (panel.scrollIntoView({behavior:'smooth'})), but
-  // the panel's OWN height changes as part of the same click (the new sub-phase's content is a
-  // different length), so the smooth-scroll's target shifted mid-flight and the browser
-  // overshot-and-corrected - a visible fall-then-rise wobble. The crossfade alone is the
-  // continuity cue now; if the panel is off-screen the reader scrolls to it themselves, same as
-  // any other page.
-  function openPanelContent(applyNavigation) {
-    MotionService.transition(applyNavigation);
-  }
-
-  // Replays the filmstrip's stagger. Needed because every phase's strip stays mounted and is only
-  // ng-show/ng-hidden (the template keeps them all built on purpose), so the cards are never
-  // recreated - and, verified empirically, a display:none → visible flip does NOT restart their
-  // CSS animation the way creating the element would. Re-running the existing animation objects is
-  // cleaner than the usual remove-class/force-reflow/re-add-class trick and needs no extra class.
-  function restageFilmstrip() {
-    if (MotionService.prefersReducedMotion()) {
-      return;
-    }
-
-    $timeout(function () {
-      var cards = document.querySelectorAll('.methodology-chrome:not(.ng-hide) .film:not(.ng-hide) .fcard');
-      var index;
-
-      for (index = 0; index < cards.length; index++) {
-        if (typeof cards[index].getAnimations !== 'function') {
-          return;
-        }
-
-        cards[index].getAnimations().forEach(function (animation) {
-          if (animation.animationName === 'dmCardIn') {
-            animation.cancel();
-            animation.play();
-          }
-        });
-      }
-    }, 0);
-  }
-
-  // Only selectPhase swaps which SET of cards is on screen (openSubPhase just moves the .on
-  // marker), so the restage belongs here alone.
+  // Selecting a phase or sub-phase applies INSTANTLY - no animation of any kind on the cards or
+  // on the panel content, and no scroll. Several layered attempts at motion here (a whole-page
+  // View Transition, then a panel-scoped one, a filmstrip stagger, an entry translate, an animated
+  // accent rail, a scroll-into-view) each produced their own visible jump on click. Selection is a
+  // high-frequency, precise action taken with the pointer already resting on the target - it wants
+  // to feel like nothing moved except the content being replaced. The card's ONLY movement is
+  // :hover's lift; the panel just swaps.
   c.selectPhase = function (phaseIndex) {
-    openPanelContent(function () {
-      NavigationService.selectPhase(phaseIndex);
-    });
-    restageFilmstrip();
+    NavigationService.selectPhase(phaseIndex);
   };
   c.openSubPhase = function (subPhaseId) {
-    openPanelContent(function () {
-      NavigationService.openSubPhase(subPhaseId);
-    });
+    NavigationService.openSubPhase(subPhaseId);
   };
   c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
     NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);
@@ -335,8 +295,11 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   c.methodologyNeedsSetup = function (methodology) {
     return StructureEditService.methodologyNeedsSetup(methodology);
   };
-  c.deleteMethodology = function () {
-    StructureEditService.deleteMethodology();
+  c.unsettledMethodology = function () {
+    return (c.methodologies || []).find(c.methodologyNeedsSetup);
+  };
+  c.deleteMethodology = function (methodology) {
+    StructureEditService.deleteMethodology(methodology);
   };
   c.renamePhase = function (phase) {
     StructureEditService.renamePhase(phase);
@@ -344,23 +307,23 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   c.renameSubPhase = function (subPhase) {
     StructureEditService.renameSubPhase(subPhase);
   };
-  c.addPhase = function () {
-    StructureEditService.addPhase();
+  c.addPhase = function (methodology) {
+    StructureEditService.addPhase(methodology);
   };
-  c.addSubPhase = function (phaseIndex) {
-    StructureEditService.addSubPhase(phaseIndex);
+  c.addSubPhase = function (phaseIndex, methodology) {
+    StructureEditService.addSubPhase(phaseIndex, methodology);
   };
-  c.movePhase = function (index, direction) {
-    StructureEditService.movePhase(index, direction);
+  c.movePhase = function (index, direction, methodology) {
+    StructureEditService.movePhase(index, direction, methodology);
   };
-  c.moveSubPhase = function (phaseIndex, index, direction) {
-    StructureEditService.moveSubPhase(phaseIndex, index, direction);
+  c.moveSubPhase = function (phaseIndex, index, direction, methodology) {
+    StructureEditService.moveSubPhase(phaseIndex, index, direction, methodology);
   };
-  c.deletePhase = function (index) {
-    StructureEditService.deletePhase(index);
+  c.deletePhase = function (index, methodology) {
+    StructureEditService.deletePhase(index, methodology);
   };
-  c.deleteSubPhase = function (phaseIndex, index) {
-    StructureEditService.deleteSubPhase(phaseIndex, index);
+  c.deleteSubPhase = function (phaseIndex, index, methodology) {
+    StructureEditService.deleteSubPhase(phaseIndex, index, methodology);
   };
 
   c.enterEdit = function () {

@@ -104,27 +104,11 @@
                     stroke-width="2" ng-bind-html="c.icon('clock')"></svg><span>What's New</span></button>
               </div>
               <div class="hdr-search-group">
-                <div class="nav-history" role="group" aria-label="History">
-                  <button type="button" class="nav-btn" ng-click="c.goBack()" ng-disabled="!c.canGoBack()" data-tip="Back"
-                    aria-label="Back">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('chevronLeft')"></svg>
-                  </button>
-                  <button type="button" class="nav-btn" ng-click="c.goForward()" ng-disabled="!c.canGoForward()"
-                    data-tip="Forward" aria-label="Forward">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('chevronRight')"></svg>
-                  </button>
-                </div>
                 <div class="hsearch">
                   <svg viewBox="0 0 24 24" fill="none" stroke-width="2" ng-bind-html="c.icon('search')"></svg>
                   <input type="text" placeholder="Search…" autocomplete="off" ng-model="c.searchQuery"
                     ng-change="c.runSearch()" ng-keydown="c.searchKeydown($event)" aria-autocomplete="list"
                     aria-controls="dm-search-modal" aria-expanded="{{c.searchOpen()}}">
-                  <!-- Hides once the field has focus or content: the hint has done its job by then,
-                     and it would otherwise sit on top of what you are typing. aria-hidden - the
-                     shortcut is a convenience, not the only way in. -->
-                  <kbd class="hsearch-kbd" aria-hidden="true">/</kbd>
                 </div>
                 <button type="button" class="theme-toggle" ng-click="c.toggleTheme()" aria-pressed="{{c.theme === 'dark'}}"
                   aria-label="Toggle light/dark mode" data-tip="Toggle light/dark mode">

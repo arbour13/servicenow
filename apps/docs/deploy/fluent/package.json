@@ -1,0 +1,16 @@
+{
+    "name": "glidefast-docs",
+    "version": "1.0.0",
+    "description": "GlideFast Docs - hosts reference documentation including the GlideFast scripting best-practices standards.",
+    "license": "UNLICENSED",
+    "scripts": {
+        "build": "now-sdk build",
+        "deploy": "now-sdk install",
+        "transform": "now-sdk transform",
+        "types": "now-sdk dependencies"
+    },
+    "devDependencies": {
+        "@servicenow/sdk": "latest",
+        "@servicenow/glide": "latest"
+    }
+}

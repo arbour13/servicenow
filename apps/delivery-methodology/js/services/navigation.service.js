@@ -1,4 +1,4 @@
-/* In-app back/forward, view/methodology/sub-phase navigation, and deep links.
+/* In-app view/methodology/sub-phase navigation, and deep links.
    Bind host hooks once after the controller's location helpers exist - avoids DI cycles
    with Raci/Search/WhatsNew. */
 angular.module('deliveryMethodology').factory('NavigationService', [
@@ -63,31 +63,6 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     }
   }
 
-  function apply(snap) {
-    navSilent = true;
-    clearSearchOverlay();
-    AppStateService.batch(function () {
-      AppStateService.setView(snap.view);
-      AppStateService.setMethodologyId(snap.methodologyId);
-      AppStateService.setSubPhaseId(snap.subPhaseId);
-      if (snap.methodologyId && snap.subPhaseId) {
-        methodologySubPhaseById[snap.methodologyId] = snap.subPhaseId;
-      }
-      AppStateService.refreshLocation();
-      afterOpenSubPhase();
-    });
-    refreshRaciGridIfNeeded();
-    navSilent = false;
-  }
-
-  function canGoBack() {
-    return navIndex > 0;
-  }
-
-  function canGoForward() {
-    return navIndex >= 0 && navIndex < navStack.length - 1;
-  }
-
   function denyIfEditing() {
     if (hooks.isEditing && hooks.isEditing()) {
       MessagingService.toast('Finish editing first');
@@ -101,28 +76,6 @@ angular.module('deliveryMethodology').factory('NavigationService', [
     if (hooks.syncSearch) {
       hooks.syncSearch();
     }
-  }
-
-  function goBack() {
-    if (denyIfEditing()) {
-      return;
-    }
-    if (!canGoBack()) {
-      return;
-    }
-    navIndex -= 1;
-    apply(navStack[navIndex]);
-  }
-
-  function goForward() {
-    if (denyIfEditing()) {
-      return;
-    }
-    if (!canGoForward()) {
-      return;
-    }
-    navIndex += 1;
-    apply(navStack[navIndex]);
   }
 
   function setView(view) {
@@ -349,10 +302,6 @@ angular.module('deliveryMethodology').factory('NavigationService', [
   return {
     bind: bind,
     push: push,
-    canGoBack: canGoBack,
-    canGoForward: canGoForward,
-    goBack: goBack,
-    goForward: goForward,
     setView: setView,
     switchMethodology: switchMethodology,
     selectPhase: selectPhase,

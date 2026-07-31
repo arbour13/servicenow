@@ -21,6 +21,18 @@
             ng-disabled="c.isSaving">{{c.isSaving ? 'Loading…' : 'Load standard content'}}</button>
         </div>
 
+        <!-- TEMPORARY testing affordance for the fresh-instance empty state / one-click standard
+           load. Sits at the top of the view so it's reachable without hunting or entering a mode,
+           behind a confirm and danger styling since it deletes everything. Editors only - a viewer
+           has no write path to it anyway. Remove this block when the seeding flow no longer needs
+           exercising. -->
+        <div class="reset-content-zone" ng-if="!c.loading && c.canEdit && c.methodologies.length">
+          <button type="button" class="btn danger" ng-click="c.resetAllContent()"
+            ng-disabled="c.isSaving">Clear all content</button>
+          <span class="reset-content-hint">Temporary: wipes every methodology so the &ldquo;Load standard
+            content&rdquo; flow can be tested again.</span>
+        </div>
+
         <!-- One mounted methodology chrome per methodology (ng-show, not ng-if) so Project ↔ GRS only
          toggles visibility instead of destroying/rebuilding every station + film card. -->
         <div class="methodology-chrome" ng-repeat="methodology in c.methodologies track by methodology.id" ng-show="methodology.id === c.methodologyId">
@@ -69,7 +81,7 @@
           <div class="film" ng-repeat="phase in methodology.phases track by phase.id" ng-show="$index === c.phaseIndexInMethodology(methodology)">
             <div class="fcard" ng-repeat="subPhase in phase.subPhases track by subPhase.id"
               ng-class="{on: subPhase.id === c.subPhaseId, stub: !c.hasContent(subPhase)}"
-              style="--pc: {{c.phaseColor($parent.$index)}}; --i: {{$index}};" role="button" tabindex="0" ng-click="c.openSubPhase(subPhase.id)"
+              style="--pc: {{c.phaseColor($parent.$index)}};" role="button" tabindex="0" ng-click="c.openSubPhase(subPhase.id)"
               ng-keydown="c.onFilmstripCardKeydown($event, subPhase)">
               <div class="fcard-head">
                 <span class="fcard-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -87,13 +99,13 @@
         <div class="panel" ng-if="c.structureEditMode">
           <div class="edit-bar">
             <span class="flag">&#9679; Editing structure</span>
-            <span class="edit-bar-loc">{{c.currentMethodology() ? c.currentMethodology().name : 'No methodologies yet'}}</span>
+            <span class="edit-bar-loc">{{c.methodologies.length ? 'All methodologies' : 'No methodologies yet'}}</span>
             <span class="spacer"></span>
             <button type="button" class="btn" ng-click="c.cancelStructureEdit()" ng-disabled="c.isSaving">Cancel</button>
             <button type="button" class="btn primary" ng-click="c.saveStructureEdit()" ng-disabled="c.isSaving">Save changes</button>
           </div>
 
-          <div ng-if="!c.currentMethodology()">
+          <div ng-if="!c.methodologies.length">
             <p class="struct-toolbar-hint">This engagement has no methodologies yet. Add one to start building
               phases and sub-phases.</p>
             <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()"
@@ -101,76 +113,69 @@
               methodology</button>
           </div>
 
-          <div ng-if="c.currentMethodology()">
-            <p class="struct-toolbar-hint">Rename the methodology, phases, and sub-phases inline. Reorder with the
+          <div ng-if="c.methodologies.length">
+            <p class="struct-toolbar-hint">Rename methodologies, phases, and sub-phases inline. Reorder with the
               arrows, or remove them with &times;. Name a new methodology before adding another. Changes stay in a
               draft until you save. Exit structure edit, then use the pencil to write content.</p>
-            <div class="struct-methodology">
-              <span class="struct-methodology-label">Methodology</span>
-              <input type="text" class="edit-in struct-rename" ng-model="c.currentMethodology().name"
-                ng-model-options="{updateOn: 'blur'}" ng-change="c.renameMethodology(c.currentMethodology())"
-                placeholder="Methodology name" aria-label="Methodology name">
-              <button type="button" class="field-x" ng-click="c.deleteMethodology()"
-                data-tip="Delete this methodology" aria-label="Delete this methodology">&times;</button>
-            </div>
-            <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()"
-              ng-disabled="c.isSaving || c.methodologyNeedsSetup(c.currentMethodology())"
-              data-tip="{{c.methodologyNeedsSetup(c.currentMethodology()) ? 'Name this methodology before adding another' : 'Add a methodology'}}">+ Add
-              methodology</button>
-            <div class="struct-phase" ng-repeat="phase in c.currentMethodology().phases track by phase.id">
-              <div class="struct-phase-head">
-                <span class="struct-num">{{$index + 1}}</span>
-                <input type="text" class="edit-in struct-rename" ng-model="phase.name" ng-model-options="{updateOn: 'blur'}"
-                  ng-change="c.renamePhase(phase)" placeholder="Phase name" aria-label="Phase name">
-                <span class="struct-controls">
-                  <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="c.movePhase($index, 'up')"
-                    data-tip="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-                  <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="c.movePhase($index, 'down')"
-                    data-tip="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
-                  <button type="button" class="field-x" ng-click="c.deletePhase($index)"
-                    data-tip="Delete phase" aria-label="Delete phase">&times;</button>
-                </span>
+            <div class="struct-methodology-block" ng-repeat="methodology in c.methodologies track by methodology.id">
+              <div class="struct-methodology">
+                <span class="struct-methodology-label">Methodology</span>
+                <input type="text" class="edit-in struct-rename" ng-model="methodology.name"
+                  ng-model-options="{updateOn: 'blur'}" ng-change="c.renameMethodology(methodology)"
+                  placeholder="Methodology name" aria-label="Methodology name">
+                <button type="button" class="field-x" ng-click="c.deleteMethodology(methodology)"
+                  data-tip="Delete this methodology" aria-label="Delete this methodology">&times;</button>
               </div>
-              <div class="struct-subphase-list">
-                <div class="struct-subphase" ng-repeat="subPhase in phase.subPhases track by subPhase.id">
-                  <span class="struct-sid">{{subPhase.sid}}</span>
-                  <input type="text" class="edit-in struct-rename" ng-model="subPhase.name"
-                    ng-model-options="{updateOn: 'blur'}" ng-change="c.renameSubPhase(subPhase)" placeholder="Sub-phase name"
-                    aria-label="Sub-phase name">
+              <div class="struct-phase" ng-repeat="phase in methodology.phases track by phase.id">
+                <div class="struct-phase-head">
+                  <span class="struct-num">{{$index + 1}}</span>
+                  <input type="text" class="edit-in struct-rename" ng-model="phase.name" ng-model-options="{updateOn: 'blur'}"
+                    ng-change="c.renamePhase(phase)" placeholder="Phase name" aria-label="Phase name">
                   <span class="struct-controls">
-                    <button type="button" class="reorder-btn" ng-disabled="$first"
-                      ng-click="c.moveSubPhase($parent.$index, $index, 'up')" data-tip="Move sub-phase earlier"
-                      aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-                    <button type="button" class="reorder-btn" ng-disabled="$last"
-                      ng-click="c.moveSubPhase($parent.$index, $index, 'down')" data-tip="Move sub-phase later"
-                      aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
-                    <button type="button" class="field-x"
-                      ng-click="c.deleteSubPhase($parent.$index, $index)"
-                      data-tip="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>
+                    <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="c.movePhase($index, 'up', methodology)"
+                      data-tip="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
+                    <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="c.movePhase($index, 'down', methodology)"
+                      data-tip="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
+                    <button type="button" class="field-x" ng-click="c.deletePhase($index, methodology)"
+                      data-tip="Delete phase" aria-label="Delete phase">&times;</button>
                   </span>
                 </div>
-                <button type="button" class="add-item-btn tight" ng-click="c.addSubPhase($index)"
-                  ng-disabled="c.isSaving">+ Add
-                  sub-phase</button>
+                <div class="struct-subphase-list">
+                  <div class="struct-subphase" ng-repeat="subPhase in phase.subPhases track by subPhase.id">
+                    <span class="struct-sid">{{subPhase.sid}}</span>
+                    <input type="text" class="edit-in struct-rename" ng-model="subPhase.name"
+                      ng-model-options="{updateOn: 'blur'}" ng-change="c.renameSubPhase(subPhase)" placeholder="Sub-phase name"
+                      aria-label="Sub-phase name">
+                    <span class="struct-controls">
+                      <button type="button" class="reorder-btn" ng-disabled="$first"
+                        ng-click="c.moveSubPhase($parent.$index, $index, 'up', methodology)" data-tip="Move sub-phase earlier"
+                        aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
+                      <button type="button" class="reorder-btn" ng-disabled="$last"
+                        ng-click="c.moveSubPhase($parent.$index, $index, 'down', methodology)" data-tip="Move sub-phase later"
+                        aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
+                      <button type="button" class="field-x"
+                        ng-click="c.deleteSubPhase($parent.$index, $index, methodology)"
+                        data-tip="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>
+                    </span>
+                  </div>
+                  <button type="button" class="add-item-btn tight" ng-click="c.addSubPhase($index, methodology)"
+                    ng-disabled="c.isSaving">+ Add
+                    sub-phase</button>
+                </div>
               </div>
+              <button type="button" class="add-item-btn struct-add-phase" ng-click="c.addPhase(methodology)"
+                ng-disabled="c.isSaving">+ Add phase</button>
             </div>
-            <button type="button" class="add-item-btn struct-add-phase" ng-click="c.addPhase()"
-              ng-disabled="c.isSaving">+ Add phase</button>
+            <button type="button" class="add-item-btn tight struct-add-methodology" ng-click="c.addMethodology()"
+              ng-disabled="c.isSaving || c.unsettledMethodology()"
+              data-tip="{{c.unsettledMethodology() ? 'Name that methodology before adding another' : 'Add a methodology'}}">+ Add
+              methodology</button>
           </div>
 
-          <!-- Testing affordance for the fresh-instance empty state / one-click standard load.
-             Kept at the very bottom, behind a confirm and danger styling, and inside structure
-             edit rather than on the read view - it deletes everything on the instance. -->
-          <div class="struct-danger-zone">
-            <button type="button" class="btn danger" ng-click="c.resetAllContent()"
-              ng-disabled="c.isSaving">Clear all content</button>
-            <span class="struct-danger-hint">Wipes every methodology so the &ldquo;Load standard content&rdquo;
-              flow can be tested again.</span>
-          </div>
         </div>
 
         <div class="panel" ng-if="c.location && !c.editMode && !c.structureEditMode">

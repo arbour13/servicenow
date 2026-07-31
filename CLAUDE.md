@@ -36,13 +36,13 @@ Two top-level groups under `ServiceNow/`:
   `scripts/` + `css/` + `package.json` at the app root, served relative so one `ServiceNow/`-root
   server serves them all):
   - **Deployed AngularJS SN apps** — the conventions below apply to these: `apps/glide-studio/`,
-    `apps/standards/`, `apps/delivery-methodology/`.
+    `apps/docs/`, `apps/delivery-methodology/`.
   - **CONVENTION-EXEMPT apps** — generators / not-yet-AngularJS, until converted:
     `apps/theme-generator/`, `apps/widget-studio/`, `apps/scss-mixin-generator/`.
 
   `apps/delivery-methodology/` deploys as **five** Service Portal widgets rather than one (see
   `manifest.widgets[]` in the packager's `manifest.schema.md`, and that app's own `CLAUDE.md`).
-  `apps/glide-studio/` and `apps/standards/` currently set `deployable: false` in their
+  `apps/glide-studio/` and `apps/docs/` currently set `deployable: false` in their
   `deploy.manifest.js`, so the packager does not offer them.
 - `tools/` — **build tooling**, never deployed:
 - `tools/sn-deployment-packager/` — builds Fluent / Now SDK projects and deploys via a local
