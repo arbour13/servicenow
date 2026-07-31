@@ -463,10 +463,17 @@
   }
 
   .deploy-modal-body {
-    padding: var(--sp-md) var(--sp-xl) var(--sp-lg);
+    /* No bottom padding - the actions row below supplies the whole gap above Done, so the two
+       don't stack into a double space (see .deploy-modal .modal-actions). */
+    padding: var(--sp-md) var(--sp-xl) 0;
     display: flex; flex-direction: column; gap: var(--sp-sm);
   }
   .deploy-modal-body .modal-hint { margin: 0; }
+  /* Done sits --sp-md above the progress log, matching the gap above the main Deploy button
+     (.output-actions' margin-top). The shared .modal-actions default (--sp-lg, plus the body
+     padding it used to stack with) read as too much air here; scoped so the confirm/prompt
+     modal - whose buttons follow body text, not a panel - keeps the roomier default. */
+  .deploy-modal .modal-actions { padding-top: var(--sp-md); }
   .deploy-progress-bar {
     height: 8px; border-radius: 999px; background: var(--bg);
     overflow: hidden; margin: 0;
