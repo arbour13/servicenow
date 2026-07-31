@@ -85,20 +85,10 @@ angular.module('glidefastDocs').controller('MainController', [
     };
     vm.clearDocsSearch = function () { vm.docsQuery = ''; vm.updateDocsSearchResults(); };
 
-    // The rail page BUTTON's own highlight - active only when the reader is at the page's own top,
-    // not a nested section (a section carries its own highlight instead, .docs-rail-section.active
-    // in index.html) - mirrors this app's previous chapter/section highlight split.
-    vm.docsPageHeadingActive = function (page) { return vm.activePageId === page.id && !vm.activeSectionId; };
-    // Per-page expand/collapse for the rail's section sub-list - purely manual, keyed by page.id
-    // (plain object, not part of vm.docsGroups - this is rail UI state, not doc data). The ONLY way
-    // this changes is vm.toggleDocsExpand, wired to the chevron alone (index.html) - navigating to a
-    // page or section, or typing a search, never touches this map.
-    vm.docsExpanded = {};
-    vm.docsPageExpanded = function (page) { return !!vm.docsExpanded[page.id]; };
-    vm.toggleDocsExpand = function (page, $event) {
-      if ($event) { $event.stopPropagation(); }
-      vm.docsExpanded[page.id] = !vm.docsExpanded[page.id];
-    };
+    // The left rail's page-button highlight - active for whichever page is open, regardless of
+    // which of its sections the reader has scrolled to (that gets its own highlight in the right
+    // "on this page" rail instead, .docs-toc-section.active in index.html).
+    vm.docsPageHeadingActive = function (page) { return vm.activePageId === page.id; };
 
     // Navigates to a page, optionally a specific section on it - a rail link, a home hub tile, a
     // search result, or an in-content [[cross-page link]] (see DocsUiService.setupDocsLinkClicks
