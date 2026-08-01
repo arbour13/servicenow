@@ -515,13 +515,16 @@
   .output-editor[hidden],
   .output-fallback[hidden] { display: none !important; }
   .output-actions {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: start;
     margin-top: var(--sp-md); gap: var(--sp-md); flex-wrap: wrap;
   }
   .output-action-btns {
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto;
   }
-  #sysIdSummary { font-size: 12px; color: var(--muted); }
+  #deployReadiness {
+    margin: 0; flex: 1 1 12rem; min-width: 0;
+  }
+  #deployReadiness:empty { display: none; }
 
   button.action-btn {
     background: var(--accent-fill); border: 1px solid transparent; color: #fff;
@@ -665,7 +668,7 @@
     <textarea id="outputFallback" class="output-fallback" readonly spellcheck="false" hidden></textarea>
   </div>
   <div class="output-actions">
-    <span id="sysIdSummary"></span>
+    <p class="field-hint" id="deployReadiness" aria-live="polite"></p>
     <div class="output-action-btns">
       <span class="tip-host" id="deploySdkBtnTip" data-tip="Rebuild Fluent and now-sdk install (syncs Connect credentials first)">
         <button type="button" class="action-btn" id="deploySdkBtn" disabled aria-describedby="deployReadiness">
@@ -675,7 +678,6 @@
       </span>
     </div>
   </div>
-  <p class="field-hint" id="deployReadiness" aria-live="polite"></p>
 </div>
 
 </div>
