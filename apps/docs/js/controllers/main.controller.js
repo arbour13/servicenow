@@ -99,7 +99,7 @@ angular.module('glidefastDocs').controller('MainController', [
     vm.docsPrevPage = null;
     vm.docsNextPage = null;
 
-    // The search palette (the topbar trigger and ⌘K/Ctrl+K both open it) - the app's ONE search
+    // The search palette (the page-title search trigger and ⌘K/Ctrl+K both open it) - the app's ONE search
     // surface, replacing the old rail-filter + inline-results-page arrangement. An overlay, never a
     // docsView: closing it lands the reader exactly where they were. vm.docsPaletteResults is a
     // recomputed property, not a function the template calls - an ng-repeat over a fresh-array-

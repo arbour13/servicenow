@@ -23,10 +23,6 @@ $gfd-accent-hover: #043a63 !default;
 $gfd-accent-soft: #e6eef5 !default;
 $gfd-accent-soft-hover: #d6e6f2 !default;
 $gfd-accent-border: #b3cae0 !default;
-// Topbar background - the brand navy this app has always used, kept for continuity even though
-// there's no sidenav here, just a slim top bar.
-$gfd-topbar-bg: #054b80 !default;
-
 $gfd-purple: #6d3fc9 !default;
 $gfd-purple-soft: #f1ecfb !default;
 $gfd-purple-border: #d3c2ee !default;
@@ -132,7 +128,6 @@ $gfd-accent-hover-dark: #7ab3ea !default;
 $gfd-accent-soft-dark: rgba(91, 159, 224, 0.16) !default;
 $gfd-accent-soft-hover-dark: rgba(91, 159, 224, 0.28) !default;
 $gfd-accent-border-dark: rgba(91, 159, 224, 0.4) !default;
-$gfd-topbar-bg-dark: #043962 !default;
 $gfd-purple-dark: #b79cf0 !default;
 $gfd-purple-soft-dark: rgba(183, 156, 240, 0.16) !default;
 $gfd-purple-border-dark: rgba(183, 156, 240, 0.4) !default;
@@ -157,7 +152,6 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
   --accent-soft: #{$gfd-accent-soft};
   --accent-soft-hover: #{$gfd-accent-soft-hover};
   --accent-border: #{$gfd-accent-border};
-  --topbar-bg: #{$gfd-topbar-bg};
   --ed-bg: #{$gfd-ed-bg};
   --ed-text: #{$gfd-ed-text};
   --ed-border: #{$gfd-ed-border};
@@ -227,7 +221,6 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
   --accent-soft: #{$gfd-accent-soft-dark};
   --accent-soft-hover: #{$gfd-accent-soft-hover-dark};
   --accent-border: #{$gfd-accent-border-dark};
-  --topbar-bg: #{$gfd-topbar-bg-dark};
   --shadow: 0 1px 2px rgba(0,0,0,.24), 0 1px 3px rgba(0,0,0,.32);
   // --ed-* (below) intentionally has NO dark override here - .docs-pre/.c-* bind to the
   // $gfd-ed-*-dark SCSS values directly via their own explicit :root[data-theme="dark"] rules
@@ -269,7 +262,7 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
 // adaptive-per-surface outline after a live comparison across this app's own components.
 // Deliberately just the ring itself: callers compose it with whatever grounding THEIR element
 // already has (border-color for bordered controls, a background tint for borderless rows). $inset
-// exists for elements that sit flush against a container edge (the topbar) where an outset ring
+// exists for elements that sit flush against a container edge where an outset ring
 // would get clipped by that container's own edge.
 @mixin gfd-focus-ring($glow: var(--accent-soft), $spread: 3px, $inset: false) {
   outline: none;
@@ -388,56 +381,11 @@ input:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
 input::placeholder { color: var(--faint); }
 
 /* ---------- App shell ---------- */
-// No sidenav/mode-switcher (this app is nothing but the docs) - just a slim brand bar pinned above
-// the scrolling content pane.
+// NO app-level header/brand bar, deliberately - see index.html's own comment. This deploys as a
+// Service Portal widget into a portal that already draws its own header, so a bar here would be a
+// second header inside the first, and the branding is the portal's to supply. Delivery Methodology
+// made the same call (its .app is just a centered column; search + theme live in an in-content row).
 .app { display: flex; flex-direction: column; height: 100vh; }
-.topbar {
-  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
-  gap: var(--sp-md); padding: var(--sp-sm) var(--sp-lg);
-  background: var(--topbar-bg);
-}
-.topbar-brand { display: flex; align-items: center; gap: var(--sp-sm); font-weight: 650; font-size: 13px; color: #fff; white-space: nowrap; }
-.topbar-logo { width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0; }
-// The palette trigger - a button dressed as a search field (docs-site convention), on the same
-// translucent-white-on-navy language as the theme toggle beside it. margin-left:auto beats the
-// topbar's space-between at pushing it right: with three children, space-between would CENTER it.
-.topbar-search {
-  display: flex; align-items: center; gap: var(--sp-sm);
-  height: 30px; margin-left: auto; padding: 0 var(--sp-sm) 0 var(--sp-md);
-  border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius-sm);
-  background: rgba(255,255,255,.12); color: rgba(255,255,255,.75);
-  font: inherit; font-size: 12px; cursor: pointer; transition: background .12s, border-color .12s;
-}
-.topbar-search:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4); color: #fff; }
-// Same inverse ring rationale as .topbar-theme-toggle below.
-.topbar-search:focus-visible {
-  @include gfd-focus-ring($glow: rgba(255,255,255,.55), $spread: 2px, $inset: true);
-  border-color: rgba(255,255,255,.4);
-}
-.topbar-search-kbd {
-  padding: 1px 5px; border: 1px solid rgba(255,255,255,.3); border-radius: 4px;
-  font-family: inherit; font-size: 10px; font-weight: 650; color: rgba(255,255,255,.75); white-space: nowrap;
-}
-// Below this the trigger drops its label and shortcut chip down to just the magnifier - the topbar
-// also holds the brand, and a full search field doesn't fit beside it on a phone.
-@media (max-width: 560px) {
-  .topbar-search { padding: 0 var(--sp-sm); }
-  .topbar-search-label, .topbar-search-kbd { display: none; }
-}
-.topbar-theme-toggle {
-  display: flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; flex-shrink: 0; padding: 0;
-  border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius-sm);
-  background: rgba(255,255,255,.12); color: #fff; cursor: pointer; transition: background .12s, border-color .12s;
-}
-.topbar-theme-toggle:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4); }
-// Inverse ring: var(--accent-soft) has poor contrast against this permanent navy background
-// regardless of app theme, so this uses a white glow instead - inset so it doesn't get clipped by
-// the topbar's own edge.
-.topbar-theme-toggle:focus-visible {
-  @include gfd-focus-ring($glow: rgba(255,255,255,.55), $spread: 2px, $inset: true);
-  border-color: rgba(255,255,255,.4);
-}
 
 // The scrolling content pane - DocsUiService's scrollTo/scrollToTop/setupScrollSpy and
 // MainController's docs-link click delegation all query `.docs-pane` by class name for this
@@ -450,6 +398,41 @@ input::placeholder { color: var(--faint); }
 // Sticky header - the title stays reachable while scrolled, since a page can run longer than one
 // screen. Background covers its own padding-top so nothing peeks through above it while pinned.
 .page-title-sticky { position: sticky; top: 0; z-index: 5; background: var(--bg); }
+// Search + theme, pushed opposite the title (DM's .hdr-search-group). margin-left:auto rather than
+// justify-content on the parent: .page-title's own children are the icon and the title block, and
+// space-between would spread THOSE apart too.
+.page-title-actions { display: flex; align-items: center; gap: var(--sp-sm); margin-left: auto; flex-shrink: 0; }
+// A button dressed as a search field (docs-site convention). Now that it sits on the app surface
+// rather than a navy bar, it uses ordinary themed tokens - the old translucent-white-on-navy
+// treatment (and its inverse white focus ring) had no background left to sit on.
+.docs-search-trigger {
+  display: flex; align-items: center; gap: var(--sp-sm);
+  height: 30px; padding: 0 var(--sp-sm) 0 var(--sp-md);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--muted);
+  font: inherit; font-size: 12px; cursor: pointer; transition: background .12s, border-color .12s, color .12s;
+}
+.docs-search-trigger:hover { background: var(--panel-alt); border-color: var(--accent-border); color: var(--text); }
+.docs-search-trigger:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+.docs-search-trigger-kbd {
+  padding: 1px 5px; border: 1px solid var(--border-strong); border-radius: 4px;
+  font-family: inherit; font-size: 10px; font-weight: 650; color: var(--faint); white-space: nowrap;
+}
+.docs-theme-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; flex-shrink: 0; padding: 0;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--muted); cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.docs-theme-toggle:hover { background: var(--panel-alt); border-color: var(--accent-border); color: var(--text); }
+.docs-theme-toggle:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+// Below this the trigger drops its label and shortcut chip to just the magnifier, so the title and
+// controls still share one row on a phone instead of wrapping.
+@media (max-width: 560px) {
+  .docs-search-trigger { padding: 0 var(--sp-sm); }
+  .docs-search-trigger-label, .docs-search-trigger-kbd { display: none; }
+}
 
 /* ---------- Docs (hosted reference pages) ---------- */
 // Rendered from DocsService's pre-parsed HTML (see scripts/build-docs.js). Three-column layout: the
@@ -555,7 +538,7 @@ input::placeholder { color: var(--faint); }
 // Below this, .docs-layout-main alone (940px) plus padding doesn't leave enough room for even the
 // left rail without cramping the reading column - it's the only page nav left at this point, so
 // below this width the reader falls back to plain scrolling (pages stay reachable through the
-// topbar's search palette, which never hides).
+// search palette in the page-title row, which never hides).
 @media (max-width: 900px) {
   .docs-rail { display: none; }
 }
@@ -644,7 +627,7 @@ input::placeholder { color: var(--faint); }
 // Both panes share one viewport-derived height so source and preview line up - they scroll
 // together (see DocsUiService.setupEditorScrollSync), and that sync reads as one document in two
 // views only if the two viewports are the same size. The 60vh floor keeps a usable pane on a short
-// laptop screen; the subtraction accounts for the chrome above and below the panes (topbar, sticky
+// laptop screen; the subtraction accounts for the chrome above and below the panes (sticky
 // page title, toolbar, controls row) so the Save row stays on screen.
 $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 // The two-layer source pane. .docs-editor-highlight paints the colours; .docs-editor-textarea sits

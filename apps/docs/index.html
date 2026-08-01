@@ -40,31 +40,35 @@
      first digest finishes compiling this element. -->
 <div class="app" ng-cloak ng-controller="MainController as vm">
 
-  <header class="topbar">
-    <div class="topbar-brand"><span class="topbar-logo" aria-hidden="true">G</span>GlideFast Docs</div>
-    <!-- The ONE search affordance in the whole app (docs-site convention: search lives in the
-         chrome, not the content). Not an input - a button dressed as one, whose only job is opening
-         the palette below; the real typing happens in the palette's own autofocused input. Lives in
-         the always-visible topbar, so no width breakpoint ever needs a fallback copy of it (the
-         old rail + header dual-input arrangement this replaced). -->
-    <button type="button" class="topbar-search" ng-click="vm.openDocsPalette()" aria-label="Search docs" aria-haspopup="dialog">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-      <span class="topbar-search-label">Search docs…</span>
-      <kbd class="topbar-search-kbd" aria-hidden="true">{{vm.docsPaletteShortcutLabel}}</kbd>
-    </button>
-    <button type="button" class="topbar-theme-toggle" ng-click="vm.toggleTheme()"
-            aria-pressed="{{vm.theme === 'dark'}}" title="Toggle dark mode" aria-label="Toggle dark mode">
-      <svg ng-if="vm.theme === 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-      <svg ng-if="vm.theme !== 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-    </button>
-  </header>
-
+  <!-- NO app header/brand bar here, deliberately. This ships as a Service Portal widget into a
+       portal that already renders its own header, so anything header-shaped at this level would
+       be a SECOND header nested inside the portal's - and the brand it used to carry is the
+       portal's job, not this widget's. Same call Delivery Methodology already made: it has no
+       app-level bar at all, just a constrained content column whose first row carries the page
+       title on the left and the search + theme controls on the right (partials/shell.html's
+       .pagehdr-top / .hdr-search-group). This app's .page-title row below is that same row. -->
   <div class="docs-pane">
     <div class="page-title page-title-sticky">
       <span aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
       <div>
         <div class="page-title-name">Docs</div>
         <div class="page-title-sub">GlideFast reference documentation</div>
+      </div>
+      <!-- Search + theme, right-aligned opposite the title - the in-content position Delivery
+           Methodology uses (.hdr-search-group), not an app header bar. The search control is a
+           BUTTON dressed as a field, not a real input: it only opens the palette, where the actual
+           typing happens in that overlay's own autofocused input. -->
+      <div class="page-title-actions">
+        <button type="button" class="docs-search-trigger" ng-click="vm.openDocsPalette()" aria-label="Search docs" aria-haspopup="dialog">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          <span class="docs-search-trigger-label">Search docs…</span>
+          <kbd class="docs-search-trigger-kbd" aria-hidden="true">{{vm.docsPaletteShortcutLabel}}</kbd>
+        </button>
+        <button type="button" class="docs-theme-toggle" ng-click="vm.toggleTheme()"
+                aria-pressed="{{vm.theme === 'dark'}}" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
+          <svg ng-if="vm.theme === 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg ng-if="vm.theme !== 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
       </div>
     </div>
 
@@ -286,7 +290,7 @@
     </div>
   </div>
 
-  <!-- The search palette - the modal the topbar trigger (and ⌘K/Ctrl+K, see
+  <!-- The search palette - the modal the page-title search trigger (and ⌘K/Ctrl+K, see
        DocsUiService.setupPaletteShortcut) opens. This is the whole search UX: results appear as
        you type, arrows move the highlight, Enter opens, Esc closes. All state is vm.docsPalette* -
        an OVERLAY over whatever view is current, never a docsView of its own, so closing it always
