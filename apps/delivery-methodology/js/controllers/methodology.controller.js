@@ -141,6 +141,31 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
   };
   WhatsNewService.bindFormatters(c);
   c.subPhaseIconPaths = IconService.pathsFor;
+  c.subPhasePickerKeys = IconService.pickerKeys();
+  c.subPhaseIconPathsForKey = IconService.pathsForKey;
+  c.subPhaseIconLabel = IconService.pickerLabel;
+
+  var iconPickerSubPhaseId = null;
+
+  c.toggleSubPhaseIconPicker = function (subPhase) {
+    if (!subPhase) {
+      return;
+    }
+    if (iconPickerSubPhaseId === subPhase.id) {
+      iconPickerSubPhaseId = null;
+    } else {
+      iconPickerSubPhaseId = subPhase.id;
+    }
+  };
+
+  c.isSubPhaseIconPickerOpen = function (subPhase) {
+    return !!(subPhase && iconPickerSubPhaseId === subPhase.id);
+  };
+
+  c.setSubPhaseIcon = function (subPhase, key) {
+    IconService.setSubPhaseIcon(subPhase, key);
+    iconPickerSubPhaseId = null;
+  };
   c.jobAidScope = function (task, jobAid) {
     return ReferenceService.jobAidScope(task, jobAid, c.sortJobTitleIds, c.jobTitleById);
   };
@@ -213,6 +238,9 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
     var structureState = StructureEditService.readState();
     c.structureEditMode = structureState.structureEditMode;
     c.structureEditUiEnabled = structureState.structureEditUiEnabled;
+    if (!c.structureEditMode) {
+      iconPickerSubPhaseId = null;
+    }
   }
   function syncEdit() {
     var editState = ContentEditService.readState();

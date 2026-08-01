@@ -1368,11 +1368,88 @@ a {
   padding-left: 30px;
 }
 
+.struct-subphase-block {
+  margin-bottom: 6px;
+}
+
 .struct-subphase {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+}
+
+.struct-icon-trigger {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(var(--wash-rgb), 0.04);
+  color: var(--teal);
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+
+.struct-icon-trigger svg {
+  width: 16px;
+  height: 16px;
+}
+
+.struct-icon-trigger:hover {
+  border-color: var(--teal);
+  background: rgba(var(--wash-rgb), 0.08);
+}
+
+.struct-icon-trigger[aria-expanded=true] {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-wash);
+}
+
+.struct-icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0 42px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(var(--wash-rgb), 0.03);
+}
+
+.struct-icon-option {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--gradient-card, rgba(var(--wash-rgb), 0.04));
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.struct-icon-option svg {
+  width: 17px;
+  height: 17px;
+}
+
+.struct-icon-option:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.struct-icon-option.on {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--chip-on-bg);
 }
 
 .struct-sid {
