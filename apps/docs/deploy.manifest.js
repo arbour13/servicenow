@@ -36,13 +36,23 @@
 
       angularModuleName: 'glidefastDocs',
       widgetScopeClass: 'gfd-widget',
-      // Every service MainController injects has to be here - a missing one is not a degraded
-      // feature but a hard Angular DI failure that stops the whole widget bootstrapping.
+      // Every service MainController injects (directly, or transitively via a service THAT
+      // service injects, e.g. DocsHighlightService via MarkdownEditorService) has to be here - a
+      // missing one is not a degraded feature but a hard Angular DI failure that stops the whole
+      // widget bootstrapping. MonacoLoaderService/MonacoMarkdownService are OUR OWN first-party JS
+      // (no different from any other provider here) - they just happen to attempt fetching a
+      // third-party library, Monaco, from a CDN at runtime, which never actually reaches THIS
+      // deployed widget in the first place (see MarkdownEditorService's own header comment) but
+      // fails that attempt gracefully either way, same as it does when a reader's own network
+      // blocks the CDN in the local harness.
       providers: [
         { file: 'js/services/theme.service.js', name: 'ThemeService', type: 'service' },
         { file: 'js/services/docs.service.js', name: 'DocsService', type: 'service' },
         { file: 'js/services/docs-edit.service.js', name: 'DocsEditService', type: 'service' },
         { file: 'js/services/docs-highlight.service.js', name: 'DocsHighlightService', type: 'service' },
+        { file: 'js/services/monaco-loader.service.js', name: 'MonacoLoaderService', type: 'service' },
+        { file: 'js/services/monaco-markdown.service.js', name: 'MonacoMarkdownService', type: 'service' },
+        { file: 'js/services/markdown-editor.service.js', name: 'MarkdownEditorService', type: 'service' },
         { file: 'js/services/docs-ui.service.js', name: 'DocsUiService', type: 'service' },
       ],
       stubProviders: [],   // no Deploy modal of its own, so nothing to stub in the deployed widget

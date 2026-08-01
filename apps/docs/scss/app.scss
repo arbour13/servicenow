@@ -61,6 +61,63 @@ $gfd-ed-num-dark: #f78c6c !default;
 $gfd-ed-com-dark: #5a6275 !default;
 $gfd-ed-fn-dark: #82aaff !default;
 
+// Markdown-editor token palette - what the textarea fallback's .md-* spans (DocsHighlightService)
+// AND Monaco's theme (MonacoMarkdownService reads these back as literal hex at runtime, since
+// Monaco's theme API rejects rgba()) both draw from, so the two editors match structurally rather
+// than by eyeballing two hand-tuned palettes. Unlike $gfd-ed-* above (bound directly per APP theme
+// in the .docs-pre/.c-* rules, never exposed as custom properties at all), these ARE exposed as
+// --ed-md-* in both :root blocks below - closing the gap where --ed-* used to have no dark
+// override, which used to leave the editor's code/link/comment colours stuck in light mode after
+// a theme toggle. All values MUST be opaque hex - Monaco rejects rgb()/rgba() outright, so the
+// translucent selection colour here is pre-blended against its own pane background rather than
+// reusing --accent-soft-hover.
+$gfd-ed-md-heading: #054b80 !default;
+$gfd-ed-md-bold: #1c2128 !default;
+$gfd-ed-md-italic: #1c2128 !default;
+$gfd-ed-md-code: #116329 !default;
+$gfd-ed-md-fence: #6b7280 !default;
+$gfd-ed-md-code-block: #8250df !default;
+$gfd-ed-md-link-text: #054b80 !default;
+$gfd-ed-md-link-url: #116329 !default;
+$gfd-ed-md-wikilink: #6d3fc9 !default;
+$gfd-ed-md-marker: #9aa1ab !default;
+$gfd-ed-md-comment: #6b7280 !default;
+$gfd-ed-md-bg: #ffffff !default;
+$gfd-ed-md-text: #1c2128 !default;
+$gfd-ed-md-selection: #d6e6f2 !default; // --accent-soft-hover, pre-blended to opaque
+$gfd-ed-md-line-highlight: #fbfbfd !default;
+$gfd-ed-md-caret: #1c2128 !default;
+
+$gfd-ed-md-heading-dark: #7ab3ea !default;
+$gfd-ed-md-bold-dark: #e7ebf2 !default;
+$gfd-ed-md-italic-dark: #e7ebf2 !default;
+$gfd-ed-md-code-dark: #c3e88d !default;
+$gfd-ed-md-fence-dark: #5a6275 !default;
+$gfd-ed-md-code-block-dark: #c792ea !default;
+$gfd-ed-md-link-text-dark: #7ab3ea !default;
+$gfd-ed-md-link-url-dark: #c3e88d !default;
+$gfd-ed-md-wikilink-dark: #b79cf0 !default;
+$gfd-ed-md-marker-dark: #6b7385 !default;
+$gfd-ed-md-comment-dark: #5a6275 !default;
+$gfd-ed-md-bg-dark: #1b1f2a !default;
+$gfd-ed-md-text-dark: #e6e9ef !default;
+$gfd-ed-md-selection-dark: #2a4a63 !default; // --accent-soft-hover-dark, pre-blended to opaque
+$gfd-ed-md-line-highlight-dark: #20262f !default;
+$gfd-ed-md-caret-dark: #e6e9ef !default;
+
+// The sticky app header's (.page-title-sticky) own measured height - where every OTHER sticky
+// thing in the pane has to start. Measured, not derived: .page-title sizes from its own content,
+// so re-check this if that header's padding or font sizes change. The JS counterpart
+// (DocsUiService.scrollTo's landing offset) deliberately MEASURES these headers at runtime rather
+// than duplicating the number.
+$gfd-sticky-app-header: 59px !default;
+// Each page's own header sits FLUSH against the app header - it's directly in the scroll path, so
+// any gap between the two is a band that page content visibly scrolls through.
+$gfd-sticky-page-head-top: $gfd-sticky-app-header !default;
+// The rails get breathing room instead: they sit BESIDE the content rather than stacked above it,
+// so a gap there reads as margin, not as a leak.
+$gfd-sticky-rail-top: $gfd-sticky-app-header + 16px !default;
+
 // ---------- Dark palette ----------
 $gfd-bg-dark: #10131a !default;
 $gfd-panel-dark: #1a1f29 !default;
@@ -109,6 +166,22 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
   --ed-num: #{$gfd-ed-num};
   --ed-com: #{$gfd-ed-com};
   --ed-fn: #{$gfd-ed-fn};
+  --ed-md-heading: #{$gfd-ed-md-heading};
+  --ed-md-bold: #{$gfd-ed-md-bold};
+  --ed-md-italic: #{$gfd-ed-md-italic};
+  --ed-md-code: #{$gfd-ed-md-code};
+  --ed-md-fence: #{$gfd-ed-md-fence};
+  --ed-md-code-block: #{$gfd-ed-md-code-block};
+  --ed-md-link-text: #{$gfd-ed-md-link-text};
+  --ed-md-link-url: #{$gfd-ed-md-link-url};
+  --ed-md-wikilink: #{$gfd-ed-md-wikilink};
+  --ed-md-marker: #{$gfd-ed-md-marker};
+  --ed-md-comment: #{$gfd-ed-md-comment};
+  --ed-md-bg: #{$gfd-ed-md-bg};
+  --ed-md-text: #{$gfd-ed-md-text};
+  --ed-md-selection: #{$gfd-ed-md-selection};
+  --ed-md-line-highlight: #{$gfd-ed-md-line-highlight};
+  --ed-md-caret: #{$gfd-ed-md-caret};
   --radius: 10px;
   --radius-sm: 7px;
   --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
@@ -130,6 +203,11 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
   --red: #{$gfd-red};
   --red-soft: #{$gfd-red-soft};
   --red-border: #{$gfd-red-border};
+  // Tooltips invert against the page in BOTH themes (dark bubble on light, light bubble on dark) -
+  // a tooltip is a transient overlay, and matching the surface it floats over would make it read
+  // as part of the page rather than above it.
+  --tooltip-bg: #{$gfd-text};
+  --tooltip-text: #{$gfd-panel};
 }
 /* Dark mode. `data-theme` is set on <html> by vm.toggleTheme() (see ThemeService) - overriding the
    custom properties here is enough to re-theme every component that already references
@@ -151,6 +229,28 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
   --accent-border: #{$gfd-accent-border-dark};
   --topbar-bg: #{$gfd-topbar-bg-dark};
   --shadow: 0 1px 2px rgba(0,0,0,.24), 0 1px 3px rgba(0,0,0,.32);
+  // --ed-* (below) intentionally has NO dark override here - .docs-pre/.c-* bind to the
+  // $gfd-ed-*-dark SCSS values directly via their own explicit :root[data-theme="dark"] rules
+  // further down, not through these custom properties. --ed-md-* is different: the editor's own
+  // .md-* rules DO read these as custom properties, so - unlike --ed-* - this needs its own
+  // dark set, or the editor's code/link/comment colours would stay stuck in light mode after a
+  // theme toggle (the bug this whole block exists to close).
+  --ed-md-heading: #{$gfd-ed-md-heading-dark};
+  --ed-md-bold: #{$gfd-ed-md-bold-dark};
+  --ed-md-italic: #{$gfd-ed-md-italic-dark};
+  --ed-md-code: #{$gfd-ed-md-code-dark};
+  --ed-md-fence: #{$gfd-ed-md-fence-dark};
+  --ed-md-code-block: #{$gfd-ed-md-code-block-dark};
+  --ed-md-link-text: #{$gfd-ed-md-link-text-dark};
+  --ed-md-link-url: #{$gfd-ed-md-link-url-dark};
+  --ed-md-wikilink: #{$gfd-ed-md-wikilink-dark};
+  --ed-md-marker: #{$gfd-ed-md-marker-dark};
+  --ed-md-comment: #{$gfd-ed-md-comment-dark};
+  --ed-md-bg: #{$gfd-ed-md-bg-dark};
+  --ed-md-text: #{$gfd-ed-md-text-dark};
+  --ed-md-selection: #{$gfd-ed-md-selection-dark};
+  --ed-md-line-highlight: #{$gfd-ed-md-line-highlight-dark};
+  --ed-md-caret: #{$gfd-ed-md-caret-dark};
   --purple: #{$gfd-purple-dark};
   --purple-soft: #{$gfd-purple-soft-dark};
   --purple-border: #{$gfd-purple-border-dark};
@@ -160,6 +260,8 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
   --red: #{$gfd-red-dark};
   --red-soft: #{$gfd-red-soft-dark};
   --red-border: #{$gfd-red-border-dark};
+  --tooltip-bg: #{$gfd-text-dark};
+  --tooltip-text: #{$gfd-bg-dark};
 }
 
 // The one shared focus-ring shape for every focusable element in the app - a soft-glow treatment
@@ -176,6 +278,40 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
   } @else {
     box-shadow: 0 0 0 $spread $glow;
   }
+}
+
+// Shared tooltip - any element with data-tooltip="..." gets one, positioned above and centered.
+// Built here rather than reaching for the native `title` attribute: title waits ~1-2s before it
+// appears, can't be styled, and never shows on keyboard focus at all, which makes it close to
+// useless for the editor toolbar's cryptic single-glyph buttons (B, { }, [[ ]]). Callers pair
+// data-tooltip with a matching aria-label, since data-* attributes contribute nothing to the
+// accessible name.
+// Pure CSS (::after + ::before), no JS: these all sit inside containers that don't clip, so there's
+// no need for the portal-to-body machinery a JS tooltip would justify.
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  z-index: 30;
+  padding: 3px var(--sp-sm); border-radius: var(--radius-sm);
+  background: var(--tooltip-bg); color: var(--tooltip-text);
+  font-size: 11px; font-weight: 600; line-height: 1.5; white-space: nowrap;
+  pointer-events: none; opacity: 0; visibility: hidden;
+  transition: opacity .12s ease .35s, visibility .12s ease .35s; // .35s so it doesn't flash on a passing cursor
+}
+// The little pointer, drawn as a rotated square rather than the usual border triangle so it picks
+// up the same --tooltip-bg as the bubble itself with no second colour to keep in sync.
+[data-tooltip]::before {
+  content: '';
+  position: absolute; bottom: calc(100% + 2px); left: 50%;
+  width: 8px; height: 8px; transform: translateX(-50%) rotate(45deg);
+  z-index: 31; background: var(--tooltip-bg);
+  pointer-events: none; opacity: 0; visibility: hidden;
+  transition: opacity .12s ease .35s, visibility .12s ease .35s;
+}
+[data-tooltip]:hover::after, [data-tooltip]:hover::before,
+[data-tooltip]:focus-visible::after, [data-tooltip]:focus-visible::before {
+  opacity: 1; visibility: visible;
 }
 
 /* ---------- Base reset ---------- */
@@ -205,10 +341,40 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: var(--sp-lg); overflow: hidden; }
-.card-head { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-md) var(--sp-lg); border-bottom: 1px solid var(--border); }
+// The main content container - deliberately NOT a panel. Documentation is a reading surface, and
+// wrapping a whole page of prose in a raised card puts a box around something that has no edges:
+// the reader is inside the content, not looking at it as an object. The genuinely object-like
+// things on a page keep their own surfaces (code blocks, the editor's panes, hub tiles, the search
+// palette) precisely BECAUSE they're discrete objects embedded in the prose - and they read more
+// clearly now that they're the only raised things on screen, sitting on the page background rather
+// than a panel almost the same colour as they are.
+// Used only by the Home and open-page views; every other surface in this app has its own class.
+// overflow stays VISIBLE (the old panel clipped to its own radius) - the page-actions dropdown is
+// absolutely positioned inside .card-head and would otherwise be clipped away.
+.card { background: transparent; border: 0; border-radius: 0; box-shadow: none; margin-bottom: var(--sp-lg); overflow: visible; }
+// Horizontal padding drops to zero along with the panel - there's no longer an edge to inset from,
+// and the head's own text should sit on the same left margin as the prose below it. The bottom
+// border stays: it's the only thing now separating the page title/actions from the content.
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md); padding: 0 0 var(--sp-md); border-bottom: 1px solid var(--border); }
+// An open page's own header, sticky beneath the app header so the page title and its actions stay
+// reachable however far down you've read. z-index below .page-title-sticky's 5 so it slides UNDER
+// that rather than over it. The Home card-head deliberately doesn't get this - it's an index you
+// scan, not a document you read down.
+// The padding-top + negative margin-top pair is what keeps content from showing through above it
+// while pinned: the head needs opaque background all the way up to where it sticks, but that gap
+// would otherwise push it down the page when NOT pinned.
+.docs-page-head {
+  position: sticky; top: $gfd-sticky-page-head-top; z-index: 4;
+  background: var(--bg);
+  margin-top: calc(-1 * var(--sp-md)); padding-top: var(--sp-md);
+}
+// Pinned state (toggled by DocsUiService.setupStickyHeadState): the title fades but keeps its layout space (visibility/opacity, never display or
+// height), so the row can't change height mid-scroll and shove the content below it. What's left
+// pinned is the actions row - the part that's actually worth having within reach deep in a page.
+.docs-page-head h2 { transition: opacity .18s ease; }
+.docs-page-head.is-stuck h2 { opacity: 0; pointer-events: none; }
 .card-head h2 { margin: 0; font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-.card-body { padding: var(--sp-md) var(--sp-lg); }
+.card-body { padding: var(--sp-lg) 0 0; }
 .hint { font-size: 11.5px; color: var(--muted); margin: 0 0 var(--sp-md); line-height: 1.5; }
 .empty { font-size: 12px; color: var(--faint); font-style: italic; padding: var(--sp-xs) 0; }
 
@@ -232,6 +398,32 @@ input::placeholder { color: var(--faint); }
 }
 .topbar-brand { display: flex; align-items: center; gap: var(--sp-sm); font-weight: 650; font-size: 13px; color: #fff; white-space: nowrap; }
 .topbar-logo { width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0; }
+// The palette trigger - a button dressed as a search field (docs-site convention), on the same
+// translucent-white-on-navy language as the theme toggle beside it. margin-left:auto beats the
+// topbar's space-between at pushing it right: with three children, space-between would CENTER it.
+.topbar-search {
+  display: flex; align-items: center; gap: var(--sp-sm);
+  height: 30px; margin-left: auto; padding: 0 var(--sp-sm) 0 var(--sp-md);
+  border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.12); color: rgba(255,255,255,.75);
+  font: inherit; font-size: 12px; cursor: pointer; transition: background .12s, border-color .12s;
+}
+.topbar-search:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4); color: #fff; }
+// Same inverse ring rationale as .topbar-theme-toggle below.
+.topbar-search:focus-visible {
+  @include gfd-focus-ring($glow: rgba(255,255,255,.55), $spread: 2px, $inset: true);
+  border-color: rgba(255,255,255,.4);
+}
+.topbar-search-kbd {
+  padding: 1px 5px; border: 1px solid rgba(255,255,255,.3); border-radius: 4px;
+  font-family: inherit; font-size: 10px; font-weight: 650; color: rgba(255,255,255,.75); white-space: nowrap;
+}
+// Below this the trigger drops its label and shortcut chip down to just the magnifier - the topbar
+// also holds the brand, and a full search field doesn't fit beside it on a phone.
+@media (max-width: 560px) {
+  .topbar-search { padding: 0 var(--sp-sm); }
+  .topbar-search-label, .topbar-search-kbd { display: none; }
+}
 .topbar-theme-toggle {
   display: flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; flex-shrink: 0; padding: 0;
@@ -255,19 +447,9 @@ input::placeholder { color: var(--faint); }
 .page-title > span:first-child { display: flex; color: var(--accent); }
 .page-title-name { font-size: 20px; font-weight: 650; color: var(--text); line-height: 1.1; }
 .page-title-sub { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-top: var(--sp-xxs); }
-.page-title-actions { margin-left: auto; align-self: center; display: flex; gap: var(--sp-sm); flex-wrap: wrap; justify-content: flex-end; }
-// Sticky header - stays reachable (title + search) while scrolled, since a page can run longer
-// than one screen. Background covers its own padding-top so nothing peeks through above it while
-// pinned.
+// Sticky header - the title stays reachable while scrolled, since a page can run longer than one
+// screen. Background covers its own padding-top so nothing peeks through above it while pinned.
 .page-title-sticky { position: sticky; top: 0; z-index: 5; background: var(--bg); }
-// Below this, the title text plus the search box's fixed 220px width no longer fit on one row -
-// wrap the search onto its own row rather than letting it run off the right edge (the fixed
-// docs-search-wrap-header width was measured against a desktop-width header, not a phone one).
-@media (max-width: 560px) {
-  .page-title { flex-wrap: wrap; }
-  .page-title-actions { margin-left: 0; width: 100%; justify-content: flex-start; }
-  .docs-search-wrap-header .docs-search-input { width: 100%; }
-}
 
 /* ---------- Docs (hosted reference pages) ---------- */
 // Rendered from DocsService's pre-parsed HTML (see scripts/build-docs.js). Three-column layout: the
@@ -279,8 +461,8 @@ input::placeholder { color: var(--faint); }
 
 .docs-rail {
   width: 240px; flex-shrink: 0; align-self: flex-start;
-  position: sticky; top: 75px;
-  max-height: calc(100vh - 75px - var(--sp-xl));
+  position: sticky; top: $gfd-sticky-rail-top;
+  max-height: calc(100vh - #{$gfd-sticky-rail-top} - var(--sp-xl));
   overflow-x: hidden; overflow-y: auto;
   transition: width .3s ease, opacity .2s ease;
 }
@@ -295,10 +477,13 @@ input::placeholder { color: var(--faint); }
 // flex:1 .docs-layout-main simply reclaims the freed space on its own.
 .docs-toc {
   width: 200px; flex-shrink: 0; align-self: flex-start;
-  position: sticky; top: 75px;
-  max-height: calc(100vh - 75px - var(--sp-xl));
+  position: sticky; top: $gfd-sticky-rail-top;
+  max-height: calc(100vh - #{$gfd-sticky-rail-top} - var(--sp-xl));
   overflow-x: hidden; overflow-y: auto;
-  padding: 0 0 var(--sp-lg) var(--sp-sm);
+  // Matches .docs-rail-inner's own horizontal padding on the opposite side, so the visible gutter
+  // between the reading column and each rail is the SAME on both - the flex `gap` alone isn't the
+  // whole story, since each rail adds its own inset on the side facing the content.
+  padding: 0 var(--sp-sm) var(--sp-lg) var(--sp-sm);
 }
 .docs-toc-title {
   font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
@@ -332,19 +517,18 @@ input::placeholder { color: var(--faint); }
 @media (prefers-reduced-motion: reduce) {
   .docs-layout, .docs-layout-main, .docs-rail { transition: none; }
 }
+// The doc set's own root ("Standards"). Sits one level ABOVE the group titles below it, so it's a
+// step larger than they are and shares their exact left edge - no indent, and no active border
+// either: the group titles it aligns with carry no border, and an indicator here would push the
+// text out of alignment with them the moment it's selected.
 .docs-rail-home {
-  display: block; width: 100%; text-align: left; border: 0; border-left: 2px solid transparent; background: transparent; cursor: pointer;
-  font: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted);
-  padding: var(--sp-xs) 0 var(--sp-xs) var(--sp-sm); margin-left: -1px; margin-bottom: var(--sp-lg);
-  transition: color .12s, border-color .12s;
+  display: block; width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer;
+  font: inherit; font-size: 14px; font-weight: 800; color: var(--muted);
+  padding: var(--sp-xs) 0; margin-left: -1px; margin-bottom: var(--sp-lg);
+  transition: color .12s;
 }
-.docs-rail .docs-search-wrap {
-  position: sticky; top: 0; z-index: 1; background: var(--bg);
-  margin-bottom: var(--sp-md);
-}
-.docs-rail .docs-search-wrap .docs-search-input { width: 100%; }
 .docs-rail-home:hover { color: var(--text); }
-.docs-rail-home.active { color: var(--accent); border-left-color: var(--accent); }
+.docs-rail-home.active { color: var(--accent); }
 .docs-rail-home:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
 .docs-rail-band + .docs-rail-band { margin-top: var(--sp-xl); }
 // Not a button (see index.html) - a group is a structural label, not something to navigate to.
@@ -370,8 +554,8 @@ input::placeholder { color: var(--faint); }
 }
 // Below this, .docs-layout-main alone (940px) plus padding doesn't leave enough room for even the
 // left rail without cramping the reading column - it's the only page nav left at this point, so
-// below this width the reader falls back to plain scrolling (still reachable via the header search
-// fallback, .docs-search-wrap-header).
+// below this width the reader falls back to plain scrolling (pages stay reachable through the
+// topbar's search palette, which never hides).
 @media (max-width: 900px) {
   .docs-rail { display: none; }
 }
@@ -382,11 +566,6 @@ input::placeholder { color: var(--faint); }
 }
 .docs-link:hover { text-decoration: underline; }
 .docs-link:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
-
-// Breadcrumb on an open page's card-head ("Group / Page Title") - the group half stays muted so
-// the page's own title (plain text alongside it, not its own span) is what reads as the heading.
-.docs-breadcrumb { color: var(--faint); font-weight: 650; }
-.docs-breadcrumb-sep { color: var(--faint); margin: 0 var(--sp-xs); font-weight: 400; }
 
 // Shared small-button base for every editor control (Edit/Cancel/Save/toolbar buttons) - this app
 // otherwise only has icon toggles and text-styled .docs-link buttons, nothing this size before now.
@@ -403,15 +582,56 @@ input::placeholder { color: var(--faint); }
 .docs-btn-primary[disabled] { opacity: .5; cursor: not-allowed; }
 .docs-btn-primary[disabled]:hover { background: var(--accent); border-color: var(--accent); }
 
-// Edit-mode header row (card-head, alongside the breadcrumb) - the badge and Reset link only ever
-// show together with the Edit button (all three gated by !vm.docsEditMode in index.html).
+// Page-actions row (card-head, alongside the breadcrumb), all gated by !vm.docsEditMode in
+// index.html so it never sits alongside the editor's own Save/Cancel.
 .docs-page-actions { display: flex; align-items: center; gap: var(--sp-sm); flex-shrink: 0; }
 .docs-local-badge {
   font-size: 10.5px; font-weight: 650; letter-spacing: .02em; text-transform: uppercase;
   color: var(--purple); background: var(--purple-soft); border: 1px solid var(--purple-border);
   border-radius: var(--radius-sm); padding: 2px var(--sp-sm); white-space: nowrap;
 }
-.docs-edit-btn { @extend .docs-btn; }
+// Copy page and Edit - two plain, equally-weighted buttons (not a primary action + a menu of
+// rarer ones - both are common, and Edit isn't even always present, see vm.canEditDocs's role
+// check). Each carries its own small icon ahead of the label.
+.docs-edit-btn, .docs-copy-page-btn { @extend .docs-btn; }
+
+// Prev/Next footer, below the page content. Two big click targets rather than small text links:
+// this is the "keep reading" affordance, so it should be the easiest thing to hit on the page once
+// you've reached the bottom. Each stacks direction / group / page title, so the reader sees WHERE
+// they'd land, not just that something is next. No horizontal padding - it aligns to the same left
+// margin as the prose above it now that the content panel is gone.
+.docs-pager {
+  display: flex; gap: var(--sp-md); justify-content: space-between;
+  margin-top: var(--sp-xxl); padding: var(--sp-lg) 0 0;
+  border-top: 1px solid var(--border);
+}
+.docs-pager-btn {
+  display: flex; flex-direction: column; gap: 1px; flex: 0 1 auto; min-width: 0; max-width: 47%;
+  padding: var(--sp-sm) var(--sp-md); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--panel); cursor: pointer; font: inherit; text-align: left;
+  transition: border-color .12s, background .12s;
+}
+.docs-pager-btn:hover { background: var(--panel-alt); border-color: var(--border-strong); }
+.docs-pager-btn:focus-visible { @include gfd-focus-ring; }
+// Keeps a lone Next button (first page of the doc, no Previous) pinned right where it belongs
+// instead of sliding to the left edge - space-between has nothing to push against with one child.
+.docs-pager-next { margin-left: auto; text-align: right; }
+.docs-pager-dir { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: .01em; }
+.docs-pager-group {
+  font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--faint);
+}
+.docs-pager-title {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+// Stacked, full-width below this - side-by-side leaves each title too narrow to read at a glance,
+// and this is the width where the rails have already dropped and vertical space is the cheap axis.
+@media (max-width: 620px) {
+  .docs-pager { flex-direction: column; }
+  .docs-pager-btn { max-width: none; }
+  .docs-pager-next { margin-left: 0; }
+}
 
 // The editor - toolbar, a two-column markdown/preview split, any validation errors, then
 // Cancel/Save. .docs-editor-preview reuses .docs-content (see the class list on its own element in
@@ -446,8 +666,9 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
   background: var(--panel);
   overflow: hidden;
 }
-// Focus ring moves to the WRAPPER (via :focus-within) since the textarea itself is now
-// border-less and transparent - the visible box belongs to the container now.
+// Focus ring moves to the WRAPPER (via :focus-within) since neither editor draws its own visible
+// box - the fallback's textarea is border-less/transparent, and Monaco's own focus styling is
+// suppressed the same way. The visible box belongs to the container either way.
 .docs-editor-source:focus-within { @include gfd-focus-ring; border-color: var(--accent); }
 .docs-editor-highlight {
   @extend %docs-editor-typography;
@@ -471,30 +692,57 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 // Selection has to stay translucent - an opaque highlight would hide the coloured layer under it.
 .docs-editor-textarea::selection { background: var(--accent-soft-hover); }
 
-// Markdown token colours, reusing the app's own code-sample palette (--ed-*) so the editor stays
-// consistent with rendered code blocks and re-themes with everything else.
-.docs-editor-highlight .md-heading { color: var(--accent); font-weight: 700; }
-.docs-editor-highlight .md-bold { color: var(--text); font-weight: 700; }
-.docs-editor-highlight .md-italic { color: var(--text); font-style: italic; }
-.docs-editor-highlight .md-code { color: var(--ed-str); }
-.docs-editor-highlight .md-fence { color: var(--ed-com); }
-.docs-editor-highlight .md-code-block { color: var(--ed-kw); }
-.docs-editor-highlight .md-link-text { color: var(--accent); }
-.docs-editor-highlight .md-link-url { color: var(--ed-str); }
-.docs-editor-highlight .md-wikilink { color: var(--purple); }
-.docs-editor-highlight .md-marker { color: var(--faint); }
-.docs-editor-highlight .md-comment { color: var(--ed-com); font-style: italic; }
+// Markdown token colours - see the --ed-md-* block near the top of this file for why these are a
+// DEDICATED palette (Monaco's theme API needs the same literal-hex values MonacoMarkdownService
+// reads back from these exact custom properties, so the fallback and Monaco match structurally
+// rather than by two hand-tuned palettes drifting apart) rather than reusing --ed-*, which has no
+// dark override and is bound directly by $gfd-ed-* elsewhere in this file.
+.docs-editor-highlight .md-heading { color: var(--ed-md-heading); font-weight: 700; }
+.docs-editor-highlight .md-bold { color: var(--ed-md-bold); font-weight: 700; }
+.docs-editor-highlight .md-italic { color: var(--ed-md-italic); font-style: italic; }
+.docs-editor-highlight .md-code { color: var(--ed-md-code); }
+.docs-editor-highlight .md-fence { color: var(--ed-md-fence); }
+.docs-editor-highlight .md-code-block { color: var(--ed-md-code-block); }
+.docs-editor-highlight .md-link-text { color: var(--ed-md-link-text); }
+.docs-editor-highlight .md-link-url { color: var(--ed-md-link-url); }
+.docs-editor-highlight .md-wikilink { color: var(--ed-md-wikilink); }
+.docs-editor-highlight .md-marker { color: var(--ed-md-marker); }
+.docs-editor-highlight .md-comment { color: var(--ed-md-comment); font-style: italic; }
+
+// Monaco's own mount point - MarkdownEditorService.mountEditor toggles which of the two editors
+// is visible via .docs-editor-source's data-editor attribute; only ONE of Monaco/the fallback
+// pair is ever shown, matching the app's usual "only the currently relevant DOM is visible"
+// approach elsewhere. Absent-attribute (before mountEditor's first digest) defaults to the
+// fallback showing, since that's the editor that always mounts first - see MarkdownEditorService's
+// own header comment for the whole mount strategy.
+.docs-editor-monaco { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
+.docs-editor-source[data-editor="monaco"] .docs-editor-monaco { display: block; }
+.docs-editor-source[data-editor="monaco"] .docs-editor-highlight,
+.docs-editor-source[data-editor="monaco"] .docs-editor-textarea { display: none; }
+// This app's global background/color/border transition (see the `*, *::before, *::after` rule
+// near the top of this file) bleeds into Monaco's entire internal DOM otherwise, making its
+// cursor blink and theme swaps look smeared rather than instant.
+.monaco-editor, .monaco-editor * { transition: none !important; }
+
+// Transparent, NOT a tinted panel - the reader view lost its own panel, so a preview sitting on
+// --panel-alt would be showing the author a surface no reader ever sees, and every code block
+// inside it would sit on the wrong backdrop. The border stays purely to delimit the pane from the
+// source half beside it; the CONTENT surface has to match the real thing, and that's --bg now.
 .docs-editor-preview {
   height: $gfd-editor-pane-height; overflow-y: auto;
-  padding: var(--sp-md); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-alt);
+  padding: var(--sp-md); border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent;
 }
 // Below this the two panes can't sit side by side legibly, so they stack - and each drops to a
 // modest fixed height, since two viewport-tall panes stacked would be twice the window and turn
 // every edit into a long scroll between source and preview. Must stay AFTER the height rules
-// above: same specificity, so source order is what decides the override.
+// above: same specificity, so source order is what decides the override. Targets .docs-editor-
+// source (not .docs-editor-textarea) - the textarea/highlight/Monaco host all fill THEIR PARENT
+// at height:100%, so the source pane's own box is what actually needs to shrink; overriding the
+// textarea alone left it at 340px while the source pane stayed at the full desktop height,
+// creating a tall empty gap below a short textarea.
 @media (max-width: 900px) {
   .docs-editor-panes { grid-template-columns: 1fr; }
-  .docs-editor-textarea, .docs-editor-preview { height: 340px; }
+  .docs-editor-source, .docs-editor-preview { height: 340px; }
 }
 .docs-editor-preview-title { font-size: 15px; font-weight: 650; margin: 0 0 var(--sp-sm); color: var(--text); }
 .docs-editor-errors {
@@ -506,46 +754,47 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 .docs-editor-cancel { @extend .docs-btn; }
 .docs-editor-save { @extend .docs-btn; @extend .docs-btn-primary; }
 
-// Search results box - lives in the sticky .page-title so it stays reachable regardless of scroll
-// position or viewport width, unlike the rail's own copy (which hides below 900px). The clear "x"
-// sits INSIDE the input's own box, not as a flex sibling, so typing a query never widens the row.
-.docs-search-wrap { position: relative; display: flex; align-items: center; }
-.docs-search-wrap .docs-search-input { width: 220px; padding-right: 26px; }
-.docs-search-clear {
-  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-  display: flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; padding: 0; border: 0; border-radius: var(--radius-sm);
-  background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; line-height: 1;
+// The search palette (see vm.docsPalette* and index.html's own comment on the overlay). Fixed
+// overlay + centered panel dropped 12vh from the top - high enough that the results list grows
+// DOWNWARD into space, the way every command palette sits. The backdrop is its own element (a
+// sibling behind the panel, not its parent), so a click can only ever land on one of them - no
+// stopPropagation dance to keep panel clicks from closing the overlay.
+.docs-palette-overlay { position: fixed; inset: 0; z-index: 50; }
+.docs-palette-backdrop { position: absolute; inset: 0; background: rgba(2, 16, 28, .45); }
+.docs-palette {
+  position: relative; width: min(580px, 92vw); margin: 12vh auto 0;
+  display: flex; flex-direction: column; max-height: 64vh;
+  background: var(--panel); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
 }
-.docs-search-clear:hover { color: var(--text); background: var(--panel-alt); }
-// The left rail carries its own search box, but it hides below 900px - the header keeps a second
-// copy (.docs-search-wrap-header) as the sole fallback below that width; hidden here whenever the
-// rail's own copy is on-screen so exactly one of the two ever renders.
-@media (min-width: 901px) {
-  .docs-search-wrap-header { display: none; }
+.docs-palette-input-row {
+  display: flex; align-items: center; gap: var(--sp-sm);
+  padding: var(--sp-sm) var(--sp-md); border-bottom: 1px solid var(--border); color: var(--muted);
 }
-
-// Flat search-results list (see vm.docsSearchResults) - a page heading row (breadcrumb + title)
-// followed by its own matched sections, indented, borrowing the rail's own muted/hover language
-// but with roomier spacing since this lives in the main content column, not the narrow rail.
-.docs-results-list { display: flex; flex-direction: column; gap: var(--sp-lg); }
-.docs-results-page-title {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
-  width: 100%; text-align: left; border: 0; border-radius: var(--radius-sm);
-  background: transparent; cursor: pointer; font: inherit; padding: var(--sp-xs) var(--sp-sm);
-  margin: 0 0 0 calc(-1 * var(--sp-sm));
+// The row carries the chrome (border, magnifier, esc chip); the input inside drops its own so it
+// reads as ONE composed field, not a field within a field.
+.docs-palette-input-row .docs-palette-input { border: 0; height: 30px; padding: 0; background: transparent; }
+.docs-palette-input-row .docs-palette-input:focus-visible { box-shadow: none; }
+.docs-palette-esc {
+  padding: 1px 5px; border: 1px solid var(--border-strong); border-radius: 4px;
+  font-family: inherit; font-size: 10px; font-weight: 650; color: var(--faint); white-space: nowrap;
 }
-.docs-results-page-title:hover { background: var(--panel-alt); }
-.docs-results-page-title:focus-visible { @include gfd-focus-ring; }
-.docs-results-breadcrumb { font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .03em; color: var(--faint); }
-.docs-results-page-title > span:last-child { font-size: 13.5px; font-weight: 650; color: var(--text); }
-.docs-results-section {
-  display: block; width: 100%; text-align: left; border: 0; background: transparent;
-  border-radius: var(--radius-sm); cursor: pointer; font: inherit; font-size: 12px; color: var(--muted);
-  padding: 3px var(--sp-sm) 3px var(--sp-lg); margin-left: calc(-1 * var(--sp-sm));
+.docs-palette-results { overflow-y: auto; padding: var(--sp-xs); }
+.docs-palette-row {
+  display: flex; flex-direction: column; gap: 1px; width: 100%; text-align: left;
+  border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer;
+  font: inherit; padding: var(--sp-xs) var(--sp-sm);
 }
-.docs-results-section:hover { color: var(--text); background: var(--panel-alt); }
-.docs-results-section:focus-visible { @include gfd-focus-ring; }
+// One highlight, driven by vm.docsPaletteIndex alone (arrows and ng-mouseenter both write it) - no
+// separate :hover background, which would paint a second, competing highlight under the cursor.
+.docs-palette-row.active { background: var(--panel-alt); }
+.docs-palette-row-path { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.docs-palette-row-path .sep { color: var(--faint); font-weight: 400; margin: 0 2px; }
+.docs-palette-row-snippet {
+  font-size: 11.5px; color: var(--muted); line-height: 1.5;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.docs-palette-empty, .docs-palette-hint { font-size: 12px; color: var(--faint); margin: 0; padding: var(--sp-md); }
 
 .docs-content { font-size: 13px; line-height: 1.65; color: var(--text); max-width: 940px; }
 .docs-content h2 { font-size: 16px; font-weight: 650; margin: var(--sp-xxl) 0 var(--sp-sm); }
@@ -571,6 +820,36 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 .docs-pre code { background: transparent; border: 0; padding: 0; font-size: 12.5px; line-height: 1.6; color: #{$gfd-ed-text}; }
 :root[data-theme="dark"] .docs-pre { background: #{$gfd-ed-bg-dark}; border-color: #{$gfd-ed-border-dark}; }
 :root[data-theme="dark"] .docs-pre code { color: #{$gfd-ed-text-dark}; }
+
+// Copy-button scaffolding, injected around each code block at page mount (see
+// DocsUiService.setupCodeCopyButtons). The wrapper carries the <pre>'s old bottom margin so
+// inserting it doesn't change the content's vertical rhythm.
+.docs-pre-wrap { position: relative; margin: 0 0 var(--sp-md); }
+.docs-pre-wrap .docs-pre { margin: 0; }
+// Icon-only, borderless, transparent until hovered - a bordered button floating over the code was
+// a second framed box inside an already-framed block, and the word "Copy" was the only thing
+// giving it enough width to need one. The hover background is the whole affordance now.
+.docs-copy-btn {
+  position: absolute; top: 6px; right: 6px;
+  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0;
+  border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--muted);
+  cursor: pointer; user-select: none;
+  // Hidden until the block is hovered or the button itself is focused, so it stays out of the way
+  // of reading - but opacity, NOT display/visibility, so it remains focusable by keyboard and its
+  // own :focus-visible can bring it back into view.
+  opacity: 0; transition: opacity .12s, color .12s, background .12s;
+}
+.docs-pre-wrap:hover .docs-copy-btn,
+.docs-copy-btn:focus-visible { opacity: 1; }
+.docs-copy-btn:hover { color: var(--text); background: var(--accent-soft); }
+.docs-copy-btn:focus-visible { @include gfd-focus-ring; background: var(--accent-soft); }
+.docs-copy-btn.copied { opacity: 1; color: var(--accent); background: var(--accent-soft); }
+// Touch devices have no hover to reveal it, so it just stays visible there.
+@media (hover: none) {
+  .docs-copy-btn { opacity: 1; }
+}
 .c-kw  { color: var(--ed-kw); }
 .c-str { color: var(--ed-str); }
 .c-num { color: var(--ed-num); }
@@ -621,10 +900,3 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
   border-radius: 20px; padding: 2px 7px;
 }
 
-// Deep-link landing flash - marks WHICH heading a rail/hub/docs-link pointed at (targets are often
-// mid-page). Animation, not a transition, so the reduced-motion override above still kills it.
-@keyframes docsFlash {
-  0% { background: var(--accent-soft); box-shadow: 0 0 0 6px var(--accent-soft); }
-  100% { background: transparent; box-shadow: 0 0 0 6px transparent; }
-}
-.docs-flash { animation: docsFlash 1.5s ease-out; border-radius: var(--radius-sm); }

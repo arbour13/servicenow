@@ -42,6 +42,16 @@
 
   <header class="topbar">
     <div class="topbar-brand"><span class="topbar-logo" aria-hidden="true">G</span>GlideFast Docs</div>
+    <!-- The ONE search affordance in the whole app (docs-site convention: search lives in the
+         chrome, not the content). Not an input - a button dressed as one, whose only job is opening
+         the palette below; the real typing happens in the palette's own autofocused input. Lives in
+         the always-visible topbar, so no width breakpoint ever needs a fallback copy of it (the
+         old rail + header dual-input arrangement this replaced). -->
+    <button type="button" class="topbar-search" ng-click="vm.openDocsPalette()" aria-label="Search docs" aria-haspopup="dialog">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span class="topbar-search-label">Search docs…</span>
+      <kbd class="topbar-search-kbd" aria-hidden="true">{{vm.docsPaletteShortcutLabel}}</kbd>
+    </button>
     <button type="button" class="topbar-theme-toggle" ng-click="vm.toggleTheme()"
             aria-pressed="{{vm.theme === 'dark'}}" title="Toggle dark mode" aria-label="Toggle dark mode">
       <svg ng-if="vm.theme === 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -56,17 +66,6 @@
         <div class="page-title-name">Docs</div>
         <div class="page-title-sub">GlideFast reference documentation</div>
       </div>
-      <!-- Fallback copy of the rail's own search box (see .docs-rail below) - the rail hides below
-           900px, and with no in-page nav at that width search needs somewhere else to live so it
-           never disappears entirely. Hidden via CSS (.docs-search-wrap-header, app.scss) whenever
-           the rail's own copy is visible, so exactly one is ever shown; both bind vm.docsQuery so
-           they can never drift out of sync. -->
-      <div class="page-title-actions">
-        <div class="docs-search-wrap docs-search-wrap-header">
-          <input type="text" class="docs-search-input" ng-model="vm.docsQuery" ng-change="vm.updateDocsSearchResults()" placeholder="Search docs…" aria-label="Search docs">
-          <button type="button" class="docs-search-clear" ng-if="vm.docsQuery" ng-click="vm.clearDocsSearch()" aria-label="Clear search" title="Clear search">✕</button>
-        </div>
-      </div>
     </div>
 
     <!-- The docs (see DocsService, generated from pages/**/*.md). Three columns on wide screens,
@@ -78,7 +77,7 @@
              (940px) rather than stretching to fill the pane.
            - .docs-toc (right): the CURRENT page's own sections - navigating WITHIN it. Only exists
              (ng-if, not just hidden) while a page with sections is actually open - there's nothing
-             for it to show on Home or mid-search. Its active highlight is vm.activeSectionId, the
+             for it to show on Home. Its active highlight is vm.activeSectionId, the
              exact same scroll-spy state that already drove the old rail's nested section list - no
              DocsUiService change was needed, only where the template points it.
          The right rail hides first as the viewport narrows, then the left - see their two separate
@@ -96,25 +95,22 @@
              letting the outer aside clip it (overflow:hidden) makes it read as sliding out of the
              way instead. See .docs-layout-editing in app.scss. -->
         <div class="docs-rail-inner">
-        <!-- Search lives here (not just the header) so it sits with the rail - but the rail itself
-             hides below the breakpoint in app.scss, so this copy would disappear at exactly the
-             width where search is needed most. The header keeps its OWN copy
-             (.docs-search-wrap-header, above) as a fallback, shown only when this one is hidden -
-             both bind the same vm.docsQuery, so they can never drift out of sync. -->
-        <div class="docs-search-wrap">
-          <input type="text" class="docs-search-input" ng-model="vm.docsQuery" ng-change="vm.updateDocsSearchResults()" placeholder="Search docs…" aria-label="Search docs">
-          <button type="button" class="docs-search-clear" ng-if="vm.docsQuery" ng-click="vm.clearDocsSearch()" aria-label="Clear search" title="Clear search">✕</button>
-        </div>
-        <button type="button" class="docs-rail-home" ng-class="{active: vm.docsView === 'home'}" ng-click="vm.showDocsHome()">Home</button>
+        <!-- "Standards" rather than "Home": this is the doc SET's own root, and the intent is for
+             it to become one tab among several once a second set exists (see the deferred
+             header-tabs work) - naming it for the set now means that later change is a layout
+             move, not a rename. -->
+        <button type="button" class="docs-rail-home" ng-class="{active: vm.docsView === 'home'}" ng-click="vm.showDocsHome()">Standards</button>
         <!-- Groups are structural labels, not navigable pages of their own - a group heading has no
              ng-click. Each page is now a single flat row (no expand chevron, no nested section
              list - those live in .docs-toc on the right now) - vm.docsPageHeadingActive lights up
              whichever page is currently open, regardless of which of ITS sections the reader has
              scrolled to (that distinction lived here only because sections used to compete for the
-             same rail; they don't any more). -->
-        <div class="docs-rail-band" ng-repeat="grp in vm.docsGroups" ng-show="vm.docsGroupVisible(grp)">
+             same rail; they don't any more). No ng-show filtering here either - the rail always
+             shows the full tree now that search lives in the palette, not in a query that narrows
+             the rail down. -->
+        <div class="docs-rail-band" ng-repeat="grp in vm.docsGroups">
           <div class="docs-rail-band-title">{{grp.name}}</div>
-          <button type="button" class="docs-rail-part" ng-repeat="page in grp.pages" ng-show="vm.docsPageVisible(page)"
+          <button type="button" class="docs-rail-part" ng-repeat="page in grp.pages"
                   ng-class="{active: vm.docsPageHeadingActive(page)}"
                   ng-click="vm.openPage(page.id)">{{page.title}}</button>
         </div>
@@ -123,33 +119,12 @@
 
       <div class="docs-layout-main">
 
-        <!-- Search results - replaces whatever the content area would otherwise show (Home or an
-             open page) whenever a query is active, since only the CURRENTLY OPEN page's HTML is
-             ever mounted (see DocsUiService's own header comment) - there's no already-rendered
-             content to just reveal via ng-show the way this app's old single-document design did. -->
-        <div class="card" ng-if="vm.docsQuery">
-          <div class="card-head"><h2>Search results</h2></div>
-          <div class="card-body">
-            <p class="empty" ng-if="!vm.docsHasMatches()">No matching pages for "{{vm.docsQuery}}".</p>
-            <p class="hint" ng-if="vm.docsHasMatches()">Showing pages matching "{{vm.docsQuery}}". <button type="button" class="docs-link" ng-click="vm.clearDocsSearch()">Clear search</button></p>
-            <div class="docs-results-list" ng-if="vm.docsHasMatches()">
-              <div class="docs-results-page" ng-repeat="result in vm.docsSearchResults">
-                <button type="button" class="docs-results-page-title" ng-click="vm.openPage(result.page.id)">
-                  <span class="docs-results-breadcrumb">{{result.group.name}}</span>
-                  <span>{{result.page.title}}</span>
-                </button>
-                <button type="button" class="docs-results-section" ng-repeat="section in result.sections" ng-click="vm.openPage(result.page.id, section.id)">{{section.title}}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Home: lead text + every page as a clickable tile, grouped. Ghost "Planned" tiles
              (grp.planned - see pages/planned.json) show pages that don't exist yet, so a thin
              group reads as a visible roadmap instead of just sparse. Tile accent/icon alternates by
              the group's own position ($parent.$index, from the outer ng-repeat) rather than
              matching a specific group name, so this scales to any number of groups. -->
-        <div class="card" ng-if="!vm.docsQuery && vm.docsView === 'home'">
+        <div class="card" ng-if="vm.docsView === 'home'">
           <div class="card-head"><h2>Contents</h2></div>
           <div class="card-body">
             <div class="docs-content" ng-bind-html="vm.homeLead"></div>
@@ -182,16 +157,37 @@
         <!-- An open page: its own lead + sections only - not every page, unlike this app's old
              single-document design where the whole doc rendered at once and visibility alone
              decided what showed. -->
-        <div class="card" ng-if="!vm.docsQuery && vm.docsView === 'page'">
-          <div class="card-head">
-            <h2><span class="docs-breadcrumb">{{vm.activeGroup.name}}</span><span class="docs-breadcrumb-sep" aria-hidden="true">/</span>{{vm.activePage.title}}</h2>
-            <!-- Client-side-only editing (see js/services/docs-edit.service.js) - immediate save to
-                 localStorage, no server involved. "Edited locally" + Reset only show when NOT
-                 currently editing, so they never sit alongside the editor's own Save/Cancel. -->
+        <div class="card" ng-if="vm.docsView === 'page'">
+          <!-- docs-page-head, not just card-head: this one is ALSO sticky (see app.scss) so the
+               page ACTIONS stay reachable however far down you've read - deciding to fix something
+               mid-page shouldn't mean scrolling back to the top for Edit. The title rides along
+               unpinned: it fades out once the header sticks (.is-stuck, see app.scss), since the
+               left rail's active item and the browser tab already say which page you're on, and a
+               permanently-pinned restatement of that is chrome sitting on top of content. It keeps
+               its LAYOUT space while faded so the row never changes height mid-scroll.
+               The Home card-head is deliberately not sticky at all - it's an index you scan, not a
+               document you read down. -->
+          <div class="card-head docs-page-head">
+            <h2>{{vm.activePage.title}}</h2>
+            <!-- Two plain buttons, not one split button - Copy and Edit are both primary, equally
+                 likely actions (not "one common action + a menu of rarer ones"), and Edit isn't
+                 even always THERE (see vm.canEditDocs - it folds in a ServiceNow role check, so a
+                 non-editor never sees it at all rather than seeing it and hitting a denial). Whole
+                 row hidden while editing, so it never sits alongside the editor's own Save/Cancel. -->
             <div class="docs-page-actions" ng-if="!vm.docsEditMode">
               <span class="docs-local-badge" ng-if="vm.activePage.locallyEdited" title="Saved to this browser's localStorage only">Edited locally</span>
               <button type="button" class="docs-link" ng-if="vm.activePage.locallyEdited" ng-click="vm.resetDocsEdit()">Reset to original</button>
-              <button type="button" class="docs-edit-btn" ng-click="vm.startDocsEdit()">Edit</button>
+              <button type="button" class="docs-copy-page-btn" ng-click="vm.copyDocsPageMarkdown()" title="Copy this page's markdown source">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+                {{vm.docsCopyPageLabel}}
+              </button>
+              <!-- Server-computed (see docs.server.js's data.canEdit, gs.hasRole) - only a real
+                   deployed widget can actually deny this; the local dev harness has no server
+                   round-trip at all, so vm.canEditDocs() defaults to allowing it there. -->
+              <button type="button" class="docs-edit-btn" ng-if="vm.canEditDocs()" ng-click="vm.startDocsEdit()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                Edit page
+              </button>
             </div>
           </div>
           <div class="card-body docs-content" ng-if="!vm.docsEditMode">
@@ -199,32 +195,65 @@
             <div ng-repeat="section in vm.activePage.sections" ng-bind-html="section.html"></div>
           </div>
 
+          <!-- Prev/Next through the flat reading order (see getReadingOrderNeighbor in
+               main.controller.js) - continues ACROSS group boundaries, so reading straight through
+               never dead-ends at the last page of a group. Each side is independently ng-if'd rather
+               than rendered-and-disabled: at the first and last page of the whole doc the missing
+               side simply isn't there, and the remaining one stays pinned to its own edge (the nav's
+               space-between, plus .docs-pager-next's margin-left:auto for the lone-Next case). -->
+          <nav class="docs-pager" ng-if="!vm.docsEditMode && (vm.docsPrevPage || vm.docsNextPage)" aria-label="Page navigation">
+            <button type="button" class="docs-pager-btn docs-pager-prev" ng-if="vm.docsPrevPage" ng-click="vm.openPage(vm.docsPrevPage.id)">
+              <span class="docs-pager-dir">← Previous</span>
+              <span class="docs-pager-group">{{vm.docsPrevPage.groupName}}</span>
+              <span class="docs-pager-title">{{vm.docsPrevPage.title}}</span>
+            </button>
+            <button type="button" class="docs-pager-btn docs-pager-next" ng-if="vm.docsNextPage" ng-click="vm.openPage(vm.docsNextPage.id)">
+              <span class="docs-pager-dir">Next →</span>
+              <span class="docs-pager-group">{{vm.docsNextPage.groupName}}</span>
+              <span class="docs-pager-title">{{vm.docsNextPage.title}}</span>
+            </button>
+          </nav>
+
           <!-- Editor: markdown + toolbar on the left, live preview (reusing .docs-content, the
                SAME styling the reader view uses, so the preview never lies about what a reader
-               will actually see) on the right. The two panes scroll together - see
-               DocsUiService.setupEditorScrollSync. vm.updateDocsEditPreview() re-renders on every
-               keystroke via ng-change - see its own comment for why that's not a bare template
-               expression. -->
+               will actually see) on the right. The two panes scroll together, and the source pane
+               itself is either Monaco or the hand-rolled fallback - see MarkdownEditorService's
+               own header comment for the whole strategy. vm.updateDocsEditPreview(text) re-renders
+               on every keystroke via mountEditor's onTextChange callback (see vm.startDocsEdit) -
+               NOT ng-model/ng-change, since Monaco has neither. -->
           <div class="card-body docs-editor" ng-if="vm.docsEditMode">
+            <!-- data-tooltip, not title: the native title tooltip takes ~1-2s to appear and can't
+                 be styled, which made the cryptic labels (B, { }, [[ ]]) effectively unlabelled in
+                 practice. The CSS tooltip (see [data-tooltip] in app.scss) appears on hover after a
+                 short delay AND on keyboard focus, which title never does. aria-label carries the
+                 same text for screen readers - data-* attributes aren't part of the accessible
+                 name computation. -->
             <div class="docs-editor-toolbar">
-              <button type="button" ng-click="vm.docsToolbarBold()" title="Bold"><strong>B</strong></button>
-              <button type="button" ng-click="vm.docsToolbarCode()" title="Inline code"><code>{ }</code></button>
-              <button type="button" ng-click="vm.docsToolbarLink()" title="Link">Link</button>
-              <button type="button" ng-click="vm.docsToolbarHeading()" title="Heading">H2</button>
-              <button type="button" ng-click="vm.docsToolbarSubheading()" title="Subheading">H3</button>
-              <button type="button" ng-click="vm.docsToolbarBullet()" title="Bullet list">•&nbsp;List</button>
-              <button type="button" ng-click="vm.docsToolbarBadge()" title="Badge">Badge</button>
+              <button type="button" ng-click="vm.docsToolbarBold()" data-tooltip="Bold" aria-label="Bold"><strong>B</strong></button>
+              <button type="button" ng-click="vm.docsToolbarItalic()" data-tooltip="Italic" aria-label="Italic"><em>I</em></button>
+              <button type="button" ng-click="vm.docsToolbarCode()" data-tooltip="Inline code" aria-label="Inline code"><code>{ }</code></button>
+              <button type="button" ng-click="vm.docsToolbarCodeBlock()" data-tooltip="Code block" aria-label="Code block"><code>```</code></button>
+              <button type="button" ng-click="vm.docsToolbarLink()" data-tooltip="Link" aria-label="Link">Link</button>
+              <button type="button" ng-click="vm.docsToolbarWikilink()" data-tooltip="Cross-page link" aria-label="Cross-page link"><code>[[ ]]</code></button>
+              <button type="button" ng-click="vm.docsToolbarHeading()" data-tooltip="Heading" aria-label="Heading">H2</button>
+              <button type="button" ng-click="vm.docsToolbarSubheading()" data-tooltip="Subheading" aria-label="Subheading">H3</button>
+              <button type="button" ng-click="vm.docsToolbarBullet()" data-tooltip="Bullet list" aria-label="Bullet list">•&nbsp;List</button>
+              <button type="button" ng-click="vm.docsToolbarNumberedList()" data-tooltip="Numbered list" aria-label="Numbered list">1.&nbsp;List</button>
+              <button type="button" ng-click="vm.docsToolbarTable()" data-tooltip="Table" aria-label="Table">Table</button>
             </div>
             <div class="docs-editor-panes">
-              <!-- Syntax-highlighted source. A <textarea> can't render coloured text, so the
-                   colours live in a <pre> painted directly behind a transparent-text textarea -
-                   the textarea still owns typing, selection, native undo and the caret, and the
-                   layer underneath just shows through. The two must stay pixel-identical in font,
-                   padding and wrapping or the painted text drifts from the real caret; see
-                   .docs-editor-source in app.scss and DocsUiService.setupEditorHighlight. -->
+              <!-- The source pane holds BOTH editors at once; MarkdownEditorService.mountEditor
+                   picks one via the data-editor attribute (app.scss shows/hides accordingly) -
+                   never both. .docs-editor-highlight/.docs-editor-textarea are the fallback (a
+                   <textarea> can't render coloured text, so the colours live in a <pre> painted
+                   directly behind a transparent-text textarea that still owns typing, selection,
+                   native undo and the caret - the two layers must stay pixel-identical in font,
+                   padding and wrapping, see %docs-editor-typography in app.scss); .docs-editor-
+                   monaco is Monaco's own mount point, otherwise empty. -->
               <div class="docs-editor-source">
                 <pre class="docs-editor-highlight" aria-hidden="true"></pre>
-                <textarea class="docs-editor-textarea" ng-model="vm.docsEditText" ng-change="vm.updateDocsEditPreview()" spellcheck="true"></textarea>
+                <textarea class="docs-editor-textarea" spellcheck="true" aria-label="Page markdown source"></textarea>
+                <div class="docs-editor-monaco"></div>
               </div>
               <div class="docs-editor-preview docs-content">
                 <h2 class="docs-editor-preview-title" ng-if="vm.docsEditPreview.title">{{vm.docsEditPreview.title}}</h2>
@@ -247,13 +276,46 @@
       <!-- "On this page" - the open page's own sections, scroll-spy highlighted (vm.activeSectionId,
            set up by DocsUiService.setupScrollSpy in vm.openPage). Unmounted (not just hidden)
            whenever there's no single open page to summarize, or nothing to list. -->
-      <aside class="docs-toc" aria-label="On this page" ng-if="vm.docsView === 'page' && !vm.docsQuery && !vm.docsEditMode && vm.activePage.sections.length">
+      <aside class="docs-toc" aria-label="On this page" ng-if="vm.docsView === 'page' && !vm.docsEditMode && vm.activePage.sections.length">
         <div class="docs-toc-title">On this page</div>
         <button type="button" class="docs-toc-section" ng-repeat="section in vm.activePage.sections"
                 ng-class="{active: vm.activeSectionId === section.id}"
                 ng-click="vm.openPage(vm.activePageId, section.id)">{{section.title}}</button>
       </aside>
 
+    </div>
+  </div>
+
+  <!-- The search palette - the modal the topbar trigger (and ⌘K/Ctrl+K, see
+       DocsUiService.setupPaletteShortcut) opens. This is the whole search UX: results appear as
+       you type, arrows move the highlight, Enter opens, Esc closes. All state is vm.docsPalette* -
+       an OVERLAY over whatever view is current, never a docsView of its own, so closing it always
+       lands you exactly where you were. Sits outside .docs-pane so its fixed positioning is never
+       trapped by an ancestor's overflow. -->
+  <div class="docs-palette-overlay" ng-if="vm.docsPaletteOpen" role="dialog" aria-modal="true" aria-label="Search docs">
+    <div class="docs-palette-backdrop" ng-click="vm.closeDocsPalette()"></div>
+    <div class="docs-palette">
+      <div class="docs-palette-input-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" class="docs-palette-input" ng-model="vm.docsPaletteQuery" ng-change="vm.updateDocsPaletteResults()"
+               ng-keydown="vm.docsPaletteKeydown($event)" placeholder="Search docs…" aria-label="Search docs"
+               role="combobox" aria-expanded="{{!!vm.docsPaletteResults.length}}" aria-controls="docs-palette-listbox"
+               aria-activedescendant="docs-palette-option-{{vm.docsPaletteIndex}}">
+        <kbd class="docs-palette-esc" aria-hidden="true">esc</kbd>
+      </div>
+      <!-- ng-mouseenter keeps hover and arrow keys driving the SAME single highlight instead of two
+           competing ones (a hovered row plus a differently-keyboard-selected row). -->
+      <div class="docs-palette-results" ng-if="vm.docsPaletteResults.length" id="docs-palette-listbox" role="listbox">
+        <button type="button" class="docs-palette-row" ng-repeat="result in vm.docsPaletteResults"
+                ng-class="{active: vm.docsPaletteIndex === $index}"
+                id="docs-palette-option-{{$index}}" role="option" aria-selected="{{vm.docsPaletteIndex === $index}}"
+                ng-click="vm.docsPaletteGo(result)" ng-mouseenter="vm.docsPaletteIndex = $index">
+          <span class="docs-palette-row-path">{{result.groupName}} <span class="sep" aria-hidden="true">/</span> {{result.pageTitle}}<span ng-if="result.sectionTitle"> <span class="sep" aria-hidden="true">/</span> {{result.sectionTitle}}</span></span>
+          <span class="docs-palette-row-snippet" ng-if="result.snippet">{{result.snippet}}</span>
+        </button>
+      </div>
+      <p class="docs-palette-empty" ng-if="vm.docsPaletteQuery && !vm.docsPaletteResults.length">No matches for "{{vm.docsPaletteQuery}}".</p>
+      <p class="docs-palette-hint" ng-if="!vm.docsPaletteQuery">Type to search every page and section.</p>
     </div>
   </div>
 
@@ -269,6 +331,13 @@
 <script src="js/services/docs.service.js"></script>
 <script src="js/services/docs-edit.service.js"></script>
 <script src="js/services/docs-highlight.service.js"></script>
+<!-- The Monaco editor stack: an eager, non-blocking CDN load with a hand-rolled-editor fallback
+     (see MarkdownEditorService's own header comment for the whole strategy). Local harness only -
+     the SN Deployment Packager ships only the <div class="app"> subtree above, so these three tags
+     never reach a deployed Service Portal widget; the fallback is what that widget always runs. -->
+<script src="js/services/monaco-loader.service.js"></script>
+<script src="js/services/monaco-markdown.service.js"></script>
+<script src="js/services/markdown-editor.service.js"></script>
 <script src="js/services/docs-ui.service.js"></script>
 <script src="js/controllers/main.controller.js"></script>
 </body>

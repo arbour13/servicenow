@@ -24,7 +24,51 @@
     stamp: '<path d="M12 3v8"/><path d="M8.5 8.5L12 12l3.5-3.5"/><rect x="5" y="14" width="14" height="7" rx="1"/><path d="M8 17h8"/>',
     lifebuoy: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
     refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/>',
-    briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/>'
+    briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    compass: '<circle cx="12" cy="12" r="9"/><path d="M16 8l-2 6-6 2 2-6z"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>',
+    chart: '<path d="M4 20V10M10 20V4M16 20v-8M22 20V8"/>'
+  };
+
+  // Structure-edit picker: one glyph per seeded sub-topic, then general-purpose extras.
+  var PICKER_KEYS = [
+    'inbox', 'exchange', 'door', 'users', 'flag',
+    'clipboard', 'presentation', 'archive', 'scales', 'list', 'calendar',
+    'code', 'flask',
+    'shield', 'rocket', 'stamp', 'cloud', 'lifebuoy',
+    'briefcase', 'refresh', 'check',
+    'doc', 'message', 'target', 'compass', 'settings', 'chart'
+  ];
+
+  var PICKER_LABELS = {
+    inbox: 'Pre-work inbox',
+    exchange: 'Handoff',
+    door: 'Pre-kickoff',
+    users: 'Team',
+    flag: 'Kickoff',
+    clipboard: 'Planning',
+    presentation: 'Workshop',
+    archive: 'Post-workshop',
+    scales: 'Scope balance',
+    list: 'Backlog',
+    calendar: 'Schedule',
+    code: 'Build',
+    flask: 'Validation',
+    shield: 'UAT',
+    rocket: 'Go-live prep',
+    stamp: 'Signoff',
+    cloud: 'Deploy',
+    lifebuoy: 'Hypercare',
+    briefcase: 'Internal closure',
+    refresh: 'Retrospective',
+    check: 'Closure',
+    doc: 'Document',
+    message: 'Discussion',
+    target: 'Objective',
+    compass: 'Discovery',
+    settings: 'Configuration',
+    chart: 'Metrics'
   };
 
   // Chrome / chrome-adjacent glyphs. calendar + message alias the sub-phase paths so one
@@ -111,6 +155,25 @@
     return UI_HTML[name] || null;
   }
 
+  function pathsForKey(key) {
+    return SUBPHASE_HTML[key] || null;
+  }
+
+  function pickerKeys() {
+    return PICKER_KEYS.slice();
+  }
+
+  function pickerLabel(key) {
+    return PICKER_LABELS[key] || key;
+  }
+
+  function setSubPhaseIcon(subPhase, key) {
+    if (!subPhase || !SUBPHASE_HTML[key]) {
+      return;
+    }
+    subPhase.icon = key;
+  }
+
   function ensureIcon(subPhase) {
     if (!subPhase) {
       return;
@@ -127,9 +190,13 @@
   return {
     paths: paths,
     pathsFor: pathsFor,
+    pathsForKey: pathsForKey,
     keyFor: keyFor,
     fallbackKey: fallbackKey,
     hasKey: hasKey,
+    pickerKeys: pickerKeys,
+    pickerLabel: pickerLabel,
+    setSubPhaseIcon: setSubPhaseIcon,
     ensureIcon: ensureIcon,
     bind: bind
   };

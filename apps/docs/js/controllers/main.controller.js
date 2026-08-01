@@ -2,10 +2,20 @@
    app-wide theme toggle exist here; there is no script-builder mode, sidenav mode-switcher, or
    Settings/Connection page, since this app is nothing but a hosted collection of reference pages. */
 angular.module('glidefastDocs').controller('MainController', [
-  '$scope', '$timeout', '$sce', 'ThemeService', 'DocsUiService', 'DocsEditService',
-  function ($scope, $timeout, $sce, ThemeService, DocsUiService, DocsEditService) {
+  '$scope', '$timeout', '$sce', 'ThemeService', 'DocsUiService', 'DocsEditService', 'MarkdownEditorService',
+  function ($scope, $timeout, $sce, ThemeService, DocsUiService, DocsEditService, MarkdownEditorService) {
     'use strict';
     var vm = this;
+
+    // Service Portal sets $scope.data server-side from the widget's own server script (see
+    // docs.server.js: data.canEdit = gs.hasRole(scope + '.editor') || gs.hasRole(scope +
+    // '.admin')) - the platform binds it onto $scope before this function runs. Read
+    // DEFENSIVELY: this app's local dev harness has no widget bootstrap at all, so $scope.data is
+    // always undefined there, and Edit should still show (nothing to enforce locally, and hiding
+    // it would make the harness useless for testing the editor). Only an EXPLICIT false - a real
+    // deployed widget actively denying a non-editor - hides it. Same convention Delivery
+    // Methodology already uses (see its shell.controller.js, AppStateService.setCanEdit).
+    var canEditByRole = !($scope.data && $scope.data.canEdit === false);
 
     // App-wide light/dark toggle (see ThemeService) - persists to localStorage and applies
     // straight to documentElement. vm.theme is a thin display mirror the template reads; syncTheme
@@ -15,75 +25,146 @@ angular.module('glidefastDocs').controller('MainController', [
     ThemeService.init('glidefastDocs');
     function syncTheme() { vm.theme = ThemeService.readState().theme; }
     syncTheme();
-    vm.toggleTheme = function () { ThemeService.toggleApp(); syncTheme(); };
+    vm.toggleTheme = function () {
+      ThemeService.toggleApp();
+      syncTheme();
+      // No-ops if no editor is currently mounted; otherwise pushes the new theme onto whichever
+      // driver is live (Monaco redefines its theme from the just-changed --ed-md-* custom
+      // properties; the textarea driver already re-themes for free via those same properties).
+      MarkdownEditorService.applyEditorTheme(vm.theme);
+    };
 
     /* ============================= Docs (hosted pages) ============================= */
     vm.docsGroups = DocsUiService.doc.groups;
     vm.homeLead = DocsUiService.doc.home.lead;
 
-    // Reverse lookup from a page id to the group that contains it - built here (view-shaping, not
-    // DOM mechanics, so it lives in the controller rather than DocsUiService) so vm.openPage can set
-    // the breadcrumb without walking every group on each navigation. Re-derived (not just built
-    // once) after any local edit save/reset, since DocsUiService.rebuild() replaces vm.docsGroups
-    // with a whole new array of new group objects - the old lookup's values would otherwise point
-    // at group objects nothing else references any more.
+    // Two lookups off one walk of the group/page tree, both view-shaping rather than DOM mechanics,
+    // so they live in the controller rather than DocsUiService:
+    //   - groupByPageId: page id -> its group, so vm.openPage sets the breadcrumb without walking
+    //     every group on each navigation.
+    //   - readingOrder / readingOrderIndexById: the flat front-to-back sequence a reader moves
+    //     through, so Prev/Next is an index step rather than a tree search. Groups are ordered, and
+    //     pages within a group are ordered, so flattening in place IS the reading order - Next off
+    //     the last page of a group therefore continues into the first page of the following one,
+    //     which is the point (a group boundary isn't a dead end for someone reading straight
+    //     through). A group's `planned` titles are placeholders with no page to open, so they're
+    //     correctly absent here - they only ever render as badges on the Home hub.
+    // Re-derived (not just built once) after any local edit save/reset, since DocsUiService.rebuild()
+    // replaces vm.docsGroups with a whole new array of new group objects - the old lookups would
+    // otherwise point at group and page objects nothing else references any more.
     var groupByPageId = {};
-    function syncGroupByPageId() {
+    var readingOrder = [];
+    var readingOrderIndexById = {};
+    function syncPageLookups() {
       groupByPageId = {};
+      readingOrder = [];
+      readingOrderIndexById = {};
       vm.docsGroups.forEach(function (grp) {
-        grp.pages.forEach(function (page) { groupByPageId[page.id] = grp; });
+        grp.pages.forEach(function (page) {
+          groupByPageId[page.id] = grp;
+          readingOrderIndexById[page.id] = readingOrder.length;
+          readingOrder.push(page);
+        });
       });
     }
-    syncGroupByPageId();
+    syncPageLookups();
 
-    // Three content-area states sharing one mounted rail: 'home' (the intro + hub of every page,
-    // grouped), 'page' (one page's own content), or - whenever vm.docsQuery is non-empty, regardless
-    // of docsView - a search-results list (see vm.docsSearchResults). Only the page actually being
-    // shown is ever mounted (ng-if, not ng-show/visibility - see DocsUiService's own header comment
-    // for why that's safe here even though this app's OLD single-document design deliberately avoided
-    // ng-if for the same DOM).
+    // The neighbour `step` places away in reading order, as the flat {id, title, groupName} the
+    // Prev/Next footer renders, or null at either end of the whole doc.
+    function getReadingOrderNeighbor(pageId, step) {
+      var index = readingOrderIndexById[pageId];
+      if (index === undefined) { return null; }
+      var neighbor = readingOrder[index + step];
+      if (!neighbor) { return null; }
+      var group = groupByPageId[neighbor.id];
+      return {
+        id: neighbor.id,
+        title: neighbor.title,
+        groupName: group ? group.name : '',
+      };
+    }
+
+    // Two content-area states sharing one mounted rail: 'home' (the intro + hub of every page,
+    // grouped) or 'page' (one page's own content). Only the page actually being shown is ever
+    // mounted (ng-if, not ng-show/visibility - see DocsUiService's own header comment for why
+    // that's safe here even though this app's OLD single-document design deliberately avoided
+    // ng-if for the same DOM). Search is NOT a third state - it's the palette overlay below,
+    // floating over whichever of these two is current.
     vm.docsView = 'home';
-    vm.activeGroup = null;
     vm.activePage = null;
     vm.activePageId = null;
     vm.activeSectionId = null;
+    // Recomputed PROPERTIES set by vm.openPage, not functions the template calls fresh each digest -
+    // same reasoning as vm.docsPaletteResults below. They only change when the open page changes.
+    vm.docsPrevPage = null;
+    vm.docsNextPage = null;
 
-    // Search: filters the rail down to matching sections, and - since content isn't all mounted at
-    // once any more - REPLACES the content area with a results list rather than just hiding/showing
-    // already-rendered cards. Plain per-digest boolean predicates - cheap at this app's size (~40
-    // sections), no memoization needed.
-    vm.docsQuery = '';
-    vm.docsSectionMatches = function (section) {
-      var q = vm.docsQuery.trim().toLowerCase();
-      return !q || section.searchText.indexOf(q) !== -1;
-    };
-    vm.docsPageVisible = function (page) {
-      return !vm.docsQuery.trim() || page.sections.some(vm.docsSectionMatches);
-    };
-    vm.docsGroupVisible = function (grp) {
-      return !vm.docsQuery.trim() || grp.pages.some(vm.docsPageVisible);
-    };
-    vm.docsHasMatches = function () { return vm.docsGroups.some(vm.docsGroupVisible); };
-    // Results grouped by page (a page with two matching sections shows both under one heading,
-    // mirroring the rail's own page-then-sections nesting) rather than a flat section list. A
-    // recomputed PROPERTY, not a function ng-repeat calls fresh every digest - the latter hands back
-    // a brand-new array of brand-new objects each time even when the query hasn't changed, which
-    // Angular's dirty-checking sees as permanent change and never stops digesting (an infinite
-    // $digest loop), since ng-model's own writes to vm.docsQuery don't trigger ng-change on their
-    // own. updateDocsSearchResults() is called from both search inputs' ng-change and everywhere
-    // else vm.docsQuery is set programmatically (vm.clearDocsSearch, vm.openPage).
-    vm.docsSearchResults = [];
-    vm.updateDocsSearchResults = function () {
-      var results = [];
-      vm.docsGroups.forEach(function (grp) {
-        grp.pages.forEach(function (page) {
-          var matched = page.sections.filter(vm.docsSectionMatches);
-          if (matched.length) { results.push({ group: grp, page: page, sections: matched }); }
-        });
+    // The search palette (the topbar trigger and ⌘K/Ctrl+K both open it) - the app's ONE search
+    // surface, replacing the old rail-filter + inline-results-page arrangement. An overlay, never a
+    // docsView: closing it lands the reader exactly where they were. vm.docsPaletteResults is a
+    // recomputed property, not a function the template calls - an ng-repeat over a fresh-array-
+    // returning function never stops digesting (see this suite's AngularJS gotchas).
+    vm.docsPaletteOpen = false;
+    vm.docsPaletteQuery = '';
+    vm.docsPaletteResults = [];
+    vm.docsPaletteIndex = 0;
+    vm.docsPaletteShortcutLabel = DocsUiService.isMacPlatform() ? '⌘K' : 'Ctrl K';
+
+    vm.openDocsPalette = function () {
+      vm.docsPaletteOpen = true;
+      vm.docsPaletteQuery = '';
+      vm.docsPaletteResults = [];
+      vm.docsPaletteIndex = 0;
+      // The input doesn't exist until ng-if mounts the overlay - focus needs the digest to finish.
+      $timeout(function () {
+        var input = document.querySelector('.docs-palette-input');
+        if (input) { input.focus(); }
       });
-      vm.docsSearchResults = results;
     };
-    vm.clearDocsSearch = function () { vm.docsQuery = ''; vm.updateDocsSearchResults(); };
+    vm.closeDocsPalette = function () { vm.docsPaletteOpen = false; };
+
+    vm.updateDocsPaletteResults = function () {
+      vm.docsPaletteResults = DocsUiService.searchDocs(vm.docsPaletteQuery);
+      vm.docsPaletteIndex = 0;
+    };
+
+    vm.docsPaletteGo = function (result) {
+      if (!result) { return; }
+      vm.closeDocsPalette();
+      vm.openPage(result.pageId, result.sectionId);
+    };
+
+    // Arrows move the highlight (wrapping at either end), Enter opens it, Esc closes. preventDefault
+    // on the arrows so the caret doesn't ALSO jump to the input's start/end on every press.
+    vm.docsPaletteKeydown = function ($event) {
+      var count = vm.docsPaletteResults.length;
+
+      if ($event.key === 'Escape') {
+        vm.closeDocsPalette();
+        return;
+      }
+      if ($event.key === 'Enter') {
+        vm.docsPaletteGo(vm.docsPaletteResults[vm.docsPaletteIndex]);
+        return;
+      }
+      if (!count) { return; }
+
+      if ($event.key === 'ArrowDown') {
+        $event.preventDefault();
+        vm.docsPaletteIndex = (vm.docsPaletteIndex + 1) % count;
+      } else if ($event.key === 'ArrowUp') {
+        $event.preventDefault();
+        vm.docsPaletteIndex = (vm.docsPaletteIndex - 1 + count) % count;
+      } else {
+        return;
+      }
+      // After the digest moves the .active class, make sure the highlighted row is actually in
+      // view inside the scrollable results list.
+      $timeout(function () {
+        var activeRow = document.querySelector('.docs-palette-row.active');
+        if (activeRow && activeRow.scrollIntoView) { activeRow.scrollIntoView({ block: 'nearest' }); }
+      });
+    };
 
     // The left rail's page-button highlight - active for whichever page is open, regardless of
     // which of its sections the reader has scrolled to (that gets its own highlight in the right
@@ -91,45 +172,51 @@ angular.module('glidefastDocs').controller('MainController', [
     vm.docsPageHeadingActive = function (page) { return vm.activePageId === page.id; };
 
     // Navigates to a page, optionally a specific section on it - a rail link, a home hub tile, a
-    // search result, or an in-content [[cross-page link]] (see DocsUiService.setupDocsLinkClicks
-    // below) all route through this. Clears any active search so the just-opened page is actually
-    // visible instead of staying hidden behind the results list.
+    // palette result, or an in-content [[cross-page link]] (see DocsUiService.setupDocsLinkClicks
+    // below) all route through this.
     vm.openPage = function (pageId, sectionId) {
       var page = DocsUiService.pagesById[pageId];
       if (!page) { return; } // build-time link validation means this should never happen
       vm.exitDocsEdit(); // navigating away from an open editor discards its UNSAVED text only -
       // an already-saved local edit lives in DocsEditService regardless.
       vm.docsView = 'page';
-      vm.activeGroup = groupByPageId[pageId] || null;
       vm.activePage = page;
       vm.activePageId = pageId;
       // Highlight the picked section in the rail immediately; DocsUiService.scrollTo suppresses the
       // scroll-spy through the scroll so it can't snap the highlight elsewhere before landing.
       vm.activeSectionId = sectionId || null;
-      vm.docsQuery = '';
-      vm.updateDocsSearchResults();
+      vm.docsPrevPage = getReadingOrderNeighbor(pageId, -1);
+      vm.docsNextPage = getReadingOrderNeighbor(pageId, 1);
+      // AFTER the state writes above: the hashchange this fires compares against vm state to know
+      // it's an echo (see the setupHashRouting callbacks at the bottom of this controller).
+      DocsUiService.writeDocsHash(pageId, sectionId || null);
       if (sectionId) {
         DocsUiService.scrollTo(sectionId, false, function () {});
       } else {
         DocsUiService.scrollToTop();
       }
-      // The page just changed docsView to 'page', which mounts fresh h2 nodes via ng-if - the spy
-      // has to re-attach to them; $timeout gives Angular a digest to actually create that DOM first.
+      // The page just changed docsView to 'page', which mounts fresh h2 and code-block nodes via
+      // ng-if - the spy has to re-attach to the headings and the copy buttons have to be injected
+      // into the new blocks; $timeout gives Angular a digest to actually create that DOM first.
       $timeout(function () {
         DocsUiService.setupScrollSpy(function (id) { if (vm.docsView === 'page') { vm.activeSectionId = id; } });
+        DocsUiService.setupCodeCopyButtons();
+        DocsUiService.setupStickyHeadState();
       });
     };
     // Rail's pinned "Home" item - the reciprocal of openPage: hides any open page, shows the hub.
     vm.showDocsHome = function () {
       vm.exitDocsEdit();
       vm.docsView = 'home';
-      vm.activeGroup = null;
       vm.activePage = null;
       vm.activePageId = null;
       vm.activeSectionId = null;
-      vm.docsQuery = '';
-      vm.updateDocsSearchResults();
-      DocsUiService.teardownScrollSpy(); // no page mounted on Home - nothing left for it to watch
+      vm.docsPrevPage = null;
+      vm.docsNextPage = null;
+      DocsUiService.writeDocsHash(null, null);
+      // No page mounted on Home - nothing left for either observer to watch.
+      DocsUiService.teardownScrollSpy();
+      DocsUiService.teardownStickyHeadState();
       DocsUiService.scrollToTop();
     };
 
@@ -138,72 +225,77 @@ angular.module('glidefastDocs').controller('MainController', [
     // not draft-then-publish, and why it's a deliberately smaller stopgap ahead of the eventual
     // server-backed editor rather than a permanent second editing path.
     vm.docsEditMode = false;
-    vm.docsEditText = '';
     vm.docsEditPreview = null; // {title, lead, sections} trusted-html, or null when not editing
     vm.docsEditErrors = [];
 
-    vm.canEditDocs = function () { return vm.docsView === 'page' && !!vm.activePage; };
+    vm.canEditDocs = function () { return canEditByRole && vm.docsView === 'page' && !!vm.activePage; };
 
-    vm.startDocsEdit = function () {
-      if (!vm.canEditDocs()) { return; }
-      vm.docsEditText = vm.activePage.markdown || '';
-      vm.docsEditMode = true;
-      vm.updateDocsEditPreview();
-      // The editor's panes don't exist until ng-if mounts them, so focus and the scroll-sync
-      // binding both have to wait a digest. scrollTop is reset explicitly AFTER focus: focusing a
-      // textarea whose content overflows can leave it scrolled to the end even with the caret at
-      // position 0, so without this an author opens the editor staring at the bottom of their page.
-      $timeout(function () {
-        var textarea = document.querySelector('.docs-editor-textarea');
-        if (textarea) {
-          textarea.focus();
-          textarea.setSelectionRange(0, 0);
-          textarea.scrollTop = 0;
-        }
-        DocsUiService.setupEditorScrollSync();
-        // Paint the highlight layer HERE, not in the updateDocsEditPreview() call above - that one
-        // runs before ng-if has mounted the editor, so the layer doesn't exist yet and the paint
-        // silently no-ops, leaving the source pane blank (the textarea's own text is transparent).
-        DocsUiService.paintEditorHighlight(vm.docsEditText);
+    // "Copy page" - the open page's SOURCE MARKDOWN (docs-site convention: a whole page you can
+    // paste into an editor or an LLM), not its rendered text. Reuses the service's clipboard
+    // mechanics from the per-code-block Copy buttons; label doubles as the confirmation, honest
+    // about failure the same way ("Press ⌘C" - the manual fallback - not a fake "Copied"). The
+    // callback can resolve from the async clipboard promise outside a digest, so the label writes
+    // are wrapped in $timeout rather than assigned bare.
+    var COPY_PAGE_CONFIRM_MS = 1500;
+    var copyPageResetTimer = null;
+    vm.docsCopyPageLabel = 'Copy page';
+    vm.copyDocsPageMarkdown = function () {
+      if (!vm.activePage) { return; }
+      DocsUiService.copyText(vm.activePage.markdown || '', function (copied) {
+        $timeout(function () {
+          if (copied) {
+            vm.docsCopyPageLabel = 'Copied';
+          } else {
+            vm.docsCopyPageLabel = 'Press ⌘C';
+          }
+          // Cancel any revert still pending from an earlier click, so a second click restarts the
+          // confirmation instead of the first click's timer wiping the label out from under it -
+          // same guard as the code-block buttons' clearTimeout(button.copyResetTimer).
+          if (copyPageResetTimer) { $timeout.cancel(copyPageResetTimer); }
+          copyPageResetTimer = $timeout(function () { vm.docsCopyPageLabel = 'Copy page'; }, COPY_PAGE_CONFIRM_MS);
+        });
       });
     };
 
-    // Escape leaves the editor - same discard-unsaved-text behavior as Cancel (see
-    // vm.exitDocsEdit). Kept even though this is an inline panel rather than a modal: it's the
-    // reflex people have with a focused textarea, and the editor is the only thing Escape could
-    // plausibly mean while it's open. Bound on document because the focused element is the
-    // textarea inside the editor, and keydown from there bubbles up here. Torn down with the
-    // controller so it can't outlive the app.
-    function onDocumentKeydown(event) {
-      if (event.key !== 'Escape' || !vm.docsEditMode) { return; }
-      $scope.$applyAsync(function () { vm.exitDocsEdit(); });
-    }
-    document.addEventListener('keydown', onDocumentKeydown);
-    $scope.$on('$destroy', function () { document.removeEventListener('keydown', onDocumentKeydown); });
+    vm.startDocsEdit = function () {
+      if (!vm.canEditDocs()) { return; }
+      var markdown = vm.activePage.markdown || '';
+      vm.docsEditMode = true;
+      vm.updateDocsEditPreview(markdown);
+      // MarkdownEditorService.mountEditor owns the wait for ng-if to actually mount the editor
+      // markup (retries with backoff, same shape as DocsUiService.setupScrollSpy) - no $timeout
+      // needed here the way this method used to need one.
+      MarkdownEditorService.mountEditor(markdown, {
+        onTextChange: vm.updateDocsEditPreview,
+        onRequestExit: vm.exitDocsEdit,
+        theme: vm.theme,
+      });
+    };
 
     // Leaves edit mode WITHOUT touching anything already saved to localStorage - only discards
-    // whatever's currently sitting unsaved in the textarea. Safe to call even when not editing
-    // (vm.openPage/vm.showDocsHome call this unconditionally on every navigation).
+    // whatever's currently sitting unsaved in the editor. Safe to call even when not editing
+    // (vm.openPage/vm.showDocsHome call this unconditionally on every navigation). Escape-to-exit
+    // is owned by MarkdownEditorService itself now (see mountEditor's onRequestExit above) - each
+    // driver knows its own rules for when Escape means "leave" versus something driver-internal
+    // (Monaco's find widget wants first refusal on its own Escape).
     vm.exitDocsEdit = function () {
-      // Unbinds the pane scroll listeners before ng-if tears the panes out of the DOM - otherwise
-      // the handlers keep a reference to detached elements until the next edit replaces them.
-      DocsUiService.teardownEditorScrollSync();
+      MarkdownEditorService.unmountEditor();
       vm.docsEditMode = false;
-      vm.docsEditText = '';
       vm.docsEditPreview = null;
       vm.docsEditErrors = [];
     };
 
-    // Re-renders the live preview from the CURRENT textarea contents - called on every keystroke
-    // via ng-change (never directly from a template expression; see vm.docsSearchResults's own
-    // comment for why a template-called function returning a fresh object/array causes an infinite
-    // $digest - this returns void and writes to a vm property instead, same fix, same reason).
+    // Re-renders the live preview from the given markdown text - called once up front by
+    // startDocsEdit (the page's saved markdown) and then passed to mountEditor as onTextChange, so
+    // both drivers call it with their own current text on every keystroke. Takes `text` as a
+    // parameter rather than reading a vm property (see vm.docsPaletteResults's own comment for why
+    // a template-called function returning a fresh object/array causes an infinite $digest - same
+    // reasoning: this returns void and writes to a vm property, never called bare from a template).
     // Reuses DocsUiService's linkTargets so a still-unsaved edit's [[links]] validate against the
     // same "every page's current section slugs" picture the reader view itself was just built from.
-    vm.updateDocsEditPreview = function () {
-      DocsUiService.paintEditorHighlight(vm.docsEditText);
+    vm.updateDocsEditPreview = function (text) {
       var linkTargets = DocsUiService.getLinkTargets();
-      var rendered = DocsRenderer.renderPage(vm.docsEditText, linkTargets);
+      var rendered = DocsRenderer.renderPage(text, linkTargets);
       vm.docsEditPreview = {
         title: rendered.title,
         lead: $sce.trustAsHtml(rendered.lead),
@@ -223,14 +315,14 @@ angular.module('glidefastDocs').controller('MainController', [
       DocsUiService.rebuild();
       vm.docsGroups = DocsUiService.doc.groups;
       vm.homeLead = DocsUiService.doc.home.lead;
-      syncGroupByPageId();
+      syncPageLookups();
       vm.openPage(pageId);
     }
 
     vm.saveDocsEdit = function () {
       if (!vm.canEditDocs() || vm.docsEditErrors.length) { return; }
       var pageId = vm.activePage.id;
-      DocsEditService.saveEdit(pageId, vm.docsEditText);
+      DocsEditService.saveEdit(pageId, MarkdownEditorService.getEditorText());
       refreshDocsAfterLocalEdit(pageId);
     };
 
@@ -241,71 +333,54 @@ angular.module('glidefastDocs').controller('MainController', [
       refreshDocsAfterLocalEdit(pageId);
     };
 
-    // Toolbar helpers - insert markdown syntax into the textarea at the cursor (or around the
-    // current selection), tied 1:1 to constructs this app's own renderer actually supports rather
-    // than a generic markdown toolbar. Query the textarea by class each call rather than caching
-    // the element, matching this app's existing style of querying singleton DOM nodes directly
-    // (see DocsUiService's .docs-pane lookups) - it only exists while vm.docsEditMode is true.
-    // Every insertion goes through execCommand('insertText') rather than assigning
-    // vm.docsEditText. That looks like the long way round, and it's the whole reason Cmd/Ctrl+Z
-    // works in this editor: writing to a textarea's value programmatically CLEARS the browser's
-    // native undo stack, so a toolbar click used to make everything typed before it unundoable.
-    // execCommand is formally deprecated, but there is still no standard API that edits a textarea
-    // while participating in native undo - contentEditable's alternatives don't apply to <textarea>.
-    // It also fires a real `input` event, which is what lets ng-model and its ng-change (the live
-    // preview + highlight refresh) update on their own with no manual call here.
-    // Runs inside $timeout because ng-click already has us in a digest, and the synchronous input
-    // event would otherwise re-enter $apply.
-    function replaceSelection(text, onDone) {
-      var textarea = document.querySelector('.docs-editor-textarea');
-      if (!textarea) { return; }
-      $timeout(function () {
-        textarea.focus();
-        document.execCommand('insertText', false, text);
-        if (onDone) { onDone(textarea); }
-      });
-    }
-    function insertWrap(before, after, placeholder) {
-      var textarea = document.querySelector('.docs-editor-textarea');
-      if (!textarea) { return; }
-      var start = textarea.selectionStart;
-      var selected = vm.docsEditText.slice(start, textarea.selectionEnd) || placeholder;
-      replaceSelection(before + selected + after, function (el) {
-        // Leave the inner text selected so it can be typed straight over - the placeholder case is
-        // the point ("bold text" should be replaceable immediately).
-        el.setSelectionRange(start + before.length, start + before.length + selected.length);
-      });
-    }
-    function insertLinePrefix(prefix) {
-      var textarea = document.querySelector('.docs-editor-textarea');
-      if (!textarea) { return; }
-      var start = textarea.selectionStart;
-      var lineStart = vm.docsEditText.lastIndexOf('\n', start - 1) + 1;
-      // Collapse to the line's start so the prefix lands there rather than at the caret, then put
-      // the caret back where the author actually was, shifted by what was inserted.
-      textarea.setSelectionRange(lineStart, lineStart);
-      replaceSelection(prefix, function (el) {
-        el.setSelectionRange(start + prefix.length, start + prefix.length);
-      });
-    }
-    function insertLine(line) {
-      var textarea = document.querySelector('.docs-editor-textarea');
-      if (!textarea) { return; }
-      var start = textarea.selectionStart;
-      var needsLeadingNewline = start > 0 && vm.docsEditText[start - 1] !== '\n';
-      replaceSelection((needsLeadingNewline ? '\n' : '') + line + '\n');
-    }
-    vm.docsToolbarBold = function () { insertWrap('**', '**', 'bold text'); };
-    vm.docsToolbarCode = function () { insertWrap('`', '`', 'code'); };
-    vm.docsToolbarLink = function () { insertWrap('[', '](https://)', 'link text'); };
-    vm.docsToolbarHeading = function () { insertLinePrefix('## '); };
-    vm.docsToolbarSubheading = function () { insertLinePrefix('### '); };
-    vm.docsToolbarBullet = function () { insertLinePrefix('* '); };
-    vm.docsToolbarBadge = function () { insertLine('<!-- badge: Extended guidance -->'); };
+    // Toolbar - one delegating one-liner per button, tied 1:1 to constructs this app's own
+    // renderer actually supports rather than a generic markdown toolbar (DocsRenderer.js). The
+    // insertion mechanics themselves (wrap-selection, pad-onto-own-line, prefix-every-touched-
+    // line, native-undo-preserving execCommand vs. Monaco's own undo stack) live in
+    // MarkdownEditorService, written once there against whichever editor is actually live -
+    // nothing here knows or cares whether that's Monaco or the textarea fallback.
+    vm.docsToolbarBold = function () { MarkdownEditorService.insertWrap('**', '**', 'bold text'); };
+    vm.docsToolbarItalic = function () { MarkdownEditorService.insertWrap('*', '*', 'italic text'); };
+    vm.docsToolbarCode = function () { MarkdownEditorService.insertWrap('`', '`', 'code'); };
+    vm.docsToolbarCodeBlock = function () { MarkdownEditorService.insertBlock('```\n', '\n```', 'code'); };
+    vm.docsToolbarLink = function () { MarkdownEditorService.insertWrap('[', '](https://)', 'link text'); };
+    vm.docsToolbarWikilink = function () { MarkdownEditorService.insertWrap('[[', ']]', 'page-slug'); };
+    vm.docsToolbarHeading = function () { MarkdownEditorService.insertLinePrefix('## '); };
+    vm.docsToolbarSubheading = function () { MarkdownEditorService.insertLinePrefix('### '); };
+    vm.docsToolbarBullet = function () { MarkdownEditorService.insertLinePrefix('* '); };
+    vm.docsToolbarNumberedList = function () { MarkdownEditorService.insertOrderedList(); };
+    vm.docsToolbarTable = function () { MarkdownEditorService.insertBlock('| Column | Column |\n| --- | --- |\n| ', ' |', 'cell'); };
 
     // [[cross-page links]] embedded in rendered page content are plain, untrusted-by-Angular HTML
     // (see DocsUiService's own header comment) - this wires their clicks back into vm.openPage.
     // Bound once for the app's whole lifetime, same as setupScrollSpy above.
     DocsUiService.setupDocsLinkClicks(function (pageId, sectionId) { vm.openPage(pageId, sectionId); });
+
+    // ⌘K/Ctrl+K from anywhere opens the palette (even mid-edit - navigating from a result then
+    // discards unsaved editor text exactly like clicking a rail link mid-edit already does).
+    // Bound once, same as the link-click delegation above.
+    DocsUiService.setupPaletteShortcut(function () { vm.openDocsPalette(); });
+
+    // Deep links: every explicit navigation writes #/page-id(/section-id) - see vm.openPage and
+    // vm.showDocsHome - and this reads them back on Back/Forward or a hand-edited hash. Both
+    // callbacks skip when the target already matches vm state: that catches the echo hashchange
+    // that writeDocsHash's own assignment fires, without any suppress-flag timing.
+    var initialHashTarget = DocsUiService.setupHashRouting(
+      function (pageId, sectionId) {
+        var alreadyThere = vm.docsView === 'page' && vm.activePageId === pageId && (vm.activeSectionId || null) === (sectionId || null);
+        if (alreadyThere) { return; }
+        vm.openPage(pageId, sectionId || undefined);
+      },
+      function () {
+        if (vm.docsView === 'home') { return; }
+        vm.showDocsHome();
+      }
+    );
+    // Boot restore: a shared #/page/section link opens where it points. An unknown page id (a stale
+    // link outliving a rename) falls through openPage's own existence guard and simply leaves the
+    // reader on Home rather than erroring.
+    if (!initialHashTarget.home) {
+      vm.openPage(initialHashTarget.pageId, initialHashTarget.sectionId || undefined);
+    }
   },
 ]);
