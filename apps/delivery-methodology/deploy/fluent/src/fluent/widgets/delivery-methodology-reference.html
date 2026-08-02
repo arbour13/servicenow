@@ -6,65 +6,175 @@
         <div class="view-root" ng-class="{'view-blur': c.searchOpen()}" ng-mouseover="c.tipMouseOver($event)"
           ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
-        <div class="refdoc">
-          <section class="ref-sec" ng-repeat="section in c.referenceSections track by section.key">
-            <h3 class="ref-h">{{section.title || section.name}}</h3>
+        <!-- Browse: left nav + one panel. Glossary / job aids stay here — different shapes, own
+           edit paths (glossary inline; job aids on Methodology tasks). -->
+        <div class="ref-layout" ng-if="!c.referenceEditMode">
+          <nav class="ref-nav" aria-label="Appendix sections" ng-keydown="c.onReferenceNavKeydown($event)">
+            <button type="button" class="ref-nav-item" ng-repeat="item in c.navItems track by item.id"
+              ng-class="{on: c.referencePanelId === item.id}"
+              ng-click="c.selectReferencePanel(item)"
+              aria-current="{{c.referencePanelId === item.id ? 'page' : undefined}}">
+              {{item.label}}
+            </button>
+          </nav>
 
-            <div class="ref-raci-grid" ng-if="section.key === 'raci'">
-              <div class="ref-raci-card" ng-repeat="letter in c.raciLetters track by letter">
-                <span class="ref-raci-badge" ng-class="'rl-' + letter">{{letter}}</span>
-                <div>
-                  <div class="ref-raci-name">{{c.raciNames[letter]}}</div>
-                  <div class="ref-raci-desc">{{c.raciDescs[letter]}}</div>
-                </div>
-              </div>
-            </div>
+          <div class="ref-main">
+            <div class="refdoc" ng-if="c.referencePanelId.indexOf('section:') === 0">
+              <section class="ref-sec" ng-if="c.activeSection">
+                <h3 class="ref-h">{{c.activeSection.title || c.activeSection.name}}</h3>
 
-            <p ng-repeat="paragraph in c.sectionParagraphs(section) track by $index"
-              ng-class="{'ref-lead': $first}" ng-bind-html="c.jargonHtml(paragraph)"></p>
-
-            <div class="ref-placeholder" ng-if="!c.sectionParagraphs(section).length">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round" ng-bind-html="c.icon('pencil')"></svg>
-              <div><b>Not yet written.</b>
-                <p>Content for this reference section hasn&rsquo;t been added yet.</p>
-              </div>
-            </div>
-          </section>
-
-          <section class="ref-sec">
-            <h3 class="ref-h">Job Aids index <span class="ref-count">{{c.jobAids.length}}</span></h3>
-            <p class="ref-lead">Every job aid referenced by a task, across all methodologies, grouped by phase. This
-              list builds itself from the tasks - add a job aid to a task and it appears here.</p>
-            <p class="empty" ng-if="!c.jobAids.length">No job aids yet.</p>
-            <!-- One card per TASK (a task's aids listed inside it), grouped under methodology+phase
-               headings - one-card-per-aid repeated the task line whenever a task carried two aids
-               and read as accidental duplicates. -->
-            <div class="ref-aid-group" ng-repeat="group in c.jobAidGroups">
-              <h4 class="ref-aid-group-h">{{group.methodology.name}} &middot; {{group.phase.name}}</h4>
-              <div class="ref-aids">
-                <div class="ref-aid" ng-repeat="entry in group.entries">
-                  <div class="ref-aid-body">
-                    <div class="ref-aid-task" ng-bind-html="c.jargonHtml(entry.task.text)"></div>
-                    <button type="button" class="ref-aid-crumb"
-                      ng-click="c.jumpTo(entry.subPhase.id, entry.methodology.id)">{{entry.subPhase.sid}}
-                      {{entry.subPhase.name}} &#8599;</button>
-                    <div class="ref-aid-scope" ng-repeat="aid in entry.aids">
-                      <a class="jobaid" ng-if="c.safeHref(aid.jobAid.url)" ng-href="{{c.safeHref(aid.jobAid.url)}}"
-                        target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                          ng-bind-html="c.icon('externalLink')"></svg>{{aid.jobAid.label || 'Job Aid'}}</a>
-                      <span>Applies to:</span>
-                      <span ng-if="!aid.scope.length" class="ref-allroles">All roles</span>
-                      <span class="ja-scope" ng-repeat="role in aid.scope" style="--c: {{c.jobTitleColor(role.id)}}"
-                        data-tip-name="{{role.name}}" data-tip="{{role.description}}">{{role.external ? '&#9671; ' :
-                        ''}}{{role.abbr}}</span>
+                <div class="ref-raci-grid" ng-if="c.activeSection.key === 'raci'">
+                  <div class="ref-raci-card" ng-repeat="letter in c.raciLetters track by letter">
+                    <span class="ref-raci-badge" ng-class="'rl-' + letter">{{letter}}</span>
+                    <div>
+                      <div class="ref-raci-name">{{c.raciNames[letter]}}</div>
+                      <div class="ref-raci-desc">{{c.raciDescs[letter]}}</div>
                     </div>
                   </div>
                 </div>
-              </div>
+
+                <p ng-repeat="paragraph in c.sectionParagraphs(c.activeSection) track by $index"
+                  ng-class="{'ref-lead': $first}" ng-bind-html="c.jargonHtml(paragraph)"></p>
+
+                <div class="ref-placeholder" ng-if="!c.sectionParagraphs(c.activeSection).length">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" ng-bind-html="c.icon('pencil')"></svg>
+                  <div><b>Not yet written.</b>
+                    <p>Content for this appendix section hasn&rsquo;t been added yet.</p>
+                  </div>
+                </div>
+              </section>
+              <p class="empty" ng-if="!c.activeSection">Section not found.</p>
             </div>
-          </section>
+
+            <div class="refdoc" ng-if="c.referencePanelId === 'glossary'">
+              <section class="ref-sec">
+                <h3 class="ref-h">Glossary <span class="ref-count">{{c.jargonEntries.length}}</span></h3>
+                <p class="ref-lead">Terms highlighted in methodology and appendix prose. Editors can add definitions
+                  here; matching words pick up the tip on hover.</p>
+
+                <div class="ref-glossary" ng-if="c.jargonEntries.length">
+                  <div class="ref-glossary-row" ng-repeat="entry in c.jargonEntries track by entry.term">
+                    <div class="ref-glossary-main" ng-if="c.editingJargonTerm !== entry.term">
+                      <div class="ref-glossary-term">{{entry.term}}</div>
+                      <div class="ref-glossary-def">{{entry.definition}}</div>
+                    </div>
+                    <div class="ref-glossary-edit" ng-if="c.canEdit && c.editingJargonTerm === entry.term">
+                      <div class="ref-glossary-term">{{entry.term}}</div>
+                      <textarea class="edit-in ref-glossary-input" rows="2" ng-model="c.editJargonDefinition"
+                        placeholder="Definition" aria-label="Definition for {{entry.term}}"></textarea>
+                      <div class="ref-glossary-actions">
+                        <button type="button" class="btn" ng-click="c.cancelEditJargon()"
+                          ng-disabled="c.isSaving">Cancel</button>
+                        <button type="button" class="btn primary" ng-click="c.saveEditJargon()"
+                          ng-disabled="c.isSaving">Save</button>
+                      </div>
+                    </div>
+                    <div class="ref-glossary-controls"
+                      ng-if="c.canEdit && c.editingJargonTerm !== entry.term">
+                      <button type="button" class="btn" ng-click="c.startEditJargon(entry)"
+                        ng-disabled="c.isSaving" data-tip="Edit definition">Edit</button>
+                      <button type="button" class="field-x" ng-click="c.deleteJargon(entry)"
+                        ng-disabled="c.isSaving" data-tip="Remove term" aria-label="Remove {{entry.term}}">&times;</button>
+                    </div>
+                  </div>
+                </div>
+                <p class="empty" ng-if="!c.jargonEntries.length">No glossary terms yet.</p>
+
+                <div class="ref-glossary-add" ng-if="c.canEdit">
+                  <div class="ref-glossary-add-fields">
+                    <input type="text" class="edit-in" ng-model="c.newJargonTerm" placeholder="Term (e.g. IPKT)"
+                      aria-label="New glossary term" ng-disabled="c.isSaving || !!c.editingJargonTerm">
+                    <textarea class="edit-in ref-glossary-input" rows="2" ng-model="c.newJargonDefinition"
+                      placeholder="Definition" aria-label="New glossary definition"
+                      ng-disabled="c.isSaving || !!c.editingJargonTerm"></textarea>
+                  </div>
+                  <button type="button" class="btn primary" ng-click="c.addJargon()"
+                    ng-disabled="c.isSaving || !!c.editingJargonTerm">Add term</button>
+                </div>
+              </section>
+            </div>
+
+            <div class="refdoc" ng-if="c.referencePanelId === 'job-aids'">
+              <section class="ref-sec">
+                <h3 class="ref-h">Assets &amp; Job Aids <span class="ref-count">{{c.jobAids.length}}</span></h3>
+                <p class="ref-lead">Every job aid referenced by a task, across all methodologies, grouped by phase.
+                  Attach aids on tasks in Methodology content edit — they appear here automatically.</p>
+                <p class="empty" ng-if="!c.jobAids.length">No job aids yet.</p>
+                <div class="ref-aid-group" ng-repeat="group in c.jobAidGroups">
+                  <h4 class="ref-aid-group-h">{{group.methodology.name}} &middot; {{group.phase.name}}</h4>
+                  <div class="ref-aids">
+                    <div class="ref-aid" ng-repeat="entry in group.entries">
+                      <div class="ref-aid-body">
+                        <div class="ref-aid-task" ng-bind-html="c.jargonHtml(entry.task.text)"></div>
+                        <button type="button" class="ref-aid-crumb"
+                          ng-click="c.jumpTo(entry.subPhase.id, entry.methodology.id)">{{entry.subPhase.sid}}
+                          {{entry.subPhase.name}} &#8599;</button>
+                        <div class="ref-aid-scope" ng-repeat="aid in entry.aids">
+                          <a class="jobaid" ng-if="c.safeHref(aid.jobAid.url)" ng-href="{{c.safeHref(aid.jobAid.url)}}"
+                            target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                              ng-bind-html="c.icon('externalLink')"></svg>{{aid.jobAid.label || 'Job Aid'}}</a>
+                          <span>Applies to:</span>
+                          <span ng-if="!aid.scope.length" class="ref-allroles">All roles</span>
+                          <span class="ja-scope" ng-repeat="role in aid.scope" style="--c: {{c.jobTitleColor(role.id)}}"
+                            data-tip-name="{{role.name}}" data-tip="{{role.description}}">{{role.external ? '&#9671; ' :
+                            ''}}{{role.abbr}}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit: prose sections only — same row shape/controls for every item (structure-edit pattern). -->
+        <div class="panel" ng-if="c.referenceEditMode">
+          <div class="edit-bar">
+            <span class="flag">&#9679; Editing appendix</span>
+            <span class="edit-bar-loc">{{c.activeSection ? (c.activeSection.title || c.activeSection.name) : 'Appendix sections'}}</span>
+            <span class="spacer"></span>
+            <button type="button" class="btn" ng-click="c.cancelReferenceEdit()" ng-disabled="c.isSaving">Cancel</button>
+            <button type="button" class="btn primary" ng-click="c.saveReferenceEdit()" ng-disabled="c.isSaving">Save changes</button>
+          </div>
+
+          <p class="struct-toolbar-hint">Edit appendix prose sections here — rename, drag to reorder, add, or remove.
+            Select a section to edit its body. Glossary terms are edited on the Glossary panel; job aids are attached
+            on tasks in Methodology. Changes stay in a draft until you save.</p>
+
+          <div class="ref-edit-sections">
+            <div class="ref-edit-row" ng-repeat="section in c.referenceSections track by section.key"
+              ng-class="{on: c.activeSection && c.activeSection.key === section.key}"
+              dm-reorder dm-reorder-group="appendix-sections" dm-reorder-index="{{$index}}"
+              dm-reorder-on="c.reorderReferenceSection(fromIndex, toIndex)">
+              <span class="drag-handle" role="button" tabindex="0" dm-reorder-handle data-tip="Drag to reorder"
+                aria-label="Drag to reorder section" ng-focus="c.selectEditSection(section)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                  stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('grip')"></svg>
+              </span>
+              <span class="struct-num">{{$index + 1}}</span>
+              <input type="text" class="edit-in struct-rename" ng-model="section.title"
+                ng-model-options="{updateOn: 'blur'}" ng-change="c.renameReferenceSection(section)"
+                ng-focus="c.selectEditSection(section)"
+                placeholder="Section title" aria-label="Section title">
+              <span class="struct-controls">
+                <button type="button" class="field-x" ng-click="c.deleteReferenceSectionByKey(section.key)"
+                  data-tip="Delete section" aria-label="Delete section">&times;</button>
+              </span>
+            </div>
+            <button type="button" class="add-item-btn tight" ng-click="c.addReferenceSection()"
+              ng-disabled="c.isSaving">+ Add section</button>
+          </div>
+
+          <div class="ref-edit-body" ng-if="c.activeSection">
+            <label class="ref-edit-body-label" for="dm-ref-section-body">Body</label>
+            <p class="ref-edit-body-hint">Blank lines between paragraphs. Jargon terms highlight automatically when viewing.</p>
+            <textarea id="dm-ref-section-body" class="edit-in ref-body-in" rows="14"
+              ng-model="c.activeSection.body" aria-label="Section body"></textarea>
+          </div>
+          <p class="empty" ng-if="!c.referenceSections.length">No appendix sections yet. Add one to get started.</p>
         </div>
 
         </div>

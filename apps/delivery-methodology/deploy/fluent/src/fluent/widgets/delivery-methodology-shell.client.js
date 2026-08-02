@@ -1,4 +1,4 @@
-api.controller = function ($rootScope, $scope, DataService, ThemeService, MessagingService, TipService, AppStateService, MethodologyDomainService, NavigationService, SearchService, WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService, IconService, MotionService, LiveSyncService) {
+api.controller = function ($rootScope, $scope, DataService, ThemeService, MessagingService, TipService, AppStateService, MethodologyDomainService, NavigationService, SearchService, WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService, ReferenceEditService, IconService, MotionService, LiveSyncService) {
   'use strict';
   var c = this;
 
@@ -101,6 +101,7 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
   }
   function syncEdit() {
     c.editMode = ContentEditService.readState().editMode;
+    c.referenceEditMode = ReferenceEditService.readState().referenceEditMode;
   }
   function syncSearch() {
     var state = SearchService.readState();
@@ -130,6 +131,10 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
       && c.canEdit
       && c.methodologies.length >= 1;
   };
+  // Appendix prose edit is on the backburner — pencil stays hidden until that UX lands.
+  c.showReferenceEdit = function () {
+    return false;
+  };
   c.pageTitle = function () {
     if (c.view === 'raci') {
       return 'RACI';
@@ -138,7 +143,7 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
       return "What's New";
     }
     if (c.view === 'reference') {
-      return 'Reference';
+      return 'Appendix';
     }
     return 'Methodology';
   };
@@ -154,7 +159,7 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
       return 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.';
     }
     if (c.view === 'reference') {
-      return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.';
+      return 'Using RACI, glossary, challenges, job aids, and lifecycle guidance for the methodology.';
     }
     var methodology = currentMethodology();
     if (methodology && methodology.summary) {
@@ -222,6 +227,9 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
   };
   c.toggleStructureEdit = function () {
     StructureEditService.toggleStructureEdit();
+  };
+  c.toggleReferenceEdit = function () {
+    ReferenceEditService.toggleReferenceEdit();
   };
   c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
     NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);
@@ -302,7 +310,8 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
       referenceSections: AppStateService.getReferenceSections()
     }, {
       isEditing: function () {
-        return ContentEditService.isEditing() || StructureEditService.isEditing();
+        return ContentEditService.isEditing() || StructureEditService.isEditing()
+          || ReferenceEditService.isEditing();
       }
     });
     syncSearch();
@@ -313,6 +322,7 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
       return AppStateService.getCanEdit();
     },
     isStructureEditing: StructureEditService.isEditing,
+    isReferenceEditing: ReferenceEditService.isEditing,
     afterSaveSuccess: function (entries) {
       AppStateService.setJustRead(entries);
       AppStateService.refreshLocation();
@@ -326,14 +336,24 @@ api.controller = function ($rootScope, $scope, DataService, ThemeService, Messag
       return AppStateService.getCanEdit();
     },
     isContentEditing: ContentEditService.isEditing,
+    isReferenceEditing: ReferenceEditService.isEditing,
     enterContentEdit: function () {
       ContentEditService.enterEdit();
     }
   });
 
+  ReferenceEditService.bind({
+    canEdit: function () {
+      return AppStateService.getCanEdit();
+    },
+    isContentEditing: ContentEditService.isEditing,
+    isStructureEditing: StructureEditService.isEditing
+  });
+
   NavigationService.bind({
     isEditing: function () {
-      return ContentEditService.isEditing() || StructureEditService.isEditing();
+      return ContentEditService.isEditing() || StructureEditService.isEditing()
+        || ReferenceEditService.isEditing();
     },
     syncSearch: syncSearch,
     afterOpenSubPhase: function () {

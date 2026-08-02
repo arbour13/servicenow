@@ -111,6 +111,10 @@
       MessagingService.toast('Finish editing first');
       return;
     }
+    if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
+      MessagingService.toast('Finish appendix edit first');
+      return;
+    }
     if (state.structureEditMode) {
       cancelStructureEdit();
       return;
@@ -235,6 +239,10 @@
       MessagingService.toast('Finish editing first');
       return;
     }
+    if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
+      MessagingService.toast('Finish appendix edit first');
+      return;
+    }
     if (!state.structureEditMode) {
       enterStructureEdit();
     }
@@ -278,6 +286,10 @@
     }
     if (hooks.isContentEditing && hooks.isContentEditing()) {
       MessagingService.toast('Finish editing first');
+      return;
+    }
+    if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
+      MessagingService.toast('Finish appendix edit first');
       return;
     }
     if (!methodology) {
@@ -406,44 +418,54 @@
     notify();
   }
 
-  function movePhase(index, direction, methodology) {
-    if (!methodology) {
-      return;
+  function reorderArray(array, fromIndex, toIndex) {
+    if (!array || fromIndex === toIndex) {
+      return false;
     }
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= array.length || toIndex >= array.length) {
+      return false;
+    }
+    var item = array.splice(fromIndex, 1)[0];
+    array.splice(toIndex, 0, item);
+    return true;
+  }
+
+  function movePhase(index, direction, methodology) {
     var swapIndex;
     if (direction === 'up') {
       swapIndex = index - 1;
     } else {
       swapIndex = index + 1;
     }
-    if (swapIndex < 0 || swapIndex >= methodology.phases.length) {
+    reorderPhase(index, swapIndex, methodology);
+  }
+
+  function reorderPhase(fromIndex, toIndex, methodology) {
+    if (!methodology || !reorderArray(methodology.phases, fromIndex, toIndex)) {
       return;
     }
-    var temporary = methodology.phases[index];
-    methodology.phases[index] = methodology.phases[swapIndex];
-    methodology.phases[swapIndex] = temporary;
     renumberPhaseOrders(methodology);
     IdSeqService.recomputeSids(methodology);
     notify();
   }
 
   function moveSubPhase(phaseIndex, index, direction, methodology) {
-    if (!methodology) {
-      return;
-    }
-    var array = methodology.phases[phaseIndex].subPhases;
     var swapIndex;
     if (direction === 'up') {
       swapIndex = index - 1;
     } else {
       swapIndex = index + 1;
     }
-    if (swapIndex < 0 || swapIndex >= array.length) {
+    reorderSubPhase(phaseIndex, index, swapIndex, methodology);
+  }
+
+  function reorderSubPhase(phaseIndex, fromIndex, toIndex, methodology) {
+    if (!methodology || !methodology.phases[phaseIndex]) {
       return;
     }
-    var temporary = array[index];
-    array[index] = array[swapIndex];
-    array[swapIndex] = temporary;
+    if (!reorderArray(methodology.phases[phaseIndex].subPhases, fromIndex, toIndex)) {
+      return;
+    }
     renumberSubPhaseOrders(methodology.phases[phaseIndex]);
     IdSeqService.recomputeSids(methodology);
     notify();
@@ -547,7 +569,9 @@
     addPhase: addPhase,
     addSubPhase: addSubPhase,
     movePhase: movePhase,
+    reorderPhase: reorderPhase,
     moveSubPhase: moveSubPhase,
+    reorderSubPhase: reorderSubPhase,
     deletePhase: deletePhase,
     deleteSubPhase: deleteSubPhase
   };

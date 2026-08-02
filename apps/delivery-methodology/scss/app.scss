@@ -1381,7 +1381,8 @@ a {
   gap: 8px;
 }
 
-.struct-icon-trigger {
+.struct-icon-trigger,
+.struct-icon-option {
   flex: none;
   width: 28px;
   height: 28px;
@@ -1397,63 +1398,36 @@ a {
   transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
 }
 
-.struct-icon-trigger svg {
+.struct-icon-trigger svg,
+.struct-icon-option svg {
   width: 16px;
   height: 16px;
 }
 
-.struct-icon-trigger:hover {
+.struct-icon-trigger:hover,
+.struct-icon-option:hover {
   border-color: var(--teal);
   background: rgba(var(--wash-rgb), 0.08);
 }
 
-.struct-icon-trigger[aria-expanded="true"] {
+.struct-icon-trigger[aria-expanded="true"],
+.struct-icon-option.on {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px var(--teal-wash);
 }
 
+/* Same flat navy as .panel so the translucent icon wash matches the trigger button. */
 .struct-icon-popover {
   position: fixed;
   z-index: 80;
   display: grid;
-  grid-template-columns: repeat(6, 36px);
+  grid-template-columns: repeat(6, 28px);
   gap: 6px;
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--navy-2);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-}
-
-.struct-icon-option {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--gradient-card, rgba(var(--wash-rgb), 0.04));
-  color: var(--ink-faint);
-  cursor: pointer;
-  padding: 0;
-  transition: border-color 0.12s, color 0.12s, background 0.12s;
-}
-
-.struct-icon-option svg {
-  width: 17px;
-  height: 17px;
-}
-
-.struct-icon-option:hover {
-  border-color: var(--teal);
-  color: var(--teal);
-}
-
-.struct-icon-option.on {
-  border-color: var(--teal);
-  color: var(--teal);
-  background: var(--chip-on-bg);
 }
 
 .struct-sid {

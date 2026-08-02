@@ -16,7 +16,7 @@
     }
   }
 
-  function loadStoredMethodologies(seedVersion) {
+  function loadStoredLocal(seedVersion) {
     try {
       var raw = window.localStorage.getItem(STORAGE_KEY);
 
@@ -27,7 +27,7 @@
       var parsed = JSON.parse(raw);
 
       if (parsed && parsed.version === seedVersion) {
-        return parsed.methodologies;
+        return parsed;
       }
 
       return null;
@@ -36,14 +36,32 @@
     }
   }
 
-  function storeMethodologies(methodologies, seedVersion) {
+  function storeLocal(methodologies, seedVersion, jargon, referenceSections) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version: seedVersion,
-        methodologies: methodologies
+        methodologies: methodologies,
+        jargon: jargon || {},
+        referenceSections: referenceSections || []
       }));
     } catch (storeError) {
       /* storage unavailable/full - edits still work for this session */
+    }
+  }
+
+  function setCachedJargon(jargon) {
+    if (jargon && typeof jargon === 'object') {
+      cachedJargon = jargon;
+    } else {
+      cachedJargon = {};
+    }
+  }
+
+  function setCachedReferenceSections(referenceSections) {
+    if (referenceSections) {
+      cachedReferenceSections = referenceSections;
+    } else {
+      cachedReferenceSections = [];
     }
   }
 
@@ -154,12 +172,20 @@
   function buildLocalPayload() {
     var seed = readSeed();
     var seedVersion = (seed && seed.version) || 0;
-    var stored = loadStoredMethodologies(seedVersion);
+    var stored = loadStoredLocal(seedVersion);
     var payload = seedPayload();
 
-    if (stored) {
-      payload.methodologies = deepClone(stored);
+    if (stored && stored.methodologies) {
+      payload.methodologies = deepClone(stored.methodologies);
       applySeedIcons(payload.methodologies, seed && seed.methodologies);
+    }
+
+    if (stored && stored.jargon && typeof stored.jargon === 'object') {
+      payload.jargon = deepClone(stored.jargon);
+    }
+
+    if (stored && stored.referenceSections && stored.referenceSections.length) {
+      payload.referenceSections = deepClone(stored.referenceSections);
     }
 
     cacheLookups(payload);
@@ -238,13 +264,15 @@
         return rejectServerError(null, 'Could not load content.');
       });
     },
+    setCachedJargon: setCachedJargon,
+    setCachedReferenceSections: setCachedReferenceSections,
     saveData: function (methodologies) {
       UrlPolicyService.normalizeMethodologies(methodologies);
 
       if (!serverApi) {
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
-        storeMethodologies(methodologies, seedVersion);
+        storeLocal(methodologies, seedVersion, cachedJargon || {}, cachedReferenceSections || []);
         return $q.resolve({
           saved: true
         });
@@ -290,7 +318,7 @@
       if (!serverApi) {
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
-        storeMethodologies([], seedVersion);
+        storeLocal([], seedVersion, {}, []);
         return $q.resolve({
           saved: true
         });
@@ -324,7 +352,7 @@
         var payload = seedPayload();
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
-        storeMethodologies(payload.methodologies, seedVersion);
+        storeLocal(payload.methodologies, seedVersion, payload.jargon || {}, payload.referenceSections || []);
         cacheLookups(payload);
         return $q.resolve(payload);
       }

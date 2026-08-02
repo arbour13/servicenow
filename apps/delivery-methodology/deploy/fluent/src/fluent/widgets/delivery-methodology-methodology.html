@@ -115,8 +115,8 @@
           </div>
 
           <div ng-if="c.methodologies.length">
-            <p class="struct-toolbar-hint">Rename methodologies, phases, and sub-phases inline. Pick a filmstrip icon for each sub-phase. Reorder with the
-              arrows, or remove them with &times;. Name a new methodology before adding another. Changes stay in a
+            <p class="struct-toolbar-hint">Rename methodologies, phases, and sub-phases inline. Pick a filmstrip icon for each sub-phase. Drag the
+              grip to reorder, or remove with &times;. Name a new methodology before adding another. Changes stay in a
               draft until you save. Exit structure edit, then use the pencil to write content.</p>
             <div class="struct-methodology-block" ng-repeat="methodology in c.methodologies track by methodology.id">
               <div class="struct-methodology">
@@ -128,29 +128,39 @@
                   data-tip="Delete this methodology" aria-label="Delete this methodology">&times;</button>
               </div>
               <div class="struct-phase" ng-repeat="phase in methodology.phases track by phase.id">
-                <div class="struct-phase-head">
+                <div class="struct-phase-head"
+                  dm-reorder dm-reorder-group="phases-{{methodology.id}}" dm-reorder-index="{{$index}}"
+                  dm-reorder-on="c.reorderPhase(fromIndex, toIndex, methodology)">
+                  <span class="drag-handle" role="button" tabindex="0" dm-reorder-handle data-tip="Drag to reorder"
+                    aria-label="Drag to reorder phase">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                      stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('grip')"></svg>
+                  </span>
                   <span class="struct-num">{{$index + 1}}</span>
                   <input type="text" class="edit-in struct-rename" ng-model="phase.name" ng-model-options="{updateOn: 'blur'}"
                     ng-change="c.renamePhase(phase)" placeholder="Phase name" aria-label="Phase name">
                   <span class="struct-controls">
-                    <button type="button" class="reorder-btn" ng-disabled="$first" ng-click="c.movePhase($index, 'up', methodology)"
-                      data-tip="Move phase earlier" aria-label="Move phase earlier"><svg viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-                    <button type="button" class="reorder-btn" ng-disabled="$last" ng-click="c.movePhase($index, 'down', methodology)"
-                      data-tip="Move phase later" aria-label="Move phase later"><svg viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
                     <button type="button" class="field-x" ng-click="c.deletePhase($index, methodology)"
                       data-tip="Delete phase" aria-label="Delete phase">&times;</button>
                   </span>
                 </div>
                 <div class="struct-subphase-list">
-                  <div class="struct-subphase-block" ng-repeat="subPhase in phase.subPhases track by subPhase.id">
+                  <div class="struct-subphase-block" ng-repeat="subPhase in phase.subPhases track by subPhase.id"
+                    dm-reorder dm-reorder-group="subphases-{{phase.id}}" dm-reorder-index="{{$index}}"
+                    dm-reorder-on="c.reorderSubPhase($parent.$index, fromIndex, toIndex, methodology)">
                     <div class="struct-subphase">
+                      <span class="drag-handle" role="button" tabindex="0" dm-reorder-handle data-tip="Drag to reorder"
+                        aria-label="Drag to reorder sub-phase">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                          stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('grip')"></svg>
+                      </span>
                       <button type="button" class="struct-icon-trigger"
-                        ng-click="c.toggleSubPhaseIconPicker(subPhase)"
+                        ng-click="c.openSubPhaseIconPicker($event, subPhase)"
                         data-tip="Choose filmstrip icon"
                         aria-label="Choose filmstrip icon for {{subPhase.name}}"
-                        aria-expanded="{{c.isSubPhaseIconPickerOpen(subPhase)}}">
+                        aria-haspopup="listbox"
+                        aria-expanded="{{c.isSubPhaseIconPickerOpen(subPhase)}}"
+                        aria-controls="dm-struct-icon-popover">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
                           ng-bind-html="c.subPhaseIconPaths(subPhase)"></svg>
@@ -160,31 +170,10 @@
                         ng-model-options="{updateOn: 'blur'}" ng-change="c.renameSubPhase(subPhase)" placeholder="Sub-phase name"
                         aria-label="Sub-phase name">
                       <span class="struct-controls">
-                        <button type="button" class="reorder-btn" ng-disabled="$first"
-                          ng-click="c.moveSubPhase($parent.$index, $index, 'up', methodology)" data-tip="Move sub-phase earlier"
-                          aria-label="Move sub-phase earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-                        <button type="button" class="reorder-btn" ng-disabled="$last"
-                          ng-click="c.moveSubPhase($parent.$index, $index, 'down', methodology)" data-tip="Move sub-phase later"
-                          aria-label="Move sub-phase later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
                         <button type="button" class="field-x"
                           ng-click="c.deleteSubPhase($parent.$index, $index, methodology)"
                           data-tip="Delete sub-phase" aria-label="Delete sub-phase">&times;</button>
                       </span>
-                    </div>
-                    <div class="struct-icon-picker" ng-if="c.isSubPhaseIconPickerOpen(subPhase)">
-                      <button type="button" class="struct-icon-option"
-                        ng-repeat="iconKey in c.subPhasePickerKeys track by iconKey"
-                        ng-class="{on: subPhase.icon === iconKey}"
-                        ng-click="c.setSubPhaseIcon(subPhase, iconKey)"
-                        data-tip="{{c.subPhaseIconLabel(iconKey)}}"
-                        aria-label="{{c.subPhaseIconLabel(iconKey)}}"
-                        aria-pressed="{{subPhase.icon === iconKey}}">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
-                          ng-bind-html="c.subPhaseIconPathsForKey(iconKey)"></svg>
-                      </button>
                     </div>
                   </div>
                   <button type="button" class="add-item-btn tight" ng-click="c.addSubPhase($index, methodology)"
@@ -498,16 +487,15 @@
           <div class="sechead">
             <span class="section-label">Comments</span>
           </div>
-          <div class="list-edit-row" ng-repeat="comment in c.editSubPhase.comments track by $index">
+          <div class="list-edit-row" ng-repeat="comment in c.editSubPhase.comments track by $index"
+            dm-reorder dm-reorder-group="comments" dm-reorder-index="{{$index}}"
+            dm-reorder-on="c.reorderListItem('comments', fromIndex, toIndex)">
+            <span class="drag-handle" role="button" tabindex="0" dm-reorder-handle data-tip="Drag to reorder"
+              aria-label="Drag to reorder comment">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('grip')"></svg>
+            </span>
             <textarea class="edit-in" rows="2" ng-model="c.editSubPhase.comments[$index]"></textarea>
-            <div class="row-reorder">
-              <button type="button" class="reorder-btn" ng-disabled="$index === 0"
-                ng-click="c.moveListItem('comments', $index, 'up')" data-tip="Move up" aria-label="Move up"><svg
-                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-              <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.comments.length - 1"
-                ng-click="c.moveListItem('comments', $index, 'down')" data-tip="Move down" aria-label="Move down"><svg
-                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
-            </div>
             <button type="button" class="field-x" ng-click="c.removeListItem('comments', $index)" data-tip="Remove"
               aria-label="Remove">&times;</button>
           </div>
@@ -516,18 +504,17 @@
           <div class="sechead">
             <span class="section-label">Meetings</span>
           </div>
-          <div class="task meeting" ng-repeat="meeting in c.editSubPhase.meetings track by meeting.id">
+          <div class="task meeting" ng-repeat="meeting in c.editSubPhase.meetings track by meeting.id"
+            dm-reorder dm-reorder-group="meetings" dm-reorder-index="{{$index}}"
+            dm-reorder-on="c.reorderMeeting(fromIndex, toIndex)">
             <div class="te-head">
+              <span class="drag-handle" role="button" tabindex="0" dm-reorder-handle data-tip="Drag to reorder"
+                aria-label="Drag to reorder meeting">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                  stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('grip')"></svg>
+              </span>
               <span class="te-num">{{$index + 1}}</span>
               <span class="te-tools">
-                <button type="button" class="reorder-btn" ng-disabled="$index === 0"
-                  ng-click="c.moveMeeting($index, 'up')" data-tip="Move up" aria-label="Move meeting up"><svg
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
-                    stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-                <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.meetings.length - 1"
-                  ng-click="c.moveMeeting($index, 'down')" data-tip="Move down" aria-label="Move meeting down"><svg
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
-                    stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
                 <button type="button" class="x-btn" ng-click="c.removeMeeting($index)" data-tip="Delete meeting"
                   aria-label="Delete meeting">&times;</button>
               </span>
@@ -561,16 +548,15 @@
           <div class="sechead">
             <h4 class="sec">Inputs</h4>
           </div>
-          <div class="list-edit-row" ng-repeat="x in c.editSubPhase.inputs track by $index">
+          <div class="list-edit-row" ng-repeat="x in c.editSubPhase.inputs track by $index"
+            dm-reorder dm-reorder-group="inputs" dm-reorder-index="{{$index}}"
+            dm-reorder-on="c.reorderListItem('inputs', fromIndex, toIndex)">
+            <span class="drag-handle" role="button" tabindex="0" dm-reorder-handle data-tip="Drag to reorder"
+              aria-label="Drag to reorder input">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('grip')"></svg>
+            </span>
             <textarea class="edit-in" rows="2" ng-model="c.editSubPhase.inputs[$index]"></textarea>
-            <div class="row-reorder">
-              <button type="button" class="reorder-btn" ng-disabled="$index === 0"
-                ng-click="c.moveListItem('inputs', $index, 'up')" data-tip="Move up" aria-label="Move up"><svg
-                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-              <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.inputs.length - 1"
-                ng-click="c.moveListItem('inputs', $index, 'down')" data-tip="Move down" aria-label="Move down"><svg
-                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
-            </div>
             <button type="button" class="field-x" ng-click="c.removeListItem('inputs', $index)" data-tip="Remove"
               aria-label="Remove">&times;</button>
           </div>
@@ -580,18 +566,17 @@
             <h4 class="sec">Tasks</h4>
           </div>
           <div id="edit-tasks">
-            <div class="task" ng-repeat="t in c.editSubPhase.tasks track by t.id">
+            <div class="task" ng-repeat="t in c.editSubPhase.tasks track by t.id"
+              dm-reorder dm-reorder-group="tasks" dm-reorder-index="{{$index}}"
+              dm-reorder-on="c.reorderTask(fromIndex, toIndex)">
               <div class="te-head">
+                <span class="drag-handle" role="button" tabindex="0" dm-reorder-handle data-tip="Drag to reorder"
+                  aria-label="Drag to reorder task">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('grip')"></svg>
+                </span>
                 <span class="te-num">{{$index + 1}}</span>
                 <span class="te-tools">
-                  <button type="button" class="reorder-btn" ng-disabled="$index === 0"
-                    ng-click="c.moveTask($index, 'up')" data-tip="Move up" aria-label="Move task up"><svg
-                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
-                      stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-                  <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.tasks.length - 1"
-                    ng-click="c.moveTask($index, 'down')" data-tip="Move down" aria-label="Move task down"><svg
-                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
-                      stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
                   <button type="button" class="x-btn" ng-click="c.removeTask($index)" data-tip="Delete task"
                     aria-label="Delete task">&times;</button>
                 </span>
@@ -655,22 +640,38 @@
           <div class="sechead">
             <h4 class="sec">Deliverables</h4>
           </div>
-          <div class="list-edit-row" ng-repeat="x in c.editSubPhase.deliverables track by $index">
+          <div class="list-edit-row" ng-repeat="x in c.editSubPhase.deliverables track by $index"
+            dm-reorder dm-reorder-group="deliverables" dm-reorder-index="{{$index}}"
+            dm-reorder-on="c.reorderListItem('deliverables', fromIndex, toIndex)">
+            <span class="drag-handle" role="button" tabindex="0" dm-reorder-handle data-tip="Drag to reorder"
+              aria-label="Drag to reorder deliverable">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('grip')"></svg>
+            </span>
             <textarea class="edit-in" rows="2" ng-model="c.editSubPhase.deliverables[$index]"></textarea>
-            <div class="row-reorder">
-              <button type="button" class="reorder-btn" ng-disabled="$index === 0"
-                ng-click="c.moveListItem('deliverables', $index, 'up')" data-tip="Move up" aria-label="Move up"><svg
-                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-              <button type="button" class="reorder-btn" ng-disabled="$index === c.editSubPhase.deliverables.length - 1"
-                ng-click="c.moveListItem('deliverables', $index, 'down')" data-tip="Move down"
-                aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
-                  stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
-            </div>
             <button type="button" class="field-x" ng-click="c.removeListItem('deliverables', $index)" data-tip="Remove"
               aria-label="Remove">&times;</button>
           </div>
           <button type="button" class="add-item-btn tight" ng-click="c.addListItem('deliverables')">+ Add
             deliverable</button>
+        </div>
+
+        <div id="dm-struct-icon-popover" class="struct-icon-popover" ng-if="c.iconPickerSubPhase"
+          ng-style="c.iconPickerStyle" role="listbox"
+          aria-label="Choose filmstrip icon for {{c.iconPickerSubPhase.name || 'sub-phase'}}"
+          ng-click="$event.stopPropagation()">
+          <button type="button" class="struct-icon-option"
+            ng-repeat="iconKey in c.subPhasePickerKeys track by iconKey"
+            ng-class="{on: c.iconPickerSubPhase.icon === iconKey}"
+            ng-click="c.setSubPhaseIcon(c.iconPickerSubPhase, iconKey)"
+            data-tip="{{c.subPhaseIconLabel(iconKey)}}"
+            aria-label="{{c.subPhaseIconLabel(iconKey)}}"
+            aria-pressed="{{c.iconPickerSubPhase.icon === iconKey}}"
+            role="option">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+              ng-bind-html="c.subPhaseIconPathsForKey(iconKey)"></svg>
+          </button>
         </div>
 
         </div>

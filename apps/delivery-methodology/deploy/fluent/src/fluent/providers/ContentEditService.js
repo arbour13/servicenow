@@ -148,6 +148,10 @@
     if (hooks.isStructureEditing && hooks.isStructureEditing()) {
       return;
     }
+    if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
+      MessagingService.toast('Finish appendix edit first');
+      return;
+    }
     var location = AppStateService.getLocation();
     if (!location || !location.subPhase) {
       MessagingService.toast('Nothing to edit yet');
@@ -279,20 +283,32 @@
     invalidateDerived();
   }
 
+  function reorderArray(array, fromIndex, toIndex) {
+    if (!array || fromIndex === toIndex) {
+      return false;
+    }
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= array.length || toIndex >= array.length) {
+      return false;
+    }
+    var item = array.splice(fromIndex, 1)[0];
+    array.splice(toIndex, 0, item);
+    return true;
+  }
+
   function moveListItem(kind, index, direction) {
-    var array = state.editSubPhase[kind];
     var swapIndex;
     if (direction === 'up') {
       swapIndex = index - 1;
     } else {
       swapIndex = index + 1;
     }
-    if (swapIndex < 0 || swapIndex >= array.length) {
+    reorderListItem(kind, index, swapIndex);
+  }
+
+  function reorderListItem(kind, fromIndex, toIndex) {
+    if (!reorderArray(state.editSubPhase[kind], fromIndex, toIndex)) {
       return;
     }
-    var temporary = array[index];
-    array[index] = array[swapIndex];
-    array[swapIndex] = temporary;
     invalidateDerived();
   }
 
@@ -381,19 +397,19 @@
   }
 
   function moveMeeting(index, direction) {
-    var array = state.editSubPhase.meetings;
     var swapIndex;
     if (direction === 'up') {
       swapIndex = index - 1;
     } else {
       swapIndex = index + 1;
     }
-    if (swapIndex < 0 || swapIndex >= array.length) {
+    reorderMeeting(index, swapIndex);
+  }
+
+  function reorderMeeting(fromIndex, toIndex) {
+    if (!reorderArray(state.editSubPhase.meetings, fromIndex, toIndex)) {
       return;
     }
-    var temporary = array[index];
-    array[index] = array[swapIndex];
-    array[swapIndex] = temporary;
     invalidateDerived();
   }
 
@@ -427,19 +443,20 @@
   }
 
   function moveTask(index, direction) {
-    var array = state.editSubPhase.tasks;
     var swapIndex;
     if (direction === 'up') {
       swapIndex = index - 1;
     } else {
       swapIndex = index + 1;
     }
-    if (swapIndex < 0 || swapIndex >= array.length) {
+    reorderTask(index, swapIndex);
+  }
+
+  function reorderTask(fromIndex, toIndex) {
+    var array = state.editSubPhase.tasks;
+    if (!reorderArray(array, fromIndex, toIndex)) {
       return;
     }
-    var temporary = array[index];
-    array[index] = array[swapIndex];
-    array[swapIndex] = temporary;
     array.forEach(function (task, orderIndex) {
       task.order = orderIndex + 1;
     });
@@ -589,6 +606,7 @@
     addListItem: addListItem,
     removeListItem: removeListItem,
     moveListItem: moveListItem,
+    reorderListItem: reorderListItem,
     setLoeMode: setLoeMode,
     loeAvailableRoles: loeAvailableRoles,
     addLoeRole: addLoeRole,
@@ -599,11 +617,13 @@
     addMeeting: addMeeting,
     removeMeeting: removeMeeting,
     moveMeeting: moveMeeting,
+    reorderMeeting: reorderMeeting,
     internalRoles: internalRoles,
     meetingPersonOrphan: meetingPersonOrphan,
     addTask: addTask,
     removeTask: removeTask,
     moveTask: moveTask,
+    reorderTask: reorderTask,
     taskRaciRoles: taskRaciRoles,
     taskRoleOrphan: taskRoleOrphan,
     taskAvailableRoles: taskAvailableRoles,

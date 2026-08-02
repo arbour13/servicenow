@@ -1,15 +1,19 @@
-api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService, JargonService, TipService, IconService, UrlPolicyService, SearchService, RaciGridService) {
+api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService, JargonService, TipService, IconService, UrlPolicyService, SearchService, RaciGridService, MessagingService, ContentEditService, StructureEditService, ReferenceEditService) {
   'use strict';
   var c = this;
 
-  // Drives this widget's own .view-blur while the Shell's search overlay is open - Shell's
-  // .search-active class can't reach a sibling widget's DOM (see CLAUDE.md's multi-widget note).
   c.searchOpen = SearchService.isOpen;
   AppStateService.bindActiveView(c, 'reference');
   TipService.bind(c);
   IconService.bind(c);
   UrlPolicyService.bind(c);
   RaciGridService.bindLegend(c);
+
+  c.referencePanelId = 'section:raci';
+  c.newJargonTerm = '';
+  c.newJargonDefinition = '';
+  c.editingJargonTerm = null;
+  c.editJargonDefinition = '';
 
   c.jargonHtml = function (text) {
     return JargonService.jargonHtml(text);
@@ -36,12 +40,139 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
     return MethodologyDomainService.jobTitleById(c.jobTitles, jobTitleId);
   }
 
+  function glossaryEntries(jargon) {
+    return Object.keys(jargon || {}).sort(function (left, right) {
+      return left.toLowerCase().localeCompare(right.toLowerCase());
+    }).map(function (term) {
+      return {
+        term: term,
+        definition: jargon[term]
+      };
+    });
+  }
+
+  function buildNavItems(sections) {
+    var items = [];
+    var list = sections || [];
+    var insertedGlossary = false;
+    var insertedJobAids = false;
+
+    list.forEach(function (section) {
+      if (!section || !section.key) {
+        return;
+      }
+      items.push({
+        id: 'section:' + section.key,
+        label: section.title || section.name || section.key,
+        kind: 'section',
+        key: section.key
+      });
+      if (section.key === 'raci') {
+        items.push({
+          id: 'glossary',
+          label: 'Glossary',
+          kind: 'panel'
+        });
+        insertedGlossary = true;
+      }
+      if (section.key === 'challenges') {
+        items.push({
+          id: 'job-aids',
+          label: 'Assets & Job Aids',
+          kind: 'panel'
+        });
+        insertedJobAids = true;
+      }
+    });
+
+    if (!insertedGlossary) {
+      items.push({
+        id: 'glossary',
+        label: 'Glossary',
+        kind: 'panel'
+      });
+    }
+    if (!insertedJobAids) {
+      items.push({
+        id: 'job-aids',
+        label: 'Assets & Job Aids',
+        kind: 'panel'
+      });
+    }
+
+    return items;
+  }
+
+  function firstSectionPanelId(sections) {
+    var first = (sections || []).find(function (section) {
+      return section && section.key;
+    });
+    if (first) {
+      return 'section:' + first.key;
+    }
+    return null;
+  }
+
+  function firstBrowsePanelId(navItems) {
+    var found = (navItems || []).find(function (item) {
+      return item.kind === 'section' || item.kind === 'panel';
+    });
+    if (found) {
+      return found.id;
+    }
+    return 'glossary';
+  }
+
+  function sectionByKey(key) {
+    var sections = ReferenceEditService.sectionsSource();
+    return (sections || []).find(function (section) {
+      return section.key === key;
+    });
+  }
+
+  function syncActiveSection() {
+    c.activeSection = null;
+    if (c.referencePanelId.indexOf('section:') === 0) {
+      c.activeSection = sectionByKey(c.referencePanelId.slice(8));
+    }
+  }
+
+  function syncNav() {
+    var sections = ReferenceEditService.sectionsSource();
+    c.navItems = buildNavItems(sections);
+
+    if (c.referenceEditMode) {
+      if (!c.activeSection || !sectionByKey(c.activeSection.key)) {
+        var editPanelId = firstSectionPanelId(sections);
+        if (editPanelId) {
+          c.referencePanelId = editPanelId;
+        }
+      } else {
+        c.referencePanelId = 'section:' + c.activeSection.key;
+      }
+    } else if (!c.navItems.some(function (item) {
+      return item.id === c.referencePanelId;
+    })) {
+      c.referencePanelId = firstBrowsePanelId(c.navItems);
+    }
+
+    syncActiveSection();
+  }
+
   function syncAppState() {
     var appState = AppStateService.readState();
     c.methodologies = appState.methodologies;
     c.jobTitles = appState.jobTitles;
-    c.referenceSections = appState.referenceSections || [];
+    c.methodologyId = appState.methodologyId;
+    c.referenceSections = ReferenceEditService.sectionsSource();
+    c.jargon = appState.jargon || {};
+    c.jargonEntries = glossaryEntries(c.jargon);
+    c.canEdit = appState.canEdit;
     c.loading = appState.loading;
+    c.isSaving = appState.isSaving;
+    var referenceEditState = ReferenceEditService.readState();
+    c.referenceEditMode = referenceEditState.referenceEditMode;
+    syncNav();
   }
   function syncJobAids() {
     var referenceState = ReferenceService.readState();
@@ -55,8 +186,227 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
   syncAll();
   AppStateService.subscribe($rootScope, $scope, syncAll);
 
-  // Enter this view with a stale index (e.g. job aids changed while on another view) - refresh
-  // once up front so the index is never a run behind the current content.
   ReferenceService.refresh(c.methodologies, sortJobTitleIds, jobTitleById);
   syncJobAids();
+
+  function otherEditOpen() {
+    if (ContentEditService.readState().editMode) {
+      MessagingService.toast('Finish editing first');
+      return true;
+    }
+    if (StructureEditService.readState().structureEditMode) {
+      MessagingService.toast('Finish editing first');
+      return true;
+    }
+    return false;
+  }
+
+  function blockIfBusy() {
+    if (ReferenceEditService.isEditing()) {
+      MessagingService.toast('Finish appendix edit first');
+      return true;
+    }
+    return otherEditOpen();
+  }
+
+  c.selectReferencePanel = function (item) {
+    if (!item || c.referenceEditMode) {
+      return;
+    }
+    if (c.referencePanelId === item.id) {
+      return;
+    }
+    c.referencePanelId = item.id;
+    c.cancelEditJargon();
+    syncActiveSection();
+  };
+
+  c.selectEditSection = function (section) {
+    if (!section || !section.key) {
+      return;
+    }
+    c.referencePanelId = 'section:' + section.key;
+    syncActiveSection();
+  };
+
+  c.onReferenceNavKeydown = function ($event) {
+    if (c.referenceEditMode) {
+      return;
+    }
+    var key = $event.key;
+    if (key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Home' && key !== 'End') {
+      return;
+    }
+    var links = Array.prototype.slice.call($event.currentTarget.querySelectorAll('.ref-nav-item'));
+    if (!links.length) {
+      return;
+    }
+    var current = links.indexOf(document.activeElement);
+    if (current < 0) {
+      current = c.navItems.findIndex(function (item) {
+        return item.id === c.referencePanelId;
+      });
+      if (current < 0) {
+        current = 0;
+      }
+    }
+    var next = current;
+    if (key === 'ArrowUp') {
+      next = (current - 1 + links.length) % links.length;
+    } else if (key === 'ArrowDown') {
+      next = (current + 1) % links.length;
+    } else if (key === 'Home') {
+      next = 0;
+    } else {
+      next = links.length - 1;
+    }
+    $event.preventDefault();
+    links[next].focus();
+    links[next].click();
+  };
+
+  c.cancelReferenceEdit = function () {
+    ReferenceEditService.cancelReferenceEdit();
+    syncAll();
+  };
+  c.saveReferenceEdit = function () {
+    ReferenceEditService.saveReferenceEdit();
+    syncAll();
+  };
+  c.addReferenceSection = function () {
+    var section = ReferenceEditService.addSection();
+    if (section) {
+      c.referencePanelId = 'section:' + section.key;
+    }
+    syncAll();
+  };
+  c.moveReferenceSection = function (sectionKey, direction) {
+    var sections = ReferenceEditService.sectionsSource();
+    var index = sections.findIndex(function (section) {
+      return section.key === sectionKey;
+    });
+    if (index < 0) {
+      return;
+    }
+    ReferenceEditService.moveSection(index, direction);
+    syncAll();
+  };
+  c.reorderReferenceSection = function (fromIndex, toIndex) {
+    ReferenceEditService.reorderSection(fromIndex, toIndex);
+    syncAll();
+  };
+  c.deleteReferenceSectionByKey = function (sectionKey) {
+    var section = sectionByKey(sectionKey);
+    if (!section) {
+      return;
+    }
+    ReferenceEditService.deleteSection(section);
+    syncAll();
+  };
+  c.renameReferenceSection = function (section) {
+    ReferenceEditService.renameSection(section);
+  };
+
+  function cloneJargon() {
+    return angular.extend({}, AppStateService.getJargon() || {});
+  }
+
+  function persistJargon(nextJargon, successMessage) {
+    if (!AppStateService.getCanEdit()) {
+      MessagingService.toast('You do not have permission to edit');
+      return;
+    }
+    if (blockIfBusy()) {
+      return;
+    }
+    if (!AppStateService.tryBeginSave()) {
+      return;
+    }
+    var previousJargon = cloneJargon();
+    AppStateService.setJargon(nextJargon);
+    AppStateService.persistMethodologies().then(function () {
+      MessagingService.toast(successMessage);
+      syncAll();
+    }, function () {
+      AppStateService.setJargon(previousJargon);
+      syncAll();
+    });
+  }
+
+  c.startEditJargon = function (entry) {
+    if (!c.canEdit || !entry || c.referenceEditMode) {
+      return;
+    }
+    c.editingJargonTerm = entry.term;
+    c.editJargonDefinition = entry.definition;
+    c.newJargonTerm = '';
+    c.newJargonDefinition = '';
+  };
+
+  c.cancelEditJargon = function () {
+    c.editingJargonTerm = null;
+    c.editJargonDefinition = '';
+  };
+
+  c.saveEditJargon = function () {
+    var term = c.editingJargonTerm;
+    var definition = String(c.editJargonDefinition || '').replace(/^\s+|\s+$/g, '');
+    if (!term) {
+      return;
+    }
+    if (!definition) {
+      MessagingService.toast('Definition is required');
+      return;
+    }
+    var nextJargon = cloneJargon();
+    nextJargon[term] = definition;
+    c.cancelEditJargon();
+    persistJargon(nextJargon, 'Glossary term updated');
+  };
+
+  c.addJargon = function () {
+    var term = String(c.newJargonTerm || '').replace(/^\s+|\s+$/g, '');
+    var definition = String(c.newJargonDefinition || '').replace(/^\s+|\s+$/g, '');
+    if (!term) {
+      MessagingService.toast('Term is required');
+      return;
+    }
+    if (!definition) {
+      MessagingService.toast('Definition is required');
+      return;
+    }
+    var nextJargon = cloneJargon();
+    if (Object.prototype.hasOwnProperty.call(nextJargon, term)) {
+      MessagingService.toast('That term already exists — edit it instead');
+      return;
+    }
+    nextJargon[term] = definition;
+    c.newJargonTerm = '';
+    c.newJargonDefinition = '';
+    persistJargon(nextJargon, 'Glossary term added');
+  };
+
+  c.deleteJargon = function (entry) {
+    if (!c.canEdit || !entry || c.referenceEditMode) {
+      return;
+    }
+    if (blockIfBusy()) {
+      return;
+    }
+    MessagingService.confirm({
+      title: 'Remove glossary term?',
+      body: 'Remove “' + entry.term + '” from the glossary? Prose will stop highlighting it.',
+      ok: 'Remove'
+    }).then(function (accepted) {
+      if (!accepted) {
+        return;
+      }
+      var nextJargon = cloneJargon();
+      delete nextJargon[entry.term];
+      if (c.editingJargonTerm === entry.term) {
+        c.cancelEditJargon();
+      }
+      persistJargon(nextJargon, 'Glossary term removed');
+    });
+  };
 };

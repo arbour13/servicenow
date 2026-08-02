@@ -1,9 +1,9 @@
 [
   '$injector', '$timeout', '$rootScope', 'DataService', 'AppStateService', 'MessagingService',
-  'ContentEditService', 'StructureEditService',
+  'ContentEditService', 'StructureEditService', 'ReferenceEditService',
   function (
     $injector, $timeout, $rootScope, DataService, AppStateService, MessagingService,
-    ContentEditService, StructureEditService
+    ContentEditService, StructureEditService, ReferenceEditService
   ) {
   'use strict';
 
@@ -23,7 +23,8 @@
   }
 
   function isBusyEditing() {
-    return ContentEditService.isEditing() || StructureEditService.isEditing();
+    return ContentEditService.isEditing() || StructureEditService.isEditing()
+      || ReferenceEditService.isEditing();
   }
 
   function scheduleReload() {

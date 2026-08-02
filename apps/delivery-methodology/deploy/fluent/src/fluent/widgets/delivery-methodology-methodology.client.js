@@ -131,27 +131,133 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   c.subPhaseIconPathsForKey = IconService.pathsForKey;
   c.subPhaseIconLabel = IconService.pickerLabel;
 
-  var iconPickerSubPhaseId = null;
+  c.iconPickerSubPhase = null;
+  c.iconPickerStyle = null;
+  var iconPickerTrigger = null;
+  var iconPickerOutsideBound = false;
 
-  c.toggleSubPhaseIconPicker = function (subPhase) {
+  function unbindIconPickerOutside() {
+    if (!iconPickerOutsideBound) {
+      return;
+    }
+    document.removeEventListener('mousedown', onIconPickerOutside, true);
+    document.removeEventListener('keydown', onIconPickerKeydown, true);
+    window.removeEventListener('resize', onIconPickerReposition);
+    window.removeEventListener('scroll', onIconPickerReposition, true);
+    iconPickerOutsideBound = false;
+  }
+
+  function bindIconPickerOutside() {
+    if (iconPickerOutsideBound) {
+      return;
+    }
+    document.addEventListener('mousedown', onIconPickerOutside, true);
+    document.addEventListener('keydown', onIconPickerKeydown, true);
+    window.addEventListener('resize', onIconPickerReposition);
+    window.addEventListener('scroll', onIconPickerReposition, true);
+    iconPickerOutsideBound = true;
+  }
+
+  function onIconPickerOutside(event) {
+    if (!c.iconPickerSubPhase) {
+      return;
+    }
+    var popover = document.getElementById('dm-struct-icon-popover');
+    var target = event.target;
+    if (popover && popover.contains(target)) {
+      return;
+    }
+    if (iconPickerTrigger && iconPickerTrigger.contains(target)) {
+      return;
+    }
+    $scope.$applyAsync(function () {
+      c.closeSubPhaseIconPicker();
+    });
+  }
+
+  function onIconPickerKeydown(event) {
+    if (event.key === 'Escape' && c.iconPickerSubPhase) {
+      event.preventDefault();
+      $scope.$applyAsync(function () {
+        c.closeSubPhaseIconPicker();
+      });
+    }
+  }
+
+  function onIconPickerReposition() {
+    if (!c.iconPickerSubPhase || !iconPickerTrigger) {
+      return;
+    }
+    positionIconPicker(iconPickerTrigger);
+    if (!$scope.$$phase) {
+      $scope.$applyAsync(angular.noop);
+    }
+  }
+
+  function positionIconPicker(trigger) {
+    var popover = document.getElementById('dm-struct-icon-popover');
+    if (!trigger || !popover) {
+      return;
+    }
+    var rect = trigger.getBoundingClientRect();
+    var popWidth = popover.offsetWidth;
+    var popHeight = popover.offsetHeight;
+    var gap = 6;
+    var left = Math.max(8, Math.min(rect.left, window.innerWidth - popWidth - 8));
+    var topBelow = rect.bottom + gap;
+    var topAbove = rect.top - popHeight - gap;
+    var top = topBelow;
+    if (topBelow + popHeight > window.innerHeight - 8 && topAbove >= 8) {
+      top = topAbove;
+    }
+    c.iconPickerStyle = {
+      top: Math.round(top) + 'px',
+      left: Math.round(left) + 'px'
+    };
+  }
+
+  c.openSubPhaseIconPicker = function ($event, subPhase) {
     if (!subPhase) {
       return;
     }
-    if (iconPickerSubPhaseId === subPhase.id) {
-      iconPickerSubPhaseId = null;
-    } else {
-      iconPickerSubPhaseId = subPhase.id;
+    if ($event) {
+      $event.stopPropagation();
     }
+    if (c.iconPickerSubPhase && c.iconPickerSubPhase.id === subPhase.id) {
+      c.closeSubPhaseIconPicker();
+      return;
+    }
+    c.iconPickerSubPhase = subPhase;
+    iconPickerTrigger = $event && $event.currentTarget ? $event.currentTarget : null;
+    c.iconPickerStyle = {
+      top: '-9999px',
+      left: '-9999px'
+    };
+    $timeout(function () {
+      if (iconPickerTrigger) {
+        positionIconPicker(iconPickerTrigger);
+      }
+      bindIconPickerOutside();
+    }, 0);
+  };
+
+  c.closeSubPhaseIconPicker = function () {
+    c.iconPickerSubPhase = null;
+    c.iconPickerStyle = null;
+    iconPickerTrigger = null;
+    unbindIconPickerOutside();
   };
 
   c.isSubPhaseIconPickerOpen = function (subPhase) {
-    return !!(subPhase && iconPickerSubPhaseId === subPhase.id);
+    return !!(subPhase && c.iconPickerSubPhase && c.iconPickerSubPhase.id === subPhase.id);
   };
 
   c.setSubPhaseIcon = function (subPhase, key) {
     IconService.setSubPhaseIcon(subPhase, key);
-    iconPickerSubPhaseId = null;
+    c.closeSubPhaseIconPicker();
   };
+
+  $scope.$on('$destroy', unbindIconPickerOutside);
   c.jobAidScope = function (task, jobAid) {
     return ReferenceService.jobAidScope(task, jobAid, c.sortJobTitleIds, c.jobTitleById);
   };
@@ -224,8 +330,8 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
     var structureState = StructureEditService.readState();
     c.structureEditMode = structureState.structureEditMode;
     c.structureEditUiEnabled = structureState.structureEditUiEnabled;
-    if (!c.structureEditMode) {
-      iconPickerSubPhaseId = null;
+    if (!c.structureEditMode && c.iconPickerSubPhase) {
+      c.closeSubPhaseIconPicker();
     }
   }
   function syncEdit() {
@@ -369,8 +475,14 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   c.movePhase = function (index, direction, methodology) {
     StructureEditService.movePhase(index, direction, methodology);
   };
+  c.reorderPhase = function (fromIndex, toIndex, methodology) {
+    StructureEditService.reorderPhase(fromIndex, toIndex, methodology);
+  };
   c.moveSubPhase = function (phaseIndex, index, direction, methodology) {
     StructureEditService.moveSubPhase(phaseIndex, index, direction, methodology);
+  };
+  c.reorderSubPhase = function (phaseIndex, fromIndex, toIndex, methodology) {
+    StructureEditService.reorderSubPhase(phaseIndex, fromIndex, toIndex, methodology);
   };
   c.deletePhase = function (index, methodology) {
     StructureEditService.deletePhase(index, methodology);
@@ -406,6 +518,9 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   c.moveListItem = function (kind, index, direction) {
     ContentEditService.moveListItem(kind, index, direction);
   };
+  c.reorderListItem = function (kind, fromIndex, toIndex) {
+    ContentEditService.reorderListItem(kind, fromIndex, toIndex);
+  };
   c.setLoeMode = function (mode) {
     ContentEditService.setLoeMode(mode);
   };
@@ -437,6 +552,9 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   c.moveMeeting = function (index, direction) {
     ContentEditService.moveMeeting(index, direction);
   };
+  c.reorderMeeting = function (fromIndex, toIndex) {
+    ContentEditService.reorderMeeting(fromIndex, toIndex);
+  };
   c.internalRoles = function () {
     return ContentEditService.internalRoles();
   };
@@ -451,6 +569,9 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
   };
   c.moveTask = function (index, direction) {
     ContentEditService.moveTask(index, direction);
+  };
+  c.reorderTask = function (fromIndex, toIndex) {
+    ContentEditService.reorderTask(fromIndex, toIndex);
   };
   c.taskRaciRoles = function (task) {
     return ContentEditService.taskRaciRoles(task);

@@ -1044,7 +1044,7 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   display: flex;
   align-items: center;
   gap: 8px;
-}.dm-widget .struct-icon-trigger {
+}.dm-widget .struct-icon-trigger, .dm-widget .struct-icon-option {
   flex: none;
   width: 28px;
   height: 28px;
@@ -1058,48 +1058,26 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   cursor: pointer;
   padding: 0;
   transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
-}.dm-widget .struct-icon-trigger svg {
+}.dm-widget .struct-icon-trigger svg, .dm-widget .struct-icon-option svg {
   width: 16px;
   height: 16px;
-}.dm-widget .struct-icon-trigger:hover {
+}.dm-widget .struct-icon-trigger:hover, .dm-widget .struct-icon-option:hover {
   border-color: var(--teal);
   background: #{'rgba(var(--wash-rgb), 0.08)'};
-}.dm-widget .struct-icon-trigger[aria-expanded="true"] {
+}.dm-widget .struct-icon-trigger[aria-expanded="true"], .dm-widget .struct-icon-option.on {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px var(--teal-wash);
-}.dm-widget .struct-icon-picker {
-  display: flex;
-  flex-wrap: wrap;
+}/* Same flat navy as .panel so the translucent icon wash matches the trigger button. */.dm-widget .struct-icon-popover {
+  position: fixed;
+  z-index: 80;
+  display: grid;
+  grid-template-columns: repeat(6, 28px);
   gap: 6px;
-  margin: 6px 0 0 42px;
   padding: 8px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #{'rgba(var(--wash-rgb), 0.03)'};
-}.dm-widget .struct-icon-option {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--gradient-card, #{'rgba(var(--wash-rgb), 0.04)'});
-  color: var(--ink-faint);
-  cursor: pointer;
-  padding: 0;
-  transition: border-color 0.12s, color 0.12s, background 0.12s;
-}.dm-widget .struct-icon-option svg {
-  width: 17px;
-  height: 17px;
-}.dm-widget .struct-icon-option:hover {
-  border-color: var(--teal);
-  color: var(--teal);
-}.dm-widget .struct-icon-option.on {
-  border-color: var(--teal);
-  color: var(--teal);
-  background: var(--chip-on-bg);
+  border-radius: 10px;
+  background: var(--navy-2);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }.dm-widget .struct-sid {
   flex: none;
   width: 34px;
@@ -2159,23 +2137,48 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   color: var(--ink-faint);
   display: block;
 }.dm-widget .list-edit-row {
-  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   margin-bottom: 6px;
 }.dm-widget .list-edit-row:last-child {
   margin-bottom: 0;
 }.dm-widget .list-edit-row textarea {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   min-height: 40px;
-  padding-right: 54px;
-}.dm-widget .row-reorder {
-  position: absolute;
-  top: 5px;
-  right: 30px;
-  display: flex;
-  flex-direction: column;
-}.dm-widget .row-reorder .reorder-btn {
-  width: 18px;
+}.dm-widget .list-edit-row > .field-x {
+  position: static;
+  margin-top: 6px;
+}.dm-widget .drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: grab;
+  touch-action: none;
+}.dm-widget .drag-handle:hover, .dm-widget .drag-handle:active, .dm-widget .dm-dragging .drag-handle {
+  color: var(--ink-faint);
+  background: transparent;
+  border: none;
+  cursor: grab;
+}.dm-widget .drag-handle:active, .dm-widget .dm-dragging .drag-handle {
+  cursor: grabbing;
+}.dm-widget .drag-handle svg {
+  width: 14px;
   height: 14px;
+}.dm-widget .dm-dragging {
+  opacity: 0.55;
+}.dm-widget .dm-drag-over {
+  outline: 1px dashed var(--teal);
+  outline-offset: 2px;
 }.dm-widget .field-x {
   position: absolute;
   top: 6px;
@@ -2271,12 +2274,13 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
 }.dm-widget .te-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 12px;
 }.dm-widget .te-tools {
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  margin-left: auto;
 }.dm-widget .te-num {
   display: flex;
   align-items: center;
@@ -2583,8 +2587,9 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   color: var(--ink);
 }.dm-widget .vtab.on svg {
   stroke: var(--teal);
-}/* In-view layout switch (RACI Grid / By Role) - same chip-on family as .loe-mode-btn, not
-   page-level view chrome. Keeps icon tabs but demotes hierarchy under Methodology/RACI/…. */.dm-widget .views.secondary {
+}/* In-view layout switch (RACI Grid / By Role, Reference Guidance / Glossary / Job Aids) - same
+   chip-on family as .loe-mode-btn, not page-level view chrome. Keeps icon tabs but demotes
+   hierarchy under Methodology/RACI/Reference/…. */.dm-widget .views.secondary {
   margin-bottom: 16px;
   border-radius: 8px;
 }.dm-widget .views.secondary .vtab {
@@ -2755,22 +2760,13 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   cursor: pointer;
 }.dm-widget .rg-colnote-btn:hover {
   border-color: var(--teal);
-}/* Bounded, self-scrolling panel - both axes scroll INSIDE this box, thead sticks to the top of
-   this box (not the page). CSS can't split the two: setting overflow-x forces overflow-y to also
-   become a scroll container (CSS Overflow §3), which detaches position: sticky from the page
-   viewport - a bare overflow-x: auto with an unbounded height leaves the sticky header inert
-   (verified: it neither pins to the page nor to the box once that promotion kicks in). Giving the
-   box its own max-height + overflow makes that promotion the intended behavior instead of a bug,
-   and is what actually lets narrow viewports reach the later role columns - .taskcol/.tname's
-   position: sticky; left: 0 only does anything with real horizontal scroll present.
-   Scroller fill matches the header/footer so the kept border-radius corners read as one piece
-   (square th cells no longer leave a paper gap in the arc). No top inset / upward pad - those
-   left the frame's left/right borders visible in the gap above the stuck header. */.dm-widget .rg-scroller {
+}/* No overflow/max-height - the table grows with the page and the page scrolls. thead sticky then
+   pins to the viewport. (An earlier inner scroller existed so overflow-x could reach later role
+   columns without killing sticky; product preference is page scroll over a nested table scroller.)
+   Frame fill matches header/footer so border-radius corners read as one piece. */.dm-widget .rg-scroller {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-2);
-  max-height: 70vh;
-  overflow: auto;
 }.dm-widget .rg-table tfoot tr:last-child td:first-child {
   border-bottom-left-radius: 11px;
 }.dm-widget .rg-table tfoot tr:last-child td:last-child {
@@ -3138,7 +3134,85 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
    narrower than RACI's ~1038px table, so switching tabs made the page jump width. One shared
    width now (just .app's, no local override); readability is preserved at the PROSE level
    instead (.ref-sec p below), not by capping the whole view - the RACI-card row and Job Aids
-   index are structural, not running text, and have no reason to be narrower than the page. */.dm-widget .ref-sec {
+   index are structural, not running text, and have no reason to be narrower than the page. *//* ---------- Appendix (browse left nav + structure-style section edit) ---------- */.dm-widget .ref-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  min-height: 0;
+}.dm-widget .ref-nav {
+  flex: 0 0 220px;
+  position: sticky;
+  top: 12px;
+  align-self: flex-start;
+  padding: 4px 0 24px;
+  border-right: 1px solid var(--line);
+  margin-right: 28px;
+}.dm-widget .ref-nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--ink-faint);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}/* Idle stays muted; hover/selected lift to full ink (white in dark theme). Selected also gets
+   teal wash + accent bar — hover alone is color-only so adjacent rows don't clash. */.dm-widget .ref-nav-item:hover:not(.on) {
+  color: var(--ink);
+  background: transparent;
+}.dm-widget .ref-nav-item.on, .dm-widget .ref-nav-item.on:hover {
+  color: var(--ink);
+  background: var(--teal-wash);
+  border-left-color: var(--teal);
+}.dm-widget .ref-main {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 32px;
+}.dm-widget .ref-edit-sections {
+  margin-bottom: 22px;
+}.dm-widget .ref-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}.dm-widget .ref-edit-row.on {
+  border-color: var(--teal);
+  box-shadow: inset 3px 0 0 var(--teal);
+}.dm-widget .ref-edit-row .struct-rename {
+  flex: 1;
+  min-width: 0;
+}.dm-widget .ref-edit-body {
+  margin-top: 8px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}.dm-widget .ref-edit-body-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}.dm-widget .ref-edit-body-hint {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}.dm-widget .ref-body-in {
+  width: 100%;
+  min-height: 280px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  margin-bottom: 8px;
+}.dm-widget .ref-sec {
   margin-bottom: 34px;
 }.dm-widget .ref-sec p {
   max-width: 72ch;
@@ -3163,6 +3237,60 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   color: var(--ink-2);
   line-height: 1.6;
   margin: 0 0 16px;
+  max-width: 72ch;
+}.dm-widget .ref-glossary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+}.dm-widget .ref-glossary-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}.dm-widget .ref-glossary-main, .dm-widget .ref-glossary-edit {
+  flex: 1;
+  min-width: 0;
+}.dm-widget .ref-glossary-term {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+  margin: 0 0 4px;
+}.dm-widget .ref-glossary-def {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}.dm-widget .ref-glossary-input {
+  width: 100%;
+  min-height: 2.8em;
+  resize: vertical;
+}.dm-widget .ref-glossary-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}.dm-widget .ref-glossary-controls {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}.dm-widget .ref-glossary-add {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: #{'rgba(var(--wash-rgb), 0.03)'};
+}.dm-widget .ref-glossary-add-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
   max-width: 72ch;
 }.dm-widget .ref-raci-grid {
   display: grid;

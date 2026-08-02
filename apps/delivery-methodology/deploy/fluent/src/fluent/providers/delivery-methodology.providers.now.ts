@@ -140,9 +140,23 @@ export const StructureEditService = SPAngularProvider({
     script: Now.include('StructureEditService.js'),
 })
 
+export const ReferenceEditService = SPAngularProvider({
+    $id: Now.ID['ReferenceEditService'],
+    name: 'ReferenceEditService',
+    type: 'service',
+    script: Now.include('ReferenceEditService.js'),
+})
+
 export const dmModal = SPAngularProvider({
     $id: Now.ID['dmModal'],
     name: 'dmModal',
     type: 'directive',
     script: Now.include('dmModal.js'),
+})
+
+export const dmReorder = SPAngularProvider({
+    $id: Now.ID['dmReorder'],
+    name: 'dmReorder',
+    type: 'directive',
+    script: Now.include('dmReorder.js'),
 })

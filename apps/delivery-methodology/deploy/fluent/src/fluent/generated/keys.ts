@@ -63,7 +63,7 @@ declare global {
                     }
                     bom_json: {
                         table: 'sys_module'
-                        id: '7311db6caf214a599f67885e6d27c590'
+                        id: 'e56a72e641b44336b5bc851976476731'
                     }
                     ChangelogDiffService: {
                         table: 'sp_angular_provider'
@@ -88,6 +88,10 @@ declare global {
                     dmModal: {
                         table: 'sp_angular_provider'
                         id: 'a4b5c6d7e8d1f419dad1f419dbd1f419'
+                    }
+                    dmReorder: {
+                        table: 'sp_angular_provider'
+                        id: 'a4b5c6d7e85e6a32e85e6a32e95e6a32'
                     }
                     editorGroup: {
                         table: 'sys_user_group'
@@ -155,11 +159,15 @@ declare global {
                     }
                     package_json: {
                         table: 'sys_module'
-                        id: '02216e7b1b4d4a178e260b9c1c4bc836'
+                        id: '03f0c6d443aa401a82e4df59b4c9f7cd'
                     }
                     RaciGridService: {
                         table: 'sp_angular_provider'
                         id: 'a4b5c6d7e8304eff10304eff11304eff'
+                    }
+                    ReferenceEditService: {
+                        table: 'sp_angular_provider'
+                        id: 'a4b5c6d7e81c8ee0561c8ee0571c8ee0'
                     }
                     ReferenceService: {
                         table: 'sp_angular_provider'
@@ -457,6 +465,14 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e80ce1db290ce1db2a0ce1db'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e81c8ee0561c8ee0571c8ee0'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
                         id: 'a4b5c6d7e80e429e580e429e590e429e'
                         key: {
                             sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
@@ -529,6 +545,22 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e81e4dab171e4dab181e4dab'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e85e6a32e85e6a32e95e6a32'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e81ecc6c551ecc6c561ecc6c'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e85e6a32e85e6a32e95e6a32'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
                         id: 'a4b5c6d7e820497c4b20497c4c20497c'
                         key: {
                             sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
@@ -573,6 +605,14 @@ declare global {
                         key: {
                             sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
                             sp_angular_provider: 'a4b5c6d7e8efa70012efa70013efa700'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e825ba145e25ba145f25ba14'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e85e6a32e85e6a32e95e6a32'
                         }
                     },
                     {
@@ -857,6 +897,14 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e875081e5775081e5875081e'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e81c8ee0561c8ee0571c8ee0'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
                         id: 'a4b5c6d7e87668e1867668e1877668e1'
                         key: {
                             sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
@@ -960,6 +1008,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e88d7737dd8d7737de8d7737'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8bddb48e2bddb48e3bddb48'
+                            sp_angular_provider: 'a4b5c6d7e85e6a32e85e6a32e95e6a32'
+                        }
+                    },
+                    {
                         table: 'sys_security_acl_role'
                         id: 'a4b5c6d7e88da014208da014218da014'
                         key: {
@@ -1017,6 +1073,22 @@ declare global {
                     },
                     {
                         table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e89db84e639db84e649db84e'
+                        key: {
+                            sp_widget: 'a4b5c6d7e85271166b5271166c527116'
+                            sp_angular_provider: 'a4b5c6d7e81c8ee0561c8ee0571c8ee0'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e89e370fa19e370fa29e370f'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8742d3f26742d3f27742d3f'
+                            sp_angular_provider: 'a4b5c6d7e81c8ee0561c8ee0571c8ee0'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
                         id: 'a4b5c6d7e89f1911929f1911939f1911'
                         key: {
                             sp_widget: 'a4b5c6d7e85271166b5271166c527116'
@@ -1037,6 +1109,14 @@ declare global {
                         key: {
                             sys_security_acl: 'a4b5c6d7e809e2e43d09e2e43e09e2e4'
                             sys_user_role: 'a4b5c6d7e8f404b51cf404b51df404b5'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e8a524b7aaa524b7aba524b7'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8c3931246c3931247c39312'
+                            sp_angular_provider: 'a4b5c6d7e81c8ee0561c8ee0571c8ee0'
                         }
                     },
                     {
@@ -1369,6 +1449,14 @@ declare global {
                         id: 'a4b5c6d7e8f5108920f5108921f51089'
                         key: {
                             name: 'delivery_methodology_user'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_ng_pro_sp_widget'
+                        id: 'a4b5c6d7e8f59d7b0bf59d7b0cf59d7b'
+                        key: {
+                            sp_widget: 'a4b5c6d7e8a41c6a1ea41c6a1fa41c6a'
+                            sp_angular_provider: 'a4b5c6d7e85e6a32e85e6a32e95e6a32'
                         }
                     },
                     {
