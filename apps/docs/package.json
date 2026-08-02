@@ -1,5 +1,5 @@
 {
-  "name": "glidefast-docs",
+  "name": "docs-app",
   "private": true,
   "scripts": {
     "build:css": "sass scss/app.scss css/app.css --no-source-map",

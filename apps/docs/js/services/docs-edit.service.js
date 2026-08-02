@@ -12,10 +12,10 @@
    try/catch: localStorage can throw (private browsing, quota, disabled storage) and a broken
    editor should never take the read-only app down with it - on any failure this just behaves as
    if nothing has been locally edited. */
-angular.module('glidefastDocs').factory('DocsEditService', [function () {
+angular.module('docsApp').factory('DocsEditService', [function () {
   'use strict';
 
-  var STORAGE_KEY = 'glidefastDocsEdits';
+  var STORAGE_KEY = 'docsAppEdits';
 
   function readStore() {
     try {

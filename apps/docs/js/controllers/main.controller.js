@@ -1,7 +1,7 @@
-/* Main controller for the standalone GlideFast Docs - only the docs-related vm surface and the
+/* Main controller for the standalone documentation viewer - only the docs-related vm surface and the
    app-wide theme toggle exist here; there is no script-builder mode, sidenav mode-switcher, or
    Settings/Connection page, since this app is nothing but a hosted collection of reference pages. */
-angular.module('glidefastDocs').controller('MainController', [
+angular.module('docsApp').controller('MainController', [
   '$scope', '$timeout', '$sce', 'ThemeService', 'DocsUiService', 'DocsEditService', 'MarkdownEditorService',
   function ($scope, $timeout, $sce, ThemeService, DocsUiService, DocsEditService, MarkdownEditorService) {
     'use strict';
@@ -17,12 +17,21 @@ angular.module('glidefastDocs').controller('MainController', [
     // Methodology already uses (see its shell.controller.js, AppStateService.setCanEdit).
     var canEditByRole = !($scope.data && $scope.data.canEdit === false);
 
+    // The app's own name and strapline. Deliberately NOT literals in the template: this is a
+    // generic document viewer meant to be filled with whatever content an installation has, so the
+    // chrome must not assert a brand. Read from $scope.data (the widget's server script can set
+    // them per instance) with neutral defaults for the local harness, exactly the way canEdit above
+    // is read. The one remaining brand anywhere is the CONTENT itself, which is authored in
+    // pages/**/*.md and has nothing to do with the app.
+    vm.appTitle = ($scope.data && $scope.data.appTitle) || 'Docs';
+    vm.appSubtitle = ($scope.data && $scope.data.appSubtitle) || 'Reference documentation';
+
     // App-wide light/dark toggle (see ThemeService) - persists to localStorage and applies
     // straight to documentElement. vm.theme is a thin display mirror the template reads; syncTheme
     // refreshes it after each toggle.
     // Init with this app's own key prefix so the docs keep their independent stored theme choice
-    // ('glidefastDocsTheme').
-    ThemeService.init('glidefastDocs');
+    // ('docsAppTheme').
+    ThemeService.init('docsApp');
     function syncTheme() { vm.theme = ThemeService.readState().theme; }
     syncTheme();
     vm.toggleTheme = function () {

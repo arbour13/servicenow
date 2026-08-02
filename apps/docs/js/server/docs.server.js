@@ -13,7 +13,7 @@
   data.error = '';
   data.saved = false;
 
-  var logPrefix = 'GlideFast Docs: ';
+  var logPrefix = 'Docs: ';
   var allowedActions = {
     load: true,
     loadPage: true,

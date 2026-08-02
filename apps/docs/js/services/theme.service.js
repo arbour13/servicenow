@@ -1,13 +1,13 @@
 /* Light/dark theme service. Handles the app-wide light/dark toggle (html[data-theme]), persisted to
    localStorage and applied straight to documentElement.
 
-   init('glidefastDocs') namespaces this app's stored preference ('glidefastDocsTheme')
+   init('docsApp') namespaces this app's stored preference ('docsAppTheme')
    independently of any other app - this is why the service is init-first rather than reading
    localStorage at construction.
 
    Own copy, not shared - this is the slim, app-theme-only subset (no editor-theme half; this app has
    no output pane). */
-angular.module('glidefastDocs').factory('ThemeService', [function () {
+angular.module('docsApp').factory('ThemeService', [function () {
   'use strict';
 
   var THEME_KEY; // set by init()

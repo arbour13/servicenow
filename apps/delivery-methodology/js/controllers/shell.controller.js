@@ -151,8 +151,9 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       && c.canEdit
       && c.methodologies.length >= 1;
   };
+  // Appendix prose edit is on the backburner — pencil stays hidden until that UX lands.
   c.showReferenceEdit = function () {
-    return c.view === 'reference' && c.canEdit;
+    return false;
   };
   c.pageTitle = function () {
     if (c.view === 'raci') {

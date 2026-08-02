@@ -301,6 +301,10 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     ReferenceEditService.moveSection(index, direction);
     syncAll();
   };
+  c.reorderReferenceSection = function (fromIndex, toIndex) {
+    ReferenceEditService.reorderSection(fromIndex, toIndex);
+    syncAll();
+  };
   c.deleteReferenceSectionByKey = function (sectionKey) {
     var section = sectionByKey(sectionKey);
     if (!section) {

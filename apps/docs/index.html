@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="glidefastDocs">
+<html lang="en" ng-app="docsApp">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GlideFast Docs</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23054b80'/%3E%3Ctext x='16' y='23' font-family='Arial,Helvetica,sans-serif' font-size='19' font-weight='700' fill='white' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
+<!-- Static, NOT {{vm.appTitle}}: <title> lives in <head>, outside ng-app, so Angular never compiles
+     it and the interpolation would render as an empty tab title. Harness-only anyway - a deployed
+     Service Portal widget ships no <head> and inherits the portal page's title. -->
+<title>Docs</title>
+<!-- A document glyph, not an initial - the app carries no brand of its own. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23054b80' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E">
 <script>
 // Blocking (deliberately not deferred/async) - runs before the stylesheet below paints anything,
 // so the app opens straight into the right theme instead of flashing light mode first and then
@@ -13,7 +17,7 @@
 // only here to beat first paint, which Angular loading from a CDN is far too slow for.
 (function () {
   try {
-    var t = localStorage.getItem('glidefastDocsTheme');
+    var t = localStorage.getItem('docsAppTheme');
     if (!t) { t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }
     document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
@@ -66,8 +70,8 @@
          page identity anyway. -->
     <div class="page-title">
       <div>
-        <div class="page-title-name">Docs</div>
-        <div class="page-title-sub">GlideFast reference documentation</div>
+        <div class="page-title-name">{{vm.appTitle}}</div>
+        <div class="page-title-sub">{{vm.appSubtitle}}</div>
       </div>
       <!-- Search + theme, right-aligned opposite the title - the in-content position Delivery
            Methodology uses (.hdr-search-group), not an app header bar. The search control is a
@@ -189,7 +193,7 @@
           <!-- docs-page-head, not just card-head: kept as its own class purely so this header can
                be styled apart from the Home one. It is NOT sticky - it belongs to the content and
                scrolls away with it. Only the chrome stays put (app header + both rails); see
-               $gfd-sticky-app-header in app.scss. -->
+               $doc-sticky-app-header in app.scss. -->
           <div class="card-head docs-page-head">
             <h2>{{vm.activePage.title}}</h2>
             <!-- Two plain buttons, not one split button - Copy and Edit are both primary, equally

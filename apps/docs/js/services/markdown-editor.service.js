@@ -28,7 +28,7 @@
    communicates which editor is live - .docs-editor-source carries data-editor="monaco"|"textarea"
    for inspection, and a failed Monaco load gets exactly one console.warn (from MonacoLoaderService
    itself). */
-angular.module('glidefastDocs').factory('MarkdownEditorService', [
+angular.module('docsApp').factory('MarkdownEditorService', [
   '$rootScope', '$timeout', 'DocsHighlightService', 'MonacoLoaderService', 'MonacoMarkdownService',
   function ($rootScope, $timeout, DocsHighlightService, MonacoLoaderService, MonacoMarkdownService) {
     'use strict';
@@ -129,7 +129,7 @@ angular.module('glidefastDocs').factory('MarkdownEditorService', [
     /* ============================= Monaco driver ============================= */
     function createMonacoDriver(hostElement, monaco, initialText, initialTheme, callbacks) {
       MonacoMarkdownService.registerLanguage(monaco);
-      var model = monaco.editor.createModel(initialText, 'gfd-markdown');
+      var model = monaco.editor.createModel(initialText, 'docs-markdown');
       // Pinned to LF: createModel can normalise to CRLF depending on the source text, at which
       // point every character offset counts 2 per newline instead of 1 - silently drifting every
       // toolbar insertion, and writing CRLF into localStorage and DocsRenderer. Read back the same
@@ -140,7 +140,7 @@ angular.module('glidefastDocs').factory('MarkdownEditorService', [
       var editor = monaco.editor.create(hostElement, {
         model: model,
         theme: themeName,
-        language: 'gfd-markdown',
+        language: 'docs-markdown',
         wordWrap: 'on',
         lineNumbers: 'on',
         minimap: { enabled: false },

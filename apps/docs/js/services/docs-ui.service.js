@@ -22,7 +22,7 @@
    and the controller writes them onto vm itself. Mode-routing (vm.docsView, vm.openPage,
    vm.showDocsHome) also stays in the controller - this service only does what happens once you're
    already looking at a page, not how you got there. */
-angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeout', 'DocsService', 'DocsEditService', '$sce', function ($rootScope, $timeout, DocsService, DocsEditService, $sce) {
+angular.module('docsApp').factory('DocsUiService', ['$rootScope', '$timeout', 'DocsService', 'DocsEditService', '$sce', function ($rootScope, $timeout, DocsService, DocsEditService, $sce) {
   'use strict';
 
   // Plain-text search corpus: strips tags from rendered HTML once here rather than per keystroke.
@@ -130,7 +130,7 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
   }
 
   // Publishes the sticky chrome's REAL height as a custom property the rails' own `top` is built
-  // from (see $gfd-sticky-app-header in app.scss, which survives only as the pre-JS fallback).
+  // from (see $doc-sticky-app-header in app.scss, which survives only as the pre-JS fallback).
   //
   // This exists because a hardcoded height is a duplicate of something the browser already knows,
   // and the two only have to disagree by a pixel for both rails to visibly slide before catching:
@@ -145,7 +145,7 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
     var chrome = document.querySelector('.docs-chrome');
     var pane = document.querySelector('.docs-pane');
     if (!chrome || !pane) { return; }
-    pane.style.setProperty('--gfd-chrome-height', chrome.getBoundingClientRect().height + 'px');
+    pane.style.setProperty('--doc-chrome-height', chrome.getBoundingClientRect().height + 'px');
   }
   function setupChromeHeightTracking() {
     publishChromeHeight();
@@ -181,7 +181,7 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
       // a padding or font change there can't silently strand headings underneath it. The app header
       // block (.docs-chrome: title row + doc-set tabs) is the only thing that pins over the
       // content column - each page's own .docs-page-head scrolls away with the prose now (see
-      // $gfd-sticky-app-header in app.scss), so it's not part of the clearance.
+      // $doc-sticky-app-header in app.scss), so it's not part of the clearance.
       var stickyChrome = 0;
       var chrome = document.querySelector('.docs-chrome');
       if (chrome) { stickyChrome += chrome.getBoundingClientRect().height; }

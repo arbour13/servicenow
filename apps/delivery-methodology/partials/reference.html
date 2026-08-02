@@ -138,27 +138,26 @@
             <button type="button" class="btn primary" ng-click="c.saveReferenceEdit()" ng-disabled="c.isSaving">Save changes</button>
           </div>
 
-          <p class="struct-toolbar-hint">Edit appendix prose sections here — rename, reorder, add, or remove. Select a
-            section to edit its body. Glossary terms are edited on the Glossary panel; job aids are attached on tasks
-            in Methodology. Changes stay in a draft until you save.</p>
+          <p class="struct-toolbar-hint">Edit appendix prose sections here — rename, drag to reorder, add, or remove.
+            Select a section to edit its body. Glossary terms are edited on the Glossary panel; job aids are attached
+            on tasks in Methodology. Changes stay in a draft until you save.</p>
 
           <div class="ref-edit-sections">
             <div class="ref-edit-row" ng-repeat="section in c.referenceSections track by section.key"
-              ng-class="{on: c.activeSection && c.activeSection.key === section.key}">
+              ng-class="{on: c.activeSection && c.activeSection.key === section.key}"
+              dm-reorder dm-reorder-group="appendix-sections" dm-reorder-index="{{$index}}"
+              dm-reorder-on="c.reorderReferenceSection(fromIndex, toIndex)">
+              <span class="drag-handle" role="button" tabindex="0" dm-reorder-handle data-tip="Drag to reorder"
+                aria-label="Drag to reorder section" ng-focus="c.selectEditSection(section)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+                  stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('grip')"></svg>
+              </span>
               <span class="struct-num">{{$index + 1}}</span>
               <input type="text" class="edit-in struct-rename" ng-model="section.title"
                 ng-model-options="{updateOn: 'blur'}" ng-change="c.renameReferenceSection(section)"
                 ng-focus="c.selectEditSection(section)"
                 placeholder="Section title" aria-label="Section title">
               <span class="struct-controls">
-                <button type="button" class="reorder-btn" ng-disabled="$first"
-                  ng-click="c.moveReferenceSection(section.key, 'up')" data-tip="Move section earlier"
-                  aria-label="Move section earlier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronUp')"></svg></button>
-                <button type="button" class="reorder-btn" ng-disabled="$last"
-                  ng-click="c.moveReferenceSection(section.key, 'down')" data-tip="Move section later"
-                  aria-label="Move section later"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('chevronDown')"></svg></button>
                 <button type="button" class="field-x" ng-click="c.deleteReferenceSectionByKey(section.key)"
                   data-tip="Delete section" aria-label="Delete section">&times;</button>
               </span>

@@ -19,10 +19,10 @@
    The theme half of this file reads LITERAL HEX off the DOM (Monaco's theme API rejects anything
    else, e.g. rgb()/rgba()) rather than hardcoding colours, so app.scss's --ed-md-* custom
    properties stay the one place these colours are edited - see their definition there. */
-angular.module('glidefastDocs').factory('MonacoMarkdownService', [function () {
+angular.module('docsApp').factory('MonacoMarkdownService', [function () {
   'use strict';
 
-  var LANGUAGE_ID = 'gfd-markdown';
+  var LANGUAGE_ID = 'docs-markdown';
 
   var MONARCH_LANGUAGE = {
     defaultToken: '',
@@ -114,17 +114,17 @@ angular.module('glidefastDocs').factory('MonacoMarkdownService', [function () {
     };
   }
 
-  // Defines (or REdefines) exactly one theme - 'gfdDocsLight' or 'gfdDocsDark' - from whatever the
+  // Defines (or REdefines) exactly one theme - 'docsAppLight' or 'docsAppDark' - from whatever the
   // --ed-md-* custom properties CURRENTLY resolve to on containerElement. Only one, not both: this
   // only ever runs while the app is actually IN that theme (mount, or right after a toggle), which
   // is the only moment getComputedStyle can see that theme's real values - reading the page while
   // it's light can't tell you what dark's custom properties would be. Read from containerElement
   // (the editor's own DOM, not documentElement) because the SN Deployment Packager rewrites
-  // `:root[data-theme]` to `.gfd-widget[data-theme]` at package time - only the container is
+  // `:root[data-theme]` to `.doc-widget[data-theme]` at package time - only the container is
   // guaranteed to see whatever actually resolved, in the harness and in a deployed widget alike.
   function defineTheme(monaco, containerElement, themeName) {
     var computedStyle = getComputedStyle(containerElement);
-    var monacoThemeName = themeName === 'dark' ? 'gfdDocsDark' : 'gfdDocsLight';
+    var monacoThemeName = themeName === 'dark' ? 'docsAppDark' : 'docsAppLight';
     monaco.editor.defineTheme(monacoThemeName, {
       base: themeName === 'dark' ? 'vs-dark' : 'vs',
       inherit: false,

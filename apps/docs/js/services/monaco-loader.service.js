@@ -11,7 +11,7 @@
    packager ships only the <div class="app"> subtree, and this file's own script tag lives outside
    it in index.html). Monaco is a LOCAL HARNESS enhancement; the deployed widget always runs the
    textarea overlay - see MarkdownEditorService's own fallback driver. */
-angular.module('glidefastDocs').factory('MonacoLoaderService', ['$timeout', function ($timeout) {
+angular.module('docsApp').factory('MonacoLoaderService', ['$timeout', function ($timeout) {
   'use strict';
 
   // Pinned, not @latest - a CDN release landing on a Tuesday should never be able to break this

@@ -1,4 +1,4 @@
-/* GlideFast Docs - visual identity: card-based layout, light/dark theming, and docs-page (.docs-*)
+/* Docs - visual identity: card-based layout, light/dark theming, and docs-page (.docs-*)
    treatment, trimmed to only what this standalone reference viewer needs (no builder forms, no
    output pane, no sidenav/mode-switcher).
 
@@ -480,8 +480,8 @@ input::placeholder {
   flex-shrink: 0;
   align-self: flex-start;
   position: sticky;
-  top: calc(var(--gfd-chrome-height, 108px) + 40px);
-  max-height: calc(100vh - calc(var(--gfd-chrome-height, 108px) + 40px) - var(--sp-xl));
+  top: calc(var(--doc-chrome-height, 108px) + 40px);
+  max-height: calc(100vh - calc(var(--doc-chrome-height, 108px) + 40px) - var(--sp-xl));
   overflow-x: hidden;
   overflow-y: auto;
   transition: width 0.3s ease, opacity 0.2s ease;
@@ -498,8 +498,8 @@ input::placeholder {
   align-self: flex-start;
   margin-left: auto;
   position: sticky;
-  top: calc(var(--gfd-chrome-height, 108px) + 40px);
-  max-height: calc(100vh - calc(var(--gfd-chrome-height, 108px) + 40px) - var(--sp-xl));
+  top: calc(var(--doc-chrome-height, 108px) + 40px);
+  max-height: calc(100vh - calc(var(--doc-chrome-height, 108px) + 40px) - var(--sp-xl));
   overflow-x: hidden;
   overflow-y: auto;
   padding: 0 var(--sp-sm) var(--sp-lg) var(--sp-sm);

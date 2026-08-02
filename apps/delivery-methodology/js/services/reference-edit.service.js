@@ -166,17 +166,21 @@ angular.module('deliveryMethodology').factory('ReferenceEditService', [
   }
 
   function moveSection(index, direction) {
+    var nextIndex = direction === 'up' ? index - 1 : index + 1;
+    reorderSection(index, nextIndex);
+  }
+
+  function reorderSection(fromIndex, toIndex) {
     if (!state.referenceEditMode || !state.referenceSnapshot) {
       return;
     }
-    var nextIndex = direction === 'up' ? index - 1 : index + 1;
-    if (nextIndex < 0 || nextIndex >= state.referenceSnapshot.length) {
+    var array = state.referenceSnapshot;
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0
+      || fromIndex >= array.length || toIndex >= array.length) {
       return;
     }
-    var array = state.referenceSnapshot;
-    var moved = array[index];
-    array[index] = array[nextIndex];
-    array[nextIndex] = moved;
+    var moved = array.splice(fromIndex, 1)[0];
+    array.splice(toIndex, 0, moved);
     notify();
   }
 
@@ -192,6 +196,7 @@ angular.module('deliveryMethodology').factory('ReferenceEditService', [
     renameSection: renameSection,
     addSection: addSection,
     deleteSection: deleteSection,
-    moveSection: moveSection
+    moveSection: moveSection,
+    reorderSection: reorderSection
   };
 }]);

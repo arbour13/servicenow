@@ -1,4 +1,4 @@
-/* GlideFast Docs' deployment descriptor - the single source of truth for its deployment manifest,
+/* Docs' deployment descriptor - the single source of truth for its deployment manifest,
    read by both tools/sn-deployment-packager/build.js (Node CLI) and the shared deploy console
    (tools/sn-deployment-packager/index.html, browser). See
    ../../tools/sn-deployment-packager/manifest.schema.md's
@@ -21,12 +21,19 @@
     deployable: false,
 
     manifest: {
-      appName: 'GlideFast Docs',
-      scope: 'x_gf_docs',
+      appName: 'Docs',
+      // PLACEHOLDER VENDOR PREFIX - must be replaced before this is ever published. `x_doc` is not
+      // a real registered prefix: ServiceNow assigns one per publishing company, and `scope` is
+      // `<vendorPrefix>_<app>`. This is deliberately NOT a branding decision to make here - it
+      // belongs to whoever ships the app. Safe to leave for now only because deployable is false
+      // and this has never been imported anywhere; note that changing scope later re-derives every
+      // sys_id (see sysIdPrefix below), so an already-installed copy would get a PARALLEL record
+      // set rather than an update.
+      scope: 'x_doc_docs',
       version: '1.0.0',
-      vendorPrefix: 'x_gf',
-      urlSuffix: 'glidefast-docs',
-      shortDescription: 'GlideFast Docs - hosts reference documentation including the GlideFast scripting best-practices standards.',
+      vendorPrefix: 'x_doc',
+      urlSuffix: 'docs',
+      shortDescription: 'A generic documentation viewer - group/page navigation, search, and in-place page editing over markdown-authored content.',
 
       // A distinctive prefix (so this app's DERIVED sys_ids never collide with another app's).
       // No pinned sysIds map - this app has never been imported into a live instance, so there
@@ -34,8 +41,8 @@
       // core.js's deriveSysIds().
       sysIdPrefix: 'e9f0a1b2c3',
 
-      angularModuleName: 'glidefastDocs',
-      widgetScopeClass: 'gfd-widget',
+      angularModuleName: 'docsApp',
+      widgetScopeClass: 'doc-widget',
       // Every service MainController injects (directly, or transitively via a service THAT
       // service injects, e.g. DocsHighlightService via MarkdownEditorService) has to be here - a
       // missing one is not a degraded feature but a hard Angular DI failure that stops the whole
@@ -64,10 +71,10 @@
       roles: {
         editorRoleName: 'editor',
         adminRoleName: 'admin',
-        editorGroupName: 'GlideFast Docs Editors',
-        adminGroupName: 'GlideFast Docs Admins',
-        editorRoleDescription: 'Can save draft edits to GlideFast Docs pages.',
-        adminRoleDescription: 'Can save and publish GlideFast Docs pages, and seed standard content.',
+        editorGroupName: 'Docs Editors',
+        adminGroupName: 'Docs Admins',
+        editorRoleDescription: 'Can save draft edits to documentation pages.',
+        adminRoleDescription: 'Can save and publish documentation pages, and seed standard content.',
       },
 
       // Two tables, not one self-referencing node table (contrast Delivery Methodology's

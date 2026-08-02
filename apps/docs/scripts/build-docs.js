@@ -2,7 +2,7 @@
  *
  *   node scripts/build-docs.js
  *       Renders every pages/<group>/<page>.md into js/services/docs.service.js - a normal
- *       glidefastDocs provider whose content is pre-parsed into groups / pages / sections of HTML
+ *       docsApp provider whose content is pre-parsed into groups / pages / sections of HTML
  *       with stable anchor ids (id="docs-<slug>"). Run this after ANY edit under pages/.
  *
  * Content model: pages/<NN-group-slug>/<NN-page-slug>.md. A directory under pages/ is a nav group
@@ -383,7 +383,7 @@ function build() {
     '',
     '   The documentation content, pre-parsed into groups / pages / sections of HTML with stable',
     '   anchor ids (id="docs-<slug>"). The app renders these directly. */',
-    "angular.module('glidefastDocs').factory('DocsService', function () {",
+    "angular.module('docsApp').factory('DocsService', function () {",
     "  'use strict';",
     '',
     '  var DOC = ' + JSON.stringify(doc, null, 2).replace(/\n/g, '\n  ') + ';',

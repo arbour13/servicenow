@@ -1,4 +1,4 @@
-/* GlideFast Docs - visual identity: card-based layout, light/dark theming, and docs-page (.docs-*)
+/* Docs - visual identity: card-based layout, light/dark theming, and docs-page (.docs-*)
    treatment, trimmed to only what this standalone reference viewer needs (no builder forms, no
    output pane, no sidenav/mode-switcher).
 
@@ -10,111 +10,111 @@
    content ship as a CSS Include that references them uncompiled. */
 
 // ---------- Light (default) palette ----------
-$gfd-bg: #f4f5f7 !default;
-$gfd-panel: #ffffff !default;
-$gfd-panel-alt: #fbfbfd !default;
-$gfd-border: #e2e5ea !default;
-$gfd-border-strong: #d2d6dd !default;
-$gfd-text: #1c2128 !default;
-$gfd-muted: #6b7280 !default;
-$gfd-faint: #9aa1ab !default;
-$gfd-accent: #054b80 !default;
-$gfd-accent-hover: #043a63 !default;
-$gfd-accent-soft: #e6eef5 !default;
-$gfd-accent-soft-hover: #d6e6f2 !default;
-$gfd-accent-border: #b3cae0 !default;
-$gfd-purple: #6d3fc9 !default;
-$gfd-purple-soft: #f1ecfb !default;
-$gfd-purple-border: #d3c2ee !default;
-$gfd-green: #15803d !default;
-$gfd-green-soft: #e8f5ec !default;
-$gfd-green-border: #bfe3cb !default;
+$doc-bg: #f4f5f7 !default;
+$doc-panel: #ffffff !default;
+$doc-panel-alt: #fbfbfd !default;
+$doc-border: #e2e5ea !default;
+$doc-border-strong: #d2d6dd !default;
+$doc-text: #1c2128 !default;
+$doc-muted: #6b7280 !default;
+$doc-faint: #9aa1ab !default;
+$doc-accent: #054b80 !default;
+$doc-accent-hover: #043a63 !default;
+$doc-accent-soft: #e6eef5 !default;
+$doc-accent-soft-hover: #d6e6f2 !default;
+$doc-accent-border: #b3cae0 !default;
+$doc-purple: #6d3fc9 !default;
+$doc-purple-soft: #f1ecfb !default;
+$doc-purple-border: #d3c2ee !default;
+$doc-green: #15803d !default;
+$doc-green-soft: #e8f5ec !default;
+$doc-green-border: #bfe3cb !default;
 // Local-edit UI only (the "Edited locally" badge, editor validation errors) - no reader content
 // uses this today, but it's a real semantic color (danger/error) so it gets a proper token trio
 // like purple/green above, not a hardcoded hex buried in the editor's own rules.
-$gfd-red: #b42318 !default;
-$gfd-red-soft: #fbeae8 !default;
-$gfd-red-border: #f0c4bd !default;
+$doc-red: #b42318 !default;
+$doc-red-soft: #fbeae8 !default;
+$doc-red-border: #f0c4bd !default;
 
 // Code-sample palette - the docs' <pre> blocks use a generated-script-style highlighter look
-// (.c-kw/.c-str/.c-num/.c-com/.c-fn). Bound directly to these $gfd-ed-* values (not var(--...)) per
+// (.c-kw/.c-str/.c-num/.c-com/.c-fn). Bound directly to these $doc-ed-* values (not var(--...)) per
 // app THEME - see the .docs-pre rule below for why.
-$gfd-ed-bg: #ffffff !default;
-$gfd-ed-text: #1c2128 !default;
-$gfd-ed-border: #e2e5ea !default;
-$gfd-ed-kw: #8250df !default;
-$gfd-ed-str: #116329 !default;
-$gfd-ed-num: #953800 !default;
-$gfd-ed-com: #6b7280 !default;
-$gfd-ed-fn: #0550ae !default;
+$doc-ed-bg: #ffffff !default;
+$doc-ed-text: #1c2128 !default;
+$doc-ed-border: #e2e5ea !default;
+$doc-ed-kw: #8250df !default;
+$doc-ed-str: #116329 !default;
+$doc-ed-num: #953800 !default;
+$doc-ed-com: #6b7280 !default;
+$doc-ed-fn: #0550ae !default;
 
-$gfd-ed-bg-dark: #1b1f2a !default;
-$gfd-ed-text-dark: #e6e9ef !default;
-$gfd-ed-border-dark: #2c3242 !default;
-$gfd-ed-kw-dark: #c792ea !default;
-$gfd-ed-str-dark: #c3e88d !default;
-$gfd-ed-num-dark: #f78c6c !default;
-$gfd-ed-com-dark: #5a6275 !default;
-$gfd-ed-fn-dark: #82aaff !default;
+$doc-ed-bg-dark: #1b1f2a !default;
+$doc-ed-text-dark: #e6e9ef !default;
+$doc-ed-border-dark: #2c3242 !default;
+$doc-ed-kw-dark: #c792ea !default;
+$doc-ed-str-dark: #c3e88d !default;
+$doc-ed-num-dark: #f78c6c !default;
+$doc-ed-com-dark: #5a6275 !default;
+$doc-ed-fn-dark: #82aaff !default;
 
 // Markdown-editor token palette - what the textarea fallback's .md-* spans (DocsHighlightService)
 // AND Monaco's theme (MonacoMarkdownService reads these back as literal hex at runtime, since
 // Monaco's theme API rejects rgba()) both draw from, so the two editors match structurally rather
-// than by eyeballing two hand-tuned palettes. Unlike $gfd-ed-* above (bound directly per APP theme
+// than by eyeballing two hand-tuned palettes. Unlike $doc-ed-* above (bound directly per APP theme
 // in the .docs-pre/.c-* rules, never exposed as custom properties at all), these ARE exposed as
 // --ed-md-* in both :root blocks below - closing the gap where --ed-* used to have no dark
 // override, which used to leave the editor's code/link/comment colours stuck in light mode after
 // a theme toggle. All values MUST be opaque hex - Monaco rejects rgb()/rgba() outright, so the
 // translucent selection colour here is pre-blended against its own pane background rather than
 // reusing --accent-soft-hover.
-$gfd-ed-md-heading: #054b80 !default;
-$gfd-ed-md-bold: #1c2128 !default;
-$gfd-ed-md-italic: #1c2128 !default;
-$gfd-ed-md-code: #116329 !default;
-$gfd-ed-md-fence: #6b7280 !default;
-$gfd-ed-md-code-block: #8250df !default;
-$gfd-ed-md-link-text: #054b80 !default;
-$gfd-ed-md-link-url: #116329 !default;
-$gfd-ed-md-wikilink: #6d3fc9 !default;
-$gfd-ed-md-marker: #9aa1ab !default;
-$gfd-ed-md-comment: #6b7280 !default;
-$gfd-ed-md-bg: #ffffff !default;
-$gfd-ed-md-text: #1c2128 !default;
-$gfd-ed-md-selection: #d6e6f2 !default; // --accent-soft-hover, pre-blended to opaque
-$gfd-ed-md-line-highlight: #fbfbfd !default;
-$gfd-ed-md-caret: #1c2128 !default;
+$doc-ed-md-heading: #054b80 !default;
+$doc-ed-md-bold: #1c2128 !default;
+$doc-ed-md-italic: #1c2128 !default;
+$doc-ed-md-code: #116329 !default;
+$doc-ed-md-fence: #6b7280 !default;
+$doc-ed-md-code-block: #8250df !default;
+$doc-ed-md-link-text: #054b80 !default;
+$doc-ed-md-link-url: #116329 !default;
+$doc-ed-md-wikilink: #6d3fc9 !default;
+$doc-ed-md-marker: #9aa1ab !default;
+$doc-ed-md-comment: #6b7280 !default;
+$doc-ed-md-bg: #ffffff !default;
+$doc-ed-md-text: #1c2128 !default;
+$doc-ed-md-selection: #d6e6f2 !default; // --accent-soft-hover, pre-blended to opaque
+$doc-ed-md-line-highlight: #fbfbfd !default;
+$doc-ed-md-caret: #1c2128 !default;
 
-$gfd-ed-md-heading-dark: #7ab3ea !default;
-$gfd-ed-md-bold-dark: #e7ebf2 !default;
-$gfd-ed-md-italic-dark: #e7ebf2 !default;
-$gfd-ed-md-code-dark: #c3e88d !default;
-$gfd-ed-md-fence-dark: #5a6275 !default;
-$gfd-ed-md-code-block-dark: #c792ea !default;
-$gfd-ed-md-link-text-dark: #7ab3ea !default;
-$gfd-ed-md-link-url-dark: #c3e88d !default;
-$gfd-ed-md-wikilink-dark: #b79cf0 !default;
-$gfd-ed-md-marker-dark: #6b7385 !default;
-$gfd-ed-md-comment-dark: #5a6275 !default;
-$gfd-ed-md-bg-dark: #1b1f2a !default;
-$gfd-ed-md-text-dark: #e6e9ef !default;
-$gfd-ed-md-selection-dark: #2a4a63 !default; // --accent-soft-hover-dark, pre-blended to opaque
-$gfd-ed-md-line-highlight-dark: #20262f !default;
-$gfd-ed-md-caret-dark: #e6e9ef !default;
+$doc-ed-md-heading-dark: #7ab3ea !default;
+$doc-ed-md-bold-dark: #e7ebf2 !default;
+$doc-ed-md-italic-dark: #e7ebf2 !default;
+$doc-ed-md-code-dark: #c3e88d !default;
+$doc-ed-md-fence-dark: #5a6275 !default;
+$doc-ed-md-code-block-dark: #c792ea !default;
+$doc-ed-md-link-text-dark: #7ab3ea !default;
+$doc-ed-md-link-url-dark: #c3e88d !default;
+$doc-ed-md-wikilink-dark: #b79cf0 !default;
+$doc-ed-md-marker-dark: #6b7385 !default;
+$doc-ed-md-comment-dark: #5a6275 !default;
+$doc-ed-md-bg-dark: #1b1f2a !default;
+$doc-ed-md-text-dark: #e6e9ef !default;
+$doc-ed-md-selection-dark: #2a4a63 !default; // --accent-soft-hover-dark, pre-blended to opaque
+$doc-ed-md-line-highlight-dark: #20262f !default;
+$doc-ed-md-caret-dark: #e6e9ef !default;
 
 // The three columns, and the gap between them. Real variables rather than literals scattered
 // through the rules below, because the shared measure is DERIVED from them - see
-// $gfd-content-measure.
+// $doc-content-measure.
 // The left rail is sized to its own TEXT, not to a round number. Its items are short and never
 // wrap, so a wider box just parks dead space between the nav and the prose - at 240px the widest
 // item ("Work with Data Efficiently", 157px) left 83px of slack, which read as a 107px gutter on
 // the left against 24px on the right, where the "on this page" items DO wrap and fill their box.
 // 190px keeps ~17px of headroom over that widest item so a font fallback can't force a wrap.
-$gfd-rail-width: 190px !default;
-$gfd-reading-width: 940px !default;
-$gfd-toc-width: 200px !default;
+$doc-rail-width: 190px !default;
+$doc-reading-width: 940px !default;
+$doc-toc-width: 200px !default;
 // 40px: wide enough that the reading column reads as separated from both rails rather than merely
 // adjacent to them, now that the left rail no longer supplies separation by being oversized.
-$gfd-column-gap: 40px !default;
+$doc-column-gap: 40px !default;
 
 // The ONE content measure every row on the page shares - the top row (.page-title) and the
 // three-column .docs-layout both centre inside it, so their left and right edges line up. Defined
@@ -122,18 +122,18 @@ $gfd-column-gap: 40px !default;
 // first place, leaving the top row running wider than the content beneath it.
 //
 // SUMMED from the columns, not picked. A round literal (this was 1440px) is only correct at the one
-// width where every column happens to be showing: the reading column caps at $gfd-reading-width and
+// width where every column happens to be showing: the reading column caps at $doc-reading-width and
 // cannot absorb any excess, so the moment a rail drops at a breakpoint the leftover became dead
 // space and the top row's controls floated past the content's right edge. Each breakpoint below
 // re-sums whatever columns survive it.
-$gfd-content-measure: $gfd-rail-width + $gfd-column-gap + $gfd-reading-width + $gfd-column-gap + $gfd-toc-width !default;
+$doc-content-measure: $doc-rail-width + $doc-column-gap + $doc-reading-width + $doc-column-gap + $doc-toc-width !default;
 // Below 1400px the "on this page" rail is gone (see its own breakpoint); below 900px the left rail
 // goes too, leaving the reading column alone.
-$gfd-content-measure-no-toc: $gfd-rail-width + $gfd-column-gap + $gfd-reading-width !default;
-$gfd-content-measure-no-rails: $gfd-reading-width !default;
+$doc-content-measure-no-toc: $doc-rail-width + $doc-column-gap + $doc-reading-width !default;
+$doc-content-measure-no-rails: $doc-reading-width !default;
 // Editing widens the whole shell, not the layout alone - otherwise the top row would stay at the
 // narrower measure while the editor beside it grew, and the two would visibly disagree.
-$gfd-content-measure-editing: 1500px !default;
+$doc-content-measure-editing: 1500px !default;
 
 // What stays put while you read: the CHROME - the app header and both navigation rails - and
 // nothing else. The content column scrolls in full underneath it, its page title and Copy/Edit
@@ -146,86 +146,86 @@ $gfd-content-measure-editing: 1500px !default;
 // re-check this if either one's padding or font sizes change. The JS counterpart
 // (DocsUiService.scrollTo's landing offset) deliberately MEASURES it at runtime rather than
 // duplicating the number, so only the rails' offset depends on this staying accurate.
-// FALLBACK ONLY - the real value is measured at runtime and published as --gfd-chrome-height (see
+// FALLBACK ONLY - the real value is measured at runtime and published as --doc-chrome-height (see
 // DocsUiService.setupChromeHeightTracking). This covers the frames before that first runs; a stale
 // number here costs a few pixels of drift for one frame instead of permanently.
-$gfd-sticky-app-header: 108px !default;
+$doc-sticky-app-header: 108px !default;
 // The gap between the chrome and the content below it - .docs-tabs' bottom margin, which collapses
 // through .docs-chrome (it has no bottom padding or border) and so becomes the space the layout
 // starts after. Sized off the Claude-docs reference, where the tab rule and the first line of
 // content sit noticeably further apart than the rows inside the chrome do - it's the seam between
 // navigation and reading, so it gets the biggest gap on the page.
-$gfd-chrome-gap: 40px !default;
-// Where the rails pin. This MUST equal their resting offset (chrome height + $gfd-chrome-gap):
+$doc-chrome-gap: 40px !default;
+// Where the rails pin. This MUST equal their resting offset (chrome height + $doc-chrome-gap):
 // any difference between where a sticky element rests and where it sticks is distance it visibly
 // travels before catching. It was once hardcoded to +16px against a resting +24px, so both rails
 // slid 8px on the first flick of the wheel - subtle, but exactly what reads as jank. Built from the
 // MEASURED chrome height rather than a literal, so it cannot drift again when zoom, a font
 // fallback, or a change to the header's contents alters that height.
-$gfd-sticky-rail-top: calc(var(--gfd-chrome-height, #{$gfd-sticky-app-header}) + #{$gfd-chrome-gap}) !default;
+$doc-sticky-rail-top: calc(var(--doc-chrome-height, #{$doc-sticky-app-header}) + #{$doc-chrome-gap}) !default;
 
 // ---------- Dark palette ----------
-$gfd-bg-dark: #10131a !default;
-$gfd-panel-dark: #1a1f29 !default;
-$gfd-panel-alt-dark: #20262f !default;
-$gfd-border-dark: #2a3040 !default;
-$gfd-border-strong-dark: #3b4353 !default;
-$gfd-text-dark: #e7ebf2 !default;
-$gfd-muted-dark: #9aa3b6 !default;
-$gfd-faint-dark: #6b7385 !default;
-$gfd-accent-dark: #5b9fe0 !default;
-$gfd-accent-hover-dark: #7ab3ea !default;
-$gfd-accent-soft-dark: rgba(91, 159, 224, 0.16) !default;
-$gfd-accent-soft-hover-dark: rgba(91, 159, 224, 0.28) !default;
-$gfd-accent-border-dark: rgba(91, 159, 224, 0.4) !default;
-$gfd-purple-dark: #b79cf0 !default;
-$gfd-purple-soft-dark: rgba(183, 156, 240, 0.16) !default;
-$gfd-purple-border-dark: rgba(183, 156, 240, 0.4) !default;
-$gfd-green-dark: #6ee7a0 !default;
-$gfd-green-soft-dark: rgba(110, 231, 160, 0.14) !default;
-$gfd-green-border-dark: rgba(110, 231, 160, 0.36) !default;
-$gfd-red-dark: #f0968c !default;
-$gfd-red-soft-dark: rgba(240, 150, 140, 0.14) !default;
-$gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
+$doc-bg-dark: #10131a !default;
+$doc-panel-dark: #1a1f29 !default;
+$doc-panel-alt-dark: #20262f !default;
+$doc-border-dark: #2a3040 !default;
+$doc-border-strong-dark: #3b4353 !default;
+$doc-text-dark: #e7ebf2 !default;
+$doc-muted-dark: #9aa3b6 !default;
+$doc-faint-dark: #6b7385 !default;
+$doc-accent-dark: #5b9fe0 !default;
+$doc-accent-hover-dark: #7ab3ea !default;
+$doc-accent-soft-dark: rgba(91, 159, 224, 0.16) !default;
+$doc-accent-soft-hover-dark: rgba(91, 159, 224, 0.28) !default;
+$doc-accent-border-dark: rgba(91, 159, 224, 0.4) !default;
+$doc-purple-dark: #b79cf0 !default;
+$doc-purple-soft-dark: rgba(183, 156, 240, 0.16) !default;
+$doc-purple-border-dark: rgba(183, 156, 240, 0.4) !default;
+$doc-green-dark: #6ee7a0 !default;
+$doc-green-soft-dark: rgba(110, 231, 160, 0.14) !default;
+$doc-green-border-dark: rgba(110, 231, 160, 0.36) !default;
+$doc-red-dark: #f0968c !default;
+$doc-red-soft-dark: rgba(240, 150, 140, 0.14) !default;
+$doc-red-border-dark: rgba(240, 150, 140, 0.36) !default;
 
 :root {
-  --bg: #{$gfd-bg};
-  --panel: #{$gfd-panel};
-  --panel-alt: #{$gfd-panel-alt};
-  --border: #{$gfd-border};
-  --border-strong: #{$gfd-border-strong};
-  --text: #{$gfd-text};
-  --muted: #{$gfd-muted};
-  --faint: #{$gfd-faint};
-  --accent: #{$gfd-accent};
-  --accent-hover: #{$gfd-accent-hover};
-  --accent-soft: #{$gfd-accent-soft};
-  --accent-soft-hover: #{$gfd-accent-soft-hover};
-  --accent-border: #{$gfd-accent-border};
-  --ed-bg: #{$gfd-ed-bg};
-  --ed-text: #{$gfd-ed-text};
-  --ed-border: #{$gfd-ed-border};
-  --ed-kw: #{$gfd-ed-kw};
-  --ed-str: #{$gfd-ed-str};
-  --ed-num: #{$gfd-ed-num};
-  --ed-com: #{$gfd-ed-com};
-  --ed-fn: #{$gfd-ed-fn};
-  --ed-md-heading: #{$gfd-ed-md-heading};
-  --ed-md-bold: #{$gfd-ed-md-bold};
-  --ed-md-italic: #{$gfd-ed-md-italic};
-  --ed-md-code: #{$gfd-ed-md-code};
-  --ed-md-fence: #{$gfd-ed-md-fence};
-  --ed-md-code-block: #{$gfd-ed-md-code-block};
-  --ed-md-link-text: #{$gfd-ed-md-link-text};
-  --ed-md-link-url: #{$gfd-ed-md-link-url};
-  --ed-md-wikilink: #{$gfd-ed-md-wikilink};
-  --ed-md-marker: #{$gfd-ed-md-marker};
-  --ed-md-comment: #{$gfd-ed-md-comment};
-  --ed-md-bg: #{$gfd-ed-md-bg};
-  --ed-md-text: #{$gfd-ed-md-text};
-  --ed-md-selection: #{$gfd-ed-md-selection};
-  --ed-md-line-highlight: #{$gfd-ed-md-line-highlight};
-  --ed-md-caret: #{$gfd-ed-md-caret};
+  --bg: #{$doc-bg};
+  --panel: #{$doc-panel};
+  --panel-alt: #{$doc-panel-alt};
+  --border: #{$doc-border};
+  --border-strong: #{$doc-border-strong};
+  --text: #{$doc-text};
+  --muted: #{$doc-muted};
+  --faint: #{$doc-faint};
+  --accent: #{$doc-accent};
+  --accent-hover: #{$doc-accent-hover};
+  --accent-soft: #{$doc-accent-soft};
+  --accent-soft-hover: #{$doc-accent-soft-hover};
+  --accent-border: #{$doc-accent-border};
+  --ed-bg: #{$doc-ed-bg};
+  --ed-text: #{$doc-ed-text};
+  --ed-border: #{$doc-ed-border};
+  --ed-kw: #{$doc-ed-kw};
+  --ed-str: #{$doc-ed-str};
+  --ed-num: #{$doc-ed-num};
+  --ed-com: #{$doc-ed-com};
+  --ed-fn: #{$doc-ed-fn};
+  --ed-md-heading: #{$doc-ed-md-heading};
+  --ed-md-bold: #{$doc-ed-md-bold};
+  --ed-md-italic: #{$doc-ed-md-italic};
+  --ed-md-code: #{$doc-ed-md-code};
+  --ed-md-fence: #{$doc-ed-md-fence};
+  --ed-md-code-block: #{$doc-ed-md-code-block};
+  --ed-md-link-text: #{$doc-ed-md-link-text};
+  --ed-md-link-url: #{$doc-ed-md-link-url};
+  --ed-md-wikilink: #{$doc-ed-md-wikilink};
+  --ed-md-marker: #{$doc-ed-md-marker};
+  --ed-md-comment: #{$doc-ed-md-comment};
+  --ed-md-bg: #{$doc-ed-md-bg};
+  --ed-md-text: #{$doc-ed-md-text};
+  --ed-md-selection: #{$doc-ed-md-selection};
+  --ed-md-line-highlight: #{$doc-ed-md-line-highlight};
+  --ed-md-caret: #{$doc-ed-md-caret};
   --radius: 10px;
   --radius-sm: 7px;
   --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
@@ -238,73 +238,73 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
   --sp-xxl: 24px;
   --font: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
-  --purple: #{$gfd-purple};
-  --purple-soft: #{$gfd-purple-soft};
-  --purple-border: #{$gfd-purple-border};
-  --green: #{$gfd-green};
-  --green-soft: #{$gfd-green-soft};
-  --green-border: #{$gfd-green-border};
-  --red: #{$gfd-red};
-  --red-soft: #{$gfd-red-soft};
-  --red-border: #{$gfd-red-border};
+  --purple: #{$doc-purple};
+  --purple-soft: #{$doc-purple-soft};
+  --purple-border: #{$doc-purple-border};
+  --green: #{$doc-green};
+  --green-soft: #{$doc-green-soft};
+  --green-border: #{$doc-green-border};
+  --red: #{$doc-red};
+  --red-soft: #{$doc-red-soft};
+  --red-border: #{$doc-red-border};
   // Tooltips invert against the page in BOTH themes (dark bubble on light, light bubble on dark) -
   // a tooltip is a transient overlay, and matching the surface it floats over would make it read
   // as part of the page rather than above it.
-  --tooltip-bg: #{$gfd-text};
-  --tooltip-text: #{$gfd-panel};
+  --tooltip-bg: #{$doc-text};
+  --tooltip-text: #{$doc-panel};
 }
 /* Dark mode. `data-theme` is set on <html> by vm.toggleTheme() (see ThemeService) - overriding the
    custom properties here is enough to re-theme every component that already references
    var(--...) instead of a literal color; the handful that don't (the .docs-pre code-sample surface)
    get their own explicit :root[data-theme="dark"] overrides further down. */
 :root[data-theme="dark"] {
-  --bg: #{$gfd-bg-dark};
-  --panel: #{$gfd-panel-dark};
-  --panel-alt: #{$gfd-panel-alt-dark};
-  --border: #{$gfd-border-dark};
-  --border-strong: #{$gfd-border-strong-dark};
-  --text: #{$gfd-text-dark};
-  --muted: #{$gfd-muted-dark};
-  --faint: #{$gfd-faint-dark};
-  --accent: #{$gfd-accent-dark};
-  --accent-hover: #{$gfd-accent-hover-dark};
-  --accent-soft: #{$gfd-accent-soft-dark};
-  --accent-soft-hover: #{$gfd-accent-soft-hover-dark};
-  --accent-border: #{$gfd-accent-border-dark};
+  --bg: #{$doc-bg-dark};
+  --panel: #{$doc-panel-dark};
+  --panel-alt: #{$doc-panel-alt-dark};
+  --border: #{$doc-border-dark};
+  --border-strong: #{$doc-border-strong-dark};
+  --text: #{$doc-text-dark};
+  --muted: #{$doc-muted-dark};
+  --faint: #{$doc-faint-dark};
+  --accent: #{$doc-accent-dark};
+  --accent-hover: #{$doc-accent-hover-dark};
+  --accent-soft: #{$doc-accent-soft-dark};
+  --accent-soft-hover: #{$doc-accent-soft-hover-dark};
+  --accent-border: #{$doc-accent-border-dark};
   --shadow: 0 1px 2px rgba(0,0,0,.24), 0 1px 3px rgba(0,0,0,.32);
   // --ed-* (below) intentionally has NO dark override here - .docs-pre/.c-* bind to the
-  // $gfd-ed-*-dark SCSS values directly via their own explicit :root[data-theme="dark"] rules
+  // $doc-ed-*-dark SCSS values directly via their own explicit :root[data-theme="dark"] rules
   // further down, not through these custom properties. --ed-md-* is different: the editor's own
   // .md-* rules DO read these as custom properties, so - unlike --ed-* - this needs its own
   // dark set, or the editor's code/link/comment colours would stay stuck in light mode after a
   // theme toggle (the bug this whole block exists to close).
-  --ed-md-heading: #{$gfd-ed-md-heading-dark};
-  --ed-md-bold: #{$gfd-ed-md-bold-dark};
-  --ed-md-italic: #{$gfd-ed-md-italic-dark};
-  --ed-md-code: #{$gfd-ed-md-code-dark};
-  --ed-md-fence: #{$gfd-ed-md-fence-dark};
-  --ed-md-code-block: #{$gfd-ed-md-code-block-dark};
-  --ed-md-link-text: #{$gfd-ed-md-link-text-dark};
-  --ed-md-link-url: #{$gfd-ed-md-link-url-dark};
-  --ed-md-wikilink: #{$gfd-ed-md-wikilink-dark};
-  --ed-md-marker: #{$gfd-ed-md-marker-dark};
-  --ed-md-comment: #{$gfd-ed-md-comment-dark};
-  --ed-md-bg: #{$gfd-ed-md-bg-dark};
-  --ed-md-text: #{$gfd-ed-md-text-dark};
-  --ed-md-selection: #{$gfd-ed-md-selection-dark};
-  --ed-md-line-highlight: #{$gfd-ed-md-line-highlight-dark};
-  --ed-md-caret: #{$gfd-ed-md-caret-dark};
-  --purple: #{$gfd-purple-dark};
-  --purple-soft: #{$gfd-purple-soft-dark};
-  --purple-border: #{$gfd-purple-border-dark};
-  --green: #{$gfd-green-dark};
-  --green-soft: #{$gfd-green-soft-dark};
-  --green-border: #{$gfd-green-border-dark};
-  --red: #{$gfd-red-dark};
-  --red-soft: #{$gfd-red-soft-dark};
-  --red-border: #{$gfd-red-border-dark};
-  --tooltip-bg: #{$gfd-text-dark};
-  --tooltip-text: #{$gfd-bg-dark};
+  --ed-md-heading: #{$doc-ed-md-heading-dark};
+  --ed-md-bold: #{$doc-ed-md-bold-dark};
+  --ed-md-italic: #{$doc-ed-md-italic-dark};
+  --ed-md-code: #{$doc-ed-md-code-dark};
+  --ed-md-fence: #{$doc-ed-md-fence-dark};
+  --ed-md-code-block: #{$doc-ed-md-code-block-dark};
+  --ed-md-link-text: #{$doc-ed-md-link-text-dark};
+  --ed-md-link-url: #{$doc-ed-md-link-url-dark};
+  --ed-md-wikilink: #{$doc-ed-md-wikilink-dark};
+  --ed-md-marker: #{$doc-ed-md-marker-dark};
+  --ed-md-comment: #{$doc-ed-md-comment-dark};
+  --ed-md-bg: #{$doc-ed-md-bg-dark};
+  --ed-md-text: #{$doc-ed-md-text-dark};
+  --ed-md-selection: #{$doc-ed-md-selection-dark};
+  --ed-md-line-highlight: #{$doc-ed-md-line-highlight-dark};
+  --ed-md-caret: #{$doc-ed-md-caret-dark};
+  --purple: #{$doc-purple-dark};
+  --purple-soft: #{$doc-purple-soft-dark};
+  --purple-border: #{$doc-purple-border-dark};
+  --green: #{$doc-green-dark};
+  --green-soft: #{$doc-green-soft-dark};
+  --green-border: #{$doc-green-border-dark};
+  --red: #{$doc-red-dark};
+  --red-soft: #{$doc-red-soft-dark};
+  --red-border: #{$doc-red-border-dark};
+  --tooltip-bg: #{$doc-text-dark};
+  --tooltip-text: #{$doc-bg-dark};
 }
 
 // The one shared focus-ring shape for every focusable element in the app - a soft-glow treatment
@@ -314,7 +314,7 @@ $gfd-red-border-dark: rgba(240, 150, 140, 0.36) !default;
 // already has (border-color for bordered controls, a background tint for borderless rows). $inset
 // exists for elements that sit flush against a container edge where an outset ring
 // would get clipped by that container's own edge.
-@mixin gfd-focus-ring($glow: var(--accent-soft), $spread: 3px, $inset: false) {
+@mixin doc-focus-ring($glow: var(--accent-soft), $spread: 3px, $inset: false) {
   outline: none;
   @if $inset {
     box-shadow: inset 0 0 0 $spread $glow;
@@ -401,7 +401,7 @@ body {
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md); padding: 0 0 var(--sp-md); border-bottom: 1px solid var(--border); }
 // An open page's own header is part of the CONTENT - it scrolls away with the prose it belongs to
 // rather than pinning, so Copy page / Edit page are reached by scrolling back up (or ⌘K to jump
-// elsewhere entirely). Only the chrome stays put; see $gfd-sticky-app-header.
+// elsewhere entirely). Only the chrome stays put; see $doc-sticky-app-header.
 .card-head h2 { margin: 0; font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .card-body { padding: var(--sp-lg) 0 0; }
 .hint { font-size: 11.5px; color: var(--muted); margin: 0 0 var(--sp-md); line-height: 1.5; }
@@ -413,7 +413,7 @@ input[type=text] {
   background: var(--panel); font: inherit; font-size: 13px; color: var(--text);
   transition: border-color .12s, box-shadow .12s;
 }
-input:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+input:focus-visible { @include doc-focus-ring; border-color: var(--accent); }
 input::placeholder { color: var(--faint); }
 
 /* ---------- App shell ---------- */
@@ -427,10 +427,10 @@ input::placeholder { color: var(--faint); }
 // MainController's docs-link click delegation all query `.docs-pane` by class name for this
 // element.
 .docs-pane { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; padding: 0 var(--sp-xl) 80px; }
-// The shared measure - see $gfd-content-measure. Both this wrapper's children (the top row and
+// The shared measure - see $doc-content-measure. Both this wrapper's children (the top row and
 // .docs-layout) inherit their width from it rather than setting their own.
-.docs-shell { max-width: $gfd-content-measure; margin: 0 auto; transition: max-width .3s ease; }
-.docs-shell-editing { max-width: $gfd-content-measure-editing; }
+.docs-shell { max-width: $doc-content-measure; margin: 0 auto; transition: max-width .3s ease; }
+.docs-shell-editing { max-width: $doc-content-measure-editing; }
 @media (prefers-reduced-motion: reduce) {
   .docs-shell { transition: none; }
 }
@@ -447,11 +447,11 @@ input::placeholder { color: var(--faint); }
 // on top of it, so the row reads as one rule with the current set notched into it.
 // Spacing matched to the Claude-docs reference: tabs sit their own clear step below the title row
 // rather than crowding it, and the labels are spaced wide enough to read as separate destinations
-// instead of one run of text. $gfd-chrome-gap (not a literal) closes the row, so the rails' sticky
+// instead of one run of text. $doc-chrome-gap (not a literal) closes the row, so the rails' sticky
 // offset can derive from the same number - see its own comment.
 .docs-tabs {
   display: flex; gap: var(--sp-xxl);
-  margin: var(--sp-xxl) 0 $gfd-chrome-gap;
+  margin: var(--sp-xxl) 0 $doc-chrome-gap;
   border-bottom: 1px solid var(--border);
 }
 .docs-tab {
@@ -461,7 +461,7 @@ input::placeholder { color: var(--faint); }
   transition: color .12s;
 }
 .docs-tab:hover { color: var(--text); }
-.docs-tab:focus-visible { @include gfd-focus-ring; border-radius: var(--radius-sm); }
+.docs-tab:focus-visible { @include doc-focus-ring; border-radius: var(--radius-sm); }
 // -1px pulls the mark over the row's own border rather than stacking below it.
 .docs-tab.active { color: var(--text); }
 .docs-tab.active::after {
@@ -485,7 +485,7 @@ input::placeholder { color: var(--faint); }
   font: inherit; font-size: 12px; cursor: pointer; transition: background .12s, border-color .12s, color .12s;
 }
 .docs-search-trigger:hover { background: var(--panel-alt); border-color: var(--accent-border); color: var(--text); }
-.docs-search-trigger:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+.docs-search-trigger:focus-visible { @include doc-focus-ring; border-color: var(--accent); }
 .docs-search-trigger-kbd {
   padding: 1px 5px; border: 1px solid var(--border-strong); border-radius: 4px;
   font-family: inherit; font-size: 10px; font-weight: 650; color: var(--faint); white-space: nowrap;
@@ -498,7 +498,7 @@ input::placeholder { color: var(--faint); }
   transition: background .12s, border-color .12s, color .12s;
 }
 .docs-theme-toggle:hover { background: var(--panel-alt); border-color: var(--accent-border); color: var(--text); }
-.docs-theme-toggle:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+.docs-theme-toggle:focus-visible { @include doc-focus-ring; border-color: var(--accent); }
 // Below this the trigger drops its label and shortcut chip to just the magnifier, so the title and
 // controls still share one row on a phone instead of wrapping.
 @media (max-width: 560px) {
@@ -514,20 +514,20 @@ input::placeholder { color: var(--faint); }
 // No max-width/margin of its own - .docs-shell owns the measure for every row on the page, so this
 // just fills it. (It used to cap itself at 1440px while the top row above ran the full pane width,
 // which is exactly the mismatch .docs-shell exists to remove.)
-.docs-layout { display: flex; align-items: flex-start; gap: $gfd-column-gap; transition: gap .3s ease; }
-.docs-layout-main { flex: 1; min-width: 0; max-width: $gfd-reading-width; position: relative; transition: max-width .3s ease; }
+.docs-layout { display: flex; align-items: flex-start; gap: $doc-column-gap; transition: gap .3s ease; }
+.docs-layout-main { flex: 1; min-width: 0; max-width: $doc-reading-width; position: relative; transition: max-width .3s ease; }
 
 .docs-rail {
-  width: $gfd-rail-width; flex-shrink: 0; align-self: flex-start;
-  position: sticky; top: $gfd-sticky-rail-top;
-  max-height: calc(100vh - #{$gfd-sticky-rail-top} - var(--sp-xl));
+  width: $doc-rail-width; flex-shrink: 0; align-self: flex-start;
+  position: sticky; top: $doc-sticky-rail-top;
+  max-height: calc(100vh - #{$doc-sticky-rail-top} - var(--sp-xl));
   overflow-x: hidden; overflow-y: auto;
   transition: width .3s ease, opacity .2s ease;
 }
 // Fixed width so the rail's content NEVER re-wraps while the rail collapses - the outer aside
 // clips it instead (see the wrapper's own comment in index.html). Padding lives here rather than
 // on .docs-rail so it collapses with the content instead of holding the rail open at 16px.
-.docs-rail-inner { width: $gfd-rail-width; padding: 0 var(--sp-sm) var(--sp-lg); }
+.docs-rail-inner { width: $doc-rail-width; padding: 0 var(--sp-sm) var(--sp-lg); }
 
 // The right "on this page" rail - the open page's own sections, scroll-spy highlighted. Unlike
 // .docs-rail it's removed from the DOM entirely when not applicable (ng-if in index.html: no open
@@ -538,9 +538,9 @@ input::placeholder { color: var(--faint); }
   // rail's right edge lands on the shared measure's right edge. Without it .docs-layout-main hits
   // its own 940px cap, can't absorb the remainder, and the slack strands the rail a few px short of
   // the edge the top row's controls align to.
-  width: $gfd-toc-width; flex-shrink: 0; align-self: flex-start; margin-left: auto;
-  position: sticky; top: $gfd-sticky-rail-top;
-  max-height: calc(100vh - #{$gfd-sticky-rail-top} - var(--sp-xl));
+  width: $doc-toc-width; flex-shrink: 0; align-self: flex-start; margin-left: auto;
+  position: sticky; top: $doc-sticky-rail-top;
+  max-height: calc(100vh - #{$doc-sticky-rail-top} - var(--sp-xl));
   overflow-x: hidden; overflow-y: auto;
   // Matches .docs-rail-inner's own horizontal padding on the opposite side, so the visible gutter
   // between the reading column and each rail is the SAME on both - the flex `gap` alone isn't the
@@ -559,7 +559,7 @@ input::placeholder { color: var(--faint); }
 }
 .docs-toc-section:hover { color: var(--text); }
 .docs-toc-section.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
-.docs-toc-section:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+.docs-toc-section:focus-visible { @include doc-focus-ring; background: var(--panel-alt); }
 
 // Edit mode widens the reading column in place: the two-pane editor needs far more room than the
 // 940px prose measure, and on a typical laptop the rails' combined width IS the available headroom.
@@ -600,7 +600,7 @@ input::placeholder { color: var(--faint); }
 }
 .docs-rail-part:hover { color: var(--text); }
 .docs-rail-part.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; letter-spacing: -0.02em; }
-.docs-rail-part:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+.docs-rail-part:focus-visible { @include doc-focus-ring; background: var(--panel-alt); }
 // The right rail goes first: it's the less essential of the two (a nice-to-have within-page jump
 // list, not the only way to reach a page), and .docs-layout-main plus two fixed-width rails no
 // longer has room to keep the reading column comfortable below this width.
@@ -608,7 +608,7 @@ input::placeholder { color: var(--faint); }
   .docs-toc { display: none; }
   // Re-sum the measure without that rail, so the top row's controls keep landing on the
   // content's right edge instead of floating past it into the space the rail left behind.
-  .docs-shell { max-width: $gfd-content-measure-no-toc; }
+  .docs-shell { max-width: $doc-content-measure-no-toc; }
 }
 // Below this, .docs-layout-main alone (940px) plus padding doesn't leave enough room for even the
 // left rail without cramping the reading column - it's the only page nav left at this point, so
@@ -616,7 +616,7 @@ input::placeholder { color: var(--faint); }
 // search palette in the page-title row, which never hides).
 @media (max-width: 900px) {
   .docs-rail { display: none; }
-  .docs-shell { max-width: $gfd-content-measure-no-rails; }
+  .docs-shell { max-width: $doc-content-measure-no-rails; }
 }
 
 .docs-link {
@@ -624,7 +624,7 @@ input::placeholder { color: var(--faint); }
   font: inherit; font-weight: 600; color: var(--accent); white-space: nowrap;
 }
 .docs-link:hover { text-decoration: underline; }
-.docs-link:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
+.docs-link:focus-visible { @include doc-focus-ring; background: var(--panel-alt); }
 
 // Shared small-button base for every editor control (Edit/Cancel/Save/toolbar buttons) - this app
 // otherwise only has icon toggles and text-styled .docs-link buttons, nothing this size before now.
@@ -635,7 +635,7 @@ input::placeholder { color: var(--faint); }
   cursor: pointer; white-space: nowrap; transition: border-color .12s, background .12s;
 }
 .docs-btn:hover { background: var(--panel-alt); }
-.docs-btn:focus-visible { @include gfd-focus-ring; }
+.docs-btn:focus-visible { @include doc-focus-ring; }
 .docs-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .docs-btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .docs-btn-primary[disabled] { opacity: .5; cursor: not-allowed; }
@@ -671,7 +671,7 @@ input::placeholder { color: var(--faint); }
   transition: border-color .12s, background .12s;
 }
 .docs-pager-btn:hover { background: var(--panel-alt); border-color: var(--border-strong); }
-.docs-pager-btn:focus-visible { @include gfd-focus-ring; }
+.docs-pager-btn:focus-visible { @include doc-focus-ring; }
 // Keeps a lone Next button (first page of the doc, no Previous) pinned right where it belongs
 // instead of sliding to the left edge - space-between has nothing to push against with one child.
 .docs-pager-next { margin-left: auto; text-align: right; }
@@ -705,7 +705,7 @@ input::placeholder { color: var(--faint); }
 // views only if the two viewports are the same size. The 60vh floor keeps a usable pane on a short
 // laptop screen; the subtraction accounts for the chrome above and below the panes (sticky
 // page title, toolbar, controls row) so the Save row stays on screen.
-$gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
+$doc-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 // The two-layer source pane. .docs-editor-highlight paints the colours; .docs-editor-textarea sits
 // on top with transparent text (but a visible caret) and handles all actual editing. EVERY
 // property that affects where a glyph lands has to be identical on both, or the colours drift out
@@ -720,7 +720,7 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 }
 .docs-editor-source {
   position: relative;
-  height: $gfd-editor-pane-height;
+  height: $doc-editor-pane-height;
   border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
   background: var(--panel);
   overflow: hidden;
@@ -728,7 +728,7 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 // Focus ring moves to the WRAPPER (via :focus-within) since neither editor draws its own visible
 // box - the fallback's textarea is border-less/transparent, and Monaco's own focus styling is
 // suppressed the same way. The visible box belongs to the container either way.
-.docs-editor-source:focus-within { @include gfd-focus-ring; border-color: var(--accent); }
+.docs-editor-source:focus-within { @include doc-focus-ring; border-color: var(--accent); }
 .docs-editor-highlight {
   @extend %docs-editor-typography;
   position: absolute; top: 0; left: 0; height: 100%;
@@ -755,7 +755,7 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 // DEDICATED palette (Monaco's theme API needs the same literal-hex values MonacoMarkdownService
 // reads back from these exact custom properties, so the fallback and Monaco match structurally
 // rather than by two hand-tuned palettes drifting apart) rather than reusing --ed-*, which has no
-// dark override and is bound directly by $gfd-ed-* elsewhere in this file.
+// dark override and is bound directly by $doc-ed-* elsewhere in this file.
 .docs-editor-highlight .md-heading { color: var(--ed-md-heading); font-weight: 700; }
 .docs-editor-highlight .md-bold { color: var(--ed-md-bold); font-weight: 700; }
 .docs-editor-highlight .md-italic { color: var(--ed-md-italic); font-style: italic; }
@@ -788,7 +788,7 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 // inside it would sit on the wrong backdrop. The border stays purely to delimit the pane from the
 // source half beside it; the CONTENT surface has to match the real thing, and that's --bg now.
 .docs-editor-preview {
-  height: $gfd-editor-pane-height; overflow-y: auto;
+  height: $doc-editor-pane-height; overflow-y: auto;
   padding: var(--sp-md); border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent;
 }
 // Below this the two panes can't sit side by side legibly, so they stack - and each drops to a
@@ -855,7 +855,7 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 }
 .docs-palette-empty, .docs-palette-hint { font-size: 12px; color: var(--faint); margin: 0; padding: var(--sp-md); }
 
-.docs-content { font-size: 13px; line-height: 1.65; color: var(--text); max-width: $gfd-reading-width; }
+.docs-content { font-size: 13px; line-height: 1.65; color: var(--text); max-width: $doc-reading-width; }
 .docs-content h2 { font-size: 16px; font-weight: 650; margin: var(--sp-xxl) 0 var(--sp-sm); }
 .docs-content h3 { font-size: 13.5px; font-weight: 650; margin: var(--sp-xl) 0 var(--sp-sm); }
 .docs-content h2:first-child, .docs-content > div > h2:first-child { margin-top: var(--sp-sm); }
@@ -874,11 +874,11 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 .docs-pre {
   margin: 0 0 var(--sp-md); padding: var(--sp-md) var(--sp-lg); overflow-x: auto;
   font-family: var(--mono); border-radius: var(--radius-sm);
-  background: #{$gfd-ed-bg}; border: 1px solid #{$gfd-ed-border};
+  background: #{$doc-ed-bg}; border: 1px solid #{$doc-ed-border};
 }
-.docs-pre code { background: transparent; border: 0; padding: 0; font-size: 12.5px; line-height: 1.6; color: #{$gfd-ed-text}; }
-:root[data-theme="dark"] .docs-pre { background: #{$gfd-ed-bg-dark}; border-color: #{$gfd-ed-border-dark}; }
-:root[data-theme="dark"] .docs-pre code { color: #{$gfd-ed-text-dark}; }
+.docs-pre code { background: transparent; border: 0; padding: 0; font-size: 12.5px; line-height: 1.6; color: #{$doc-ed-text}; }
+:root[data-theme="dark"] .docs-pre { background: #{$doc-ed-bg-dark}; border-color: #{$doc-ed-border-dark}; }
+:root[data-theme="dark"] .docs-pre code { color: #{$doc-ed-text-dark}; }
 
 // Copy-button scaffolding, injected around each code block at page mount (see
 // DocsUiService.setupCodeCopyButtons). The wrapper carries the <pre>'s old bottom margin so
@@ -903,7 +903,7 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 .docs-pre-wrap:hover .docs-copy-btn,
 .docs-copy-btn:focus-visible { opacity: 1; }
 .docs-copy-btn:hover { color: var(--text); background: var(--accent-soft); }
-.docs-copy-btn:focus-visible { @include gfd-focus-ring; background: var(--accent-soft); }
+.docs-copy-btn:focus-visible { @include doc-focus-ring; background: var(--accent-soft); }
 .docs-copy-btn.copied { opacity: 1; color: var(--accent); background: var(--accent-soft); }
 // Touch devices have no hover to reveal it, so it just stays visible there.
 @media (hover: none) {
@@ -914,11 +914,11 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 .c-num { color: var(--ed-num); }
 .c-com { color: var(--ed-com); font-style: italic; }
 .c-fn  { color: var(--ed-fn); }
-:root[data-theme="dark"] .docs-content .c-kw  { color: #{$gfd-ed-kw-dark}; }
-:root[data-theme="dark"] .docs-content .c-str { color: #{$gfd-ed-str-dark}; }
-:root[data-theme="dark"] .docs-content .c-num { color: #{$gfd-ed-num-dark}; }
-:root[data-theme="dark"] .docs-content .c-com { color: #{$gfd-ed-com-dark}; }
-:root[data-theme="dark"] .docs-content .c-fn  { color: #{$gfd-ed-fn-dark}; }
+:root[data-theme="dark"] .docs-content .c-kw  { color: #{$doc-ed-kw-dark}; }
+:root[data-theme="dark"] .docs-content .c-str { color: #{$doc-ed-str-dark}; }
+:root[data-theme="dark"] .docs-content .c-num { color: #{$doc-ed-num-dark}; }
+:root[data-theme="dark"] .docs-content .c-com { color: #{$doc-ed-com-dark}; }
+:root[data-theme="dark"] .docs-content .c-fn  { color: #{$doc-ed-fn-dark}; }
 
 .docs-badge {
   display: inline-flex; align-items: center;
@@ -945,7 +945,7 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
   padding: var(--sp-md); font: inherit; cursor: pointer; transition: border-color .12s, box-shadow .12s;
 }
 .docs-hub-tile:hover { border-color: var(--accent-border); box-shadow: var(--shadow); }
-.docs-hub-tile:focus-visible { @include gfd-focus-ring; border-color: var(--accent); }
+.docs-hub-tile:focus-visible { @include doc-focus-ring; border-color: var(--accent); }
 .docs-hub-tile .ic { display: block; width: 15px; height: 15px; margin-bottom: 2px; color: var(--accent); }
 .docs-hub-tile-alt .ic { color: var(--purple); }
 .docs-hub-tile.ghost .ic { color: var(--faint); }

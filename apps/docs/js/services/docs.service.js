@@ -4,7 +4,7 @@
 
    The documentation content, pre-parsed into groups / pages / sections of HTML with stable
    anchor ids (id="docs-<slug>"). The app renders these directly. */
-angular.module('glidefastDocs').factory('DocsService', function () {
+angular.module('docsApp').factory('DocsService', function () {
   'use strict';
 
   var DOC = {
