@@ -91,11 +91,11 @@
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ng-bind-html="c.icon('grid')"></svg><span>RACI</span></button>
                 <button type="button" class="vtab" id="dm-tab-reference" role="tab"
                   aria-selected="{{c.view === 'reference'}}" aria-controls="dm-panel-reference"
-                  aria-label="Reference" data-tip="Reference"
+                  aria-label="Appendix" data-tip="Appendix"
                   tabindex="{{c.view === 'reference' ? 0 : -1}}"
                   ng-class="{on: c.view === 'reference'}"
                   ng-click="c.setView('reference')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('book')"></svg><span>Reference</span></button>
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ng-bind-html="c.icon('book')"></svg><span>Appendix</span></button>
                 <button type="button" class="vtab" id="dm-tab-whatsnew" role="tab" ng-if="c.anyUnread()"
                   aria-selected="{{c.view === 'whatsnew'}}" aria-controls="dm-panel-whatsnew"
                   aria-label="What's New" data-tip="What's New"
@@ -125,7 +125,7 @@
               <p class="pg-sub">{{c.pageSub()}}</p>
             </div>
             <div class="pagehdr-controls"
-              ng-if="(c.view === 'methodology' || c.view === 'raci') && (c.showMethodologySwitch() || c.showStructureEdit())">
+              ng-if="((c.view === 'methodology' || c.view === 'raci') && (c.showMethodologySwitch() || c.showStructureEdit())) || c.showReferenceEdit()">
               <div class="methodology-switch" ng-if="c.showMethodologySwitch()">
                 <button type="button" class="methodology-tab" ng-class="{on: methodology.id === c.methodologyId}"
                   ng-repeat="methodology in c.methodologies track by methodology.id" ng-click="c.switchMethodology(methodology.id)">{{methodology.name}}</button>
@@ -137,6 +137,14 @@
                 data-tip="Edit structure"
                 aria-label="Edit structure"
                 aria-pressed="{{c.structureEditMode}}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('pencil')"></svg>
+              </button>
+              <button type="button" class="struct-icon-btn" ng-if="c.showReferenceEdit()"
+                ng-class="{on: c.referenceEditMode}" ng-click="c.toggleReferenceEdit()"
+                data-tip="Edit appendix"
+                aria-label="Edit appendix"
+                aria-pressed="{{c.referenceEditMode}}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                   stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('pencil')"></svg>
               </button>

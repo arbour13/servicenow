@@ -104,10 +104,17 @@ $gfd-ed-md-caret-dark: #e6e9ef !default;
 // The three columns, and the gap between them. Real variables rather than literals scattered
 // through the rules below, because the shared measure is DERIVED from them - see
 // $gfd-content-measure.
-$gfd-rail-width: 240px !default;
+// The left rail is sized to its own TEXT, not to a round number. Its items are short and never
+// wrap, so a wider box just parks dead space between the nav and the prose - at 240px the widest
+// item ("Work with Data Efficiently", 157px) left 83px of slack, which read as a 107px gutter on
+// the left against 24px on the right, where the "on this page" items DO wrap and fill their box.
+// 190px keeps ~17px of headroom over that widest item so a font fallback can't force a wrap.
+$gfd-rail-width: 190px !default;
 $gfd-reading-width: 940px !default;
 $gfd-toc-width: 200px !default;
-$gfd-column-gap: 24px !default; // matches --sp-xxl; a SCSS value so the sums below can use it
+// 40px: wide enough that the reading column reads as separated from both rails rather than merely
+// adjacent to them, now that the left rail no longer supplies separation by being oversized.
+$gfd-column-gap: 40px !default;
 
 // The ONE content measure every row on the page shares - the top row (.page-title) and the
 // three-column .docs-layout both centre inside it, so their left and right edges line up. Defined
@@ -139,10 +146,23 @@ $gfd-content-measure-editing: 1500px !default;
 // re-check this if either one's padding or font sizes change. The JS counterpart
 // (DocsUiService.scrollTo's landing offset) deliberately MEASURES it at runtime rather than
 // duplicating the number, so only the rails' offset depends on this staying accurate.
-$gfd-sticky-app-header: 100px !default;
-// The rails get a little breathing room below it: they sit BESIDE the content rather than stacked
-// above it, so a gap there reads as margin, not as a leak.
-$gfd-sticky-rail-top: $gfd-sticky-app-header + 16px !default;
+// FALLBACK ONLY - the real value is measured at runtime and published as --gfd-chrome-height (see
+// DocsUiService.setupChromeHeightTracking). This covers the frames before that first runs; a stale
+// number here costs a few pixels of drift for one frame instead of permanently.
+$gfd-sticky-app-header: 108px !default;
+// The gap between the chrome and the content below it - .docs-tabs' bottom margin, which collapses
+// through .docs-chrome (it has no bottom padding or border) and so becomes the space the layout
+// starts after. Sized off the Claude-docs reference, where the tab rule and the first line of
+// content sit noticeably further apart than the rows inside the chrome do - it's the seam between
+// navigation and reading, so it gets the biggest gap on the page.
+$gfd-chrome-gap: 40px !default;
+// Where the rails pin. This MUST equal their resting offset (chrome height + $gfd-chrome-gap):
+// any difference between where a sticky element rests and where it sticks is distance it visibly
+// travels before catching. It was once hardcoded to +16px against a resting +24px, so both rails
+// slid 8px on the first flick of the wheel - subtle, but exactly what reads as jank. Built from the
+// MEASURED chrome height rather than a literal, so it cannot drift again when zoom, a font
+// fallback, or a change to the header's contents alters that height.
+$gfd-sticky-rail-top: calc(var(--gfd-chrome-height, #{$gfd-sticky-app-header}) + #{$gfd-chrome-gap}) !default;
 
 // ---------- Dark palette ----------
 $gfd-bg-dark: #10131a !default;
@@ -425,9 +445,13 @@ input::placeholder { color: var(--faint); }
 
 // Doc-set tabs. The bottom border runs the full measure and the active tab's own thicker mark sits
 // on top of it, so the row reads as one rule with the current set notched into it.
+// Spacing matched to the Claude-docs reference: tabs sit their own clear step below the title row
+// rather than crowding it, and the labels are spaced wide enough to read as separate destinations
+// instead of one run of text. $gfd-chrome-gap (not a literal) closes the row, so the rails' sticky
+// offset can derive from the same number - see its own comment.
 .docs-tabs {
-  display: flex; gap: var(--sp-lg);
-  margin: var(--sp-lg) 0 var(--sp-xxl);
+  display: flex; gap: var(--sp-xxl);
+  margin: var(--sp-xxl) 0 $gfd-chrome-gap;
   border-bottom: 1px solid var(--border);
 }
 .docs-tab {

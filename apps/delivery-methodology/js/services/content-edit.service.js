@@ -158,7 +158,7 @@ angular.module('deliveryMethodology').factory('ContentEditService', [
       return;
     }
     if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
-      MessagingService.toast('Finish reference edit first');
+      MessagingService.toast('Finish appendix edit first');
       return;
     }
     var location = AppStateService.getLocation();

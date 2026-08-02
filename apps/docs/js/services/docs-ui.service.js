@@ -129,6 +129,31 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
     if (onDone) { onDone(); }
   }
 
+  // Publishes the sticky chrome's REAL height as a custom property the rails' own `top` is built
+  // from (see $gfd-sticky-app-header in app.scss, which survives only as the pre-JS fallback).
+  //
+  // This exists because a hardcoded height is a duplicate of something the browser already knows,
+  // and the two only have to disagree by a pixel for both rails to visibly slide before catching:
+  // a sticky element travels exactly the difference between where it RESTS and where it STICKS.
+  // The literal was measured at one width, one zoom level, with one font actually loaded - none of
+  // which is guaranteed on someone else's screen. Measuring removes the whole class of bug rather
+  // than re-tuning the number each time the header's contents change.
+  // Re-run on resize because the chrome reflows (the search trigger sheds its label under 560px,
+  // and the row can wrap), which changes its height.
+  var chromeResizeHandler = null;
+  function publishChromeHeight() {
+    var chrome = document.querySelector('.docs-chrome');
+    var pane = document.querySelector('.docs-pane');
+    if (!chrome || !pane) { return; }
+    pane.style.setProperty('--gfd-chrome-height', chrome.getBoundingClientRect().height + 'px');
+  }
+  function setupChromeHeightTracking() {
+    publishChromeHeight();
+    if (chromeResizeHandler) { window.removeEventListener('resize', chromeResizeHandler); }
+    chromeResizeHandler = publishChromeHeight;
+    window.addEventListener('resize', chromeResizeHandler, { passive: true });
+  }
+
   // Scrolls to section `id` on the CURRENTLY MOUNTED page (the caller has already switched pages,
   // if needed, before calling this). `enteringFresh` (arriving from another mode, not already
   // browsing this page) spotlights JUST the target section once the jump lands - onFocusChange(id)
@@ -574,6 +599,7 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
     setupHashRouting: setupHashRouting,
     copyText: copyText,
     setupCodeCopyButtons: setupCodeCopyButtons,
+    setupChromeHeightTracking: setupChromeHeightTracking,
   };
   return service;
 }]);

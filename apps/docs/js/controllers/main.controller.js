@@ -353,6 +353,11 @@ angular.module('glidefastDocs').controller('MainController', [
     // Bound once for the app's whole lifetime, same as setupScrollSpy above.
     DocsUiService.setupDocsLinkClicks(function (pageId, sectionId) { vm.openPage(pageId, sectionId); });
 
+    // Publishes the sticky chrome's measured height for the rails' sticky offset to build on - see
+    // the function's own comment for why that is measured rather than hardcoded. Runs once here and
+    // then on every resize; a $timeout so the chrome has actually been laid out first.
+    $timeout(function () { DocsUiService.setupChromeHeightTracking(); });
+
     // ⌘K/Ctrl+K from anywhere opens the palette (even mid-edit - navigating from a result then
     // discards unsaved editor text exactly like clicking a rail link mid-edit already does).
     // Bound once, same as the link-click delegation above.

@@ -79,10 +79,18 @@ angular.module('deliveryMethodology').factory('ReferenceEditService', [
     notify();
   }
 
+  function toggleReferenceEdit() {
+    if (state.referenceEditMode) {
+      cancelReferenceEdit();
+      return;
+    }
+    enterReferenceEdit();
+  }
+
   function cancelReferenceEdit() {
     state.referenceSnapshot = null;
     state.referenceEditMode = false;
-    MessagingService.toast('Reference edit cancelled — changes reverted');
+    MessagingService.toast('Appendix edit cancelled — changes reverted');
     notify();
   }
 
@@ -98,7 +106,7 @@ angular.module('deliveryMethodology').factory('ReferenceEditService', [
     state.referenceEditMode = false;
     AppStateService.setReferenceSections(nextSections);
     AppStateService.persistMethodologies().then(function () {
-      MessagingService.toast('Reference saved');
+      MessagingService.toast('Appendix saved');
       notify();
     }, function () {
       state.referenceEditMode = true;
@@ -108,29 +116,34 @@ angular.module('deliveryMethodology').factory('ReferenceEditService', [
   }
 
   function renameSection(section) {
-    if (!section || !String(section.title || section.name || '').trim()) {
-      section.title = 'Untitled section';
-      section.name = section.title;
-    } else {
-      section.title = String(section.title || section.name).trim();
-      section.name = section.title;
+    if (!section) {
+      return;
     }
+    var title = String(section.title || section.name || '').trim();
+    if (!title) {
+      section.title = 'Untitled section';
+    } else {
+      section.title = title;
+    }
+    section.name = section.title;
     notify();
   }
 
   function addSection() {
     if (!state.referenceEditMode || !state.referenceSnapshot) {
-      return;
+      return null;
     }
     var title = 'New section';
     var key = uniqueKey(slugify(title), state.referenceSnapshot);
-    state.referenceSnapshot.push({
+    var section = {
       key: key,
       title: title,
       name: title,
       body: ''
-    });
+    };
+    state.referenceSnapshot.push(section);
     notify();
+    return section;
   }
 
   function deleteSection(section) {
@@ -139,7 +152,7 @@ angular.module('deliveryMethodology').factory('ReferenceEditService', [
     }
     MessagingService.confirm({
       title: 'Remove reference section?',
-      body: 'Remove “' + (section.title || section.name) + '” from the appendix? Cancel reference edit to undo.',
+      body: 'Remove “' + (section.title || section.name) + '” from the appendix? Cancel appendix edit to undo.',
       ok: 'Remove'
     }).then(function (accepted) {
       if (!accepted) {
@@ -173,6 +186,7 @@ angular.module('deliveryMethodology').factory('ReferenceEditService', [
     readState: readState,
     sectionsSource: sectionsSource,
     enterReferenceEdit: enterReferenceEdit,
+    toggleReferenceEdit: toggleReferenceEdit,
     cancelReferenceEdit: cancelReferenceEdit,
     saveReferenceEdit: saveReferenceEdit,
     renameSection: renameSection,

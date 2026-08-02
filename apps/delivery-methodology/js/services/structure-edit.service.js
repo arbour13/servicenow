@@ -121,7 +121,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       return;
     }
     if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
-      MessagingService.toast('Finish reference edit first');
+      MessagingService.toast('Finish appendix edit first');
       return;
     }
     if (state.structureEditMode) {
@@ -248,6 +248,10 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       MessagingService.toast('Finish editing first');
       return;
     }
+    if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
+      MessagingService.toast('Finish appendix edit first');
+      return;
+    }
     if (!state.structureEditMode) {
       enterStructureEdit();
     }
@@ -291,6 +295,10 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     }
     if (hooks.isContentEditing && hooks.isContentEditing()) {
       MessagingService.toast('Finish editing first');
+      return;
+    }
+    if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
+      MessagingService.toast('Finish appendix edit first');
       return;
     }
     if (!methodology) {

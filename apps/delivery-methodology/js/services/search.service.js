@@ -221,7 +221,7 @@ angular.module('deliveryMethodology').factory('SearchService', [
       { kind: 'jobaid', label: 'Job aids', results: findJobAidResults(methodologies, query) },
       { kind: 'whatsnew', label: 'What’s New', results: findWhatsNewResults(methodologies, query) },
       { kind: 'glossary', label: 'Glossary', results: findGlossaryResults(context && context.jargon, query) },
-      { kind: 'reference', label: 'Reference', results: findReferenceResults(context && context.referenceSections, query) }
+      { kind: 'reference', label: 'Appendix', results: findReferenceResults(context && context.referenceSections, query) }
     ];
 
     searchResultGroups = groups.filter(function (group) {

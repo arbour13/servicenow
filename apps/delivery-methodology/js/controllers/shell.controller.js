@@ -151,6 +151,9 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       && c.canEdit
       && c.methodologies.length >= 1;
   };
+  c.showReferenceEdit = function () {
+    return c.view === 'reference' && c.canEdit;
+  };
   c.pageTitle = function () {
     if (c.view === 'raci') {
       return 'RACI';
@@ -159,7 +162,7 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       return "What's New";
     }
     if (c.view === 'reference') {
-      return 'Reference';
+      return 'Appendix';
     }
     return 'Methodology';
   };
@@ -175,7 +178,7 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       return 'Every change since you last looked - detected automatically, and cleared as you open the sub-phase it belongs to.';
     }
     if (c.view === 'reference') {
-      return 'How to read a RACI, escalation guidance, and every job aid across the methodology in one place.';
+      return 'Using RACI, glossary, challenges, job aids, and lifecycle guidance for the methodology.';
     }
     var methodology = currentMethodology();
     if (methodology && methodology.summary) {
@@ -243,6 +246,9 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   };
   c.toggleStructureEdit = function () {
     StructureEditService.toggleStructureEdit();
+  };
+  c.toggleReferenceEdit = function () {
+    ReferenceEditService.toggleReferenceEdit();
   };
   c.jumpTo = function (subPhaseId, methodologyId, elementKey) {
     NavigationService.jumpTo(subPhaseId, methodologyId, elementKey);

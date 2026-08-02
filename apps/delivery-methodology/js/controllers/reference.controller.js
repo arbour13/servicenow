@@ -1,5 +1,5 @@
-/* Delivery Methodology "Reference" widget: appendix left nav, prose sections, glossary CRUD,
-   and the cross-methodology job aids index. Visible only when AppState.view === 'reference'. */
+/* Delivery Methodology "Appendix" widget: browse left nav + prose/glossary/job-aids panels;
+   appendix edit is a structure-style list of reference_section rows only. */
 angular.module('deliveryMethodology').controller('DmReferenceController', [
   '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'ReferenceService',
   'JargonService', 'TipService', 'IconService', 'UrlPolicyService', 'SearchService', 'RaciGridService',
@@ -11,14 +11,6 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
   ) {
   'use strict';
   var c = this;
-
-  var SECTION_NAV_ORDER = [
-    'raci',
-    'challenges',
-    'consultant-lifecycle',
-    'em-lifecycle',
-    'escalation'
-  ];
 
   c.searchOpen = SearchService.isOpen;
   AppStateService.bindActiveView(c, 'reference');
@@ -57,13 +49,6 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
   function jobTitleById(jobTitleId) {
     return MethodologyDomainService.jobTitleById(c.jobTitles, jobTitleId);
   }
-  function raciGridContext() {
-    return {
-      methodology: MethodologyDomainService.currentMethodology(c.methodologies, c.methodologyId),
-      sortJobTitleIds: sortJobTitleIds,
-      hasContent: MethodologyDomainService.hasContent
-    };
-  }
 
   function glossaryEntries(jargon) {
     return Object.keys(jargon || {}).sort(function (left, right) {
@@ -77,58 +62,75 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
   }
 
   function buildNavItems(sections) {
-    var byKey = {};
     var items = [];
-    var index = 0;
+    var list = sections || [];
+    var insertedGlossary = false;
+    var insertedJobAids = false;
 
-    (sections || []).forEach(function (section) {
-      if (section && section.key) {
-        byKey[section.key] = section;
+    list.forEach(function (section) {
+      if (!section || !section.key) {
+        return;
       }
-    });
-
-    items.push({
-      id: 'tasks-by-role',
-      label: 'Tasks by Role',
-      kind: 'jump'
-    });
-
-    SECTION_NAV_ORDER.forEach(function (key) {
-      if (byKey[key]) {
-        items.push({
-          id: 'section:' + key,
-          label: byKey[key].title || byKey[key].name || key,
-          kind: 'section',
-          key: key
-        });
-        delete byKey[key];
-      }
-      if (key === 'raci') {
+      items.push({
+        id: 'section:' + section.key,
+        label: section.title || section.name || section.key,
+        kind: 'section',
+        key: section.key
+      });
+      if (section.key === 'raci') {
         items.push({
           id: 'glossary',
           label: 'Glossary',
           kind: 'panel'
         });
+        insertedGlossary = true;
       }
-      if (key === 'challenges') {
+      if (section.key === 'challenges') {
         items.push({
           id: 'job-aids',
           label: 'Assets & Job Aids',
           kind: 'panel'
         });
+        insertedJobAids = true;
       }
     });
 
-    Object.keys(byKey).sort().forEach(function (key) {
+    if (!insertedGlossary) {
       items.push({
-        id: 'section:' + key,
-        label: byKey[key].title || byKey[key].name || key,
-        kind: 'section',
-        key: key
+        id: 'glossary',
+        label: 'Glossary',
+        kind: 'panel'
       });
-    });
+    }
+    if (!insertedJobAids) {
+      items.push({
+        id: 'job-aids',
+        label: 'Assets & Job Aids',
+        kind: 'panel'
+      });
+    }
 
     return items;
+  }
+
+  function firstSectionPanelId(sections) {
+    var first = (sections || []).find(function (section) {
+      return section && section.key;
+    });
+    if (first) {
+      return 'section:' + first.key;
+    }
+    return null;
+  }
+
+  function firstBrowsePanelId(navItems) {
+    var found = (navItems || []).find(function (item) {
+      return item.kind === 'section' || item.kind === 'panel';
+    });
+    if (found) {
+      return found.id;
+    }
+    return 'glossary';
   }
 
   function sectionByKey(key) {
@@ -138,19 +140,33 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     });
   }
 
-  function syncNav() {
-    c.navItems = buildNavItems(ReferenceEditService.sectionsSource());
-    if (!c.navItems.some(function (item) {
-      return item.id === c.referencePanelId;
-    })) {
-      if (c.navItems.length) {
-        c.referencePanelId = c.navItems[0].id;
-      }
-    }
+  function syncActiveSection() {
     c.activeSection = null;
     if (c.referencePanelId.indexOf('section:') === 0) {
       c.activeSection = sectionByKey(c.referencePanelId.slice(8));
     }
+  }
+
+  function syncNav() {
+    var sections = ReferenceEditService.sectionsSource();
+    c.navItems = buildNavItems(sections);
+
+    if (c.referenceEditMode) {
+      if (!c.activeSection || !sectionByKey(c.activeSection.key)) {
+        var editPanelId = firstSectionPanelId(sections);
+        if (editPanelId) {
+          c.referencePanelId = editPanelId;
+        }
+      } else {
+        c.referencePanelId = 'section:' + c.activeSection.key;
+      }
+    } else if (!c.navItems.some(function (item) {
+      return item.id === c.referencePanelId;
+    })) {
+      c.referencePanelId = firstBrowsePanelId(c.navItems);
+    }
+
+    syncActiveSection();
   }
 
   function syncAppState() {
@@ -197,18 +213,14 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
 
   function blockIfBusy() {
     if (ReferenceEditService.isEditing()) {
-      MessagingService.toast('Finish reference edit first');
+      MessagingService.toast('Finish appendix edit first');
       return true;
     }
     return otherEditOpen();
   }
 
   c.selectReferencePanel = function (item) {
-    if (!item) {
-      return;
-    }
-    if (item.kind === 'jump') {
-      c.openTasksByRole();
+    if (!item || c.referenceEditMode) {
       return;
     }
     if (c.referencePanelId === item.id) {
@@ -216,19 +228,21 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     }
     c.referencePanelId = item.id;
     c.cancelEditJargon();
-    syncNav();
+    syncActiveSection();
   };
 
-  c.openTasksByRole = function () {
-    if (blockIfBusy()) {
+  c.selectEditSection = function (section) {
+    if (!section || !section.key) {
       return;
     }
-    NavigationService.setView('raci');
-    RaciGridService.setMode('byrole', raciGridContext());
-    AppStateService.notify();
+    c.referencePanelId = 'section:' + section.key;
+    syncActiveSection();
   };
 
   c.onReferenceNavKeydown = function ($event) {
+    if (c.referenceEditMode) {
+      return;
+    }
     var key = $event.key;
     if (key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Home' && key !== 'End') {
       return;
@@ -261,10 +275,6 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     links[next].click();
   };
 
-  c.enterReferenceEdit = function () {
-    ReferenceEditService.enterReferenceEdit();
-    syncAll();
-  };
   c.cancelReferenceEdit = function () {
     ReferenceEditService.cancelReferenceEdit();
     syncAll();
@@ -274,7 +284,10 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     syncAll();
   };
   c.addReferenceSection = function () {
-    ReferenceEditService.addSection();
+    var section = ReferenceEditService.addSection();
+    if (section) {
+      c.referencePanelId = 'section:' + section.key;
+    }
     syncAll();
   };
   c.moveReferenceSection = function (sectionKey, direction) {
@@ -288,7 +301,11 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     ReferenceEditService.moveSection(index, direction);
     syncAll();
   };
-  c.deleteReferenceSection = function (section) {
+  c.deleteReferenceSectionByKey = function (sectionKey) {
+    var section = sectionByKey(sectionKey);
+    if (!section) {
+      return;
+    }
     ReferenceEditService.deleteSection(section);
     syncAll();
   };
