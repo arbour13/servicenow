@@ -56,6 +56,10 @@
          layout bug rather than a design choice. Editing widens the wrapper (not the layout alone),
          so the two stay locked together in that mode too. -->
     <div class="docs-shell" ng-class="{'docs-shell-editing': vm.docsEditMode}">
+    <!-- The sticky chrome: the title/controls row plus the doc-set tabs, pinned together as one
+         block so the tabs can't slide out from under the row above them. Everything else - the page
+         title, its Copy/Edit actions, the prose - scrolls underneath. -->
+    <div class="docs-chrome">
     <!-- No decorative icon ahead of the title: it indented the text ~36px, so "Docs" no longer
          started on the same left margin as the rail and the prose below it. Alignment to the shared
          measure is worth more here than the ornament, especially in a portal that supplies its own
@@ -81,6 +85,17 @@
           <svg ng-if="vm.theme !== 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
       </div>
+    </div>
+
+    <!-- Doc-set tabs - the top level of the whole tree, above groups. Exactly one set exists today
+         ("Standards", moved here out of the left rail, which is why the rail now starts straight in
+         on its groups). Deliberately a literal button rather than an ng-repeat over a one-element
+         array: a second set isn't just another row of data, it needs real routing (which set is
+         open, what the rail shows, where a deep link points), so faking the loop now would only
+         disguise how much is still missing. Add the second tab when the second set is real. -->
+    <nav class="docs-tabs" aria-label="Documentation sets">
+      <button type="button" class="docs-tab active" ng-click="vm.showDocsHome()" aria-current="page">Standards</button>
+    </nav>
     </div>
 
     <!-- The docs (see DocsService, generated from pages/**/*.md). Three columns on wide screens,
@@ -110,12 +125,10 @@
              letting the outer aside clip it (overflow:hidden) makes it read as sliding out of the
              way instead. See .docs-layout-editing in app.scss. -->
         <div class="docs-rail-inner">
-        <!-- "Standards" rather than "Home": this is the doc SET's own root, and the intent is for
-             it to become one tab among several once a second set exists (see the deferred
-             header-tabs work) - naming it for the set now means that later change is a layout
-             move, not a rename. -->
-        <button type="button" class="docs-rail-home" ng-class="{active: vm.docsView === 'home'}" ng-click="vm.showDocsHome()">Standards</button>
-        <!-- Groups are structural labels, not navigable pages of their own - a group heading has no
+        <!-- No "Standards" root here any more - it moved up into the doc-set tabs (see .docs-tabs
+             above), which is the layout move its own comment always anticipated. The rail is now
+             purely the groups and pages WITHIN the open set.
+             Groups are structural labels, not navigable pages of their own - a group heading has no
              ng-click. Each page is now a single flat row (no expand chevron, no nested section
              list - those live in .docs-toc on the right now) - vm.docsPageHeadingActive lights up
              whichever page is currently open, regardless of which of ITS sections the reader has
@@ -173,15 +186,10 @@
              single-document design where the whole doc rendered at once and visibility alone
              decided what showed. -->
         <div class="card" ng-if="vm.docsView === 'page'">
-          <!-- docs-page-head, not just card-head: this one is ALSO sticky (see app.scss) so the
-               page ACTIONS stay reachable however far down you've read - deciding to fix something
-               mid-page shouldn't mean scrolling back to the top for Edit. The title rides along
-               unpinned: it fades out once the header sticks (.is-stuck, see app.scss), since the
-               left rail's active item and the browser tab already say which page you're on, and a
-               permanently-pinned restatement of that is chrome sitting on top of content. It keeps
-               its LAYOUT space while faded so the row never changes height mid-scroll.
-               The Home card-head is deliberately not sticky at all - it's an index you scan, not a
-               document you read down. -->
+          <!-- docs-page-head, not just card-head: kept as its own class purely so this header can
+               be styled apart from the Home one. It is NOT sticky - it belongs to the content and
+               scrolls away with it. Only the chrome stays put (app header + both rails); see
+               $gfd-sticky-app-header in app.scss. -->
           <div class="card-head docs-page-head">
             <h2>{{vm.activePage.title}}</h2>
             <!-- Two plain buttons, not one split button - Copy and Edit are both primary, equally

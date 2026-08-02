@@ -11,13 +11,13 @@
 angular.module('deliveryMethodology').controller('DmShellController', [
   '$rootScope', '$scope', 'DataService', 'ThemeService', 'MessagingService', 'TipService',
   'AppStateService', 'MethodologyDomainService', 'NavigationService', 'SearchService',
-  'WhatsNewService', 'ReferenceService', 'RaciGridService', 'ContentEditService', 'StructureEditService',
+  'WhatsNewService', 'ReferenceService', 'RaciGridService',   'ContentEditService', 'StructureEditService', 'ReferenceEditService',
   'IconService', 'MotionService', 'LiveSyncService',
   function (
     $rootScope, $scope, DataService, ThemeService, MessagingService, TipService,
     AppStateService, MethodologyDomainService, NavigationService, SearchService,
     WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService,
-    IconService, MotionService, LiveSyncService
+    ReferenceEditService, IconService, MotionService, LiveSyncService
   ) {
   'use strict';
   var c = this;
@@ -121,6 +121,7 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   }
   function syncEdit() {
     c.editMode = ContentEditService.readState().editMode;
+    c.referenceEditMode = ReferenceEditService.readState().referenceEditMode;
   }
   function syncSearch() {
     var state = SearchService.readState();
@@ -322,7 +323,8 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       referenceSections: AppStateService.getReferenceSections()
     }, {
       isEditing: function () {
-        return ContentEditService.isEditing() || StructureEditService.isEditing();
+        return ContentEditService.isEditing() || StructureEditService.isEditing()
+          || ReferenceEditService.isEditing();
       }
     });
     syncSearch();
@@ -333,6 +335,7 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       return AppStateService.getCanEdit();
     },
     isStructureEditing: StructureEditService.isEditing,
+    isReferenceEditing: ReferenceEditService.isEditing,
     afterSaveSuccess: function (entries) {
       AppStateService.setJustRead(entries);
       AppStateService.refreshLocation();
@@ -346,14 +349,24 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       return AppStateService.getCanEdit();
     },
     isContentEditing: ContentEditService.isEditing,
+    isReferenceEditing: ReferenceEditService.isEditing,
     enterContentEdit: function () {
       ContentEditService.enterEdit();
     }
   });
 
+  ReferenceEditService.bind({
+    canEdit: function () {
+      return AppStateService.getCanEdit();
+    },
+    isContentEditing: ContentEditService.isEditing,
+    isStructureEditing: StructureEditService.isEditing
+  });
+
   NavigationService.bind({
     isEditing: function () {
-      return ContentEditService.isEditing() || StructureEditService.isEditing();
+      return ContentEditService.isEditing() || StructureEditService.isEditing()
+        || ReferenceEditService.isEditing();
     },
     syncSearch: syncSearch,
     afterOpenSubPhase: function () {

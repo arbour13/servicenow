@@ -122,6 +122,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     } else {
       state.referenceSections = [];
     }
+    DataService.setCachedReferenceSections(state.referenceSections);
     notify();
   }
   function getMethodologyId() {

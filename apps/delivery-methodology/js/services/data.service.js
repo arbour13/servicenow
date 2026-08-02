@@ -40,12 +40,13 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
     }
   }
 
-  function storeLocal(methodologies, seedVersion, jargon) {
+  function storeLocal(methodologies, seedVersion, jargon, referenceSections) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version: seedVersion,
         methodologies: methodologies,
-        jargon: jargon || {}
+        jargon: jargon || {},
+        referenceSections: referenceSections || []
       }));
     } catch (storeError) {
       /* storage unavailable/full - edits still work for this session */
@@ -57,6 +58,14 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
       cachedJargon = jargon;
     } else {
       cachedJargon = {};
+    }
+  }
+
+  function setCachedReferenceSections(referenceSections) {
+    if (referenceSections) {
+      cachedReferenceSections = referenceSections;
+    } else {
+      cachedReferenceSections = [];
     }
   }
 
@@ -179,6 +188,10 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
       payload.jargon = deepClone(stored.jargon);
     }
 
+    if (stored && stored.referenceSections && stored.referenceSections.length) {
+      payload.referenceSections = deepClone(stored.referenceSections);
+    }
+
     cacheLookups(payload);
     return payload;
   }
@@ -256,13 +269,14 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
       });
     },
     setCachedJargon: setCachedJargon,
+    setCachedReferenceSections: setCachedReferenceSections,
     saveData: function (methodologies) {
       UrlPolicyService.normalizeMethodologies(methodologies);
 
       if (!serverApi) {
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
-        storeLocal(methodologies, seedVersion, cachedJargon || {});
+        storeLocal(methodologies, seedVersion, cachedJargon || {}, cachedReferenceSections || []);
         return $q.resolve({
           saved: true
         });
@@ -308,7 +322,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
       if (!serverApi) {
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
-        storeLocal([], seedVersion, {});
+        storeLocal([], seedVersion, {}, []);
         return $q.resolve({
           saved: true
         });
@@ -342,7 +356,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
         var payload = seedPayload();
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
-        storeLocal(payload.methodologies, seedVersion, payload.jargon || {});
+        storeLocal(payload.methodologies, seedVersion, payload.jargon || {}, payload.referenceSections || []);
         cacheLookups(payload);
         return $q.resolve(payload);
       }

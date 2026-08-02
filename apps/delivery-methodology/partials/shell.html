@@ -5,7 +5,7 @@
          widgets[] entry for 'shell' (templateFile, not templatePartial). editing/search-active stay
          on THIS .app (not a per-view one) because pagehdr/views/pagehdr-title/pagehdr-controls -
          the only elements those classes still affect post-split - all live here now. -->
-      <div class="app app--chrome" ng-class="{editing: c.editMode || c.structureEditMode, 'search-active': c.searchOpen()}"
+      <div class="app app--chrome" ng-class="{editing: c.editMode || c.structureEditMode || c.referenceEditMode, 'search-active': c.searchOpen()}"
         ng-mouseover="c.tipMouseOver($event)" ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
         <div class="dm-loading" ng-if="c.loading">Loading…</div>

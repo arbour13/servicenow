@@ -201,7 +201,6 @@ angular.module('glidefastDocs').controller('MainController', [
       $timeout(function () {
         DocsUiService.setupScrollSpy(function (id) { if (vm.docsView === 'page') { vm.activeSectionId = id; } });
         DocsUiService.setupCodeCopyButtons();
-        DocsUiService.setupStickyHeadState();
       });
     };
     // Rail's pinned "Home" item - the reciprocal of openPage: hides any open page, shows the hub.
@@ -214,9 +213,7 @@ angular.module('glidefastDocs').controller('MainController', [
       vm.docsPrevPage = null;
       vm.docsNextPage = null;
       DocsUiService.writeDocsHash(null, null);
-      // No page mounted on Home - nothing left for either observer to watch.
-      DocsUiService.teardownScrollSpy();
-      DocsUiService.teardownStickyHeadState();
+      DocsUiService.teardownScrollSpy(); // no page mounted on Home - nothing left for it to watch
       DocsUiService.scrollToTop();
     };
 

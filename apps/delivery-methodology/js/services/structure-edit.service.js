@@ -120,6 +120,10 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
       MessagingService.toast('Finish editing first');
       return;
     }
+    if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
+      MessagingService.toast('Finish reference edit first');
+      return;
+    }
     if (state.structureEditMode) {
       cancelStructureEdit();
       return;

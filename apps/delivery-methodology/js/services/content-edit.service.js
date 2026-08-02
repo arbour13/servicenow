@@ -157,6 +157,10 @@ angular.module('deliveryMethodology').factory('ContentEditService', [
     if (hooks.isStructureEditing && hooks.isStructureEditing()) {
       return;
     }
+    if (hooks.isReferenceEditing && hooks.isReferenceEditing()) {
+      MessagingService.toast('Finish reference edit first');
+      return;
+    }
     var location = AppStateService.getLocation();
     if (!location || !location.subPhase) {
       MessagingService.toast('Nothing to edit yet');

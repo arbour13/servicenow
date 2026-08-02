@@ -128,16 +128,21 @@ $gfd-content-measure-no-rails: $gfd-reading-width !default;
 // narrower measure while the editor beside it grew, and the two would visibly disagree.
 $gfd-content-measure-editing: 1500px !default;
 
-// Exactly ONE sticky row now: each open page's own header (.docs-page-head), which carries the
-// Copy page / Edit page actions worth having within reach however far down you have read. The app
-// row above it (.page-title) deliberately scrolls away - its search trigger is redundant with the
-// global ⌘K shortcut, and its theme toggle is a set-once preference, so neither earns permanent
-// viewport space. That is also what Delivery Methodology does (its .pagehdr is not sticky either).
-// The page header therefore pins at the very top of the pane, with nothing stacked above it.
-$gfd-sticky-page-head-top: 0 !default;
-// The rails get breathing room instead: they sit BESIDE the content rather than stacked above it,
-// so a gap there reads as margin, not as a leak.
-$gfd-sticky-rail-top: 16px !default;
+// What stays put while you read: the CHROME - the app header and both navigation rails - and
+// nothing else. The content column scrolls in full underneath it, its page title and Copy/Edit
+// actions included. This is the standard docs-site split (Claude docs works exactly this way):
+// the things that tell you where you ARE and let you go elsewhere stay fixed, while the thing you
+// are actually reading moves.
+//
+// The sticky chrome block's own measured height (.docs-chrome: title row + doc-set tabs) - where
+// the rails have to start. Measured, not derived: both rows size from their own content, so
+// re-check this if either one's padding or font sizes change. The JS counterpart
+// (DocsUiService.scrollTo's landing offset) deliberately MEASURES it at runtime rather than
+// duplicating the number, so only the rails' offset depends on this staying accurate.
+$gfd-sticky-app-header: 100px !default;
+// The rails get a little breathing room below it: they sit BESIDE the content rather than stacked
+// above it, so a gap there reads as margin, not as a leak.
+$gfd-sticky-rail-top: $gfd-sticky-app-header + 16px !default;
 
 // ---------- Dark palette ----------
 $gfd-bg-dark: #10131a !default;
@@ -374,23 +379,9 @@ body {
 // and the head's own text should sit on the same left margin as the prose below it. The bottom
 // border stays: it's the only thing now separating the page title/actions from the content.
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md); padding: 0 0 var(--sp-md); border-bottom: 1px solid var(--border); }
-// An open page's own header, sticky beneath the app header so the page title and its actions stay
-// reachable however far down you've read - the only sticky row on the page now, pinning at the
-// pane's own top edge. The Home card-head deliberately doesn't get this - it's an index you
-// scan, not a document you read down.
-// The padding-top + negative margin-top pair is what keeps content from showing through above it
-// while pinned: the head needs opaque background all the way up to where it sticks, but that gap
-// would otherwise push it down the page when NOT pinned.
-.docs-page-head {
-  position: sticky; top: $gfd-sticky-page-head-top; z-index: 4;
-  background: var(--bg);
-  margin-top: calc(-1 * var(--sp-md)); padding-top: var(--sp-md);
-}
-// Pinned state (toggled by DocsUiService.setupStickyHeadState): the title fades but keeps its layout space (visibility/opacity, never display or
-// height), so the row can't change height mid-scroll and shove the content below it. What's left
-// pinned is the actions row - the part that's actually worth having within reach deep in a page.
-.docs-page-head h2 { transition: opacity .18s ease; }
-.docs-page-head.is-stuck h2 { opacity: 0; pointer-events: none; }
+// An open page's own header is part of the CONTENT - it scrolls away with the prose it belongs to
+// rather than pinning, so Copy page / Edit page are reached by scrolling back up (or ⌘K to jump
+// elsewhere entirely). Only the chrome stays put; see $gfd-sticky-app-header.
 .card-head h2 { margin: 0; font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .card-body { padding: var(--sp-lg) 0 0; }
 .hint { font-size: 11.5px; color: var(--muted); margin: 0 0 var(--sp-md); line-height: 1.5; }
@@ -424,9 +415,35 @@ input::placeholder { color: var(--faint); }
   .docs-shell { transition: none; }
 }
 
-// Deliberately NOT sticky - see the $gfd-sticky-page-head-top comment for why neither control in
-// this row earns permanent viewport space.
-.page-title { display: flex; align-items: flex-start; gap: var(--sp-md); margin: 0 0 var(--sp-xxl); padding-top: var(--sp-xl); }
+// The sticky chrome - title row + doc-set tabs pinned as ONE block, so the tabs can't slide out
+// from under the row above them (two separately-sticky siblings would need hand-maintained offsets
+// that drift the moment either one's height changes). The background covers its own padding-top,
+// or content scrolling underneath shows through the gap above it while pinned.
+.docs-chrome { position: sticky; top: 0; z-index: 5; background: var(--bg); }
+// Margin moved to .docs-tabs below - the title row no longer sits directly above the content.
+.page-title { display: flex; align-items: flex-start; gap: var(--sp-md); padding-top: var(--sp-xl); }
+
+// Doc-set tabs. The bottom border runs the full measure and the active tab's own thicker mark sits
+// on top of it, so the row reads as one rule with the current set notched into it.
+.docs-tabs {
+  display: flex; gap: var(--sp-lg);
+  margin: var(--sp-lg) 0 var(--sp-xxl);
+  border-bottom: 1px solid var(--border);
+}
+.docs-tab {
+  position: relative; padding: 0 2px var(--sp-sm);
+  border: 0; background: transparent; cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--muted);
+  transition: color .12s;
+}
+.docs-tab:hover { color: var(--text); }
+.docs-tab:focus-visible { @include gfd-focus-ring; border-radius: var(--radius-sm); }
+// -1px pulls the mark over the row's own border rather than stacking below it.
+.docs-tab.active { color: var(--text); }
+.docs-tab.active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 2px; background: var(--accent); border-radius: 2px 2px 0 0;
+}
 .page-title-name { font-size: 20px; font-weight: 650; color: var(--text); line-height: 1.1; }
 .page-title-sub { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-top: var(--sp-xxs); }
 // Search + theme, pushed opposite the title (DM's .hdr-search-group). margin-left:auto rather than
@@ -544,15 +561,6 @@ input::placeholder { color: var(--faint); }
 // step larger than they are and shares their exact left edge - no indent, and no active border
 // either: the group titles it aligns with carry no border, and an indicator here would push the
 // text out of alignment with them the moment it's selected.
-.docs-rail-home {
-  display: block; width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer;
-  font: inherit; font-size: 14px; font-weight: 800; color: var(--muted);
-  padding: var(--sp-xs) 0; margin-left: -1px; margin-bottom: var(--sp-lg);
-  transition: color .12s;
-}
-.docs-rail-home:hover { color: var(--text); }
-.docs-rail-home.active { color: var(--accent); }
-.docs-rail-home:focus-visible { @include gfd-focus-ring; background: var(--panel-alt); }
 .docs-rail-band + .docs-rail-band { margin-top: var(--sp-xl); }
 // Not a button (see index.html) - a group is a structural label, not something to navigate to.
 .docs-rail-band-title {

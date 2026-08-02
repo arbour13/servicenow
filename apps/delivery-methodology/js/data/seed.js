@@ -867,37 +867,126 @@
   ];
 
   var JARGON = {
+    'AE': 'Account Executive - the GlideFast sales owner for the commercial relationship and CRM opportunity.',
+    'AVP': 'Area Vice President - regional executive leadership for the account and delivery oversight.',
+    'BPC': 'Business Process Consultant - owns process design, requirements facilitation and workshop readiness.',
+    'CSAT': 'Customer Satisfaction - measured feedback on delivery quality, often collected at milestones and closure.',
+    'EM': 'Engagement Manager - owns delivery, client relationship, scope, schedule and internal coordination.',
+    'GRS': 'GlideFast Remote Services - ongoing remote ServiceNow support and delivery engagements, typically leaner than a full Project implementation.',
+    'GTK': 'Get to Know You - early customer session to introduce the team and set working norms.',
+    'GTKT': 'Get to Know the Team - variant of the introductory customer session focused on team introductions.',
+    'HLD': 'High Level Design - the architectural design document for the solution.',
     'IPKT': 'Internal Project Kickoff Transition - the handoff of a sold engagement from Sales to Delivery.',
+    'IPKT doc': 'Internal Project Kickoff Transition document - the structured handoff artifact from Sales to Delivery.',
+    'RIDAC': 'Risks, Issues, Decisions, Actions, Changes - the living log on the project record for delivery governance.',
+    'ROM': 'Rough Order of Magnitude - an early, approximate estimate of effort or cost.',
     'RTM': 'Requirements Traceability Matrix - maps requirements to stories and tests through delivery.',
     'SOW': 'Statement of Work - the contracted scope, deliverables and terms of the engagement.',
-    'ROM': 'Rough Order of Magnitude - an early, approximate estimate of effort or cost.',
+    'TC': 'Technical Consultant - builds and configures the ServiceNow solution against approved stories.',
     'UAT': 'User Acceptance Testing - customer validation of the built solution against requirements.',
-    'GRS': 'GlideFast Remote Services - ongoing remote ServiceNow support and delivery engagements, typically leaner than a full Project implementation.',
-    'HLD': 'High Level Design - the architectural design document for the solution.'
+    'UIX': 'User Interface Experience - portal and interface design work when UX is in scope.'
   };
 
 
   var REFERENCE_SECTIONS = [
     {
       key: 'raci',
-      title: 'How to use RACI',
+      title: 'Using RACI',
       body: [
+        'Purpose: RACI clarifies who does the work, who owns the outcome, who must be consulted, and who needs to stay informed — so teams move quickly without ambiguity about decisions or handoffs.',
         'Every task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person\'s relationship to the work?',
         'Exactly one A per task. Accountability shouldn\'t be shared - if two people sign off, no one does.',
         'R and A can be the same person (shown together as R A) - they do it and own it.',
         'Every task needs at least an R and an A - someone doing the work, someone owning the result.',
-        'The customer appears in the RACI wherever the engagement requires their input, approval, or participation.'
+        'The customer appears in the RACI wherever the engagement requires their input, approval, or participation.',
+        'Remember: RACI is a collaboration tool, not a permission slip. Consulted means their input is sought before a decision; Informed means they need visibility after. When in doubt, over-communicate early rather than re-litigating accountability later.'
+      ].join('\n\n')
+    },
+    {
+      key: 'challenges',
+      title: 'Challenges',
+      body: [
+        'Delivery engagements fail in predictable ways. Watch for these common pitfalls — and use the methodology tasks and job aids to stay ahead of them.',
+        'Scope creep without a change path — new asks accumulate without rebaselining the SOW, RTM, or project plan. Address it in Plan and Execute with explicit change-order tasks.',
+        'Weak IPKT / sales-to-delivery handoff — the delivery team starts blind. Treat the IPKT and IPKT doc as non-negotiable; capture open questions before customer-facing work.',
+        'Customer availability — workshops and UAT stall when SMEs are unavailable. Surface it early in status, escalate through the EM, and adjust the plan visibly.',
+        'RACI ambiguity — two Accountables or no clear Responsible on a task. Fix it in Initiate; don\'t let it linger into Execute.',
+        'Requirements without acceptance criteria — stories that cannot be tested. Tie every requirement to testable criteria before build accelerates.',
+        'Environment and access delays — instances, integrations, or credentials block the TC. Track as RIDAC items with owners and dates.',
+        'Status without decisions — recurring meetings that report activity but never close actions. Every checkpoint should produce decisions, owners, and dates.',
+        'Testing compressed at the end — UAT becomes a single gate instead of continuous validation. Plan UAT working sessions during Plan, not only at Deliver.',
+        'Silent customer dissatisfaction — issues surface only at closure. Use CSAT touchpoints, executive check-ins, and transparent RAID logs.',
+        'Knowledge transfer as an afterthought — go-live succeeds but adoption fails. Start enablement and training planning during Execute, not after deployment.',
+        'Teams that recognize these patterns early — and escalate through the EM using the Escalation guidance — recover faster than teams that treat each as a one-off surprise.'
+      ].join('\n\n')
+    },
+    {
+      key: 'consultant-lifecycle',
+      title: 'Consultant Lifecycle',
+      body: [
+        'Beyond phase-specific tasks, every consultant on an engagement carries standing duties. These recur daily, weekly, and throughout the engagement.',
+        'Daily: Update timekeeping and progress notes per GlideFast policy. Review assigned stories/tasks and RIDAC items you own. Prepare for any customer sessions that day.',
+        'Daily: Flag blockers to the EM or Architect — don\'t wait for the weekly status meeting.',
+        'Weekly: Participate in internal team sync and customer status as scheduled. Confirm your deliverables for the week match the project plan.',
+        'Weekly: Review open actions from workshops and meetings; close or reassign stale items.',
+        'Throughout: Follow the methodology tasks for your role in each sub-phase — the RACI grid and By Role view summarize your standing responsibilities.',
+        'Throughout: Use job aids linked from tasks for templates, checklists, and knowledge articles — don\'t reinvent standard artifacts.',
+        'Throughout: Raise risks and issues in RIDAC on the project record; keep descriptions factual and actionable.',
+        'Throughout: Model GlideFast delivery standards in customer sessions — prepared, on time, and aligned to the agreed agenda.'
+      ].join('\n\n')
+    },
+    {
+      key: 'em-lifecycle',
+      title: 'EM Lifecycle',
+      body: [
+        'The Engagement Manager owns delivery health end to end. These standing duties apply in every phase — in addition to the EM\'s RACI assignments on individual tasks.',
+        'Daily: Review project health — schedule, scope, budget, RAID, and team utilization. Clear or delegate blockers.',
+        'Daily: Ensure customer communications are timely; nothing important should wait for a standing meeting.',
+        'Weekly: Facilitate or delegate customer status and internal team sync. Publish the status report / status meeting artifacts per Initiate and Execute tasks.',
+        'Weekly: Confirm staffing and upcoming milestones with Resourcing and the delivery team.',
+        'Throughout: Own the SOW baseline — scope changes flow through change order tasks, not side conversations.',
+        'Throughout: Maintain RIDAC hygiene; escalate per the Escalation section when customer or internal alignment breaks down.',
+        'Throughout: Keep executive sponsors (ES / AVP) informed at the agreed cadence — not only when things go wrong.',
+        'Throughout: Coach the team on methodology use — correct RACI gaps, missing job aids, and skipped sub-phases early.',
+        'At closure: Ensure case study / marketing capture, CSAT, and internal retrospective tasks complete before the engagement is marked done.'
       ].join('\n\n')
     },
     {
       key: 'escalation',
-      title: 'Escalation Management',
-      body: ''
+      title: 'Escalation',
+      body: 'Escalation Management guidance is coming soon. Until then, use RIDAC on the project record, notify your Engagement Manager immediately for customer-impacting issues, and involve the Executive Sponsor when schedule, scope, or relationship risk exceeds the EM\'s authority to resolve.'
     }
   ];
 
+  function enrichJobAidLabels(methodologies) {
+    methodologies.forEach(function (methodology) {
+      (methodology.phases || []).forEach(function (phase) {
+        (phase.subPhases || []).forEach(function (subPhase) {
+          (subPhase.tasks || []).forEach(function (task) {
+            (task.jobAids || []).forEach(function (jobAid, index) {
+              if (jobAid.label) {
+                return;
+              }
+              var text = String(task.text || '').replace(/\s+/g, ' ').trim();
+              if (text.length > 72) {
+                text = text.slice(0, 69) + '…';
+              }
+              if ((task.jobAids || []).length > 1) {
+                jobAid.label = text + ' (' + (index + 1) + ')';
+              } else {
+                jobAid.label = text;
+              }
+            });
+          });
+        });
+      });
+    });
+  }
+
+  enrichJobAidLabels(METHODOLOGIES);
+
   root.DMSeed = {
-    version: 22,
+    version: 23,
     jobTitles: JOB_TITLES,
     methodologies: METHODOLOGIES,
     jargon: JARGON,

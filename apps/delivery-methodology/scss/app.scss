@@ -3750,23 +3750,14 @@ select.edit-in option {
   border-color: var(--teal);
 }
 
-/* Bounded, self-scrolling panel - both axes scroll INSIDE this box, thead sticks to the top of
-   this box (not the page). CSS can't split the two: setting overflow-x forces overflow-y to also
-   become a scroll container (CSS Overflow §3), which detaches position: sticky from the page
-   viewport - a bare overflow-x: auto with an unbounded height leaves the sticky header inert
-   (verified: it neither pins to the page nor to the box once that promotion kicks in). Giving the
-   box its own max-height + overflow makes that promotion the intended behavior instead of a bug,
-   and is what actually lets narrow viewports reach the later role columns - .taskcol/.tname's
-   position: sticky; left: 0 only does anything with real horizontal scroll present.
-   Scroller fill matches the header/footer so the kept border-radius corners read as one piece
-   (square th cells no longer leave a paper gap in the arc). No top inset / upward pad - those
-   left the frame's left/right borders visible in the gap above the stuck header. */
+/* No overflow/max-height - the table grows with the page and the page scrolls. thead sticky then
+   pins to the viewport. (An earlier inner scroller existed so overflow-x could reach later role
+   columns without killing sticky; product preference is page scroll over a nested table scroller.)
+   Frame fill matches header/footer so border-radius corners read as one piece. */
 .rg-scroller {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-2);
-  max-height: 70vh;
-  overflow: auto;
 }
 
 .rg-table tfoot tr:last-child td:first-child {
@@ -4284,6 +4275,152 @@ select.edit-in option {
    width now (just .app's, no local override); readability is preserved at the PROSE level
    instead (.ref-sec p below), not by capping the whole view - the RACI-card row and Job Aids
    index are structural, not running text, and have no reason to be narrower than the page. */
+/* ---------- Reference appendix (left nav + panels) ---------- */
+.ref-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  min-height: 0;
+}
+
+.ref-nav {
+  flex: 0 0 220px;
+  position: sticky;
+  top: 12px;
+  align-self: flex-start;
+  padding: 14px 0 24px;
+  border-right: 1px solid var(--line);
+  margin-right: 28px;
+}
+
+.ref-nav-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal);
+  padding: 0 18px 10px;
+}
+
+.ref-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ref-nav-item:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.ref-nav-item.on {
+  color: var(--ink);
+  background: var(--teal-wash);
+  border-left-color: var(--teal);
+}
+
+.ref-nav-jump .ref-nav-text {
+  color: var(--ink-muted);
+}
+
+.ref-nav-edit {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ref-nav-mini {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 11px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ref-nav-mini:hover {
+  color: var(--ink);
+  border-color: var(--teal);
+}
+
+.ref-nav-mini.danger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.ref-nav-add {
+  display: block;
+  width: calc(100% - 36px);
+  margin: 8px 18px 0;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.ref-nav-add:hover {
+  border-color: var(--teal);
+  background: var(--teal-wash);
+}
+
+.ref-main {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 32px;
+}
+
+.ref-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.ref-title-in {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.ref-body-in {
+  width: 100%;
+  min-height: 280px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+
+.ref-edit-note {
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin: -4px 0 16px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--line);
+  background: var(--surface-2);
+  border-radius: 0 8px 8px 0;
+}
+
 .ref-sec {
   margin-bottom: 34px;
 }
