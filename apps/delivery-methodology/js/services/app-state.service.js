@@ -107,6 +107,10 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     } else {
       state.jargon = {};
     }
+    // Keep the highlight engine and the save cache on the same map - jargon edits are not on
+    // methodologies, so persistMethodologies() would otherwise re-send a stale cachedJargon.
+    JargonService.setGlossary(state.jargon);
+    DataService.setCachedJargon(state.jargon);
     notify();
   }
   function getReferenceSections() {

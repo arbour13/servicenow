@@ -20,7 +20,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
     }
   }
 
-  function loadStoredMethodologies(seedVersion) {
+  function loadStoredLocal(seedVersion) {
     try {
       var raw = window.localStorage.getItem(STORAGE_KEY);
 
@@ -31,7 +31,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
       var parsed = JSON.parse(raw);
 
       if (parsed && parsed.version === seedVersion) {
-        return parsed.methodologies;
+        return parsed;
       }
 
       return null;
@@ -40,14 +40,23 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
     }
   }
 
-  function storeMethodologies(methodologies, seedVersion) {
+  function storeLocal(methodologies, seedVersion, jargon) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
         version: seedVersion,
-        methodologies: methodologies
+        methodologies: methodologies,
+        jargon: jargon || {}
       }));
     } catch (storeError) {
       /* storage unavailable/full - edits still work for this session */
+    }
+  }
+
+  function setCachedJargon(jargon) {
+    if (jargon && typeof jargon === 'object') {
+      cachedJargon = jargon;
+    } else {
+      cachedJargon = {};
     }
   }
 
@@ -158,12 +167,16 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
   function buildLocalPayload() {
     var seed = readSeed();
     var seedVersion = (seed && seed.version) || 0;
-    var stored = loadStoredMethodologies(seedVersion);
+    var stored = loadStoredLocal(seedVersion);
     var payload = seedPayload();
 
-    if (stored) {
-      payload.methodologies = deepClone(stored);
+    if (stored && stored.methodologies) {
+      payload.methodologies = deepClone(stored.methodologies);
       applySeedIcons(payload.methodologies, seed && seed.methodologies);
+    }
+
+    if (stored && stored.jargon && typeof stored.jargon === 'object') {
+      payload.jargon = deepClone(stored.jargon);
     }
 
     cacheLookups(payload);
@@ -242,13 +255,14 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
         return rejectServerError(null, 'Could not load content.');
       });
     },
+    setCachedJargon: setCachedJargon,
     saveData: function (methodologies) {
       UrlPolicyService.normalizeMethodologies(methodologies);
 
       if (!serverApi) {
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
-        storeMethodologies(methodologies, seedVersion);
+        storeLocal(methodologies, seedVersion, cachedJargon || {});
         return $q.resolve({
           saved: true
         });
@@ -294,7 +308,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
       if (!serverApi) {
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
-        storeMethodologies([], seedVersion);
+        storeLocal([], seedVersion, {});
         return $q.resolve({
           saved: true
         });
@@ -328,7 +342,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
         var payload = seedPayload();
         var seed = readSeed();
         var seedVersion = (seed && seed.version) || 0;
-        storeMethodologies(payload.methodologies, seedVersion);
+        storeLocal(payload.methodologies, seedVersion, payload.jargon || {});
         cacheLookups(payload);
         return $q.resolve(payload);
       }

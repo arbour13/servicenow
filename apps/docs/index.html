@@ -48,8 +48,19 @@
        title on the left and the search + theme controls on the right (partials/shell.html's
        .pagehdr-top / .hdr-search-group). This app's .page-title row below is that same row. -->
   <div class="docs-pane">
-    <div class="page-title page-title-sticky">
-      <span aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+    <!-- ONE measure for the whole page. Everything a reader sees - this top row and the three-column
+         layout below it - is centred inside this single wrapper, so the row's left edge lines up
+         with the left rail and its right edge with the "on this page" rail. That matters more here
+         than in a standalone app: this ships into a Service Portal page where every other widget
+         shares one content measure, and a row running wider than the content under it reads as a
+         layout bug rather than a design choice. Editing widens the wrapper (not the layout alone),
+         so the two stay locked together in that mode too. -->
+    <div class="docs-shell" ng-class="{'docs-shell-editing': vm.docsEditMode}">
+    <!-- No decorative icon ahead of the title: it indented the text ~36px, so "Docs" no longer
+         started on the same left margin as the rail and the prose below it. Alignment to the shared
+         measure is worth more here than the ornament, especially in a portal that supplies its own
+         page identity anyway. -->
+    <div class="page-title">
       <div>
         <div class="page-title-name">Docs</div>
         <div class="page-title-sub">GlideFast reference documentation</div>
@@ -287,6 +298,7 @@
                 ng-click="vm.openPage(vm.activePageId, section.id)">{{section.title}}</button>
       </aside>
 
+    </div>
     </div>
   </div>
 

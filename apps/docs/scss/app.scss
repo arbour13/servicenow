@@ -101,18 +101,43 @@ $gfd-ed-md-selection-dark: #2a4a63 !default; // --accent-soft-hover-dark, pre-bl
 $gfd-ed-md-line-highlight-dark: #20262f !default;
 $gfd-ed-md-caret-dark: #e6e9ef !default;
 
-// The sticky app header's (.page-title-sticky) own measured height - where every OTHER sticky
-// thing in the pane has to start. Measured, not derived: .page-title sizes from its own content,
-// so re-check this if that header's padding or font sizes change. The JS counterpart
-// (DocsUiService.scrollTo's landing offset) deliberately MEASURES these headers at runtime rather
-// than duplicating the number.
-$gfd-sticky-app-header: 59px !default;
-// Each page's own header sits FLUSH against the app header - it's directly in the scroll path, so
-// any gap between the two is a band that page content visibly scrolls through.
-$gfd-sticky-page-head-top: $gfd-sticky-app-header !default;
+// The three columns, and the gap between them. Real variables rather than literals scattered
+// through the rules below, because the shared measure is DERIVED from them - see
+// $gfd-content-measure.
+$gfd-rail-width: 240px !default;
+$gfd-reading-width: 940px !default;
+$gfd-toc-width: 200px !default;
+$gfd-column-gap: 24px !default; // matches --sp-xxl; a SCSS value so the sums below can use it
+
+// The ONE content measure every row on the page shares - the top row (.page-title) and the
+// three-column .docs-layout both centre inside it, so their left and right edges line up. Defined
+// once here rather than repeated per element: a second copy is how the two drifted apart in the
+// first place, leaving the top row running wider than the content beneath it.
+//
+// SUMMED from the columns, not picked. A round literal (this was 1440px) is only correct at the one
+// width where every column happens to be showing: the reading column caps at $gfd-reading-width and
+// cannot absorb any excess, so the moment a rail drops at a breakpoint the leftover became dead
+// space and the top row's controls floated past the content's right edge. Each breakpoint below
+// re-sums whatever columns survive it.
+$gfd-content-measure: $gfd-rail-width + $gfd-column-gap + $gfd-reading-width + $gfd-column-gap + $gfd-toc-width !default;
+// Below 1400px the "on this page" rail is gone (see its own breakpoint); below 900px the left rail
+// goes too, leaving the reading column alone.
+$gfd-content-measure-no-toc: $gfd-rail-width + $gfd-column-gap + $gfd-reading-width !default;
+$gfd-content-measure-no-rails: $gfd-reading-width !default;
+// Editing widens the whole shell, not the layout alone - otherwise the top row would stay at the
+// narrower measure while the editor beside it grew, and the two would visibly disagree.
+$gfd-content-measure-editing: 1500px !default;
+
+// Exactly ONE sticky row now: each open page's own header (.docs-page-head), which carries the
+// Copy page / Edit page actions worth having within reach however far down you have read. The app
+// row above it (.page-title) deliberately scrolls away - its search trigger is redundant with the
+// global ⌘K shortcut, and its theme toggle is a set-once preference, so neither earns permanent
+// viewport space. That is also what Delivery Methodology does (its .pagehdr is not sticky either).
+// The page header therefore pins at the very top of the pane, with nothing stacked above it.
+$gfd-sticky-page-head-top: 0 !default;
 // The rails get breathing room instead: they sit BESIDE the content rather than stacked above it,
 // so a gap there reads as margin, not as a leak.
-$gfd-sticky-rail-top: $gfd-sticky-app-header + 16px !default;
+$gfd-sticky-rail-top: 16px !default;
 
 // ---------- Dark palette ----------
 $gfd-bg-dark: #10131a !default;
@@ -350,8 +375,8 @@ body {
 // border stays: it's the only thing now separating the page title/actions from the content.
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-md); padding: 0 0 var(--sp-md); border-bottom: 1px solid var(--border); }
 // An open page's own header, sticky beneath the app header so the page title and its actions stay
-// reachable however far down you've read. z-index below .page-title-sticky's 5 so it slides UNDER
-// that rather than over it. The Home card-head deliberately doesn't get this - it's an index you
+// reachable however far down you've read - the only sticky row on the page now, pinning at the
+// pane's own top edge. The Home card-head deliberately doesn't get this - it's an index you
 // scan, not a document you read down.
 // The padding-top + negative margin-top pair is what keeps content from showing through above it
 // while pinned: the head needs opaque background all the way up to where it sticks, but that gap
@@ -391,13 +416,19 @@ input::placeholder { color: var(--faint); }
 // MainController's docs-link click delegation all query `.docs-pane` by class name for this
 // element.
 .docs-pane { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; padding: 0 var(--sp-xl) 80px; }
+// The shared measure - see $gfd-content-measure. Both this wrapper's children (the top row and
+// .docs-layout) inherit their width from it rather than setting their own.
+.docs-shell { max-width: $gfd-content-measure; margin: 0 auto; transition: max-width .3s ease; }
+.docs-shell-editing { max-width: $gfd-content-measure-editing; }
+@media (prefers-reduced-motion: reduce) {
+  .docs-shell { transition: none; }
+}
+
+// Deliberately NOT sticky - see the $gfd-sticky-page-head-top comment for why neither control in
+// this row earns permanent viewport space.
 .page-title { display: flex; align-items: flex-start; gap: var(--sp-md); margin: 0 0 var(--sp-xxl); padding-top: var(--sp-xl); }
-.page-title > span:first-child { display: flex; color: var(--accent); }
 .page-title-name { font-size: 20px; font-weight: 650; color: var(--text); line-height: 1.1; }
 .page-title-sub { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-top: var(--sp-xxs); }
-// Sticky header - the title stays reachable while scrolled, since a page can run longer than one
-// screen. Background covers its own padding-top so nothing peeks through above it while pinned.
-.page-title-sticky { position: sticky; top: 0; z-index: 5; background: var(--bg); }
 // Search + theme, pushed opposite the title (DM's .hdr-search-group). margin-left:auto rather than
 // justify-content on the parent: .page-title's own children are the icon and the title block, and
 // space-between would spread THOSE apart too.
@@ -439,11 +470,14 @@ input::placeholder { color: var(--faint); }
 // reading column caps at .docs-content's measure (940px) rather than stretching to fill the pane,
 // a sticky rail on the LEFT uses the reclaimed width for group/page navigation, and a second sticky
 // rail on the RIGHT lists the open page's own sections (see .docs-toc below).
-.docs-layout { display: flex; align-items: flex-start; gap: var(--sp-xxl); max-width: 1440px; margin: 0 auto; transition: max-width .3s ease, gap .3s ease; }
-.docs-layout-main { flex: 1; min-width: 0; max-width: 940px; position: relative; transition: max-width .3s ease; }
+// No max-width/margin of its own - .docs-shell owns the measure for every row on the page, so this
+// just fills it. (It used to cap itself at 1440px while the top row above ran the full pane width,
+// which is exactly the mismatch .docs-shell exists to remove.)
+.docs-layout { display: flex; align-items: flex-start; gap: $gfd-column-gap; transition: gap .3s ease; }
+.docs-layout-main { flex: 1; min-width: 0; max-width: $gfd-reading-width; position: relative; transition: max-width .3s ease; }
 
 .docs-rail {
-  width: 240px; flex-shrink: 0; align-self: flex-start;
+  width: $gfd-rail-width; flex-shrink: 0; align-self: flex-start;
   position: sticky; top: $gfd-sticky-rail-top;
   max-height: calc(100vh - #{$gfd-sticky-rail-top} - var(--sp-xl));
   overflow-x: hidden; overflow-y: auto;
@@ -452,14 +486,18 @@ input::placeholder { color: var(--faint); }
 // Fixed width so the rail's content NEVER re-wraps while the rail collapses - the outer aside
 // clips it instead (see the wrapper's own comment in index.html). Padding lives here rather than
 // on .docs-rail so it collapses with the content instead of holding the rail open at 16px.
-.docs-rail-inner { width: 240px; padding: 0 var(--sp-sm) var(--sp-lg); }
+.docs-rail-inner { width: $gfd-rail-width; padding: 0 var(--sp-sm) var(--sp-lg); }
 
 // The right "on this page" rail - the open page's own sections, scroll-spy highlighted. Unlike
 // .docs-rail it's removed from the DOM entirely when not applicable (ng-if in index.html: no open
 // page, mid-search, or editing), so there's no width-collapse transition to manage here - the
 // flex:1 .docs-layout-main simply reclaims the freed space on its own.
 .docs-toc {
-  width: 200px; flex-shrink: 0; align-self: flex-start;
+  // margin-left:auto collects any leftover row space BEFORE this rail rather than after it, so the
+  // rail's right edge lands on the shared measure's right edge. Without it .docs-layout-main hits
+  // its own 940px cap, can't absorb the remainder, and the slack strands the rail a few px short of
+  // the edge the top row's controls align to.
+  width: $gfd-toc-width; flex-shrink: 0; align-self: flex-start; margin-left: auto;
   position: sticky; top: $gfd-sticky-rail-top;
   max-height: calc(100vh - #{$gfd-sticky-rail-top} - var(--sp-xl));
   overflow-x: hidden; overflow-y: auto;
@@ -488,8 +526,10 @@ input::placeholder { color: var(--faint); }
 // anyway (vm.openPage calls vm.exitDocsEdit), so neither rail has anything useful to offer here.
 // Capped at 1500px rather than going full-bleed: past that a single line of markdown gets too wide
 // to track comfortably - the same reason the reading column is capped in the first place.
+// The widening itself lives on .docs-shell (see .docs-shell-editing) so the top row grows with the
+// editor instead of staying behind at the narrower measure - this rule only handles what happens
+// INSIDE the layout.
 .docs-layout-editing {
-  max-width: 1500px;
   // gap is a flex property on the container, so it survives the left rail collapsing to width:0 and
   // would otherwise leave a dead 24px indent down the editor's left edge. (.docs-toc is unmounted
   // entirely while editing - see its ng-if in index.html - so it never contributes a gap here.)
@@ -534,6 +574,9 @@ input::placeholder { color: var(--faint); }
 // longer has room to keep the reading column comfortable below this width.
 @media (max-width: 1400px) {
   .docs-toc { display: none; }
+  // Re-sum the measure without that rail, so the top row's controls keep landing on the
+  // content's right edge instead of floating past it into the space the rail left behind.
+  .docs-shell { max-width: $gfd-content-measure-no-toc; }
 }
 // Below this, .docs-layout-main alone (940px) plus padding doesn't leave enough room for even the
 // left rail without cramping the reading column - it's the only page nav left at this point, so
@@ -541,6 +584,7 @@ input::placeholder { color: var(--faint); }
 // search palette in the page-title row, which never hides).
 @media (max-width: 900px) {
   .docs-rail { display: none; }
+  .docs-shell { max-width: $gfd-content-measure-no-rails; }
 }
 
 .docs-link {
@@ -779,7 +823,7 @@ $gfd-editor-pane-height: max(60vh, calc(100vh - 340px)) !default;
 }
 .docs-palette-empty, .docs-palette-hint { font-size: 12px; color: var(--faint); margin: 0; padding: var(--sp-md); }
 
-.docs-content { font-size: 13px; line-height: 1.65; color: var(--text); max-width: 940px; }
+.docs-content { font-size: 13px; line-height: 1.65; color: var(--text); max-width: $gfd-reading-width; }
 .docs-content h2 { font-size: 16px; font-weight: 650; margin: var(--sp-xxl) 0 var(--sp-sm); }
 .docs-content h3 { font-size: 13.5px; font-weight: 650; margin: var(--sp-xl) 0 var(--sp-sm); }
 .docs-content h2:first-child, .docs-content > div > h2:first-child { margin-top: var(--sp-sm); }

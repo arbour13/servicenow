@@ -126,6 +126,14 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
   // nothing had asked. Resist reintroducing either without re-reading this paragraph.
   function setPaneScrollTop(pane, targetTop, onDone) {
     pane.scrollTop = targetTop;
+    // Push the sticky-header state directly rather than waiting for the scroll event this
+    // assignment is supposed to fire. A deep link lands mid-page with the header already pinned,
+    // and setupStickyHeadState's own initial refresh() has by then already run against the
+    // pre-jump position (scrollTo defers the jump ~80ms, the setup does not) - so without this the
+    // header sits pinned with its title still showing until the reader happens to scroll. Relying
+    // on a programmatic scroll to fire its event is the same class of assumption that has bitten
+    // this app before, so it asserts the state instead of hoping for the notification.
+    if (stickyHeadHandler) { stickyHeadHandler(); }
     if (onDone) { onDone(); }
   }
 
@@ -152,15 +160,13 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
         spySuppressed = false;
         return;
       }
-      // Clearance for everything sticky above the landing spot, MEASURED rather than hardcoded -
-      // there are two stacked sticky headers now (the app's own .page-title-sticky plus each
-      // page's .docs-page-head), and a literal would silently strand headings underneath them the
-      // next time either one's padding changed. Falls back to the app header alone on Home, where
-      // there is no page head.
+      // Clearance for everything sticky above the landing spot, MEASURED rather than hardcoded, so
+      // a padding or font change in the header can't silently strand headings underneath it. Only
+      // ONE row is sticky now - each page's own .docs-page-head; the app row above it scrolls away
+      // (see $gfd-sticky-page-head-top in app.scss), so it contributes no clearance and isn't
+      // measured here. Zero on Home, which has no page head at all.
       var stickyChrome = 0;
-      var appHeader = document.querySelector('.page-title-sticky');
       var pageHeader = document.querySelector('.docs-page-head');
-      if (appHeader) { stickyChrome += appHeader.getBoundingClientRect().height; }
       if (pageHeader) { stickyChrome += pageHeader.getBoundingClientRect().height; }
       var top = Math.max(0, pane.scrollTop + el.getBoundingClientRect().top - pane.getBoundingClientRect().top - stickyChrome - SCROLL_LANDING_GAP);
       setPaneScrollTop(pane, top, function () {
@@ -271,11 +277,12 @@ angular.module('glidefastDocs').factory('DocsUiService', ['$rootScope', '$timeou
       return;
     }
 
-    var appHeader = document.querySelector('.page-title-sticky');
+    // The header pins at the pane's own top edge now - nothing sticky sits above it any more, so
+    // there is no other chrome height to add here.
     // 1px of slack: the pinned position can land a subpixel under the threshold at some zoom
     // levels, which would otherwise flicker the class on and off as the reader scrolls.
     function refresh() {
-      var stickAt = pane.getBoundingClientRect().top + (appHeader ? appHeader.getBoundingClientRect().height : 0);
+      var stickAt = pane.getBoundingClientRect().top;
       head.classList.toggle('is-stuck', head.getBoundingClientRect().top <= stickAt + 1);
     }
     refresh(); // a deep link can land mid-page, already stuck, before any scroll event fires

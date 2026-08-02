@@ -4314,6 +4314,81 @@ select.edit-in option {
   max-width: 72ch;
 }
 
+.ref-glossary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.ref-glossary-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.ref-glossary-main,
+.ref-glossary-edit {
+  flex: 1;
+  min-width: 0;
+}
+
+.ref-glossary-term {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+  margin: 0 0 4px;
+}
+
+.ref-glossary-def {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.ref-glossary-input {
+  width: 100%;
+  min-height: 2.8em;
+  resize: vertical;
+}
+
+.ref-glossary-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ref-glossary-controls {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ref-glossary-add {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: rgba(var(--wash-rgb), 0.03);
+}
+
+.ref-glossary-add-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 72ch;
+}
+
 .ref-raci-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
