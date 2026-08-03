@@ -68,13 +68,15 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     }
   }
 
-  function markReadCurrent() {
+  // Surfaces the current sub-phase's unread changes without marking them read - acknowledgement is
+  // the reader's own action (see the What changed panel), never a side effect of a structure edit.
+  function refreshPendingChanges() {
     var location = AppStateService.getLocation();
     if (!location || !location.subPhase) {
+      AppStateService.setPendingChanges([]);
       return;
     }
-    var entries = WhatsNewService.markRead(location.subPhase, AppStateService.getMethodologies());
-    AppStateService.setJustRead(entries);
+    AppStateService.setPendingChanges(WhatsNewService.unreadEntries(location.subPhase));
   }
 
   function isEditing() {
@@ -156,7 +158,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
   }
 
   // Fill blank names for persist; keep previous values so a failed save can restore them
-  // (draft stays open — same honesty model as ContentEditService.saveEdit).
+  // (draft stays open - same honesty model as ContentEditService.saveEdit).
   function coerceBlankNames(methodologies) {
     var coerced = [];
 
@@ -282,7 +284,7 @@ angular.module('deliveryMethodology').factory('StructureEditService', [
     AppStateService.setSubPhaseId(null);
     RaciGridService.ensureActivePhases(methodology);
     AppStateService.refreshLocation();
-    markReadCurrent();
+    refreshPendingChanges();
     refreshDerived();
     NavigationService.push();
     notify();

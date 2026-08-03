@@ -349,7 +349,7 @@
 
   function jobTitleIdFromRow(row) {
     // Soft refs store bare job-title ids (`arch`); dehydrate uses clientId `jt:arch` only as a
-    // row identity helper — never treat that prefix as the soft-ref key.
+    // row identity helper - never treat that prefix as the soft-ref key.
     if (row && row.content && row.content.id) {
       return String(row.content.id);
     }
@@ -441,7 +441,7 @@
         origins.push(String(servletUri).replace(/\/$/, ''));
       }
     } catch (originError) {
-      /* property unavailable — DMUrlPolicy still strips *.service-now.com */
+      /* property unavailable - DMUrlPolicy still strips *.service-now.com */
     }
     return origins;
   }

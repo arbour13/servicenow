@@ -1,4 +1,4 @@
-# Delivery Methodology — ServiceNow data-tier schema
+# Delivery Methodology - ServiceNow data-tier schema
 
 Design target for the port off `localStorage` onto real ServiceNow tables. **Table + roles are
 declared in `deploy.manifest.js` and emitted by the packager** (`tables[]` → Fluent `Table()`;
@@ -9,10 +9,10 @@ local harness.
 
 ## Shape
 
-**One table, `content`** (full scoped name `x_<scope>_content`). Every entity in the app —
+**One table, `content`** (full scoped name `x_<scope>_content`). Every entity in the app -
 methodology, phase, sub-phase, task, RACI assignment, input, deliverable, comment, participant,
 meeting, level-of-effort entry, changelog entry, job aid, job aid's role scoping, job title,
-glossary term, reference section — is a row in this one table, distinguished by a `type` field,
+glossary term, reference section - is a row in this one table, distinguished by a `type` field,
 linked into a tree by a single self-referencing `parent` column (`cascadeRule: 'cascade'` so
 deleting a parent removes descendants).
 
@@ -30,7 +30,7 @@ content (self-referencing on `parent`, discriminated by `type`)
                ├─ raci          (content.job_title → another row, soft ref)
                └─ job_aid
                    └─ job_aid_role (content.job_title → another row, soft ref)
-  job_title / glossary_term / reference_section   (parent: null — lookups + Reference page prose)
+  job_title / glossary_term / reference_section   (parent: null - lookups + Reference page prose)
 ```
 
 ## Roles
@@ -47,49 +47,49 @@ Manifest uses short suffixes (`user` / `editor` / `admin`); the packager emits s
 
 Widget server sets `data.canEdit` from editor/admin roles; local harness defaults to editable.
 
-## The governing constraint — read this before the type table
+## The governing constraint - read this before the type table
 
 **A self-referencing table with one `parent` column can express exactly one relationship per row:
 the tree parent.** Every entity above that's a genuine hierarchy step uses `parent` for that.
 
-Every entity that's a **join** — associates two things with no hierarchy between them
-(`raci`, `participant`, `meeting`'s scheduler/leader, `level_of_effort`'s role, `job_aid_role`) —
+Every entity that's a **join** - associates two things with no hierarchy between them
+(`raci`, `participant`, `meeting`'s scheduler/leader, `level_of_effort`'s role, `job_aid_role`) -
 already has its one `parent` slot spent on its *actual* container. The **second** thing it needs
-to reference — always a `job_title` row — lives inside `content` as a plain id string (soft ref).
+to reference - always a `job_title` row - lives inside `content` as a plain id string (soft ref).
 
 ## Table: `content`
 
 | Field | Type |
 |---|---|
-| `type` | Choice — 17 values (see enum below) |
+| `type` | Choice - 17 values (see enum below) |
 | `parent` | Reference → `content` (self; `null` for the three lookup types); cascade delete |
-| `name` | String(150) — used where a real display value exists; unused for pure-join types |
-| `order` | Integer — used where a real position exists; unused for pure-join types |
-| `content` | JSON — type-specific payload, including any soft references |
+| `name` | String(150) - used where a real display value exists; unused for pure-join types |
+| `order` | Integer - used where a real position exists; unused for pure-join types |
+| `content` | JSON - type-specific payload, including any soft references |
 
 ## The `type` enum
 
 | `type` | `parent` → | `name` holds | `content` holds |
 |---|---|---|---|
-| `methodology` | — | short chip name (e.g. Project) | `{ id, title, summary, description, feedbackUrl, feedbackLabel, diagramUrl }` — `summary` is the one-line Methodology subtitle; `description` is multi-paragraph intro prose (`\n\n`-separated); `title` is optional legacy/display heading  (Methodology view uses “About {name}” instead); feedback is a URL (often `mailto:…`); `diagramUrl` is optional illustration |
+| `methodology` | - | short chip name (e.g. Project) | `{ id, title, summary, description, feedbackUrl, feedbackLabel, diagramUrl }` - `summary` is the one-line Methodology subtitle; `description` is multi-paragraph intro prose (`\n\n`-separated); `title` is optional legacy/display heading  (Methodology view uses “About {name}” instead); feedback is a URL (often `mailto:…`); `diagramUrl` is optional illustration |
 | `phase` | a `methodology` row | phase name | `{ id }` |
 | `sub_phase` | a `phase` row | sub-phase name | `{ id, overview, objective, icon }` |
 | `task` | a `sub_phase` row | the task text | `{ id }` |
 | `raci` | a `task` row | the letter (`R`/`A`/`C`/`I`) | `{ job_title }` *(soft ref)* |
 | `job_aid` | a `task` row | aid title (optional; UI falls back to "Job Aid") | `{ id, url }` |
-| `job_aid_role` | a `job_aid` row | — | `{ job_title }` *(soft ref; zero rows = all roles)* |
+| `job_aid_role` | a `job_aid` row | - | `{ job_title }` *(soft ref; zero rows = all roles)* |
 | `input` | a `sub_phase` row | the input text | `{}` |
 | `deliverable` | a `sub_phase` row | the deliverable text | `{}` |
 | `comment` | a `sub_phase` row | the comment text | `{}` |
-| `participant` | a `sub_phase` row | — | `{ job_title }` *(soft ref)* |
+| `participant` | a `sub_phase` row | - | `{ job_title }` *(soft ref)* |
 | `meeting` | a `sub_phase` row | meeting title | `{ id, scheduledBy, ledBy, external }` *(soft refs)* |
-| `level_of_effort` | a `sub_phase` row | — | `{ job_title, text, billable, optional }` *(`job_title: null` = all)* |
-| `changelog_entry` | a `sub_phase` row | — | `{ id, ts, text }` — **no global `read` flag** |
+| `level_of_effort` | a `sub_phase` row | - | `{ job_title, text, billable, optional }` *(`job_title: null` = all)* |
+| `changelog_entry` | a `sub_phase` row | - | `{ id, ts, text }` - **no global `read` flag** |
 | `job_title` | `null` | full name | `{ id, abbreviation, description, external }` |
 | `glossary_term` | `null` | the term | `{ definition }` |
-| `reference_section` | `null` | section title | `{ key, body }` — Reference page prose (e.g. How to use RACI, Escalation). Not job aids or glossary terms. |
+| `reference_section` | `null` | section title | `{ key, body }` - Reference page prose (e.g. How to use RACI, Escalation). Not job aids or glossary terms. |
 
-`sid` (`'1.1'`, `'2.3'`, …) is not stored — derived by walking `parent`/`order`.
+`sid` (`'1.1'`, `'2.3'`, …) is not stored - derived by walking `parent`/`order`.
 
 ## Resolved design decisions
 
@@ -98,16 +98,16 @@ to reference — always a `job_title` row — lives inside `content` as a plain 
    changelog **content.id** values (stable client ids that survive full-replace save; not row
    sys_ids, which change on recreate). Harness uses the same key in localStorage. No ack type; no
    global `content.read`.
-3. **Cascade delete:** Fluent `parent` column `cascadeRule: 'cascade'` — platform deletes
+3. **Cascade delete:** Fluent `parent` column `cascadeRule: 'cascade'` - platform deletes
    descendants when a parent row is deleted. Soft refs inside JSON are not cascaded.
 4. **`icon`:** on `sub_phase` content as `{ overview, objective, icon }`.
 5. **Roles:** `<scope>.user` / `.editor` / `.admin` as above.
-6. **Type choice values** are short labels (`task`, `raci`, `input`, …) — hierarchy is carried by
+6. **Type choice values** are short labels (`task`, `raci`, `input`, …) - hierarchy is carried by
    `parent`, not by prefixes on the choice value.
 
 ## Decisions made this reconciliation (history)
 
-**A–D.** See git history / earlier drafts. Summary: phases are first-class rows; `sid` is derived;
+**A-D.** See git history / earlier drafts. Summary: phases are first-class rows; `sid` is derived;
 the design collapsed from 5 tables → 3 → **1** self-referencing `type`-discriminated tree
 (Decision D, 2026-07-26). Soft refs in `content` for join-shaped entities are inherent to one
 `parent` column.
@@ -118,22 +118,22 @@ Every field in the current seed (`js/services/data.service.js`) has a home in th
 above. Notably: `sub_phase.icon`, `levelOfEffort` `optional`, job title `external`, and
 participants (often backfilled client-side from RACI).
 
-## Standard content seeding — resolved 2026-07-30
+## Standard content seeding - resolved 2026-07-30
 
 No content ships in the deploy artifact itself (avoids the redeploy-clobbers-edits risk of
-shipping rows directly). Instead: `js/data/standard-content.js` — a deployed (`deploy: true`,
+shipping rows directly). Instead: `js/data/standard-content.js` - a deployed (`deploy: true`,
 unlike harness-only `js/data/seed.js`) snapshot of the canonical GlideFast Delivery 2.0 content,
 concatenated onto the widget **server** script via `deploy.manifest.js`'s `files.contentModel`
 (same mechanism as `DMUrlPolicy`/`DMContentModel`). `content.server.js`'s `importStandardContent` action
 reuses the existing `saveContent()` insert path wholesale (dehydrate → validate → parent-link →
 create is the same job regardless of payload origin) behind one new guard: it refuses outright if
 the content table already has any rows, which is what makes it structurally incapable of
-clobbering existing content — not a revision check, an outright refusal. Client: an empty-state
+clobbering existing content - not a revision check, an outright refusal. Client: an empty-state
 button on the Methodology view, editor/admin only (`AppStateService.importStandardContent()` →
-`DataService.importStandardContent()`), one-time and manually triggered — never automatic.
+`DataService.importStandardContent()`), one-time and manually triggered - never automatic.
 
 `js/data/standard-content.js` is a **generated snapshot** of `js/data/seed.js`'s payload (see its
-own header for the regeneration command) — the harness file stays the single authored source, to
+own header for the regeneration command) - the harness file stays the single authored source, to
 avoid a third hand-maintained copy of ~1300 rows of content alongside `seed.js` and the live
 table.
 
@@ -143,5 +143,5 @@ failed full replace.
 
 ## Packager
 
-`tables[]` + optional `editorRoleName` are implemented in `tools/sn-deployment-packager/` —
+`tables[]` + optional `editorRoleName` are implemented in `tools/sn-deployment-packager/` -
 see `manifest.schema.md`. First consumer: this app's `deploy.manifest.js`.

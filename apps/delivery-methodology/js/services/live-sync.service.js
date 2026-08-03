@@ -1,5 +1,5 @@
 /* Live content sync for Service Portal: spUtil.recordWatch on the content table, then reload
-   when the revision changes. Harness has no spUtil — start() is a no-op there.
+   when the revision changes. Harness has no spUtil - start() is a no-op there.
    While the viewer is editing or saving, remote changes are deferred until they finish. */
 angular.module('deliveryMethodology').factory('LiveSyncService', [
   '$injector', '$timeout', '$rootScope', 'DataService', 'AppStateService', 'MessagingService',
@@ -55,7 +55,7 @@ angular.module('deliveryMethodology').factory('LiveSyncService', [
       pendingRemoteChange = true;
       if (!deferredToastShown) {
         deferredToastShown = true;
-        MessagingService.toast('Content updated elsewhere — sync when you finish editing');
+        MessagingService.toast('Content updated elsewhere - sync when you finish editing');
       }
       return;
     }

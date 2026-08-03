@@ -12,7 +12,7 @@ angular.module('deliveryMethodology').factory('RaciGridService', [
     C: 'Consulted',
     I: 'Informed'
   };
-  // Same copy as the Reference RACI cards — tips and that page share this so neither drifts short.
+  // Same copy as the Reference RACI cards - tips and that page share this so neither drifts short.
   var RACI_DESCS = {
     R: 'Does the work. At least one per task - the people who actually carry it out.',
     A: 'Owns the outcome and signs off. Exactly one per task - the single point of ownership.',
@@ -136,7 +136,7 @@ angular.module('deliveryMethodology').factory('RaciGridService', [
         visibleRoleIds: [],
         minorRoleIds: [],
         roleCounts: {},
-        roleTaskCounts: {},
+            roleTaskCounts: {},
         groups: [],
         byRoleGroups: []
       };
@@ -298,6 +298,7 @@ angular.module('deliveryMethodology').factory('RaciGridService', [
     return refresh(context);
   }
 
+
   function setMode(mode, context) {
     raciMode = mode;
     return refresh(context);
@@ -321,7 +322,7 @@ angular.module('deliveryMethodology').factory('RaciGridService', [
     });
   }
 
-  // Display and tips iterate letter arrays in stored order — keep every task's letters in
+  // Display and tips iterate letter arrays in stored order - keep every task's letters in
   // R-A-C-I sequence so "RA" never renders as "AR" (or "CI" as "IC") after load/edit/import.
   function normalizeMethodologies(methodologies) {
     (methodologies || []).forEach(function (methodology) {

@@ -54,6 +54,9 @@
   --chip-on-bg: rgba(0, 224, 172, 0.1);
   --gradient-card: linear-gradient(135deg, #{$card-mix-1} 0%, #{$card-mix-2} 100%);
   --gradient-card-2: linear-gradient(135deg, #327374 0%, #0c506e 100%);
+  /* Solid stand-in for the gradient above, for the few places that need a FLAT colour matching it
+     (the focus-ring gap on controls sitting on a card-2 surface). Keep in step with the stop. */
+  --gradient-card-2-from: #327374;
   /* How much of --pc gets mixed into .fcard.on's background (see the rule itself, further down).
      Tokenized because the SAME percentage against a dark-mode-bright --pc vs a light-mode-dark --pc
      produces very different visual jumps - mixing a dark, saturated colour into a near-white base
@@ -225,6 +228,7 @@
   --on-phase-ink: #ffffff;
   --gradient-card: linear-gradient(135deg, #f4fcfd 0%, #c9ebf2 100%);
   --gradient-card-2: linear-gradient(135deg, #e2f6fa 0%, #bfe7ef 100%);
+  --gradient-card-2-from: #e2f6fa;
   --shadow-md: 0 4px 10px 0 rgba(10, 33, 54, 0.12);
   --shadow-sm: 2px 2px 8px 0 rgba(10, 33, 54, 0.08);
   /* Same navy the other light shadows use, kept heavier than --shadow-md because these two carry
@@ -293,7 +297,7 @@ button {
    (Shell chrome, then the active view) - full padding on both left a ~150px void under pagehdr.
    .app--chrome: top/side only. .app--view: side + bottom breathing room, no extra top.
 
-   cursor: default — Service Portal themes commonly style [ng-click] { cursor: pointer }. Our
+   cursor: default - Service Portal themes commonly style [ng-click] { cursor: pointer }. Our
    .app / .view-root roots use ng-click only to dismiss tooltips, so without this reset the whole
    page header (and empty chrome) looks clickable. Real controls keep their own cursor rules. */
 .app {
@@ -555,7 +559,7 @@ button {
 
 /* Service Portal / Bootstrap paint a mint/green :focus outline (and often a glow box-shadow) on
    mouse click. Nested under .app so after packager scoping the selector is
-   `.dm-widget .app …:focus` — higher specificity than theme `button:focus !important` that
+   `.dm-widget .app …:focus` - higher specificity than theme `button:focus !important` that
    loads later. Kill every outline channel + mouse-focus shadows, then restore our teal ring
    only for keyboard focus (:focus-visible). --focus-gap matches the surface behind the control. */
 .app {
@@ -1640,6 +1644,12 @@ a {
   padding-top: 8px;
 }
 
+/* margin-top:auto still pins the badge to the card's foot; the name's margin below guarantees a
+   gap even on a tall card where there is no slack left for auto to absorb. */
+.fcard .fcard-name {
+  margin-bottom: 10px;
+}
+
 .fcard .rbadge {
   display: inline-flex;
   align-items: center;
@@ -1668,7 +1678,7 @@ a {
   padding: 30px 34px;
   margin-top: 20px;
   box-shadow: var(--shadow-md);
-  /* Deep-link scrollIntoView(block: start) — keep the panel clear of sticky portal chrome. */
+  /* Deep-link scrollIntoView(block: start) - keep the panel clear of sticky portal chrome. */
   scroll-margin-top: 16px;
 }
 
@@ -1725,7 +1735,11 @@ h1.sp-title {
   stroke-width: 2;
 }
 
+/* Controls inside this panel sit on the card-2 gradient, not the page. Without this the keyboard
+   focus ring's gap falls back to --paper (the dark page background) and paints a dark halo around
+   the button - the same declaration .rg-table td.tname / .jt-task / .ref-aid already make. */
 .pchange {
+  --focus-gap: var(--gradient-card-2-from);
   display: flex;
   gap: 10px;
   align-items: flex-start;
@@ -1744,7 +1758,7 @@ h1.sp-title {
 
 /* Deep-link / RACI jump targets.
    Sub-phase panels: pulse the outer border (not a fill) so the whole panel reads as the target.
-   Task rows keep a fill pulse — borders on <tr> are unreliable across table layouts.
+   Task rows keep a fill pulse - borders on <tr> are unreliable across table layouts.
    Prefer plain rgba over color-mix: older portal browsers / SP CSS pipelines drop color-mix. */
 @keyframes jumpPulse {
   0% {
@@ -1802,11 +1816,11 @@ h1.sp-title {
   content: "•";
   position: absolute;
   left: 0;
-  color: rgba(var(--on-accent-rgb), 0.6);
+  color: rgba(var(--on-accent-rgb), 0.8);
 }
 
 .pchange-ts {
-  color: rgba(var(--on-accent-rgb), 0.65);
+  color: rgba(var(--on-accent-rgb), 0.85);
   font-size: 12px;
 }
 
@@ -1847,7 +1861,7 @@ h1.sp-title {
   letter-spacing: 0.04em;
 }
 
-/* Tip chrome is always dark navy — use the bright RACI fills, not --r-*-text (those darken
+/* Tip chrome is always dark navy - use the bright RACI fills, not --r-*-text (those darken
    for light-mode content surfaces and would fail contrast on this tooltip). */
 .tip .tname.tn-R {
   color: var(--r-r);
@@ -2179,9 +2193,17 @@ h4.sec {
   gap: 2px;
 }
 
-.loe2 .row {
+/* Both Level of Effort modes render the same row shape, so switching a sub-phase between "Same for
+   all" and "Per role" does not change how its rows read. Two things this fixes: the effort column
+   used to be a fixed 62px, which fits "1 hour" and nothing else ("1 hour each" wrapped, and free
+   text like "Defined by portal concept complexity" was squeezed into a sliver); and the two modes
+   disagreed about the Billable / Optional pills, which sat hard against the hours in "Same for all"
+   but right-justified in "Per role". The effort column now takes the space, so the pills form one
+   right rail in both. */
+.loe2 .row,
+.loe-all {
   display: grid;
-  grid-template-columns: minmax(58px, max-content) 62px 1fr;
+  grid-template-columns: minmax(58px, max-content) minmax(62px, 1fr) max-content;
   align-items: center;
   gap: 10px;
   padding: 6px 8px;
@@ -2215,12 +2237,7 @@ h4.sec {
 }
 
 .loe-all {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
   background: rgba(var(--wash-rgb), 0.025);
-  border-radius: 8px;
   font-size: 13px;
 }
 
@@ -2525,7 +2542,7 @@ table.ttbl .jobaid {
   font-weight: 700;
 }
 
-/* RACI letter chips + legend rows carry tips — help cursor signals "definition on hover", not click. */
+/* RACI letter chips + legend rows carry tips - help cursor signals "definition on hover", not click. */
 .rl-R[data-tip],
 .rl-A[data-tip],
 .rl-C[data-tip],
@@ -2652,8 +2669,17 @@ table.ttbl .jobaid {
   box-shadow: var(--shadow-inset);
 }
 
+/* background-clip is load-bearing, not decoration. .btn's 1px border is inherited here with a
+   TRANSPARENT colour (to keep this variant the same box size as the outlined ones), and with the
+   default border-box clip the gradient is painted out to the border edge. Its rounded clip and the
+   border's own path then disagree at the point of maximum curvature - the pill's left and right
+   ends - leaving a visible 1px notch at each end. Clipping to the padding box makes the gradient
+   stop cleanly inside the border and the notch goes away. Solid-background buttons (.btn.danger)
+   are unaffected, and the hover/active states set an opaque white border that covers the seam
+   anyway; only this transparent-border-over-a-gradient combination shows it. */
 .btn.primary {
   background: var(--gradient-pill);
+  background-clip: padding-box;
   border-color: transparent;
   color: var(--on-gradient-ink);
   font-weight: 600;
@@ -2713,6 +2739,90 @@ table.ttbl .jobaid {
 
 .edit-in::placeholder {
   color: var(--ink-faint);
+}
+
+/* dm-combo: an .edit-in with a list of common values behind a caret. Free text either way - see the
+   directive's header for why this is neither a select nor a native datalist. */
+dm-combo {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.cbx {
+  position: relative;
+  display: flex;
+}
+
+.cbx .edit-in {
+  flex: 1;
+  padding-right: 34px;
+}
+
+.cbx-toggle {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  bottom: 1px;
+  width: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+
+.cbx-toggle:hover {
+  color: var(--hs-teal);
+  background: rgba(var(--wash-rgb), 0.08);
+}
+
+.cbx-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cbx-list {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--surface-flat);
+  border: 1px solid var(--teal-line);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lift);
+}
+
+.cbx-list.up {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.cbx-opt {
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.cbx-opt.active {
+  background: var(--chip-on-bg);
+  color: var(--hs-teal);
+}
+
+.cbx-opt.on {
+  color: var(--teal);
+  font-weight: 600;
 }
 
 textarea.edit-in {
@@ -3582,6 +3692,26 @@ select.edit-in option {
   text-align: center;
 }
 
+/* Acknowledgement row on the "What changed" panel. The action is deliberately a primary button,
+   not a quiet link: acknowledging is the one thing that clears the flag, so it should look like the
+   thing to press. */
+.pchange-ack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* on-accent, not --ink-faint: this sits on the accent card, so a page-level ink token was both
+   too light and the wrong palette. */
+.pchange-ack-hint {
+  font-size: 12px;
+  color: rgba(var(--on-accent-rgb), 0.85);
+}
+
 /* TEMPORARY destructive testing action at the top of the Methodology view, in its own card so it
    reads as tooling rather than content. Remove alongside the .reset-content-zone block in
    partials/methodology.html when seeding no longer needs testing. */
@@ -4230,22 +4360,6 @@ select.edit-in option {
 
 /* Read history sits visibly below unread: same card, muted accent rail and softened text, so it
    reads as reference material rather than as something still demanding attention. */
-.wn-group-read .whatsnew-item {
-  border-left-color: var(--line);
-  opacity: 0.72;
-}
-
-.wn-group-read .whatsnew-item:hover {
-  border-left-color: var(--teal);
-  opacity: 1;
-}
-
-.wn-caughtup {
-  margin: 0 0 22px;
-  font-size: 13.5px;
-  color: var(--ink-faint);
-}
-
 .whatsnew-item .wn-top {
   display: flex;
   align-items: baseline;
@@ -4367,7 +4481,7 @@ select.edit-in option {
 }
 
 /* Idle stays muted; hover/selected lift to full ink (white in dark theme). Selected also gets
-   teal wash + accent bar — hover alone is color-only so adjacent rows don't clash. */
+   teal wash + accent bar - hover alone is color-only so adjacent rows don't clash. */
 .ref-nav-item:hover:not(.on) {
   color: var(--ink);
   background: transparent;
@@ -4599,7 +4713,7 @@ select.edit-in option {
   line-height: 1.5;
 }
 
-/* Carded standard sections (Challenges "Title — explanation" paragraphs; the lifecycle sections'
+/* Carded standard sections (Challenges "Title - explanation" paragraphs; the lifecycle sections'
    Daily/Weekly/Throughout duties) - same surface language as .ref-raci-card. See
    sectionLayout() in reference.controller.js for the parsing conventions. */
 .ref-card-grid {
@@ -4693,6 +4807,19 @@ select.edit-in option {
   height: 5px;
   border-radius: 50%;
   background: var(--hs-teal);
+}
+
+.ref-role-block {
+  margin-bottom: 26px;
+}
+
+.ref-role-h {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .ref-trail {

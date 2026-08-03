@@ -1,7 +1,7 @@
 /* Editor URL policy: scheme allowlist + strip ServiceNow instance origins to relative paths.
    Shared by the widget server (concatenated ahead of content-model) and the browser harness /
    UrlPolicyService. Soft-fail friendly: empty string means "do not link / do not persist".
-   Rhino-safe — no URL / window / document APIs. */
+   Rhino-safe - no URL / window / document APIs. */
 var DMUrlPolicy = (function () {
   'use strict';
 

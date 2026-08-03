@@ -1,6 +1,6 @@
 /* Reference appendix edit mode: prose reference_section CRUD (title, body, order).
    Glossary CRUD stays on the Reference controller (immediate save). Job aids are task-attached
-   in Methodology content edit — not edited here. */
+   in Methodology content edit - not edited here. */
 angular.module('deliveryMethodology').factory('ReferenceEditService', [
   'IdSeqService', 'MessagingService', 'AppStateService',
   function (IdSeqService, MessagingService, AppStateService) {
@@ -90,7 +90,7 @@ angular.module('deliveryMethodology').factory('ReferenceEditService', [
   function cancelReferenceEdit() {
     state.referenceSnapshot = null;
     state.referenceEditMode = false;
-    MessagingService.toast('Appendix edit cancelled — changes reverted');
+    MessagingService.toast('Appendix edit cancelled - changes reverted');
     notify();
   }
 

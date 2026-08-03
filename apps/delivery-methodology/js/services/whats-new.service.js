@@ -22,14 +22,17 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [
     return date.getFullYear() + '-' + monthPart + '-' + dayPart;
   })();
 
-  // How many already-read entries the view keeps below the unread ones. Unread-only left the page
-  // nearly blank in normal use (once you have caught up there is by definition nothing to show),
-  // and it also made a change you had just opened impossible to find again. Capped rather than
-  // unbounded because this list only grows as the methodology is edited over time.
-  var READ_HISTORY_LIMIT = 20;
+  /* What's New lists UNREAD entries only. An "Earlier changes" list of already-acknowledged
+     entries used to sit below them; removed 2026-08-03. Both reasons it existed had failed:
+     it was meant to stop the page reading as empty, but the tab is ng-if="anyUnread()" so that
+     state is unreachable - and it was meant to keep a just-acknowledged change findable, but
+     acknowledging the last one removes the tab, so the history vanished exactly when it was
+     wanted. It also capped silently at 20 and sorted by entry date rather than acknowledgement
+     date, so a just-acknowledged older entry dropped out immediately. If a real change history
+     is wanted later, build it as history - reachable on its own, most likely per sub-phase -
+     rather than as a tail on this list. */
 
   var whatsNew = [];
-  var whatsNewRead = [];
   var seenMap = {};
 
   function readLocalSeen() {
@@ -136,7 +139,6 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [
 
   function refresh(methodologies) {
     var items = [];
-    var readItems = [];
     (methodologies || []).forEach(function (methodology) {
       (methodology.phases || []).forEach(function (phase, phaseIndex) {
         (phase.subPhases || []).forEach(function (subPhase) {
@@ -150,9 +152,7 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [
               color: MethodologyDomainService.phaseColor(phaseIndex)
             };
 
-            if (entry.read) {
-              readItems.push(item);
-            } else {
+            if (!entry.read) {
               items.push(item);
             }
           });
@@ -165,9 +165,7 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [
     }
 
     items.sort(newestFirst);
-    readItems.sort(newestFirst);
     whatsNew = items;
-    whatsNewRead = readItems.slice(0, READ_HISTORY_LIMIT);
     return whatsNew;
   }
 
@@ -201,8 +199,7 @@ angular.module('deliveryMethodology').factory('WhatsNewService', [
 
   function readState() {
     return {
-      whatsNew: whatsNew,
-      whatsNewRead: whatsNewRead
+      whatsNew: whatsNew
     };
   }
 

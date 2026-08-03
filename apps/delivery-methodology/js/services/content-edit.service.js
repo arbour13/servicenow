@@ -204,7 +204,7 @@ angular.module('deliveryMethodology').factory('ContentEditService', [
         toSave.changelog = [];
       }
       // Own saves start read so What's New / unread dots don't treat the editor's write
-      // as someone else's update. justRead still surfaces them in the post-save banner.
+      // as someone else's update, and they are not echoed back to the editor either.
       entries = changes.map(function (text) {
         return {
           id: IdSeqService.next('changelog'),

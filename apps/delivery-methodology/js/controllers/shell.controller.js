@@ -63,7 +63,6 @@ angular.module('deliveryMethodology').controller('DmShellController', [
 
   TipService.bind(c);
   IconService.bind(c);
-
   function currentMethodology() {
     return MethodologyDomainService.currentMethodology(c.methodologies, c.methodologyId);
   }
@@ -151,7 +150,7 @@ angular.module('deliveryMethodology').controller('DmShellController', [
       && c.canEdit
       && c.methodologies.length >= 1;
   };
-  // Appendix prose edit is on the backburner — pencil stays hidden until that UX lands.
+  // Appendix prose edit is on the backburner - pencil stays hidden until that UX lands.
   c.showReferenceEdit = function () {
     return false;
   };
@@ -311,12 +310,21 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   // (rendered as non-buttons). Everything else opens its sub-phase. jumpTo clears the search
   // overlay itself (NavigationService.clearSearchOverlay); the reference path clears explicitly.
   c.pickSearchResult = function (result) {
+    SearchService.recordJump({
+      kind: result.kind,
+      title: result.title,
+      loc: result.loc || '',
+      methodologyId: result.methodology ? result.methodology.id : null,
+      subPhaseId: result.subPhase ? result.subPhase.id : null,
+      elementKey: result.task ? 'task:' + result.task.id : null,
+      view: result.kind === 'reference' ? 'reference' : null
+    });
     if (result.kind === 'reference') {
       c.clearSearch();
       c.setView('reference');
       return;
     }
-    if (result.kind === 'jobaid') {
+    if (result.kind === 'jobaid' || result.kind === 'task') {
       c.jumpTo(result.subPhase.id, result.methodology.id, 'task:' + result.task.id);
       return;
     }
@@ -343,8 +351,9 @@ angular.module('deliveryMethodology').controller('DmShellController', [
     },
     isStructureEditing: StructureEditService.isEditing,
     isReferenceEditing: ReferenceEditService.isEditing,
-    afterSaveSuccess: function (entries) {
-      AppStateService.setJustRead(entries);
+    // entries (the changelog rows this save wrote) are intentionally unused: they are the editor's
+    // own change, already read:true, and echoing them back was noise.
+    afterSaveSuccess: function () {
       AppStateService.refreshLocation();
       refreshWhatsNew();
       refreshJobAids();
@@ -376,12 +385,15 @@ angular.module('deliveryMethodology').controller('DmShellController', [
         || ReferenceEditService.isEditing();
     },
     syncSearch: syncSearch,
+    // Opening a sub-phase SURFACES its changes; it no longer clears them. The reader has to
+    // acknowledge explicitly (the "Got it" button on the What changed panel), so a change cannot be
+    // retired by a glance or an accidental click - the unread dots and badges stay lit until then.
     afterOpenSubPhase: function () {
       var location = AppStateService.getLocation();
       if (location) {
-        AppStateService.setJustRead(WhatsNewService.markRead(location.subPhase, AppStateService.getMethodologies()));
+        AppStateService.setPendingChanges(WhatsNewService.unreadEntries(location.subPhase));
       } else {
-        AppStateService.setJustRead([]);
+        AppStateService.setPendingChanges([]);
       }
     },
     refreshRaciGridIfNeeded: function () {
@@ -420,7 +432,7 @@ angular.module('deliveryMethodology').controller('DmShellController', [
 
     if (!result.empty) {
       NavigationService.remember(result.methodologyId, result.subPhaseId);
-      // Live sync keeps the viewer in place — do not re-apply deep links or push history.
+      // Live sync keeps the viewer in place - do not re-apply deep links or push history.
       if (!result.liveSync && !NavigationService.applyDeepLinkFromUrl()) {
         NavigationService.push();
       }

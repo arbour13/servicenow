@@ -893,7 +893,7 @@
       key: 'raci',
       title: 'Using RACI',
       body: [
-        'Purpose: RACI clarifies who does the work, who owns the outcome, who must be consulted, and who needs to stay informed — so teams move quickly without ambiguity about decisions or handoffs.',
+        'Purpose: RACI clarifies who does the work, who owns the outcome, who must be consulted, and who needs to stay informed - so teams move quickly without ambiguity about decisions or handoffs.',
         'Every task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person\'s relationship to the work?',
         'Exactly one A per task. Accountability shouldn\'t be shared - if two people sign off, no one does.',
         'R and A can be the same person (shown together as R A) - they do it and own it.',
@@ -906,48 +906,50 @@
       key: 'challenges',
       title: 'Challenges',
       body: [
-        'Delivery engagements fail in predictable ways. Watch for these common pitfalls — and use the methodology tasks and job aids to stay ahead of them.',
-        'Scope creep without a change path — new asks accumulate without rebaselining the SOW, RTM, or project plan. Address it in Plan and Execute with explicit change-order tasks.',
-        'Weak IPKT / sales-to-delivery handoff — the delivery team starts blind. Treat the IPKT and IPKT doc as non-negotiable; capture open questions before customer-facing work.',
-        'Customer availability — workshops and UAT stall when SMEs are unavailable. Surface it early in status, escalate through the EM, and adjust the plan visibly.',
-        'RACI ambiguity — two Accountables or no clear Responsible on a task. Fix it in Initiate; don\'t let it linger into Execute.',
-        'Requirements without acceptance criteria — stories that cannot be tested. Tie every requirement to testable criteria before build accelerates.',
-        'Environment and access delays — instances, integrations, or credentials block the TC. Track as RIDAC items with owners and dates.',
-        'Status without decisions — recurring meetings that report activity but never close actions. Every checkpoint should produce decisions, owners, and dates.',
-        'Testing compressed at the end — UAT becomes a single gate instead of continuous validation. Plan UAT working sessions during Plan, not only at Deliver.',
-        'Silent customer dissatisfaction — issues surface only at closure. Use CSAT touchpoints, executive check-ins, and transparent RAID logs.',
-        'Knowledge transfer as an afterthought — go-live succeeds but adoption fails. Start enablement and training planning during Execute, not after deployment.',
-        'Teams that recognize these patterns early — and escalate through the EM using the Escalation guidance — recover faster than teams that treat each as a one-off surprise.'
+        'Delivery engagements fail in predictable ways. Watch for these common pitfalls - and use the methodology tasks and job aids to stay ahead of them.',
+        'Scope creep without a change path - new asks accumulate without rebaselining the SOW, RTM, or project plan. Address it in Plan and Execute with explicit change-order tasks.',
+        'Weak IPKT / sales-to-delivery handoff - the delivery team starts blind. Treat the IPKT and IPKT doc as non-negotiable; capture open questions before customer-facing work.',
+        'Customer availability - workshops and UAT stall when SMEs are unavailable. Surface it early in status, escalate through the EM, and adjust the plan visibly.',
+        'RACI ambiguity - two Accountables or no clear Responsible on a task. Fix it in Initiate; don\'t let it linger into Execute.',
+        'Requirements without acceptance criteria - stories that cannot be tested. Tie every requirement to testable criteria before build accelerates.',
+        'Environment and access delays - instances, integrations, or credentials block the TC. Track as RIDAC items with owners and dates.',
+        'Status without decisions - recurring meetings that report activity but never close actions. Every checkpoint should produce decisions, owners, and dates.',
+        'Testing compressed at the end - UAT becomes a single gate instead of continuous validation. Plan UAT working sessions during Plan, not only at Deliver.',
+        'Silent customer dissatisfaction - issues surface only at closure. Use CSAT touchpoints, executive check-ins, and transparent RAID logs.',
+        'Knowledge transfer as an afterthought - go-live succeeds but adoption fails. Start enablement and training planning during Execute, not after deployment.',
+        'Teams that recognize these patterns early - and escalate through the EM using the Escalation guidance - recover faster than teams that treat each as a one-off surprise.'
       ].join('\n\n')
     },
     {
-      key: 'consultant-lifecycle',
-      title: 'Consultant Lifecycle',
+      // One section for EVERY role's standing duties, not one section per role - a new role is a
+      // new "Role: <name>" block typed into this body, not a new reference_section. Block grammar
+      // (parsed by reference.controller.js's parseRoleLifecycles): paragraphs before the first
+      // "Role:" line are the section lead; each block is its title line, then description
+      // paragraphs, then "Daily:/Weekly:/Throughout:/At closure:" duty lines.
+      key: 'role-lifecycles',
+      title: 'Role Lifecycles',
       body: [
-        'Beyond phase-specific tasks, every consultant on an engagement carries standing duties. These recur daily, weekly, and throughout the engagement.',
+        'Beyond phase-specific tasks, every role on an engagement carries standing duties. Each role below lists them by cadence - what recurs daily, weekly, and across the whole engagement.',
+        'Role: Consultant',
+        'Standing duties for every consultant on the engagement, whatever their specialty.',
         'Daily: Update timekeeping and progress notes per GlideFast policy. Review assigned stories/tasks and RIDAC items you own. Prepare for any customer sessions that day.',
-        'Daily: Flag blockers to the EM or Architect — don\'t wait for the weekly status meeting.',
+        'Daily: Flag blockers to the EM or Architect - don\'t wait for the weekly status meeting.',
         'Weekly: Participate in internal team sync and customer status as scheduled. Confirm your deliverables for the week match the project plan.',
         'Weekly: Review open actions from workshops and meetings; close or reassign stale items.',
-        'Throughout: Follow the methodology tasks for your role in each sub-phase — the RACI grid and By Role view summarize your standing responsibilities.',
-        'Throughout: Use job aids linked from tasks for templates, checklists, and knowledge articles — don\'t reinvent standard artifacts.',
+        'Throughout: Follow the methodology tasks for your role in each sub-phase - the RACI grid and By Role view summarize your standing responsibilities.',
+        'Throughout: Use job aids linked from tasks for templates, checklists, and knowledge articles - don\'t reinvent standard artifacts.',
         'Throughout: Raise risks and issues in RIDAC on the project record; keep descriptions factual and actionable.',
-        'Throughout: Model GlideFast delivery standards in customer sessions — prepared, on time, and aligned to the agreed agenda.'
-      ].join('\n\n')
-    },
-    {
-      key: 'em-lifecycle',
-      title: 'EM Lifecycle',
-      body: [
-        'The Engagement Manager owns delivery health end to end. These standing duties apply in every phase — in addition to the EM\'s RACI assignments on individual tasks.',
-        'Daily: Review project health — schedule, scope, budget, RAID, and team utilization. Clear or delegate blockers.',
+        'Throughout: Model GlideFast delivery standards in customer sessions - prepared, on time, and aligned to the agreed agenda.',
+        'Role: Engagement Manager',
+        'The Engagement Manager owns delivery health end to end. These standing duties apply in every phase - in addition to the EM\'s RACI assignments on individual tasks.',
+        'Daily: Review project health - schedule, scope, budget, RAID, and team utilization. Clear or delegate blockers.',
         'Daily: Ensure customer communications are timely; nothing important should wait for a standing meeting.',
         'Weekly: Facilitate or delegate customer status and internal team sync. Publish the status report / status meeting artifacts per Initiate and Execute tasks.',
         'Weekly: Confirm staffing and upcoming milestones with Resourcing and the delivery team.',
-        'Throughout: Own the SOW baseline — scope changes flow through change order tasks, not side conversations.',
+        'Throughout: Own the SOW baseline - scope changes flow through change order tasks, not side conversations.',
         'Throughout: Maintain RIDAC hygiene; escalate per the Escalation section when customer or internal alignment breaks down.',
-        'Throughout: Keep executive sponsors (ES / AVP) informed at the agreed cadence — not only when things go wrong.',
-        'Throughout: Coach the team on methodology use — correct RACI gaps, missing job aids, and skipped sub-phases early.',
+        'Throughout: Keep executive sponsors (ES / AVP) informed at the agreed cadence - not only when things go wrong.',
+        'Throughout: Coach the team on methodology use - correct RACI gaps, missing job aids, and skipped sub-phases early.',
         'At closure: Ensure case study / marketing capture, CSAT, and internal retrospective tasks complete before the engagement is marked done.'
       ].join('\n\n')
     },
@@ -967,8 +969,75 @@
      enrichJobAidLabels() pass here bulk-copied task text into every label - removed 2026-08-02
      after review; do not reintroduce task-text mirroring. */
 
+  /* Demo changelog entries, applied by sub-phase id rather than inlined among the content above so
+     the whole set can be read - and removed - in one place. They exist so the What's New view, the
+     unread dots on phase steps, and the per-card "N new changes" badges have something to show:
+     before this, the entire model carried three entries, all in Project, none newer than three
+     weeks. Spread deliberately across several phases AND both methodologies so switching either
+     one still shows activity.
+
+     Dates are fixed strings, never computed from today, so the "N days ago" a reader sees is the
+     same one written here. They will drift older over time - refresh them if the demo starts
+     reading as stale. NOTE: these are content, so they DO travel with "Import Delivery 2.0
+     content"; delete this table before a real rollout. */
+  var DEMO_CHANGELOG = {
+    'd2-1-2': [
+      { id: 'c4', ts: '2026-08-03', text: 'Task added: \u201cRe-baseline resource plans\u201d' },
+      { id: 'c5', ts: '2026-07-30', text: 'Comment updated: pre-read expectations for the IPKT' }
+    ],
+    'd2-2-2': [
+      { id: 'c6', ts: '2026-08-02', text: 'Deliverable added: \u201cWorkshop outcomes summary\u201d' }
+    ],
+    'd2-3-1': [
+      { id: 'c7', ts: '2026-08-01', text: 'Level of effort updated for Technical Consultant' },
+      { id: 'c8', ts: '2026-07-22', text: 'Objective rewritten to cover sprint-zero setup' }
+    ],
+    'd2-4-1': [
+      { id: 'c9', ts: '2026-07-28', text: 'Participant added: Training Program Manager' }
+    ],
+    'd2-5-1': [
+      { id: 'c10', ts: '2026-08-02', text: 'Input added: \u201cLessons learned log\u201d' }
+    ],
+    'grs-1-2': [
+      { id: 'c11', ts: '2026-08-03', text: 'Task edited: \u201cReview of IPKT documentation\u201d' }
+    ],
+    'grs-2-1': [
+      { id: 'c12', ts: '2026-08-01', text: 'Task added: \u201cConfirm check-in cadence with the customer\u201d' },
+      { id: 'c13', ts: '2026-07-28', text: 'Comment updated: who chairs the check-in' }
+    ],
+    'grs-3-2': [
+      { id: 'c14', ts: '2026-07-30', text: 'Deliverable added: \u201cRetrospective summary\u201d' }
+    ]
+  };
+
+  function applyDemoChangelog(methodologies) {
+    methodologies.forEach(function (methodology) {
+      (methodology.phases || []).forEach(function (phase) {
+        (phase.subPhases || []).forEach(function (subPhase) {
+          var entries = DEMO_CHANGELOG[subPhase.id];
+          if (!entries) {
+            return;
+          }
+          if (!subPhase.changelog) {
+            subPhase.changelog = [];
+          }
+          entries.forEach(function (entry) {
+            subPhase.changelog.push({
+              id: entry.id,
+              ts: entry.ts,
+              text: entry.text,
+              read: false
+            });
+          });
+        });
+      });
+    });
+  }
+
+  applyDemoChangelog(METHODOLOGIES);
+
   root.DMSeed = {
-    version: 24,
+    version: 27,
     jobTitles: JOB_TITLES,
     methodologies: METHODOLOGIES,
     jargon: JARGON,

@@ -29,7 +29,7 @@ var DMContentModel = (function () {
     reference_section: true
   };
 
-  // Same order as RaciGridService.LETTERS — hydrate must not depend on Angular.
+  // Same order as RaciGridService.LETTERS - hydrate must not depend on Angular.
   var RACI_LETTER_ORDER = {
     R: 0,
     A: 1,
@@ -124,7 +124,7 @@ var DMContentModel = (function () {
   }
 
   // Nested UI payload → flat rows (ready for GlideRecord insert).
-  // options.instanceOrigins — optional list of origins (e.g. glide.servlet.uri) to strip to
+  // options.instanceOrigins - optional list of origins (e.g. glide.servlet.uri) to strip to
   // relative paths alongside any *.service-now.com host (see DMUrlPolicy).
   function dehydrate(payload, options) {
     var rows = [];

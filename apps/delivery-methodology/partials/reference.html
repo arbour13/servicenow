@@ -4,7 +4,7 @@
         <div class="view-root" ng-class="{'view-blur': c.searchOpen()}" ng-mouseover="c.tipMouseOver($event)"
           ng-mouseout="c.tipMouseOut($event)" ng-click="c.dismissTip()">
 
-        <!-- Browse: left nav + one panel. Glossary / job aids stay here — different shapes, own
+        <!-- Browse: left nav + one panel. Glossary / job aids stay here - different shapes, own
            edit paths (glossary inline; job aids on Methodology tasks). -->
         <div class="ref-layout" ng-if="!c.referenceEditMode">
           <nav class="ref-nav" aria-label="Appendix sections" ng-keydown="c.onReferenceNavKeydown($event)">
@@ -64,6 +64,26 @@
                   </div>
                   <p class="ref-trail" ng-repeat="paragraph in c.sectionLayout(c.activeSection).trail track by $index"
                     ng-bind-html="c.jargonHtml(paragraph)"></p>
+                </div>
+
+                <!-- Role Lifecycles: one section, one block per role (title, description, cadence
+                   cards) - see parseRoleLifecycles() for the "Role: <name>" body grammar. -->
+                <div ng-if="c.sectionLayout(c.activeSection).kind === 'roles'">
+                  <p class="ref-lead" ng-repeat="paragraph in c.sectionLayout(c.activeSection).lead track by $index"
+                    ng-bind-html="c.jargonHtml(paragraph)"></p>
+                  <div class="ref-role-block" ng-repeat="role in c.sectionLayout(c.activeSection).roles track by role.title">
+                    <h4 class="ref-role-h">{{role.title}}</h4>
+                    <p class="ref-lead" ng-repeat="paragraph in role.description track by $index"
+                      ng-bind-html="c.jargonHtml(paragraph)"></p>
+                    <div class="ref-cadence-grid">
+                      <div class="ref-cadence-card" ng-repeat="group in role.groups track by group.label">
+                        <span class="ref-cadence-label">{{group.label}}</span>
+                        <ul class="ref-cadence-list">
+                          <li ng-repeat="item in group.items track by $index" ng-bind-html="c.jargonHtml(item)"></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="ref-placeholder" ng-if="!c.sectionParagraphs(c.activeSection).length">
@@ -129,7 +149,7 @@
               <section class="ref-sec">
                 <h3 class="ref-h">Assets &amp; Job Aids <span class="ref-count">{{c.jobAids.length}}</span></h3>
                 <p class="ref-lead">Every job aid referenced by a task, across all methodologies, grouped by phase.
-                  Attach aids on tasks in Methodology content edit — they appear here automatically.</p>
+                  Attach aids on tasks in Methodology content edit - they appear here automatically.</p>
                 <p class="empty" ng-if="!c.jobAids.length">No job aids yet.</p>
                 <div class="ref-aid-group" ng-repeat="group in c.jobAidGroups">
                   <h4 class="ref-aid-group-h">{{group.methodology.name}} &middot; {{group.phase.name}}</h4>
@@ -160,7 +180,7 @@
           </div>
         </div>
 
-        <!-- Edit: prose sections only — same row shape/controls for every item (structure-edit pattern). -->
+        <!-- Edit: prose sections only - same row shape/controls for every item (structure-edit pattern). -->
         <div class="panel" ng-if="c.referenceEditMode">
           <div class="edit-bar">
             <span class="flag">&#9679; Editing appendix</span>
@@ -170,7 +190,7 @@
             <button type="button" class="btn primary" ng-click="c.saveReferenceEdit()" ng-disabled="c.isSaving">Save changes</button>
           </div>
 
-          <p class="struct-toolbar-hint">Edit appendix prose sections here — rename, drag to reorder, add, or remove.
+          <p class="struct-toolbar-hint">Edit appendix prose sections here - rename, drag to reorder, add, or remove.
             Select a section to edit its body. Glossary terms are edited on the Glossary panel; job aids are attached
             on tasks in Methodology. Changes stay in a draft until you save.</p>
 
@@ -201,6 +221,12 @@
           <div class="ref-edit-body" ng-if="c.activeSection">
             <label class="ref-edit-body-label" for="dm-ref-section-body">Body</label>
             <p class="ref-edit-body-hint">Blank lines between paragraphs. Jargon terms highlight automatically when viewing.</p>
+            <!-- The Role Lifecycles grammar is only worth explaining on the section that uses it. -->
+            <p class="ref-edit-body-hint" ng-if="c.activeSection.key === 'role-lifecycles'">
+              This section renders as one block per role. Start a block with a
+              <b>Role: Name</b> paragraph, follow it with description paragraphs, then
+              <b>Daily:</b> / <b>Weekly:</b> / <b>Throughout:</b> / <b>At closure:</b> lines - each
+              cadence becomes a card. Add a role by adding another <b>Role:</b> block.</p>
             <textarea id="dm-ref-section-body" class="edit-in ref-body-in" rows="14"
               ng-model="c.activeSection.body" aria-label="Section body"></textarea>
           </div>

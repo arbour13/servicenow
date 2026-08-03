@@ -1,4 +1,4 @@
-/* Glossary term highlighting with memoized trusted HTML output. Always on — terms and standalone
+/* Glossary term highlighting with memoized trusted HTML output. Always on - terms and standalone
    RACI letters in prose carry data-tip so TipService can show definitions on hover. */
 angular.module('deliveryMethodology').factory('JargonService', [
   '$sce', 'RaciGridService',

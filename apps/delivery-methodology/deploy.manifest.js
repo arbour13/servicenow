@@ -42,10 +42,10 @@
       // scoped app on redeploy.
       appName: 'Delivery Methodology',
 
-      // No fixed scope — showConnection derives it per target instance (vendor prefix + App ID).
+      // No fixed scope - showConnection derives it per target instance (vendor prefix + App ID).
       // CLI builds must pass --scope=…; never hardcode a placeholder scope here.
       version: '1.0.0',
-      // Still iterating on the target instance — packager allows redeploy at the same version and
+      // Still iterating on the target instance - packager allows redeploy at the same version and
       // does not force semver bumps. Flip to false (or remove) when this app is release-ready.
       development: true,
       urlSuffix: 'delivery-methodology',
@@ -101,6 +101,7 @@
         { file: 'js/services/reference-edit.service.js', name: 'ReferenceEditService', type: 'service' },
         { file: 'js/directives/dm-modal.directive.js', name: 'dmModal', type: 'directive' },
         { file: 'js/directives/dm-reorder.directive.js', name: 'dmReorder', type: 'directive' },
+        { file: 'js/directives/dm-combo.directive.js', name: 'dmCombo', type: 'directive' },
         // Harness-only play data (window.DMSeed). deploy: false → packager skips this file entirely
         // so the instance widget stays thin. Local index.html still loads it before DataService.
         { file: 'js/data/seed.js', name: 'DMSeed', type: 'script', deploy: false },
@@ -117,7 +118,7 @@
       // tip/toast/confirm, search, loading) - see manifest.schema.md's widgets[] doc on
       // templateFile vs templatePartial. The four view widgets' templatePartial fragments each get
       // wrapped by the packager as `<div class="app app--view" id="dm-panel-<id>" role="tabpanel"
-      // aria-labelledby="dm-tab-<id>" ng-show="c.isActiveView()">...fragment...</div>` — matching
+      // aria-labelledby="dm-tab-<id>" ng-show="c.isActiveView()">...fragment...</div>` - matching
       // the harness index.html so Shell aria-controls resolve after deploy.
       widgets: [
         {
@@ -165,7 +166,7 @@
       // view; editor + admin = edit content in the tool; admin also gets write ACLs on app metadata.
       features: { portal: false, theme: false, roles: true },
 
-      // Short suffixes only — the packager emits scoped names (<scope>.user / .editor / .admin).
+      // Short suffixes only - the packager emits scoped names (<scope>.user / .editor / .admin).
       // content.server.js builds the same strings from gs.getCurrentScopeName() for hasRole().
       roles: {
         userRoleName: 'user',
@@ -179,7 +180,7 @@
         adminRoleDescription: 'Can edit Delivery Methodology content and the application’s own records.',
       },
 
-      // One self-referencing content table — see SCHEMA.md. Short name becomes
+      // One self-referencing content table - see SCHEMA.md. Short name becomes
       // <scope>_content at emit time. Parent cascade deletes descendants.
       tables: [
         {
@@ -250,7 +251,7 @@
   ],
   serverScript: 'js/server/content.server.js',
 },
-    // Inline serverScriptSource omitted — hosts concatenate files.contentModel + files.serverScript.
+    // Inline serverScriptSource omitted - hosts concatenate files.contentModel + files.serverScript.
 
     // App-local scss/_tokens.scss supplies $var: value !default for the core palette (compiled
     // into :root custom properties). Inlined at package time so ServiceNow's widget SCSS compile

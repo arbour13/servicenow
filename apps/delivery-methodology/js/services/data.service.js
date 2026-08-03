@@ -378,7 +378,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
       });
     },
     // Persist What's New read map. Harness is localStorage-only (WhatsNewService); SN writes
-    // the dm.changelog.seen user preference. Failures are ignored — unread UI still works in-session.
+    // the dm.changelog.seen user preference. Failures are ignored - unread UI still works in-session.
     saveChangelogSeen: function (seenMap) {
       if (!serverApi) {
         return $q.resolve({
