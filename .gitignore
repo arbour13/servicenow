@@ -8,6 +8,9 @@ dist/
 dist-ssr/
 *.local
 
+# Client work kept local — deliberately not pushed to the GitHub backup
+components/
+
 # OS / editor
 .DS_Store
 .vscode/*

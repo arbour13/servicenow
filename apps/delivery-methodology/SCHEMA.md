@@ -124,13 +124,13 @@ No content ships in the deploy artifact itself (avoids the redeploy-clobbers-edi
 shipping rows directly). Instead: `js/data/standard-content.js` — a deployed (`deploy: true`,
 unlike harness-only `js/data/seed.js`) snapshot of the canonical GlideFast Delivery 2.0 content,
 concatenated onto the widget **server** script via `deploy.manifest.js`'s `files.contentModel`
-(same mechanism as `DMUrlPolicy`/`DMContentModel`). `content.server.js`'s `seedStandard` action
+(same mechanism as `DMUrlPolicy`/`DMContentModel`). `content.server.js`'s `importStandardContent` action
 reuses the existing `saveContent()` insert path wholesale (dehydrate → validate → parent-link →
 create is the same job regardless of payload origin) behind one new guard: it refuses outright if
 the content table already has any rows, which is what makes it structurally incapable of
 clobbering existing content — not a revision check, an outright refusal. Client: an empty-state
-button on the Methodology view, editor/admin only (`AppStateService.seedStandard()` →
-`DataService.seedStandard()`), one-time and manually triggered — never automatic.
+button on the Methodology view, editor/admin only (`AppStateService.importStandardContent()` →
+`DataService.importStandardContent()`), one-time and manually triggered — never automatic.
 
 `js/data/standard-content.js` is a **generated snapshot** of `js/data/seed.js`'s payload (see its
 own header for the regeneration command) — the harness file stays the single authored source, to

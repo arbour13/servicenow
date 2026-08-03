@@ -93,6 +93,10 @@
      1.12:1 on the white bar - the app's own --chip-on-bg note records this exact finding (a pale
      tint tops out ~1.1:1 and the border is the real signal). */
   --vtab-on-line: transparent;
+  /* Destructive text/border for OUTLINED danger controls only - solid .btn.danger keeps its own
+     fixed red (white on it works in both themes). The solid red reads at just 2.16:1 as ink on the
+     dark panel, so it cannot double as a text colour here. */
+  --danger-ink: #f0857a;
   --focus-ring: 2px solid var(--hs-teal);
   --focus-ring-offset: 2px;
   --hs-border-tertiary: #{$ink-soft};
@@ -171,7 +175,13 @@
   --wash-rgb: 10, 33, 54;
   --card-line: #a5d6e2;           /* .fcard's existing 1px border box - see --card-line comment
                                       on the base :root; only visible once its colour isn't transparent */
-  --hs-teal: #008365;
+  --danger-ink: #b42318;         /* the solid-danger red works as ink on the pale page (6.57:1) */
+  --hs-teal: #00745a;            /* darkened from #008365 for the same reason as --teal below: at
+                                     #008365 this cleared 4.5:1 only on pure white (4.74) and failed
+                                     on every tinted surface it actually lands on - the About panel
+                                     (3.88), the Billable pill (3.86), the comment icon (2.95).
+                                     #00745a holds 4.70+ on both tinted text surfaces, 5.76 on
+                                     white, and 3.59 for the icon (non-text needs 3:1). */
   --teal: #005c63;               /* darker than the mid-palette version - a tinted page eats
                                      contrast margin, verified >=4.5:1 on every surface below */
   /* The brand gradient darkened so it stops glowing on a pale page (the "too flashy" feedback).
@@ -1020,19 +1030,21 @@ a {
   margin-top: 14px;
 }
 
+/* Underlined at rest, not just on hover: this is the only link in the chrome, and colour alone
+   was the sole thing marking it interactive. */
 .methodology-intro-feedback {
   flex-shrink: 0;
   color: var(--hs-teal);
   font-size: 12.5px;
   font-weight: 600;
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
   border-radius: var(--radius-round);
   padding: 6px 12px;
 }
 
 .methodology-intro-feedback:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-thickness: 2px;
 }
 
 .methodology-intro-body {
@@ -3570,9 +3582,9 @@ select.edit-in option {
   text-align: center;
 }
 
-/* TEMPORARY destructive testing action at the foot of the Methodology view - separated by a rule
-   and pushed well clear of the content above so it can't be hit by accident. Remove alongside the
-   .reset-content-zone block in partials/methodology.html when seeding no longer needs testing. */
+/* TEMPORARY destructive testing action at the top of the Methodology view, in its own card so it
+   reads as tooling rather than content. Remove alongside the .reset-content-zone block in
+   partials/methodology.html when seeding no longer needs testing. */
 .reset-content-zone {
   display: flex;
   align-items: center;
@@ -3583,6 +3595,37 @@ select.edit-in option {
   border: 1px solid var(--line-soft);
   border-radius: 10px;
   background: var(--surface-flat);
+}
+
+/* Outlined, not filled: a solid red button here outranked the page's real content as the first
+   scan stop. Solid red stays reserved for the confirm dialog this opens, where the destructive
+   choice is actually being made. */
+.reset-content-zone .btn.danger {
+  background: transparent;
+  border-color: var(--danger-ink);
+  color: var(--danger-ink);
+}
+
+.reset-content-zone .btn.danger:hover {
+  background: color-mix(in srgb, var(--danger-ink) 12%, transparent);
+  border-color: var(--danger-ink);
+  color: var(--danger-ink);
+  box-shadow: none;
+}
+
+.reset-content-zone .btn.danger:active {
+  background: color-mix(in srgb, var(--danger-ink) 20%, transparent);
+  border-color: var(--danger-ink);
+  color: var(--danger-ink);
+  box-shadow: var(--shadow-inset);
+}
+
+.reset-content-zone .btn.danger:disabled,
+.reset-content-zone .btn.danger[disabled] {
+  background: transparent !important;
+  border-color: var(--danger-ink) !important;
+  color: var(--danger-ink) !important;
+  -webkit-text-fill-color: var(--danger-ink) !important;
 }
 
 .reset-content-hint {
@@ -4554,6 +4597,109 @@ select.edit-in option {
   font-size: 13px;
   color: var(--ink-2);
   line-height: 1.5;
+}
+
+/* Carded standard sections (Challenges "Title — explanation" paragraphs; the lifecycle sections'
+   Daily/Weekly/Throughout duties) - same surface language as .ref-raci-card. See
+   sectionLayout() in reference.controller.js for the parsing conventions. */
+.ref-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+@media (min-width: 760px) {
+  .ref-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.ref-card {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.ref-card-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.ref-card-body {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.ref-cadence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+@media (min-width: 760px) {
+  .ref-cadence-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.ref-cadence-card {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.ref-cadence-label {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: rgba(var(--wash-rgb), 0.07);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-bottom: 10px;
+}
+
+.ref-cadence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ref-cadence-list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.ref-cadence-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--hs-teal);
+}
+
+.ref-trail {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin: 0 0 12px;
 }
 
 .ref-rules {

@@ -958,35 +958,17 @@
     }
   ];
 
-  function enrichJobAidLabels(methodologies) {
-    methodologies.forEach(function (methodology) {
-      (methodology.phases || []).forEach(function (phase) {
-        (phase.subPhases || []).forEach(function (subPhase) {
-          (subPhase.tasks || []).forEach(function (task) {
-            (task.jobAids || []).forEach(function (jobAid, index) {
-              if (jobAid.label) {
-                return;
-              }
-              var text = String(task.text || '').replace(/\s+/g, ' ').trim();
-              if (text.length > 72) {
-                text = text.slice(0, 69) + '…';
-              }
-              if ((task.jobAids || []).length > 1) {
-                jobAid.label = text + ' (' + (index + 1) + ')';
-              } else {
-                jobAid.label = text;
-              }
-            });
-          });
-        });
-      });
-    });
-  }
-
-  enrichJobAidLabels(METHODOLOGIES);
+  /* Job aids deliberately carry NO generated label. A label that mirrors its task's text tells
+     the reader nothing the task line above it didn't - and it costs the one thing the generic
+     rendering did well: signalling "this is a job aid for this task". The template's
+     {{j.label || 'Job Aid'}} fallback renders every unlabeled aid as "Job Aid"; a label is only
+     worth setting once it can describe what the linked document actually teaches or helps with,
+     which needs real URLs (currently all '#') and someone who knows the assets. An earlier
+     enrichJobAidLabels() pass here bulk-copied task text into every label - removed 2026-08-02
+     after review; do not reintroduce task-text mirroring. */
 
   root.DMSeed = {
-    version: 23,
+    version: 24,
     jobTitles: JOB_TITLES,
     methodologies: METHODOLOGIES,
     jargon: JARGON,

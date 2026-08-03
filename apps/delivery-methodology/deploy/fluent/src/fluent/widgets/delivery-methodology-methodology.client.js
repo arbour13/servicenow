@@ -350,12 +350,12 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
 
   // One-time "Import Delivery 2.0 content" action offered by the empty-state below when this
   // instance's content table is empty. Guarded by canEdit/isSaving in the template (same as
-  // every other write action here) - AppStateService.seedStandard() itself also refuses a
+  // every other write action here) - AppStateService.importStandardContent() itself also refuses a
   // double-fire via tryBeginSave(), and the server refuses outright if the table already has
   // rows, so this button cannot clobber existing content no matter how it's triggered.
-  c.seedStandard = function () {
+  c.importStandardContent = function () {
     clearCollapsedPreferences();
-    AppStateService.seedStandard();
+    AppStateService.importStandardContent();
   };
 
   // Testing affordance for the empty state / one-click import above: wipes all content so that flow

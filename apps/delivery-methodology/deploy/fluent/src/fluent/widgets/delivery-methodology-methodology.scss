@@ -118,6 +118,10 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
      1.12:1 on the white bar - the app's own --chip-on-bg note records this exact finding (a pale
      tint tops out ~1.1:1 and the border is the real signal). */
   --vtab-on-line: transparent;
+  /* Destructive text/border for OUTLINED danger controls only - solid .btn.danger keeps its own
+     fixed red (white on it works in both themes). The solid red reads at just 2.16:1 as ink on the
+     dark panel, so it cannot double as a text colour here. */
+  --danger-ink: #f0857a;
   --focus-ring: 2px solid var(--hs-teal);
   --focus-ring-offset: 2px;
   --hs-border-tertiary: #{$ink-soft};
@@ -193,7 +197,13 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   --wash-rgb: 10, 33, 54;
   --card-line: #a5d6e2;           /* .fcard's existing 1px border box - see --card-line comment
                                       on the base :root; only visible once its colour isn't transparent */
-  --hs-teal: #008365;
+  --danger-ink: #b42318;         /* the solid-danger red works as ink on the pale page (6.57:1) */
+  --hs-teal: #00745a;            /* darkened from #008365 for the same reason as --teal below: at
+                                     #008365 this cleared 4.5:1 only on pure white (4.74) and failed
+                                     on every tinted surface it actually lands on - the About panel
+                                     (3.88), the Billable pill (3.86), the comment icon (2.95).
+                                     #00745a holds 4.70+ on both tinted text surfaces, 5.76 on
+                                     white, and 3.59 for the icon (non-text needs 3:1). */
   --teal: #005c63;               /* darker than the mid-palette version - a tinted page eats
                                      contrast margin, verified >=4.5:1 on every surface below */
   /* The brand gradient darkened so it stops glowing on a pale page (the "too flashy" feedback).
@@ -793,17 +803,18 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   margin-top: 0;
 }.dm-widget .sp-brief-body .sec {
   margin-top: 14px;
-}.dm-widget .methodology-intro-feedback {
+}/* Underlined at rest, not just on hover: this is the only link in the chrome, and colour alone
+   was the sole thing marking it interactive. */.dm-widget .methodology-intro-feedback {
   flex-shrink: 0;
   color: var(--hs-teal);
   font-size: 12.5px;
   font-weight: 600;
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
   border-radius: var(--radius-round);
   padding: 6px 12px;
 }.dm-widget .methodology-intro-feedback:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-thickness: 2px;
 }.dm-widget .methodology-intro-body {
   display: grid;
   grid-template-columns: 1fr;
@@ -2613,9 +2624,9 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   font-size: 14px;
   padding: 30px 0;
   text-align: center;
-}/* TEMPORARY destructive testing action at the foot of the Methodology view - separated by a rule
-   and pushed well clear of the content above so it can't be hit by accident. Remove alongside the
-   .reset-content-zone block in partials/methodology.html when seeding no longer needs testing. */.dm-widget .reset-content-zone {
+}/* TEMPORARY destructive testing action at the top of the Methodology view, in its own card so it
+   reads as tooling rather than content. Remove alongside the .reset-content-zone block in
+   partials/methodology.html when seeding no longer needs testing. */.dm-widget .reset-content-zone {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2625,6 +2636,27 @@ $card-mix-2: #0d435f !default;/* Palette literals live in _tokens.scss as $var: 
   border: 1px solid var(--line-soft);
   border-radius: 10px;
   background: var(--surface-flat);
+}/* Outlined, not filled: a solid red button here outranked the page's real content as the first
+   scan stop. Solid red stays reserved for the confirm dialog this opens, where the destructive
+   choice is actually being made. */.dm-widget .reset-content-zone .btn.danger {
+  background: transparent;
+  border-color: var(--danger-ink);
+  color: var(--danger-ink);
+}.dm-widget .reset-content-zone .btn.danger:hover {
+  background: #{'color-mix(in srgb, var(--danger-ink) 12%, transparent)'};
+  border-color: var(--danger-ink);
+  color: var(--danger-ink);
+  box-shadow: none;
+}.dm-widget .reset-content-zone .btn.danger:active {
+  background: #{'color-mix(in srgb, var(--danger-ink) 20%, transparent)'};
+  border-color: var(--danger-ink);
+  color: var(--danger-ink);
+  box-shadow: var(--shadow-inset);
+}.dm-widget .reset-content-zone .btn.danger:disabled, .dm-widget .reset-content-zone .btn.danger[disabled] {
+  background: transparent !important;
+  border-color: var(--danger-ink) !important;
+  color: var(--danger-ink) !important;
+  -webkit-text-fill-color: var(--danger-ink) !important;
 }.dm-widget .reset-content-hint {
   font-size: 12px;
   color: var(--ink-faint);

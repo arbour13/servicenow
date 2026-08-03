@@ -32,7 +32,39 @@
                 </div>
 
                 <p ng-repeat="paragraph in c.sectionParagraphs(c.activeSection) track by $index"
+                  ng-if="c.sectionLayout(c.activeSection).kind === 'prose'"
                   ng-class="{'ref-lead': $first}" ng-bind-html="c.jargonHtml(paragraph)"></p>
+
+                <!-- Carded renderings of the standard sections' own text conventions - see
+                   sectionLayout() in reference.controller.js. Content is still one plain-text
+                   body; a body that stops matching falls back to the prose branch above. -->
+                <div ng-if="c.sectionLayout(c.activeSection).kind === 'cards'">
+                  <p class="ref-lead" ng-repeat="paragraph in c.sectionLayout(c.activeSection).lead track by $index"
+                    ng-bind-html="c.jargonHtml(paragraph)"></p>
+                  <div class="ref-card-grid">
+                    <div class="ref-card" ng-repeat="card in c.sectionLayout(c.activeSection).cards track by $index">
+                      <div class="ref-card-title">{{card.title}}</div>
+                      <div class="ref-card-body" ng-bind-html="c.jargonHtml(card.body)"></div>
+                    </div>
+                  </div>
+                  <p class="ref-trail" ng-repeat="paragraph in c.sectionLayout(c.activeSection).trail track by $index"
+                    ng-bind-html="c.jargonHtml(paragraph)"></p>
+                </div>
+
+                <div ng-if="c.sectionLayout(c.activeSection).kind === 'cadence'">
+                  <p class="ref-lead" ng-repeat="paragraph in c.sectionLayout(c.activeSection).lead track by $index"
+                    ng-bind-html="c.jargonHtml(paragraph)"></p>
+                  <div class="ref-cadence-grid">
+                    <div class="ref-cadence-card" ng-repeat="group in c.sectionLayout(c.activeSection).groups track by group.label">
+                      <span class="ref-cadence-label">{{group.label}}</span>
+                      <ul class="ref-cadence-list">
+                        <li ng-repeat="item in group.items track by $index" ng-bind-html="c.jargonHtml(item)"></li>
+                      </ul>
+                    </div>
+                  </div>
+                  <p class="ref-trail" ng-repeat="paragraph in c.sectionLayout(c.activeSection).trail track by $index"
+                    ng-bind-html="c.jargonHtml(paragraph)"></p>
+                </div>
 
                 <div class="ref-placeholder" ng-if="!c.sectionParagraphs(c.activeSection).length">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"

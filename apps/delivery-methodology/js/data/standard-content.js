@@ -1,9 +1,9 @@
 /* Delivery 2.0 content payload - the one-time "Import Delivery 2.0 content" action offers this
-   when an instance's content table is empty (see content.server.js's seedStandard action and
-   js/services/data.service.js's seedStandard()). Deployed (unlike js/data/seed.js, which stays
-   deploy: false / harness-only) - see deploy.manifest.js's files.contentModel entry, which
-   concatenates this onto the widget SERVER script alongside url-policy.js / content-model.js,
-   in the same Rhino-safe bare-var style.
+   when an instance's content table is empty (see content.server.js's importStandardContent action
+   and js/services/data.service.js's importStandardContent()). Deployed (unlike js/data/seed.js,
+   which stays deploy: false / harness-only) - see deploy.manifest.js's files.contentModel entry,
+   which concatenates this onto the widget SERVER script alongside url-policy.js /
+   content-model.js, in the same Rhino-safe bare-var style.
 
    GENERATED, do not hand-edit. This is js/data/seed.js's payload (jobTitles/methodologies/
    jargon/referenceSections only - not its blankSubPhase harness helper or version field, which
@@ -293,8 +293,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d211t5-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Notate any questions or concerns in the IPKT document to discuss duri…"
+                      "roles": []
                     }
                   ]
                 }
@@ -441,16 +440,14 @@ var DMStandardContent = {
                       "url": "#",
                       "roles": [
                         "em"
-                      ],
-                      "label": "Discuss Q&A, risks and issues. Document in RIDAC on the project record. (1)"
+                      ]
                     },
                     {
                       "id": "ja-d212t4-2",
                       "url": "#",
                       "roles": [
                         "arch"
-                      ],
-                      "label": "Discuss Q&A, risks and issues. Document in RIDAC on the project record. (2)"
+                      ]
                     }
                   ]
                 },
@@ -477,8 +474,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d212t5-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Tailor the Customer Startup checklist"
+                      "roles": []
                     }
                   ]
                 },
@@ -505,8 +501,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d212t6-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Outline workshops, duration, and attendees"
+                      "roles": []
                     }
                   ]
                 },
@@ -630,16 +625,14 @@ var DMStandardContent = {
                       "url": "#",
                       "roles": [
                         "em"
-                      ],
-                      "label": "Introduction to the core GlideFast team (1)"
+                      ]
                     },
                     {
                       "id": "ja-d213t1-2",
                       "url": "#",
                       "roles": [
                         "arch"
-                      ],
-                      "label": "Introduction to the core GlideFast team (2)"
+                      ]
                     }
                   ]
                 },
@@ -666,8 +659,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d213t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Prepare and walk through the start-up checklist with the customer"
+                      "roles": []
                     }
                   ]
                 },
@@ -757,8 +749,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d213t6-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Create the initial project plan"
+                      "roles": []
                     }
                   ]
                 },
@@ -785,8 +776,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d213t7-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Facilitate the meeting using the standard Customer Pre-Kickoff deck"
+                      "roles": []
                     }
                   ]
                 }
@@ -872,8 +862,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d214t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Engagement Manager customizes the Get to Know You deck"
+                      "roles": []
                     }
                   ]
                 },
@@ -942,8 +931,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d214t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Review timekeeping guidelines and progress notes"
+                      "roles": []
                     }
                   ]
                 },
@@ -1092,8 +1080,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d215t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Facilitate the meeting using the standard kickoff deck covering proje…"
+                      "roles": []
                     }
                   ]
                 },
@@ -1141,8 +1128,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d215t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Finalize schedule, agenda, and SMEs for future workshops"
+                      "roles": []
                     }
                   ]
                 },
@@ -1172,8 +1158,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d215t5-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Create the first status report / status meeting"
+                      "roles": []
                     }
                   ]
                 },
@@ -1203,8 +1188,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d215t6-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Determine leadership check-in cadence (Executive Sponsor)"
+                      "roles": []
                     }
                   ]
                 }
@@ -1335,8 +1319,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d221t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Role play prep for workshop"
+                      "roles": []
                     }
                   ]
                 },
@@ -1363,8 +1346,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d221t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Prepare Demo instance"
+                      "roles": []
                     }
                   ]
                 },
@@ -1412,8 +1394,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d221t6-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Lead Product Workshop preparation"
+                      "roles": []
                     }
                   ]
                 },
@@ -1576,8 +1557,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d222t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Execute the Product Workshop"
+                      "roles": []
                     }
                   ]
                 },
@@ -1625,8 +1605,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d222t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Lead the effort to coordinate requirements gathering cadence"
+                      "roles": []
                     }
                   ]
                 },
@@ -1653,8 +1632,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d222t5-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Initiate Testing Strategy and UAT Planning working session(s)"
+                      "roles": []
                     }
                   ]
                 },
@@ -1681,8 +1659,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d222t6-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Initiate Change Enablement & Governance workshop session(s)"
+                      "roles": []
                     }
                   ]
                 },
@@ -1818,8 +1795,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d223t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Draft / populate user stories capturing workshop information into the…"
+                      "roles": []
                     }
                   ]
                 },
@@ -1843,8 +1819,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d223t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Calibrate scope: compare draft with SoW and enter data into the RTM"
+                      "roles": []
                     }
                   ]
                 },
@@ -1904,8 +1879,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d223t5-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Create a deployment record on the ServiceNow partner portal"
+                      "roles": []
                     }
                   ]
                 },
@@ -2023,8 +1997,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d224t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Discuss approach for non-in-scope stories and determine next steps"
+                      "roles": []
                     }
                   ]
                 },
@@ -2057,14 +2030,12 @@ var DMStandardContent = {
                     {
                       "id": "ja-d224t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Facilitate change order based on scope rebalancing outcomes (1)"
+                      "roles": []
                     },
                     {
                       "id": "ja-d224t3-2",
                       "url": "#",
-                      "roles": [],
-                      "label": "Facilitate change order based on scope rebalancing outcomes (2)"
+                      "roles": []
                     }
                   ]
                 }
@@ -2136,8 +2107,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d225t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Add short descriptions, personas, acceptance criteria, story pointing…"
+                      "roles": []
                     }
                   ]
                 },
@@ -2185,8 +2155,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d225t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Add testing acceptance criteria for functional business requirements …"
+                      "roles": []
                     }
                   ]
                 },
@@ -2213,8 +2182,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d225t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Draft high level technical approach to development within the High-Le…"
+                      "roles": []
                     }
                   ]
                 },
@@ -2304,8 +2272,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d225t8-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Schedule customer sprint planning review"
+                      "roles": []
                     }
                   ]
                 },
@@ -2429,8 +2396,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d226t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Obtain customer approval and signoff. Document approvals within user …"
+                      "roles": []
                     }
                   ]
                 },
@@ -2551,8 +2517,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Facilitate and prepare for Sprint planning prior to start of the upco…"
+                      "roles": []
                     }
                   ]
                 },
@@ -2579,8 +2544,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Review stories with the project team and ensure plan for the sprint i…"
+                      "roles": []
                     }
                   ]
                 },
@@ -2607,8 +2571,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "User story refining and unblocking"
+                      "roles": []
                     }
                   ]
                 },
@@ -2635,8 +2598,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Establish Daily Standup (DSU) cadence with the client and GlideFast team"
+                      "roles": []
                     }
                   ]
                 },
@@ -2708,8 +2670,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t7-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Defect remediation"
+                      "roles": []
                     }
                   ]
                 },
@@ -2736,8 +2697,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t8-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Create code notations and work notes within stories"
+                      "roles": []
                     }
                   ]
                 },
@@ -2764,8 +2724,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t9-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Conduct unit tests for developed features"
+                      "roles": []
                     }
                   ]
                 },
@@ -2792,8 +2751,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t10-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Conduct peer reviews of code / configurations"
+                      "roles": []
                     }
                   ]
                 },
@@ -2820,8 +2778,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t11-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Prepare for the demonstration at the end of the sprint"
+                      "roles": []
                     }
                   ]
                 },
@@ -2869,8 +2826,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d231t13-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Deliver sprint demos"
+                      "roles": []
                     }
                   ]
                 },
@@ -2991,8 +2947,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d232t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Draft technical documentation and As Built documents"
+                      "roles": []
                     }
                   ]
                 },
@@ -3040,8 +2995,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d232t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Deliver E2E demos"
+                      "roles": []
                     }
                   ]
                 },
@@ -3068,8 +3022,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d232t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Schedule and conduct UAT Kickoff meetings (including deck preparation)"
+                      "roles": []
                     }
                   ]
                 },
@@ -3096,8 +3049,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d232t5-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Execute Change Enablement and Go-Live Support planning"
+                      "roles": []
                     }
                   ]
                 },
@@ -3232,8 +3184,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d241t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Establish UAT reporting cadence"
+                      "roles": []
                     }
                   ]
                 },
@@ -3281,8 +3232,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d241t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Work with customer on backlog prioritization and plan for enhancements"
+                      "roles": []
                     }
                   ]
                 }
@@ -3357,8 +3307,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d242t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Schedule and prepare for the Go Live readiness meeting with the customer"
+                      "roles": []
                     }
                   ]
                 },
@@ -3385,8 +3334,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d242t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Finalize the deployment runbook"
+                      "roles": []
                     }
                   ]
                 },
@@ -3413,8 +3361,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d242t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Finalize the As-Built technical document"
+                      "roles": []
                     }
                   ]
                 },
@@ -3504,8 +3451,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d242t7-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Develop and finalize the hypercare plan"
+                      "roles": []
                     }
                   ]
                 }
@@ -3573,8 +3519,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d243t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Review standard go live readiness agenda deck (run book, RTM, Go Live…"
+                      "roles": []
                     }
                   ]
                 },
@@ -3622,8 +3567,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d243t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Prepare for “go live” / change enablement final phases of plan"
+                      "roles": []
                     }
                   ]
                 },
@@ -3780,8 +3724,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d244t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Commit update sets to production"
+                      "roles": []
                     }
                   ]
                 },
@@ -3808,8 +3751,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d244t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Execute and complete smoke testing"
+                      "roles": []
                     }
                   ]
                 },
@@ -3836,8 +3778,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d244t5-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Execute “go live” / change enablement"
+                      "roles": []
                     }
                   ]
                 },
@@ -3984,8 +3925,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d245t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Send Hypercare end of day status"
+                      "roles": []
                     }
                   ]
                 },
@@ -4118,8 +4058,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d251t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Schedule and facilitate internal retrospective & execute internal les…"
+                      "roles": []
                     }
                   ]
                 },
@@ -4214,8 +4153,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d251t5-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Confirm go live celebration logistics with Marketing team and client …"
+                      "roles": []
                     }
                   ]
                 },
@@ -4320,8 +4258,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d252t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "EM facilitates delivery of retrospective deck"
+                      "roles": []
                     }
                   ]
                 },
@@ -4348,8 +4285,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d252t2-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "Update customer project closure deck (EM)"
+                      "roles": []
                     }
                   ]
                 },
@@ -4508,8 +4444,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d253t1-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "EM facilitates delivery of closure deck"
+                      "roles": []
                     }
                   ]
                 },
@@ -4570,8 +4505,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d253t3-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "EM confirms ServiceNow CSAT risk of the project"
+                      "roles": []
                     }
                   ]
                 },
@@ -4600,8 +4534,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d253t4-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "EM notifies Chief Customer / Delivery officer to send project complet…"
+                      "roles": []
                     }
                   ]
                 },
@@ -4627,8 +4560,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d253t5-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "EM validates data on ServiceNow partner portal and closes deployment …"
+                      "roles": []
                     }
                   ]
                 },
@@ -4657,8 +4589,7 @@ var DMStandardContent = {
                     {
                       "id": "ja-d253t6-1",
                       "url": "#",
-                      "roles": [],
-                      "label": "EM closes timesheet project tasks and resource plans"
+                      "roles": []
                     }
                   ]
                 },

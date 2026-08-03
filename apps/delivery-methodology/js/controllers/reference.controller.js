@@ -36,6 +36,114 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     }
     return trimmed.split(/\n\n+/);
   };
+
+  /* Presentation-only parsing of the standard sections' own text conventions - the body stays one
+     plain-text field (schema, editor, and search untouched), same pattern as the hardcoded 'raci'
+     definition cards. 'challenges' paragraphs read "Title — explanation" and become one card each;
+     the lifecycle sections' "Daily:/Weekly:/Throughout:" duties group into one card per cadence.
+     Paragraphs that don't match stay prose, before (lead) or after (trail) the cards, so a
+     rewritten body degrades to the plain-prose rendering rather than breaking.
+
+     Memoized per section key + body: these return fresh objects, and ng-repeat over a fresh
+     object graph re-triggers every digest (see the suite's infinite-digest note). */
+  var sectionLayoutCache = {};
+
+  var CHALLENGE_TITLE_MAX = 100;
+  var CADENCE_LABEL_PATTERN = /^([A-Z][A-Za-z ]{2,20}):\s+/;
+
+  // First and last paragraphs are ALWAYS prose (the section's intro/outro convention) - both
+  // happen to contain mid-sentence em dashes, so position, not punctuation, is what reliably
+  // separates them from the "Title — explanation" card paragraphs between them. A title that
+  // contains a full sentence is prose too, wherever it sits.
+  function parseChallengeCards(paragraphs) {
+    var lead = [], cards = [], trail = [];
+    paragraphs.forEach(function (paragraph, index) {
+      var isEdge = index === 0 || (index === paragraphs.length - 1 && paragraphs.length > 1);
+      var splitAt = paragraph.indexOf(' — ');
+      var title = paragraph.slice(0, splitAt).trim();
+      var looksLikeCard = splitAt > 0 && splitAt <= CHALLENGE_TITLE_MAX && title.indexOf('. ') < 0;
+      if (!isEdge && looksLikeCard) {
+        cards.push({
+          title: title,
+          body: paragraph.slice(splitAt + 3).trim()
+        });
+      } else if (!cards.length) {
+        lead.push(paragraph);
+      } else {
+        trail.push(paragraph);
+      }
+    });
+    return {
+      kind: 'cards',
+      lead: lead,
+      cards: cards,
+      trail: trail
+    };
+  }
+
+  function parseCadenceGroups(paragraphs) {
+    var lead = [], groups = [], trail = [];
+    var groupsByLabel = {};
+    paragraphs.forEach(function (paragraph) {
+      var match = paragraph.match(CADENCE_LABEL_PATTERN);
+      if (match) {
+        var label = match[1];
+        if (!groupsByLabel[label]) {
+          groupsByLabel[label] = {
+            label: label,
+            items: []
+          };
+          groups.push(groupsByLabel[label]);
+        }
+        groupsByLabel[label].items.push(paragraph.slice(match[0].length).trim());
+      } else if (!groups.length) {
+        lead.push(paragraph);
+      } else {
+        trail.push(paragraph);
+      }
+    });
+    return {
+      kind: 'cadence',
+      lead: lead,
+      groups: groups,
+      trail: trail
+    };
+  }
+
+  c.sectionLayout = function (section) {
+    var key = section && section.key;
+    var body = section && section.body != null ? String(section.body) : '';
+    var cached = sectionLayoutCache[key];
+    if (cached && cached.body === body) {
+      return cached.layout;
+    }
+
+    var paragraphs = c.sectionParagraphs(section);
+    var layout = {
+      kind: 'prose'
+    };
+    if (key === 'challenges') {
+      layout = parseChallengeCards(paragraphs);
+      if (!layout.cards.length) {
+        layout = {
+          kind: 'prose'
+        };
+      }
+    } else if (key === 'consultant-lifecycle' || key === 'em-lifecycle') {
+      layout = parseCadenceGroups(paragraphs);
+      if (!layout.groups.length) {
+        layout = {
+          kind: 'prose'
+        };
+      }
+    }
+
+    sectionLayoutCache[key] = {
+      body: body,
+      layout: layout
+    };
+    return layout;
+  };
   c.jobTitleColor = function (jobTitleId) {
     return MethodologyDomainService.jobTitleColor(c.jobTitles, jobTitleId);
   };

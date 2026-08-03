@@ -23,7 +23,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
 
   // Post-load side effects (RACI grid, job aids index, What's New hydration, the initial nav
   // push) live in Shell's own closures over services this factory does not inject - see
-  // shell.controller.js's bootstrap call. bind() lets seedStandard() below reuse that SAME
+  // shell.controller.js's bootstrap call. bind() lets importStandardContent() below reuse that SAME
   // callback instead of duplicating it, the same way ContentEditService/StructureEditService/
   // NavigationService already take a hostHooks object from Shell.
   var hooks = {};
@@ -257,14 +257,14 @@ angular.module('deliveryMethodology').factory('AppStateService', [
   // Shell's own bound onAfterLoad (RACI grid / job aids / What's New / nav push) - because a
   // table that was empty a moment ago now has real methodologies/phases/tasks that every one of
   // those needs to see for the first time, same as any other fresh load.
-  function seedStandard() {
+  function importStandardContent() {
     if (!tryBeginSave()) {
       return $q.reject({
         error: 'Save already in progress'
       });
     }
 
-    return DataService.seedStandard().then(function (data) {
+    return DataService.importStandardContent().then(function (data) {
       // No extra notify() here: applyLoadedData() below already broadcasts once at the end of
       // its own run (in both its empty and non-empty branches), and by then state.isSaving is
       // already false - a second broadcast would be pure redundancy, not a missed update.
@@ -286,8 +286,8 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     });
   }
 
-  // Testing counterpart to seedStandard() - clears all content so the fresh-instance empty state
-  // can be exercised repeatedly. Runs the same applyLoadedData() pipeline on the way back, which
+  // Testing counterpart to importStandardContent() - clears all content so the fresh-instance
+  // empty state can be exercised repeatedly. Runs the same applyLoadedData() pipeline back, which
   // takes its own empty branch (null methodologyId/subPhaseId, no nav push) and leaves every
   // widget correctly showing nothing. Server clearAll requires canAdmin.
   function resetAllContent() {
@@ -543,7 +543,7 @@ angular.module('deliveryMethodology').factory('AppStateService', [
     persistMethodologies: persistMethodologies,
     applyLoadedData: applyLoadedData,
     applySyncedData: applySyncedData,
-    seedStandard: seedStandard,
+    importStandardContent: importStandardContent,
     resetAllContent: resetAllContent,
     readState: readState,
     bindActiveView: bindActiveView,

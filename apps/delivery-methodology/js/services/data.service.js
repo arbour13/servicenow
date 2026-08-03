@@ -308,11 +308,11 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
         return responseData;
       });
     },
-    // Testing counterpart to seedStandard(): wipes ALL content so the empty state (and the
-    // one-click load) can be exercised repeatedly. Deliberately does NOT go through saveData() -
-    // that reuses cachedJobTitles/cachedJargon/cachedReferenceSections, which would leave those
-    // lookup rows behind and the table non-empty, so seedStandard's emptiness guard would then
-    // refuse the reload. Sends explicitly empty collections instead, and clears the caches so a
+    // Testing counterpart to importStandardContent(): wipes ALL content so the empty state (and
+    // the one-click import) can be exercised repeatedly. Deliberately does NOT go through
+    // saveData() - that reuses cachedJobTitles/cachedJargon/cachedReferenceSections, which would
+    // leave those lookup rows behind and the table non-empty, so the import's emptiness guard
+    // would then refuse it. Sends explicitly empty collections instead, and clears the caches so a
     // subsequent save cannot resurrect them.
     resetAllContent: function () {
       cachedJobTitles = [];
@@ -350,8 +350,8 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
     // in-memory resolve) - the harness's own "empty" state only exists after a real
     // structure-edit delete-everything-and-save, so this should make the load durable, matching
     // what the server path does. The server itself refuses if the table isn't actually empty
-    // (see content.server.js's seedStandard action) - this method does not duplicate that guard.
-    seedStandard: function () {
+    // (see content.server.js's importStandardContent action) - this does not duplicate that guard.
+    importStandardContent: function () {
       if (!serverApi) {
         var payload = seedPayload();
         var seed = readSeed();
@@ -362,7 +362,7 @@ angular.module('deliveryMethodology').factory('DataService', ['$q', 'UrlPolicySe
       }
 
       return serverApi.get({
-        action: 'seedStandard'
+        action: 'importStandardContent'
       }).then(function (response) {
         var responseData = (response && response.data) || {};
 

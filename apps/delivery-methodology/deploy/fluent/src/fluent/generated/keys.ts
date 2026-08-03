@@ -63,7 +63,7 @@ declare global {
                     }
                     bom_json: {
                         table: 'sys_module'
-                        id: 'e56a72e641b44336b5bc851976476731'
+                        id: '9bf8cdbe97274120bb42fa5b5d8a5588'
                     }
                     ChangelogDiffService: {
                         table: 'sp_angular_provider'
@@ -159,7 +159,7 @@ declare global {
                     }
                     package_json: {
                         table: 'sys_module'
-                        id: '03f0c6d443aa401a82e4df59b4c9f7cd'
+                        id: '911560d4f0604a69a636505b2ef8613d'
                     }
                     RaciGridService: {
                         table: 'sp_angular_provider'

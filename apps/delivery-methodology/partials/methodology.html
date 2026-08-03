@@ -9,14 +9,14 @@
         <!-- Fresh-instance empty state (methodologies.length === 0 - no seed ships with the deploy
            artifact, so this is genuinely what a brand-new install looks like before the one-time
            import). Editors get the action; a plain viewer gets an honest status line and no button
-           they couldn't use anyway (c.seedStandard is gated server-side on editor/app-admin/admin;
+           they couldn't use anyway (c.importStandardContent is gated server-side on editor/app-admin/admin;
            Clear all content is canAdmin only — app admin or system admin),
            same as any other write). -->
         <div class="content-empty-state" ng-if="!c.loading && !c.methodologies.length">
           <p class="content-empty-lede" ng-if="c.canEdit">Delivery 2.0 content hasn&rsquo;t been imported on this
             instance yet.</p>
           <p class="content-empty-lede" ng-if="!c.canEdit">No methodology content yet.</p>
-          <button type="button" class="btn primary" ng-if="c.canEdit" ng-click="c.seedStandard()"
+          <button type="button" class="btn primary" ng-if="c.canEdit" ng-click="c.importStandardContent()"
             ng-disabled="c.isSaving">{{c.isSaving ? 'Importing…' : 'Import Delivery 2.0 content'}}</button>
         </div>
 

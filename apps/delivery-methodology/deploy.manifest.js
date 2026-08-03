@@ -240,7 +240,7 @@
       // No files.viewPartials: each view widget's fragment is now declared directly on its own
       // widgets[] entry (templatePartial) instead of being inlined into one shared template.
   // Prefixed onto the widget server script at package time (url policy + hydrate/dehydrate,
-  // then the standard-content starter payload the seedStandard action inserts on an empty
+  // then the standard-content starter payload the importStandardContent action inserts on an empty
   // instance). Array order matters: DMUrlPolicy must load before DMContentModel; standard-content
   // has no dependency on either, so it's placed last, right before the script that uses it.
   contentModel: [

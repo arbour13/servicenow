@@ -14,7 +14,7 @@
     load: true,
     save: true,
     saveChangelogSeen: true,
-    seedStandard: true,
+    importStandardContent: true,
     clearAll: true
   };
   var maximumSaveRows = 5000;
@@ -542,18 +542,18 @@
     return contentRecord.next();
   }
 
-  function seedStandard() {
+  function importStandardContent() {
     if (hasAnyContentRecords()) {
       data.error = 'Content already exists - Delivery 2.0 content only imports into an empty table.';
-      gs.warn(logPrefix + 'seedStandard refused - table is not empty');
+      gs.warn(logPrefix + 'importStandardContent refused - table is not empty');
       loadContent();
       return false;
     }
 
     if (typeof DMStandardContent === 'undefined') {
       data.error = 'Delivery 2.0 content is not available on this instance.';
-      gs.error(logPrefix + 'seedStandard: DMStandardContent missing from the server bundle - ' +
-        'check deploy.manifest.js files.contentModel includes js/data/standard-content.js');
+      gs.error(logPrefix + 'importStandardContent: DMStandardContent missing from the server ' +
+        'bundle - check deploy.manifest.js files.contentModel includes js/data/standard-content.js');
       return false;
     }
 
@@ -619,15 +619,15 @@
     return;
   }
 
-  if (action === 'seedStandard') {
+  if (action === 'importStandardContent') {
     if (!data.canEdit) {
       data.error = 'Not authorized to edit content.';
-      gs.warn(logPrefix + 'seedStandard denied - caller lacks editor/admin');
+      gs.warn(logPrefix + 'importStandardContent denied - caller lacks editor/admin');
       loadContent();
       return;
     }
 
-    seedStandard();
+    importStandardContent();
     return;
   }
 

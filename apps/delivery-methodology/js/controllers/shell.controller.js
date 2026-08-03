@@ -392,10 +392,10 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   });
 
   // Runs after EITHER kind of content load: the bootstrap getData() below, or a later
-  // AppStateService.seedStandard() call from the Methodology widget's empty-state button (a
-  // table that was empty a moment ago now has real content none of these derived caches have
+  // AppStateService.importStandardContent() call from the Methodology widget's empty-state button
+  // (a table that was empty a moment ago now has real content none of these derived caches have
   // ever seen). Named and bound via AppStateService.bind() rather than left as bootstrap's own
-  // inline closure, so seedStandard() can reuse it instead of duplicating this list. loadedData
+  // inline closure, so the import can reuse it instead of duplicating this list. loadedData
   // is AppStateService.applyLoadedData()'s own first argument, passed through unchanged - this
   // is the only place changelogSeen is available (result itself only carries {empty,
   // methodologyId, subPhaseId}).
