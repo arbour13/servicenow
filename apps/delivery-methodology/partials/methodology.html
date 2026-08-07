@@ -43,7 +43,9 @@
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('chevronRight')"></svg>
                 <span class="methodology-intro-heading">About {{methodology.name}}</span>
               </button>
-              <a class="methodology-intro-feedback" ng-if="c.safeHref(methodology.feedbackUrl)" ng-href="{{c.safeHref(methodology.feedbackUrl)}}">{{methodology.feedbackLabel || 'Provide Feedback'}}</a>
+              <a class="methodology-intro-feedback" ng-if="c.safeHref(methodology.feedbackUrl)"
+                ng-href="{{c.safeHref(methodology.feedbackUrl)}}"
+                ng-click="c.trackFeedbackClick(methodology)">{{methodology.feedbackLabel || 'Provide Feedback'}}</a>
             </div>
             <!-- .clp/.clp-inner animate collapse via grid-template-rows (see the .clp scss note);
                body stays mounted (no ng-if) so there is something to animate - the parent's

@@ -50,7 +50,9 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
     c.byRoleFocusRoleId = state.byRoleFocusRoleId;
     c.showAllRoles = state.showAllRoles;
     c.raciGrid = state.raciGrid;
+    // Phase 1: which column the open role panel is pinning (Shell owns the panel itself).
   }
+
   function refreshAndSync() {
     RaciGridService.refresh(raciGridContext());
     syncRaciGrid();

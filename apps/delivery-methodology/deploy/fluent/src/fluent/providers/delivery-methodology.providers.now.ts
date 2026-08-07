@@ -42,6 +42,13 @@ export const AppStateService = SPAngularProvider({
     script: Now.include('AppStateService.js'),
 })
 
+export const AnalyticsService = SPAngularProvider({
+    $id: Now.ID['AnalyticsService'],
+    name: 'AnalyticsService',
+    type: 'service',
+    script: Now.include('AnalyticsService.js'),
+})
+
 export const ChangelogDiffService = SPAngularProvider({
     $id: Now.ID['ChangelogDiffService'],
     name: 'ChangelogDiffService',
@@ -159,4 +166,11 @@ export const dmReorder = SPAngularProvider({
     name: 'dmReorder',
     type: 'directive',
     script: Now.include('dmReorder.js'),
+})
+
+export const dmCombo = SPAngularProvider({
+    $id: Now.ID['dmCombo'],
+    name: 'dmCombo',
+    type: 'directive',
+    script: Now.include('dmCombo.js'),
 })

@@ -3,8 +3,8 @@
    results - a matching job aid and the sub-phase that carries it both appear, each under its own
    heading, so neither drowns the other. Builds trusted snippets once per runSearch. */
 angular.module('deliveryMethodology').factory('SearchService', [
-  '$sce', 'MessagingService', 'AppStateService',
-  function ($sce, MessagingService, AppStateService) {
+  '$sce', 'MessagingService', 'AppStateService', 'AnalyticsService',
+  function ($sce, MessagingService, AppStateService, AnalyticsService) {
   'use strict';
 
   var searchQuery = '';
@@ -230,6 +230,7 @@ angular.module('deliveryMethodology').factory('SearchService', [
     searchResultCount = searchResultGroups.reduce(function (total, group) {
       return total + group.results.length;
     }, 0);
+    AnalyticsService.trackSearch(trimmed, searchResultCount);
     notifyUi();
     return readState();
   }

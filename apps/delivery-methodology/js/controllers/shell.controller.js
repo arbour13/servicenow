@@ -12,12 +12,12 @@ angular.module('deliveryMethodology').controller('DmShellController', [
   '$rootScope', '$scope', 'DataService', 'ThemeService', 'MessagingService', 'TipService',
   'AppStateService', 'MethodologyDomainService', 'NavigationService', 'SearchService',
   'WhatsNewService', 'ReferenceService', 'RaciGridService',   'ContentEditService', 'StructureEditService', 'ReferenceEditService',
-  'IconService', 'MotionService', 'LiveSyncService',
+  'IconService', 'MotionService', 'LiveSyncService', 'AnalyticsService',
   function (
     $rootScope, $scope, DataService, ThemeService, MessagingService, TipService,
     AppStateService, MethodologyDomainService, NavigationService, SearchService,
     WhatsNewService, ReferenceService, RaciGridService, ContentEditService, StructureEditService,
-    ReferenceEditService, IconService, MotionService, LiveSyncService
+    ReferenceEditService, IconService, MotionService, LiveSyncService, AnalyticsService
   ) {
   'use strict';
   var c = this;
@@ -442,6 +442,25 @@ angular.module('deliveryMethodology').controller('DmShellController', [
     // What's New / Reference widgets (already mounted and listening) pick up the fresh data,
     // matching every other cross-widget state change in this app (see AppStateService header).
     AppStateService.notify();
+
+    // Usage Insights session + heartbeat. No-ops in the harness / without the analytics plugin.
+    AnalyticsService.startSession({
+      view: AppStateService.getView() || 'methodology',
+      empty: !!result.empty
+    });
+    if (!result.empty && AppStateService.getSubPhaseId()) {
+      var location = AppStateService.getLocation();
+      if (location && location.subPhase) {
+        AnalyticsService.trackSubPhase({
+          methodologyId: location.methodology && location.methodology.id,
+          methodologyName: location.methodology && location.methodology.name,
+          phaseName: location.phase && location.phase.name,
+          subPhaseId: location.subPhase.id,
+          subPhaseName: location.subPhase.name
+        });
+      }
+    }
+    AnalyticsService.trackView(AppStateService.getView() || 'methodology');
   }
 
   AppStateService.bind({

@@ -3,28 +3,11 @@
         <!-- Root wrapper exists (unlike before) solely to carry .view-blur while the Shell's search
            overlay is open - this widget has no tip-delegation handlers of its own. -->
         <div class="view-root" ng-class="{'view-blur': c.searchOpen()}">
-          <p class="empty" ng-if="!c.whatsNew.length && !c.whatsNewRead.length">No changes recorded yet.</p>
+          <p class="empty" ng-if="!c.whatsNew.length">Nothing unread. You&rsquo;re caught up.</p>
 
           <div class="wn-group" ng-if="c.whatsNew.length">
             <h4 class="sec">Unread <span class="wn-count">{{c.whatsNew.length}}</span></h4>
             <button type="button" class="whatsnew-item" ng-repeat="item in c.whatsNew track by item.entry.id" ng-click="c.jumpTo(item.subPhase.id, item.methodology.id)">
-              <div class="wn-top">
-                <span class="wn-loc" ng-style="{background: item.color}">{{item.methodology.name}} &middot; {{item.subPhase.sid}}</span>
-                <span class="wn-title">{{item.subPhase.name}}</span>
-                <span class="wn-date">{{c.formatDate(item.entry.ts)}} &middot; {{c.daysAgo(item.entry.ts)}}d ago</span>
-              </div>
-              <div class="wn-summary">{{item.entry.text}}</div>
-            </button>
-          </div>
-
-          <p class="wn-caughtup" ng-if="!c.whatsNew.length && c.whatsNewRead.length">Nothing unread. You&rsquo;re caught
-            up.</p>
-
-          <!-- Already-read history: keeps the page from reading as empty once you are caught up, and
-             makes a change you just opened findable again. Dimmed so it never competes with unread. -->
-          <div class="wn-group wn-group-read" ng-if="c.whatsNewRead.length">
-            <h4 class="sec">Earlier changes</h4>
-            <button type="button" class="whatsnew-item" ng-repeat="item in c.whatsNewRead track by item.entry.id" ng-click="c.jumpTo(item.subPhase.id, item.methodology.id)">
               <div class="wn-top">
                 <span class="wn-loc" ng-style="{background: item.color}">{{item.methodology.name}} &middot; {{item.subPhase.sid}}</span>
                 <span class="wn-title">{{item.subPhase.name}}</span>

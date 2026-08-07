@@ -1,6 +1,6 @@
 [
-  '$sce', 'MessagingService', 'AppStateService',
-  function ($sce, MessagingService, AppStateService) {
+  '$sce', 'MessagingService', 'AppStateService', 'AnalyticsService',
+  function ($sce, MessagingService, AppStateService, AnalyticsService) {
   'use strict';
 
   var searchQuery = '';
@@ -226,6 +226,7 @@
     searchResultCount = searchResultGroups.reduce(function (total, group) {
       return total + group.results.length;
     }, 0);
+    AnalyticsService.trackSearch(trimmed, searchResultCount);
     notifyUi();
     return readState();
   }

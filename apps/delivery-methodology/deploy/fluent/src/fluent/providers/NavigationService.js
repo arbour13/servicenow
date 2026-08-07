@@ -1,6 +1,8 @@
 [
   '$timeout', '$location', 'MessagingService', 'SearchService', 'AppStateService', 'MethodologyDomainService',
-  function ($timeout, $location, MessagingService, SearchService, AppStateService, MethodologyDomainService) {
+  'AnalyticsService',
+  function ($timeout, $location, MessagingService, SearchService, AppStateService, MethodologyDomainService,
+    AnalyticsService) {
   'use strict';
 
   var navStack = [];
@@ -199,11 +201,29 @@
     }
   }
 
+  function trackOpenSubPhase(subPhaseId) {
+    var location = AppStateService.getLocation();
+    if (!location || !location.subPhase || location.subPhase.id !== subPhaseId) {
+      location = MethodologyDomainService.findSubPhase(AppStateService.getMethodologies(), subPhaseId);
+    }
+    if (!location || !location.subPhase) {
+      return;
+    }
+    AnalyticsService.trackSubPhase({
+      methodologyId: location.methodology && location.methodology.id,
+      methodologyName: location.methodology && location.methodology.name,
+      phaseName: location.phase && location.phase.name,
+      subPhaseId: location.subPhase.id,
+      subPhaseName: location.subPhase.name
+    });
+  }
+
   function setView(view) {
     if (denyIfEditing()) {
       return;
     }
     AppStateService.setView(view);
+    AnalyticsService.trackView(view);
     if (view === 'raci') {
       refreshRaciGridIfNeeded();
     }
@@ -240,6 +260,9 @@
       AppStateService.refreshLocation();
       afterOpenSubPhase();
     });
+    if (resume) {
+      trackOpenSubPhase(resume);
+    }
     push();
     if (AppStateService.getView() === 'raci') {
       refreshRaciGridIfNeeded();
@@ -256,6 +279,7 @@
       AppStateService.refreshLocation();
       afterOpenSubPhase();
     });
+    trackOpenSubPhase(subPhaseId);
     push();
   }
 
@@ -365,6 +389,8 @@
       AppStateService.refreshLocation();
       afterOpenSubPhase();
     });
+    AnalyticsService.trackView('methodology');
+    trackOpenSubPhase(subPhaseId);
     push();
     focusJumpTarget(elementKey || ('sub:' + subPhaseId));
   }

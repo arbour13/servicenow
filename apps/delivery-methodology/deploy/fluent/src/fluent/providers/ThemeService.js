@@ -49,7 +49,7 @@
   }
 
   // Packager scopes CSS under .dm-widget[data-theme=…], so every SP wrapper needs the attribute
-  // (not only <html>). Harness has no .dm-widget — querySelectorAll is then a no-op.
+  // (not only <html>). Harness has no .dm-widget - querySelectorAll is then a no-op.
   function stampWidgets() {
     if (!appTheme) {
       return;

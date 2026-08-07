@@ -1,7 +1,7 @@
 /* Editor URL policy: scheme allowlist + strip ServiceNow instance origins to relative paths.
    Shared by the widget server (concatenated ahead of content-model) and the browser harness /
    UrlPolicyService. Soft-fail friendly: empty string means "do not link / do not persist".
-   Rhino-safe — no URL / window / document APIs. */
+   Rhino-safe - no URL / window / document APIs. */
 var DMUrlPolicy = (function () {
   'use strict';
 
@@ -219,7 +219,7 @@ var DMContentModel = (function () {
     reference_section: true
   };
 
-  // Same order as RaciGridService.LETTERS — hydrate must not depend on Angular.
+  // Same order as RaciGridService.LETTERS - hydrate must not depend on Angular.
   var RACI_LETTER_ORDER = {
     R: 0,
     A: 1,
@@ -314,7 +314,7 @@ var DMContentModel = (function () {
   }
 
   // Nested UI payload → flat rows (ready for GlideRecord insert).
-  // options.instanceOrigins — optional list of origins (e.g. glide.servlet.uri) to strip to
+  // options.instanceOrigins - optional list of origins (e.g. glide.servlet.uri) to strip to
   // relative paths alongside any *.service-now.com host (see DMUrlPolicy).
   function dehydrate(payload, options) {
     var rows = [];
@@ -1056,7 +1056,20 @@ var DMStandardContent = {
               "name": "IPKT",
               "order": 2,
               "icon": "exchange",
-              "changelog": [],
+              "changelog": [
+                {
+                  "id": "c4",
+                  "ts": "2026-08-03",
+                  "text": "Task added: “Re-baseline resource plans”",
+                  "read": false
+                },
+                {
+                  "id": "c5",
+                  "ts": "2026-07-30",
+                  "text": "Comment updated: pre-read expectations for the IPKT",
+                  "read": false
+                }
+              ],
               "overview": "At this phase, the engagement is confirmed. The Sales Executive has moved the opportunity in the Customer Relations Management (CRM) system to “Closed Won” and we are just about ready to meet the client and commence. The heart of this step is the completion and live review of the IPKT document (and supporting documents) which serves as the transition phase.",
               "objective": "The primary objective of this step is to obtain knowledge from the sales team that negotiated the merits of the client engagement. A proper “handoff” will help ensure we come across as One company, remove any seams in the transition to Delivery and address any insights, risks and actions that we must take prior to meeting the client for the first time.",
               "participants": [
@@ -2222,7 +2235,14 @@ var DMStandardContent = {
               "name": "Customer Workshops",
               "order": 2,
               "icon": "presentation",
-              "changelog": [],
+              "changelog": [
+                {
+                  "id": "c6",
+                  "ts": "2026-08-02",
+                  "text": "Deliverable added: “Workshop outcomes summary”",
+                  "read": false
+                }
+              ],
               "overview": "Engage stakeholders to plan the engagement, understand business objectives, processes, and expectations for digital transformation with ServiceNow.",
               "objective": "Translate findings from workshops into tangible user stories to be developed/configured into the platform.",
               "participants": [
@@ -3209,7 +3229,20 @@ var DMStandardContent = {
               "name": "Build Activities",
               "order": 1,
               "icon": "code",
-              "changelog": [],
+              "changelog": [
+                {
+                  "id": "c7",
+                  "ts": "2026-08-01",
+                  "text": "Level of effort updated for Technical Consultant",
+                  "read": false
+                },
+                {
+                  "id": "c8",
+                  "ts": "2026-07-22",
+                  "text": "Objective rewritten to cover sprint-zero setup",
+                  "read": false
+                }
+              ],
               "overview": "This phase is where we execute high quality development and code configurations within the ServiceNow platform. We do this iteratively and incrementally, ensuring that the output evolves in alignment with the plans set forth with the customer, prior.",
               "objective": "The objective of the development phase is to build upon the user stories established and create a working ServiceNow platform environment that will help customer meet their stated business objectives, in the timeline set forth.",
               "participants": [
@@ -3861,7 +3894,14 @@ var DMStandardContent = {
               "name": "UAT",
               "order": 1,
               "icon": "shield",
-              "changelog": [],
+              "changelog": [
+                {
+                  "id": "c9",
+                  "ts": "2026-07-28",
+                  "text": "Participant added: Training Program Manager",
+                  "read": false
+                }
+              ],
               "overview": "The User Acceptance Testing (UAT) is a phase in our overall engagement in which the software/configuration built by GlideFast is tested in “real world” environments with representatives of the personas who will be using ServiceNow simulating their future use and accepting the work performed based on the requirements.",
               "objective": "The primary objective of UAT is to ensure the ServiceNow code we delivered can perform required tasks in “real world” scenarios, based on the battery of tests built prior. Furthermore, to ensure that defects, if any, are worked on and resolved satisfactorily.",
               "participants": [
@@ -4738,7 +4778,14 @@ var DMStandardContent = {
               "name": "Internal Closure Meeting",
               "order": 1,
               "icon": "briefcase",
-              "changelog": [],
+              "changelog": [
+                {
+                  "id": "c10",
+                  "ts": "2026-08-02",
+                  "text": "Input added: “Lessons learned log”",
+                  "read": false
+                }
+              ],
               "overview": "This is the phase in the journey where we prepare for the customer official closure meeting, discuss lessons learned, and care for any internal logistics necessary and associated with the closure of the engagement.",
               "objective": "The primary objective of this step is to capture all learnings from the engagement for the purpose of internal improvement and closely align on what is expected at the customer closure meeting.",
               "participants": [
@@ -5438,7 +5485,14 @@ var DMStandardContent = {
               "name": "IPKT",
               "order": 2,
               "icon": "exchange",
-              "changelog": [],
+              "changelog": [
+                {
+                  "id": "c11",
+                  "ts": "2026-08-03",
+                  "text": "Task edited: “Review of IPKT documentation”",
+                  "read": false
+                }
+              ],
               "overview": "",
               "objective": "",
               "participants": [],
@@ -5529,7 +5583,20 @@ var DMStandardContent = {
               "name": "Check-in",
               "order": 1,
               "icon": "calendar",
-              "changelog": [],
+              "changelog": [
+                {
+                  "id": "c12",
+                  "ts": "2026-08-01",
+                  "text": "Task added: “Confirm check-in cadence with the customer”",
+                  "read": false
+                },
+                {
+                  "id": "c13",
+                  "ts": "2026-07-28",
+                  "text": "Comment updated: who chairs the check-in",
+                  "read": false
+                }
+              ],
               "overview": "",
               "objective": "",
               "participants": [],
@@ -5578,7 +5645,14 @@ var DMStandardContent = {
               "name": "Customer Retrospective",
               "order": 2,
               "icon": "refresh",
-              "changelog": [],
+              "changelog": [
+                {
+                  "id": "c14",
+                  "ts": "2026-07-30",
+                  "text": "Deliverable added: “Retrospective summary”",
+                  "read": false
+                }
+              ],
               "overview": "",
               "objective": "",
               "participants": [],
@@ -5643,22 +5717,17 @@ var DMStandardContent = {
     {
       "key": "raci",
       "title": "Using RACI",
-      "body": "Purpose: RACI clarifies who does the work, who owns the outcome, who must be consulted, and who needs to stay informed — so teams move quickly without ambiguity about decisions or handoffs.\n\nEvery task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person's relationship to the work?\n\nExactly one A per task. Accountability shouldn't be shared - if two people sign off, no one does.\n\nR and A can be the same person (shown together as R A) - they do it and own it.\n\nEvery task needs at least an R and an A - someone doing the work, someone owning the result.\n\nThe customer appears in the RACI wherever the engagement requires their input, approval, or participation.\n\nRemember: RACI is a collaboration tool, not a permission slip. Consulted means their input is sought before a decision; Informed means they need visibility after. When in doubt, over-communicate early rather than re-litigating accountability later."
+      "body": "Purpose: RACI clarifies who does the work, who owns the outcome, who must be consulted, and who needs to stay informed - so teams move quickly without ambiguity about decisions or handoffs.\n\nEvery task in this methodology assigns each involved job title one or more RACI letters. They answer one question: for this task, what is that person's relationship to the work?\n\nExactly one A per task. Accountability shouldn't be shared - if two people sign off, no one does.\n\nR and A can be the same person (shown together as R A) - they do it and own it.\n\nEvery task needs at least an R and an A - someone doing the work, someone owning the result.\n\nThe customer appears in the RACI wherever the engagement requires their input, approval, or participation.\n\nRemember: RACI is a collaboration tool, not a permission slip. Consulted means their input is sought before a decision; Informed means they need visibility after. When in doubt, over-communicate early rather than re-litigating accountability later."
     },
     {
       "key": "challenges",
       "title": "Challenges",
-      "body": "Delivery engagements fail in predictable ways. Watch for these common pitfalls — and use the methodology tasks and job aids to stay ahead of them.\n\nScope creep without a change path — new asks accumulate without rebaselining the SOW, RTM, or project plan. Address it in Plan and Execute with explicit change-order tasks.\n\nWeak IPKT / sales-to-delivery handoff — the delivery team starts blind. Treat the IPKT and IPKT doc as non-negotiable; capture open questions before customer-facing work.\n\nCustomer availability — workshops and UAT stall when SMEs are unavailable. Surface it early in status, escalate through the EM, and adjust the plan visibly.\n\nRACI ambiguity — two Accountables or no clear Responsible on a task. Fix it in Initiate; don't let it linger into Execute.\n\nRequirements without acceptance criteria — stories that cannot be tested. Tie every requirement to testable criteria before build accelerates.\n\nEnvironment and access delays — instances, integrations, or credentials block the TC. Track as RIDAC items with owners and dates.\n\nStatus without decisions — recurring meetings that report activity but never close actions. Every checkpoint should produce decisions, owners, and dates.\n\nTesting compressed at the end — UAT becomes a single gate instead of continuous validation. Plan UAT working sessions during Plan, not only at Deliver.\n\nSilent customer dissatisfaction — issues surface only at closure. Use CSAT touchpoints, executive check-ins, and transparent RAID logs.\n\nKnowledge transfer as an afterthought — go-live succeeds but adoption fails. Start enablement and training planning during Execute, not after deployment.\n\nTeams that recognize these patterns early — and escalate through the EM using the Escalation guidance — recover faster than teams that treat each as a one-off surprise."
+      "body": "Delivery engagements fail in predictable ways. Watch for these common pitfalls - and use the methodology tasks and job aids to stay ahead of them.\n\nScope creep without a change path - new asks accumulate without rebaselining the SOW, RTM, or project plan. Address it in Plan and Execute with explicit change-order tasks.\n\nWeak IPKT / sales-to-delivery handoff - the delivery team starts blind. Treat the IPKT and IPKT doc as non-negotiable; capture open questions before customer-facing work.\n\nCustomer availability - workshops and UAT stall when SMEs are unavailable. Surface it early in status, escalate through the EM, and adjust the plan visibly.\n\nRACI ambiguity - two Accountables or no clear Responsible on a task. Fix it in Initiate; don't let it linger into Execute.\n\nRequirements without acceptance criteria - stories that cannot be tested. Tie every requirement to testable criteria before build accelerates.\n\nEnvironment and access delays - instances, integrations, or credentials block the TC. Track as RIDAC items with owners and dates.\n\nStatus without decisions - recurring meetings that report activity but never close actions. Every checkpoint should produce decisions, owners, and dates.\n\nTesting compressed at the end - UAT becomes a single gate instead of continuous validation. Plan UAT working sessions during Plan, not only at Deliver.\n\nSilent customer dissatisfaction - issues surface only at closure. Use CSAT touchpoints, executive check-ins, and transparent RAID logs.\n\nKnowledge transfer as an afterthought - go-live succeeds but adoption fails. Start enablement and training planning during Execute, not after deployment.\n\nTeams that recognize these patterns early - and escalate through the EM using the Escalation guidance - recover faster than teams that treat each as a one-off surprise."
     },
     {
-      "key": "consultant-lifecycle",
-      "title": "Consultant Lifecycle",
-      "body": "Beyond phase-specific tasks, every consultant on an engagement carries standing duties. These recur daily, weekly, and throughout the engagement.\n\nDaily: Update timekeeping and progress notes per GlideFast policy. Review assigned stories/tasks and RIDAC items you own. Prepare for any customer sessions that day.\n\nDaily: Flag blockers to the EM or Architect — don't wait for the weekly status meeting.\n\nWeekly: Participate in internal team sync and customer status as scheduled. Confirm your deliverables for the week match the project plan.\n\nWeekly: Review open actions from workshops and meetings; close or reassign stale items.\n\nThroughout: Follow the methodology tasks for your role in each sub-phase — the RACI grid and By Role view summarize your standing responsibilities.\n\nThroughout: Use job aids linked from tasks for templates, checklists, and knowledge articles — don't reinvent standard artifacts.\n\nThroughout: Raise risks and issues in RIDAC on the project record; keep descriptions factual and actionable.\n\nThroughout: Model GlideFast delivery standards in customer sessions — prepared, on time, and aligned to the agreed agenda."
-    },
-    {
-      "key": "em-lifecycle",
-      "title": "EM Lifecycle",
-      "body": "The Engagement Manager owns delivery health end to end. These standing duties apply in every phase — in addition to the EM's RACI assignments on individual tasks.\n\nDaily: Review project health — schedule, scope, budget, RAID, and team utilization. Clear or delegate blockers.\n\nDaily: Ensure customer communications are timely; nothing important should wait for a standing meeting.\n\nWeekly: Facilitate or delegate customer status and internal team sync. Publish the status report / status meeting artifacts per Initiate and Execute tasks.\n\nWeekly: Confirm staffing and upcoming milestones with Resourcing and the delivery team.\n\nThroughout: Own the SOW baseline — scope changes flow through change order tasks, not side conversations.\n\nThroughout: Maintain RIDAC hygiene; escalate per the Escalation section when customer or internal alignment breaks down.\n\nThroughout: Keep executive sponsors (ES / AVP) informed at the agreed cadence — not only when things go wrong.\n\nThroughout: Coach the team on methodology use — correct RACI gaps, missing job aids, and skipped sub-phases early.\n\nAt closure: Ensure case study / marketing capture, CSAT, and internal retrospective tasks complete before the engagement is marked done."
+      "key": "role-lifecycles",
+      "title": "Role Lifecycles",
+      "body": "Beyond phase-specific tasks, every role on an engagement carries standing duties. Each role below lists them by cadence - what recurs daily, weekly, and across the whole engagement.\n\nRole: Consultant\n\nStanding duties for every consultant on the engagement, whatever their specialty.\n\nDaily: Update timekeeping and progress notes per GlideFast policy. Review assigned stories/tasks and RIDAC items you own. Prepare for any customer sessions that day.\n\nDaily: Flag blockers to the EM or Architect - don't wait for the weekly status meeting.\n\nWeekly: Participate in internal team sync and customer status as scheduled. Confirm your deliverables for the week match the project plan.\n\nWeekly: Review open actions from workshops and meetings; close or reassign stale items.\n\nThroughout: Follow the methodology tasks for your role in each sub-phase - the RACI grid and By Role view summarize your standing responsibilities.\n\nThroughout: Use job aids linked from tasks for templates, checklists, and knowledge articles - don't reinvent standard artifacts.\n\nThroughout: Raise risks and issues in RIDAC on the project record; keep descriptions factual and actionable.\n\nThroughout: Model GlideFast delivery standards in customer sessions - prepared, on time, and aligned to the agreed agenda.\n\nRole: Engagement Manager\n\nThe Engagement Manager owns delivery health end to end. These standing duties apply in every phase - in addition to the EM's RACI assignments on individual tasks.\n\nDaily: Review project health - schedule, scope, budget, RAID, and team utilization. Clear or delegate blockers.\n\nDaily: Ensure customer communications are timely; nothing important should wait for a standing meeting.\n\nWeekly: Facilitate or delegate customer status and internal team sync. Publish the status report / status meeting artifacts per Initiate and Execute tasks.\n\nWeekly: Confirm staffing and upcoming milestones with Resourcing and the delivery team.\n\nThroughout: Own the SOW baseline - scope changes flow through change order tasks, not side conversations.\n\nThroughout: Maintain RIDAC hygiene; escalate per the Escalation section when customer or internal alignment breaks down.\n\nThroughout: Keep executive sponsors (ES / AVP) informed at the agreed cadence - not only when things go wrong.\n\nThroughout: Coach the team on methodology use - correct RACI gaps, missing job aids, and skipped sub-phases early.\n\nAt closure: Ensure case study / marketing capture, CSAT, and internal retrospective tasks complete before the engagement is marked done."
     },
     {
       "key": "escalation",
@@ -6019,7 +6088,7 @@ var DMStandardContent = {
 
   function jobTitleIdFromRow(row) {
     // Soft refs store bare job-title ids (`arch`); dehydrate uses clientId `jt:arch` only as a
-    // row identity helper — never treat that prefix as the soft-ref key.
+    // row identity helper - never treat that prefix as the soft-ref key.
     if (row && row.content && row.content.id) {
       return String(row.content.id);
     }
@@ -6111,7 +6180,7 @@ var DMStandardContent = {
         origins.push(String(servletUri).replace(/\/$/, ''));
       }
     } catch (originError) {
-      /* property unavailable — DMUrlPolicy still strips *.service-now.com */
+      /* property unavailable - DMUrlPolicy still strips *.service-now.com */
     }
     return origins;
   }

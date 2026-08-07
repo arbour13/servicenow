@@ -20,7 +20,6 @@ api.controller = function ($rootScope, $scope, AppStateService, NavigationServic
   function syncWhatsNew() {
     var whatsNewState = WhatsNewService.readState();
     c.whatsNew = whatsNewState.whatsNew;
-    c.whatsNewRead = whatsNewState.whatsNewRead;
   }
   function syncAll() {
     syncAppState();

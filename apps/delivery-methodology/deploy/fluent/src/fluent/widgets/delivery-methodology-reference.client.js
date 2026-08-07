@@ -1,4 +1,4 @@
-api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService, JargonService, TipService, IconService, UrlPolicyService, SearchService, RaciGridService, MessagingService, ContentEditService, StructureEditService, ReferenceEditService) {
+api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService, JargonService, TipService, IconService, UrlPolicyService, SearchService, RaciGridService, MessagingService, ContentEditService, StructureEditService, ReferenceEditService, AnalyticsService) {
   'use strict';
   var c = this;
 
@@ -25,6 +25,172 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
       return [];
     }
     return trimmed.split(/\n\n+/);
+  };
+
+  /* Presentation-only parsing of the standard sections' own text conventions - the body stays one
+     plain-text field (schema, editor, and search untouched), same pattern as the hardcoded 'raci'
+     definition cards. 'challenges' paragraphs read "Title - explanation" and become one card each;
+     the lifecycle sections' "Daily:/Weekly:/Throughout:" duties group into one card per cadence.
+     Paragraphs that don't match stay prose, before (lead) or after (trail) the cards, so a
+     rewritten body degrades to the plain-prose rendering rather than breaking.
+
+     Memoized per section key + body: these return fresh objects, and ng-repeat over a fresh
+     object graph re-triggers every digest (see the suite's infinite-digest note). */
+  var sectionLayoutCache = {};
+
+  var CHALLENGE_TITLE_MAX = 100;
+  var CADENCE_LABEL_PATTERN = /^([A-Z][A-Za-z ]{2,20}):\s+/;
+
+  // First and last paragraphs are ALWAYS prose (the section's intro/outro convention) - both
+  // happen to contain mid-sentence " - " separators, so position, not punctuation, is what
+  // reliably separates them from the "Title - explanation" card paragraphs between them. A title
+  // that contains a full sentence is prose too, wherever it sits.
+  function parseChallengeCards(paragraphs) {
+    var lead = [], cards = [], trail = [];
+    paragraphs.forEach(function (paragraph, index) {
+      var isEdge = index === 0 || (index === paragraphs.length - 1 && paragraphs.length > 1);
+      var splitAt = paragraph.indexOf(' - ');
+      var title = paragraph.slice(0, splitAt).trim();
+      var looksLikeCard = splitAt > 0 && splitAt <= CHALLENGE_TITLE_MAX && title.indexOf('. ') < 0;
+      if (!isEdge && looksLikeCard) {
+        cards.push({
+          title: title,
+          body: paragraph.slice(splitAt + 3).trim()
+        });
+      } else if (!cards.length) {
+        lead.push(paragraph);
+      } else {
+        trail.push(paragraph);
+      }
+    });
+    return {
+      kind: 'cards',
+      lead: lead,
+      cards: cards,
+      trail: trail
+    };
+  }
+
+  // "Role Lifecycles": ONE section holding every role's standing duties. Grammar per block:
+  // a short "Role: <name>" paragraph starts the block; paragraphs after it that carry no cadence
+  // prefix are that role's description; "Daily:/Weekly:/..." lines group into its cadence cards.
+  // Paragraphs before the first Role: line are the section lead. Adding a role is typing a new
+  // Role: block into the body - no new section, key, or code.
+  var ROLE_BLOCK_PATTERN = /^Role:\s+(.{1,60})$/;
+
+  function parseRoleLifecycles(paragraphs) {
+    var lead = [];
+    var roles = [];
+    var current = null;
+    paragraphs.forEach(function (paragraph) {
+      var roleMatch = paragraph.match(ROLE_BLOCK_PATTERN);
+      if (roleMatch) {
+        current = {
+          title: roleMatch[1].trim(),
+          description: [],
+          groups: [],
+          groupsByLabel: {}
+        };
+        roles.push(current);
+        return;
+      }
+      if (!current) {
+        lead.push(paragraph);
+        return;
+      }
+      var cadenceMatch = paragraph.match(CADENCE_LABEL_PATTERN);
+      if (cadenceMatch && cadenceMatch[1] !== 'Role') {
+        var label = cadenceMatch[1];
+        if (!current.groupsByLabel[label]) {
+          current.groupsByLabel[label] = {
+            label: label,
+            items: []
+          };
+          current.groups.push(current.groupsByLabel[label]);
+        }
+        current.groupsByLabel[label].items.push(paragraph.slice(cadenceMatch[0].length).trim());
+        return;
+      }
+      current.description.push(paragraph);
+    });
+    return {
+      kind: 'roles',
+      lead: lead,
+      roles: roles
+    };
+  }
+
+  function parseCadenceGroups(paragraphs) {
+    var lead = [], groups = [], trail = [];
+    var groupsByLabel = {};
+    paragraphs.forEach(function (paragraph) {
+      var match = paragraph.match(CADENCE_LABEL_PATTERN);
+      if (match) {
+        var label = match[1];
+        if (!groupsByLabel[label]) {
+          groupsByLabel[label] = {
+            label: label,
+            items: []
+          };
+          groups.push(groupsByLabel[label]);
+        }
+        groupsByLabel[label].items.push(paragraph.slice(match[0].length).trim());
+      } else if (!groups.length) {
+        lead.push(paragraph);
+      } else {
+        trail.push(paragraph);
+      }
+    });
+    return {
+      kind: 'cadence',
+      lead: lead,
+      groups: groups,
+      trail: trail
+    };
+  }
+
+  c.sectionLayout = function (section) {
+    var key = section && section.key;
+    var body = section && section.body != null ? String(section.body) : '';
+    var cached = sectionLayoutCache[key];
+    if (cached && cached.body === body) {
+      return cached.layout;
+    }
+
+    var paragraphs = c.sectionParagraphs(section);
+    var layout = {
+      kind: 'prose'
+    };
+    if (key === 'challenges') {
+      layout = parseChallengeCards(paragraphs);
+      if (!layout.cards.length) {
+        layout = {
+          kind: 'prose'
+        };
+      }
+    } else if (key === 'role-lifecycles') {
+      layout = parseRoleLifecycles(paragraphs);
+      if (!layout.roles.length) {
+        layout = {
+          kind: 'prose'
+        };
+      }
+    } else if (key === 'consultant-lifecycle' || key === 'em-lifecycle') {
+      // Superseded by the combined 'role-lifecycles' section (seed v26) - kept so an instance
+      // still carrying the old per-role rows renders them as cards rather than prose.
+      layout = parseCadenceGroups(paragraphs);
+      if (!layout.groups.length) {
+        layout = {
+          kind: 'prose'
+        };
+      }
+    }
+
+    sectionLayoutCache[key] = {
+      body: body,
+      layout: layout
+    };
+    return layout;
   };
   c.jobTitleColor = function (jobTitleId) {
     return MethodologyDomainService.jobTitleColor(c.jobTitles, jobTitleId);
@@ -219,6 +385,7 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
     c.referencePanelId = item.id;
     c.cancelEditJargon();
     syncActiveSection();
+    AnalyticsService.trackReference(item.id);
   };
 
   c.selectEditSection = function (section) {
@@ -377,7 +544,7 @@ api.controller = function ($rootScope, $scope, AppStateService, MethodologyDomai
     }
     var nextJargon = cloneJargon();
     if (Object.prototype.hasOwnProperty.call(nextJargon, term)) {
-      MessagingService.toast('That term already exists — edit it instead');
+      MessagingService.toast('That term already exists - edit it instead');
       return;
     }
     nextJargon[term] = definition;

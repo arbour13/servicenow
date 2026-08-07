@@ -87,7 +87,7 @@
   function cancelReferenceEdit() {
     state.referenceSnapshot = null;
     state.referenceEditMode = false;
-    MessagingService.toast('Appendix edit cancelled — changes reverted');
+    MessagingService.toast('Appendix edit cancelled - changes reverted');
     notify();
   }
 

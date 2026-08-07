@@ -2,6 +2,15 @@
 
 Suite rules in the repo-root `CLAUDE.md` apply. Additions for this app:
 
+## Usage Insights (analytics)
+
+`AnalyticsService` (`js/services/analytics.service.js`) wraps Service Portal `snAnalytics`
+(Usage Insights / UI analytics). It no-ops in the local harness and when the analytics plugin
+is absent. Events: `DM Session Started`, `DM Heartbeat` (60s while visible), `DM View Opened` /
+`DM View Left` (with duration), `DM Sub-phase Opened`, `DM Search`, `DM Feedback Clicked`,
+`DM Reference Opened`, `DM Edit Entered`. Dashboards/KPIs are configured in **Platform Analytics →
+Usage Insights** on the instance (not in this app). Enable portal tracking for the host portal.
+
 ## Multi-widget split (five widgets, one deployed app)
 
 This app deploys as **five** Service Portal widgets, not one. There is no `MainController` any

@@ -9,10 +9,10 @@
    only ever mutate state.editSubPhase, which only the Methodology widget's own template reads. */
 angular.module('deliveryMethodology').factory('ContentEditService', [
   'ChangelogDiffService', 'IdSeqService', 'MessagingService', 'AppStateService', 'MethodologyDomainService',
-  'RaciGridService', 'WhatsNewService',
+  'RaciGridService', 'WhatsNewService', 'AnalyticsService',
   function (
     ChangelogDiffService, IdSeqService, MessagingService, AppStateService, MethodologyDomainService,
-    RaciGridService, WhatsNewService
+    RaciGridService, WhatsNewService, AnalyticsService
   ) {
   'use strict';
 
@@ -173,6 +173,7 @@ angular.module('deliveryMethodology').factory('ContentEditService', [
     state.editMode = true;
     invalidateDerived();
     notify();
+    AnalyticsService.trackEditEntered();
     MessagingService.scrollToEditBar();
   }
 

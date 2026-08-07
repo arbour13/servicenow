@@ -7,11 +7,11 @@
 angular.module('deliveryMethodology').controller('DmMethodologyController', [
   '$rootScope', '$scope', '$timeout', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'WhatsNewService',
   'ReferenceService', 'IconService', 'JargonService', 'TipService', 'ContentEditService', 'StructureEditService',
-  'RaciGridService', 'UrlPolicyService', 'SearchService', 'MessagingService',
+  'RaciGridService', 'UrlPolicyService', 'SearchService', 'MessagingService', 'AnalyticsService',
   function (
     $rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService,
     ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService,
-    RaciGridService, UrlPolicyService, SearchService, MessagingService
+    RaciGridService, UrlPolicyService, SearchService, MessagingService, AnalyticsService
   ) {
   'use strict';
   var c = this;
@@ -83,6 +83,13 @@ angular.module('deliveryMethodology').controller('DmMethodologyController', [
       methodologyIntroCollapsedById[methodologyId] = true;
     }
     storeCollapsedMap(METHODOLOGY_INTRO_COLLAPSED_KEY, methodologyIntroCollapsedById);
+  };
+
+  c.trackFeedbackClick = function (methodology) {
+    AnalyticsService.trackFeedback({
+      methodologyId: methodology && methodology.id,
+      methodologyName: methodology && methodology.name
+    });
   };
 
   c.methodologyIntroParagraphs = function (methodology) {

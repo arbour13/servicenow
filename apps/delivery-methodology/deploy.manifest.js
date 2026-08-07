@@ -84,6 +84,7 @@
         { file: 'js/services/live-sync.service.js', name: 'LiveSyncService', type: 'service' },
         { file: 'js/services/methodology-domain.service.js', name: 'MethodologyDomainService', type: 'service' },
         { file: 'js/services/app-state.service.js', name: 'AppStateService', type: 'service' },
+        { file: 'js/services/analytics.service.js', name: 'AnalyticsService', type: 'service' },
         { file: 'js/services/changelog-diff.service.js', name: 'ChangelogDiffService', type: 'service' },
         { file: 'js/services/raci-grid.service.js', name: 'RaciGridService', type: 'service' },
         { file: 'js/services/navigation.service.js', name: 'NavigationService', type: 'service' },

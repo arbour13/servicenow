@@ -6,7 +6,7 @@
   var tip = {
     show: false,
     name: '',
-    // R|A|C|I when the target is a RACI letter chip — colors the tip heading to match.
+    // R|A|C|I when the target is a RACI letter chip - colors the tip heading to match.
     nameTone: '',
     text: '',
     x: 0,

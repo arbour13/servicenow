@@ -63,7 +63,7 @@
           try {
             event.dataTransfer.setDragImage(row, 16, 16);
           } catch (ignore) {
-            // Some browsers reject setDragImage on certain nodes — default ghost is fine.
+            // Some browsers reject setDragImage on certain nodes - default ghost is fine.
           }
         }
       }

@@ -52,7 +52,7 @@
       pendingRemoteChange = true;
       if (!deferredToastShown) {
         deferredToastShown = true;
-        MessagingService.toast('Content updated elsewhere — sync when you finish editing');
+        MessagingService.toast('Content updated elsewhere - sync when you finish editing');
       }
       return;
     }

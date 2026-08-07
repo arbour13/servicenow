@@ -126,7 +126,7 @@
                     ng-class="{dimmed: c.gridFocusRoleId && id !== c.gridFocusRoleId, colhi: !c.gridFocusRoleId && c.hoverColumnRoleId === id}">
                     <span ng-if="row.task.raci[id]" class="rg-lt"><span ng-repeat="l in row.task.raci[id] track by l"
                         ng-class="'rl-' + l" data-tip-name="{{c.raciNames[l]}}" data-tip="{{c.raciDescs[l]}}">{{l}}</span></span>
-                    <span ng-if="!row.task.raci[id]" class="rg-dash">&ndash;</span>
+                    <span ng-if="!row.task.raci[id]" class="rg-dash">&middot;</span>
                   </td>
                 </tr>
               </tbody>

@@ -1,4 +1,4 @@
-api.controller = function ($rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService, ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService, RaciGridService, UrlPolicyService, SearchService, MessagingService) {
+api.controller = function ($rootScope, $scope, $timeout, AppStateService, MethodologyDomainService, NavigationService, WhatsNewService, ReferenceService, IconService, JargonService, TipService, ContentEditService, StructureEditService, RaciGridService, UrlPolicyService, SearchService, MessagingService, AnalyticsService) {
   'use strict';
   var c = this;
 
@@ -71,6 +71,13 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
     storeCollapsedMap(METHODOLOGY_INTRO_COLLAPSED_KEY, methodologyIntroCollapsedById);
   };
 
+  c.trackFeedbackClick = function (methodology) {
+    AnalyticsService.trackFeedback({
+      methodologyId: methodology && methodology.id,
+      methodologyName: methodology && methodology.name
+    });
+  };
+
   c.methodologyIntroParagraphs = function (methodology) {
     if (!methodology || !methodology.description) {
       return [];
@@ -105,6 +112,38 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
     return MethodologyDomainService.currentMethodology(c.methodologies, c.methodologyId);
   }
   c.currentMethodology = currentMethodology;
+
+  // Phase 6 acknowledgement: the reader confirms they have seen the listed changes. Only this
+  // marks them read - which is what clears the unread dots, the card badge and the What's New
+  // entry. Deliberately explicit: a change that clears itself on arrival is a change nobody
+  // actually read.
+  c.acknowledgeChanges = function () {
+    if (!c.location || !c.location.subPhase || !c.pendingChanges.length) {
+      return;
+    }
+    WhatsNewService.markRead(c.location.subPhase, c.methodologies);
+    AppStateService.setPendingChanges([]);
+  };
+
+  /* Common Level of Effort values, offered on every LOE field through dm-combo. The field stays
+     free text - the content genuinely needs prose for a few entries ("Varies per SoW",
+     "Non-billable unless EM & Architect say otherwise"), so a closed dropdown would be wrong.
+
+     Drawn from what the content actually contains rather than invented: "1 hour" alone is 17 of the
+     54 entries, and these nine cover about two thirds of them. Spellings are normalised here on
+     purpose - the same duration is currently written "1 hour", "1-2 hrs", "8h" and "10h", and
+     picking rather than typing is what stops that spreading. */
+  c.loePresets = [
+    '1 hour',
+    '2 hours',
+    '3 hours',
+    '1 hour each',
+    '2 hours / week',
+    '1-2 hours per sprint',
+    '2 days per workshop',
+    'Varies per SoW',
+    'As Defined'
+  ];
 
   c.hasContent = MethodologyDomainService.hasContent;
   c.jobTitleById = function (jobTitleId) {
@@ -323,7 +362,7 @@ api.controller = function ($rootScope, $scope, $timeout, AppStateService, Method
     c.canAdmin = appState.canAdmin;
     c.loading = appState.loading;
     c.isSaving = appState.isSaving;
-    c.justRead = appState.justRead;
+    c.pendingChanges = appState.pendingChanges;
     c.tmpLevelOfEffortRoleId = appState.tmpLevelOfEffortRoleId;
   }
   function syncStructure() {

@@ -35,7 +35,7 @@
   }
 
   // Run several setters as one logical update (one dm-state at the end). Nested batch() calls
-  // keep silence until the outermost finishes so nav gestures do not fan out 4–5 broadcasts.
+  // keep silence until the outermost finishes so nav gestures do not fan out 4-5 broadcasts.
   function batch(work) {
     var wasSilenced = silenced;
     silenced = true;
@@ -62,7 +62,7 @@
     canAdmin: true,
     loading: true,
     isSaving: false,
-    justRead: [],
+    pendingChanges: [],
     tmpLevelOfEffortRoleId: ''
   };
 
@@ -171,14 +171,14 @@
     state.isSaving = !!isSaving;
     notify();
   }
-  function getJustRead() {
-    return state.justRead;
+  function getPendingChanges() {
+    return state.pendingChanges;
   }
-  function setJustRead(justRead) {
-    if (justRead) {
-      state.justRead = justRead;
+  function setPendingChanges(pendingChanges) {
+    if (pendingChanges) {
+      state.pendingChanges = pendingChanges;
     } else {
-      state.justRead = [];
+      state.pendingChanges = [];
     }
     notify();
   }
@@ -480,7 +480,7 @@
       canAdmin: state.canAdmin,
       loading: state.loading,
       isSaving: state.isSaving,
-      justRead: state.justRead,
+      pendingChanges: state.pendingChanges,
       tmpLevelOfEffortRoleId: state.tmpLevelOfEffortRoleId
     };
   }
@@ -524,8 +524,8 @@
     setLoading: setLoading,
     getIsSaving: getIsSaving,
     setIsSaving: setIsSaving,
-    getJustRead: getJustRead,
-    setJustRead: setJustRead,
+    getPendingChanges: getPendingChanges,
+    setPendingChanges: setPendingChanges,
     getTmpLevelOfEffortRoleId: getTmpLevelOfEffortRoleId,
     setTmpLevelOfEffortRoleId: setTmpLevelOfEffortRoleId,
     refreshLocation: refreshLocation,

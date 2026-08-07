@@ -12,7 +12,7 @@
            artifact, so this is genuinely what a brand-new install looks like before the one-time
            import). Editors get the action; a plain viewer gets an honest status line and no button
            they couldn't use anyway (c.importStandardContent is gated server-side on editor/app-admin/admin;
-           Clear all content is canAdmin only — app admin or system admin),
+           Clear all content is canAdmin only - app admin or system admin),
            same as any other write). -->
         <div class="content-empty-state" ng-if="!c.loading && !c.methodologies.length">
           <p class="content-empty-lede" ng-if="c.canEdit">Delivery 2.0 content hasn&rsquo;t been imported on this
@@ -45,7 +45,9 @@
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ng-bind-html="c.icon('chevronRight')"></svg>
                 <span class="methodology-intro-heading">About {{methodology.name}}</span>
               </button>
-              <a class="methodology-intro-feedback" ng-if="c.safeHref(methodology.feedbackUrl)" ng-href="{{c.safeHref(methodology.feedbackUrl)}}">{{methodology.feedbackLabel || 'Provide Feedback'}}</a>
+              <a class="methodology-intro-feedback" ng-if="c.safeHref(methodology.feedbackUrl)"
+                ng-href="{{c.safeHref(methodology.feedbackUrl)}}"
+                ng-click="c.trackFeedbackClick(methodology)">{{methodology.feedbackLabel || 'Provide Feedback'}}</a>
             </div>
             <!-- .clp/.clp-inner animate collapse via grid-template-rows (see the .clp scss note);
                body stays mounted (no ng-if) so there is something to animate - the parent's
@@ -90,7 +92,7 @@
               </div>
               <span class="fcard-sid">Sub-phase {{subPhase.sid}}</span>
               <div class="fcard-name">{{subPhase.name}}</div>
-              <div class="rbadge" ng-if="c.hasContent(subPhase) && c.unreadCount(subPhase)">&#9679; {{c.unreadCount(subPhase)}} new
+              <div class="rbadge" ng-if="c.hasContent(subPhase) && c.unreadCount(subPhase)">{{c.unreadCount(subPhase)}} new
                 change{{c.unreadCount(subPhase) > 1 ? 's' : ''}}</div>
               <div class="fcard-meta" ng-if="!c.hasContent(subPhase)">Not yet written</div>
             </div>
@@ -199,7 +201,7 @@
               <div class="crumb">{{c.location.phase.name}} &rsaquo; {{c.location.subPhase.sid}}</div>
               <h1 class="sp-title">
                 {{c.location.subPhase.name}}
-                <span class="prec" ng-if="c.unreadCount(c.location.subPhase)">&#9679; {{c.unreadCount(c.location.subPhase)}} new
+                <span class="prec" ng-if="c.unreadCount(c.location.subPhase)">{{c.unreadCount(c.location.subPhase)}} new
                   change{{c.unreadCount(c.location.subPhase) > 1 ? 's' : ''}}</span>
               </h1>
             </div>
@@ -218,12 +220,21 @@
           <p class="obj faint stub-hint" ng-if="!c.hasContent(c.location.subPhase) && !c.canEdit">Not yet written.</p>
 
           <div ng-if="c.hasContent(c.location.subPhase)" class="sp-content">
-            <div class="pchange" ng-if="c.justRead.length">
-              <div><b>What changed</b> - you're seeing this because it's new since your last visit:
+            <!-- Changes since your last visit. Listing them does NOT clear them: the reader has to
+               press Got it. Until then the unread dot, the card badge and the What's New entry all
+               stay lit, so a change can't be retired by a glance or a stray click. -->
+            <div class="pchange" ng-if="c.pendingChanges.length">
+              <div>
+                <b>What changed</b> - new since your last visit:
                 <ul class="pchange-list">
-                  <li ng-repeat="change in c.justRead track by change.id">{{change.text}} <span class="pchange-ts">&middot;
+                  <li ng-repeat="change in c.pendingChanges track by change.id">{{change.text}} <span class="pchange-ts">&middot;
                       {{c.formatDate(change.ts)}}</span></li>
                 </ul>
+                <div class="pchange-ack">
+                  <button type="button" class="btn sm primary" ng-click="c.acknowledgeChanges()">Acknowledge
+                    {{c.pendingChanges.length === 1 ? 'this change' : 'these ' + c.pendingChanges.length + ' changes'}}</button>
+                  <span class="pchange-ack-hint">Stays flagged until you do.</span>
+                </div>
               </div>
             </div>
 
@@ -274,8 +285,8 @@
                 <span class="loe-role">{{row.label}}</span>
                 <span class="eff" ng-class="{none: !row.text}">{{row.text || '-'}}</span>
                 <span class="tags">
-                  <span class="loe-pill bill" ng-if="row.billable">Billable</span>
                   <span class="loe-pill opt" ng-if="row.optional">Optional</span>
+                  <span class="loe-pill bill" ng-if="row.billable">Billable</span>
                 </span>
               </div>
               <div class="loe2" ng-if="c.location.levelOfEffortRows.mode === 'roles'">
@@ -284,8 +295,8 @@
                     data-tip="{{row.description}}">{{row.label}}</span>
                   <span class="eff">{{row.text}}</span>
                   <span class="tags">
-                    <span class="loe-pill bill" ng-if="row.billable">Billable</span>
                     <span class="loe-pill opt" ng-if="row.optional">Optional</span>
+                    <span class="loe-pill bill" ng-if="row.billable">Billable</span>
                   </span>
                 </div>
               </div>
@@ -425,7 +436,9 @@
 
               <div ng-if="c.editSubPhase.levelOfEffort.mode === 'all'" class="loe-edit-row">
                 <span class="loe-abbr wide">All participants</span>
-                <input class="edit-in" placeholder="e.g. 2 hours" ng-model="c.editSubPhase.levelOfEffort.all.text">
+                <dm-combo value="c.editSubPhase.levelOfEffort.all.text" options="c.loePresets"
+                  label="Level of effort for all participants"
+                  placeholder="Pick a common value or type your own"></dm-combo>
                 <div class="loe-flag-group">
                   <div class="loe-flag">
                     <button type="button" class="loe-flag-btn"
@@ -451,7 +464,9 @@
                 <div class="loe-edit-row" ng-class="{orphan: c.loeRoleOrphan(r.id)}" ng-repeat="r in c.loeRoleRows() track by r.id">
                   <span class="loe-abbr" data-tip-name="{{r.name}}" data-tip="{{r.description}}">{{r.abbr}}</span>
                   <span class="orphan-badge" ng-if="c.loeRoleOrphan(r.id)">Not a participant</span>
-                  <input class="edit-in" placeholder="e.g. 2 hours" ng-model="c.editSubPhase.levelOfEffort.roles[r.id].text">
+                  <dm-combo value="c.editSubPhase.levelOfEffort.roles[r.id].text" options="c.loePresets"
+                    label="Level of effort for {{r.name}}"
+                    placeholder="Pick a common value or type your own"></dm-combo>
                   <div class="loe-flag-group">
                     <div class="loe-flag">
                       <button type="button" class="loe-flag-btn"
@@ -480,7 +495,9 @@
                   </select>
                 </div>
               </div>
-              <p class="edit-hint">Same for all participants, or add roles one at a time for a per-role breakdown.</p>
+              <p class="edit-hint">Same for all participants, or add roles one at a time for a per-role
+                breakdown. Each effort field offers the values already used across the methodology, and still
+                accepts anything you type.</p>
             </div>
           </div>
 

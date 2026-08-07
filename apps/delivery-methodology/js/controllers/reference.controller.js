@@ -3,11 +3,11 @@
 angular.module('deliveryMethodology').controller('DmReferenceController', [
   '$rootScope', '$scope', 'AppStateService', 'MethodologyDomainService', 'NavigationService', 'ReferenceService',
   'JargonService', 'TipService', 'IconService', 'UrlPolicyService', 'SearchService', 'RaciGridService',
-  'MessagingService', 'ContentEditService', 'StructureEditService', 'ReferenceEditService',
+  'MessagingService', 'ContentEditService', 'StructureEditService', 'ReferenceEditService', 'AnalyticsService',
   function (
     $rootScope, $scope, AppStateService, MethodologyDomainService, NavigationService, ReferenceService,
     JargonService, TipService, IconService, UrlPolicyService, SearchService, RaciGridService,
-    MessagingService, ContentEditService, StructureEditService, ReferenceEditService
+    MessagingService, ContentEditService, StructureEditService, ReferenceEditService, AnalyticsService
   ) {
   'use strict';
   var c = this;
@@ -395,6 +395,7 @@ angular.module('deliveryMethodology').controller('DmReferenceController', [
     c.referencePanelId = item.id;
     c.cancelEditJargon();
     syncActiveSection();
+    AnalyticsService.trackReference(item.id);
   };
 
   c.selectEditSection = function (section) {
